@@ -105,3 +105,36 @@ export async function preloadAssets(assets: MediaAsset[]): Promise<void> {
   
   await Promise.all(preloadPromises);
 }
+
+/**
+ * Preload a single image
+ * Returns a promise that resolves when the image is loaded or fails
+ */
+export function preloadImage(src: string): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
+    img.src = src;
+  });
+}
+
+/**
+ * Extract file extension from a path or URL
+ */
+export function getFileExtension(path: string): string {
+  const parts = path.split('.');
+  if (parts.length <= 1) return '';
+  return `.${parts.pop()?.toLowerCase()}`;
+}
+
+/**
+ * Props for the SafeImage component
+ */
+export interface SafeImageProps {
+  src: string;
+  alt: string;
+  fallbackSrc?: string;
+  width?: number | string;
+  height?: number | string;
+}
