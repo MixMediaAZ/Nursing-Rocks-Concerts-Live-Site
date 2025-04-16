@@ -3,6 +3,18 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertSubscriberSchema } from "@shared/schema";
 import { z } from "zod";
+import {
+  register,
+  login,
+  registerValidation,
+  loginValidation,
+  licenseValidation,
+  submitNurseLicense,
+  getNurseLicenses,
+  purchaseTicket,
+  getUserTickets,
+  authenticateToken
+} from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Events
@@ -155,6 +167,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to process subscription" });
     }
   });
+
+  // Authentication and License Verification
+  app.post("/api/auth/register", registerValidation, register);
+  app.post("/api/auth/login", loginValidation, login);
+
+  // Protected routes (require authentication)
+  app.post("/api/license/submit", authenticateToken, licenseValidation, submitNurseLicense);
+  app.get("/api/license", authenticateToken, getNurseLicenses);
+  app.post("/api/tickets/purchase", authenticateToken, purchaseTicket);
+  app.get("/api/tickets", authenticateToken, getUserTickets);
 
   // Create HTTP server
   const httpServer = createServer(app);
