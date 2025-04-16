@@ -13,13 +13,13 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           <div className="flex flex-col gap-4">
             <Link href="/">
-              <a className="flex items-center gap-2">
+              <div className="flex items-center gap-2 cursor-pointer">
                 <img
                   src={logoPath}
                   alt="Nursing Rocks!"
                   className="h-14 w-auto"
                 />
-              </a>
+              </div>
             </Link>
             <p className="text-sm text-muted-foreground">
               Nursing Rocks! Concert Series celebrates healthcare professionals with exclusive music experiences.
@@ -44,28 +44,28 @@ export function Footer() {
             <h3 className="text-lg font-bold">Quick Links</h3>
             <ul className="flex flex-col gap-2">
               <li>
-                <Link href="/" className="hover:underline text-muted-foreground hover:text-primary">
-                  <a className="inline-block text-muted-foreground hover:text-primary transition-colors">Home</a>
+                <Link href="/">
+                  <div className="inline-block text-muted-foreground hover:text-primary transition-colors cursor-pointer">Home</div>
                 </Link>
               </li>
               <li>
-                <Link href="/events" className="hover:underline text-muted-foreground hover:text-primary">
-                  <a className="inline-block text-muted-foreground hover:text-primary transition-colors">Concerts</a>
+                <Link href="/events">
+                  <div className="inline-block text-muted-foreground hover:text-primary transition-colors cursor-pointer">Concerts</div>
                 </Link>
               </li>
               <li>
-                <Link href="/artists" className="hover:underline text-muted-foreground hover:text-primary">
-                  <a className="inline-block text-muted-foreground hover:text-primary transition-colors">Artists</a>
+                <Link href="/artists">
+                  <div className="inline-block text-muted-foreground hover:text-primary transition-colors cursor-pointer">Artists</div>
                 </Link>
               </li>
               <li>
-                <Link href="/venues" className="hover:underline text-muted-foreground hover:text-primary">
-                  <a className="inline-block text-muted-foreground hover:text-primary transition-colors">Venues</a>
+                <Link href="/venues">
+                  <div className="inline-block text-muted-foreground hover:text-primary transition-colors cursor-pointer">Venues</div>
                 </Link>
               </li>
               <li>
-                <Link href="/license" className="hover:underline text-muted-foreground hover:text-primary">
-                  <a className="inline-block text-muted-foreground hover:text-primary transition-colors">License Verification</a>
+                <Link href="/license">
+                  <div className="inline-block text-muted-foreground hover:text-primary transition-colors cursor-pointer">License Verification</div>
                 </Link>
               </li>
             </ul>
@@ -118,19 +118,19 @@ export function Footer() {
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <Link href="/terms">
-                <a className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                <div className="text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer">
                   Terms of Service
-                </a>
+                </div>
               </Link>
               <Link href="/privacy">
-                <a className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                <div className="text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer">
                   Privacy Policy
-                </a>
+                </div>
               </Link>
               <Link href="/faq">
-                <a className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                <div className="text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer">
                   FAQ
-                </a>
+                </div>
               </Link>
               <div className="flex items-center gap-1">
                 <span className="text-xs text-muted-foreground">Made with</span>

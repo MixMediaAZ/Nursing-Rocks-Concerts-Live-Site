@@ -61,13 +61,13 @@ export function Header() {
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-2">
           <Link href="/">
-            <a className="flex items-center gap-2">
+            <div className="flex items-center gap-2 cursor-pointer">
               <img
                 src={logoPath}
                 alt="Nursing Rocks!"
                 className="h-12 md:h-14 w-auto"
               />
-            </a>
+            </div>
           </Link>
         </div>
         
@@ -75,15 +75,15 @@ export function Header() {
           <nav className="flex items-center gap-6">
             {navLinks.map((link) => (
               <Link key={link.href} href={link.href}>
-                <a
-                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                <div
+                  className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer ${
                     isActive(link.href)
                       ? "text-primary"
                       : "text-muted-foreground"
                   }`}
                 >
                   {link.label}
-                </a>
+                </div>
               </Link>
             ))}
             
@@ -97,17 +97,17 @@ export function Header() {
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem asChild>
                     <Link href="/profile">
-                      <a className="w-full cursor-pointer">My Profile</a>
+                      <div className="w-full cursor-pointer">My Profile</div>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/license">
-                      <a className="w-full cursor-pointer">License Verification</a>
+                      <div className="w-full cursor-pointer">License Verification</div>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/tickets">
-                      <a className="w-full cursor-pointer">My Tickets</a>
+                      <div className="w-full cursor-pointer">My Tickets</div>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
@@ -119,12 +119,12 @@ export function Header() {
               <div className="flex items-center gap-2">
                 <Button variant="ghost" asChild>
                   <Link href="/login">
-                    <a>Login</a>
+                    <div className="cursor-pointer">Login</div>
                   </Link>
                 </Button>
                 <Button asChild>
                   <Link href="/register">
-                    <a>Register</a>
+                    <div className="cursor-pointer">Register</div>
                   </Link>
                 </Button>
               </div>
@@ -147,8 +147,8 @@ export function Header() {
           <nav className="flex flex-col space-y-4">
             {navLinks.map((link) => (
               <Link key={link.href} href={link.href}>
-                <a
-                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                <div
+                  className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer ${
                     isActive(link.href)
                       ? "text-primary"
                       : "text-muted-foreground"
@@ -156,35 +156,35 @@ export function Header() {
                   onClick={() => setIsMenuOpen(false)}
                 >
                   {link.label}
-                </a>
+                </div>
               </Link>
             ))}
             
             {isLoggedIn ? (
               <>
                 <Link href="/profile">
-                  <a
-                    className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground"
+                  <div
+                    className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     My Profile
-                  </a>
+                  </div>
                 </Link>
                 <Link href="/license">
-                  <a
-                    className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground"
+                  <div
+                    className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     License Verification
-                  </a>
+                  </div>
                 </Link>
                 <Link href="/tickets">
-                  <a
-                    className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground"
+                  <div
+                    className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     My Tickets
-                  </a>
+                  </div>
                 </Link>
                 <a
                   className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer"
@@ -200,12 +200,12 @@ export function Header() {
               <div className="flex flex-col space-y-2">
                 <Button variant="outline" asChild className="w-full">
                   <Link href="/login">
-                    <a onClick={() => setIsMenuOpen(false)}>Login</a>
+                    <div className="cursor-pointer" onClick={() => setIsMenuOpen(false)}>Login</div>
                   </Link>
                 </Button>
                 <Button asChild className="w-full">
                   <Link href="/register">
-                    <a onClick={() => setIsMenuOpen(false)}>Register</a>
+                    <div className="cursor-pointer" onClick={() => setIsMenuOpen(false)}>Register</div>
                   </Link>
                 </Button>
               </div>
