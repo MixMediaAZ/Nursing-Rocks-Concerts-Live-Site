@@ -4,7 +4,11 @@ import {
   Venue, InsertVenue, 
   Gallery, InsertGallery, 
   Subscriber, InsertSubscriber,
-  events, artists, venues, gallery, subscribers
+  User, InsertUser,
+  NurseLicense, InsertNurseLicense,
+  Ticket, InsertTicket,
+  events, artists, venues, gallery, subscribers,
+  users, nurseLicenses, tickets
 } from "@shared/schema";
 import { DatabaseStorage } from "./storage-db";
 
@@ -33,6 +37,35 @@ export interface IStorage {
   // Subscribers
   createSubscriber(subscriber: InsertSubscriber): Promise<Subscriber>;
   getSubscriberByEmail(email: string): Promise<Subscriber | undefined>;
+  
+  // User Management
+  createUser(user: InsertUser, passwordHash: string): Promise<User>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  getUserById(id: number): Promise<User | undefined>;
+  updateUserVerificationStatus(userId: number, isVerified: boolean): Promise<User>;
+  
+  // Nurse License Verification
+  createNurseLicense(license: InsertNurseLicense, userId: number): Promise<NurseLicense>;
+  getNurseLicensesByUserId(userId: number): Promise<NurseLicense[]>;
+  getNurseLicenseById(id: number): Promise<NurseLicense | undefined>;
+  updateNurseLicenseVerification(
+    licenseId: number, 
+    status: string, 
+    verificationDate: Date, 
+    verificationSource: string,
+    verificationResult: any
+  ): Promise<NurseLicense>;
+  
+  // Ticket Management
+  createTicket(
+    ticket: InsertTicket, 
+    userId: number, 
+    eventId: number, 
+    ticketCode: string
+  ): Promise<Ticket>;
+  getTicketsByUserId(userId: number): Promise<Ticket[]>;
+  getTicketByCode(ticketCode: string): Promise<Ticket | undefined>;
+  markTicketAsUsed(ticketId: number): Promise<Ticket>;
 }
 
 export class MemStorage implements IStorage {

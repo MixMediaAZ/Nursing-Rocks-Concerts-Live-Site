@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, date } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -108,6 +108,91 @@ export const insertSubscriberSchema = createInsertSchema(subscribers).omit({
   created_at: true,
 });
 
+// User model
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  password_hash: text("password_hash").notNull(),
+  first_name: text("first_name").notNull(),
+  last_name: text("last_name").notNull(),
+  created_at: timestamp("created_at").defaultNow(),
+  is_verified: boolean("is_verified").default(false),
+});
+
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  created_at: true,
+  password_hash: true,
+}).extend({
+  password: z.string().min(8),
+});
+
+// Nurse License model
+export const nurseLicenses = pgTable("nurse_licenses", {
+  id: serial("id").primaryKey(),
+  user_id: integer("user_id").notNull(),
+  license_number: text("license_number").notNull(),
+  state: text("state").notNull(),
+  expiration_date: date("expiration_date").notNull(),
+  status: text("status").default("pending"),
+  verification_date: timestamp("verification_date"),
+  verification_source: text("verification_source"),
+  verification_result: jsonb("verification_result"),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+export const insertNurseLicenseSchema = createInsertSchema(nurseLicenses).omit({
+  id: true,
+  user_id: true,
+  verification_date: true,
+  verification_source: true,
+  verification_result: true,
+  created_at: true,
+});
+
+// Tickets model
+export const tickets = pgTable("tickets", {
+  id: serial("id").primaryKey(),
+  user_id: integer("user_id").notNull(),
+  event_id: integer("event_id").notNull(),
+  purchase_date: timestamp("purchase_date").defaultNow(),
+  ticket_type: text("ticket_type").notNull(),
+  price: text("price").notNull(),
+  is_used: boolean("is_used").default(false),
+  ticket_code: text("ticket_code").notNull().unique(),
+});
+
+export const insertTicketSchema = createInsertSchema(tickets).omit({
+  id: true,
+  purchase_date: true,
+  is_used: true,
+  ticket_code: true,
+});
+
+// Relations
+export const usersRelations = relations(users, ({ many }) => ({
+  licenses: many(nurseLicenses),
+  tickets: many(tickets),
+}));
+
+export const nurseLicensesRelations = relations(nurseLicenses, ({ one }) => ({
+  user: one(users, {
+    fields: [nurseLicenses.user_id],
+    references: [users.id],
+  }),
+}));
+
+export const ticketsRelations = relations(tickets, ({ one }) => ({
+  user: one(users, {
+    fields: [tickets.user_id],
+    references: [users.id],
+  }),
+  event: one(events, {
+    fields: [tickets.event_id],
+    references: [events.id],
+  }),
+}));
+
 // Types
 export type Event = typeof events.$inferSelect;
 export type InsertEvent = z.infer<typeof insertEventSchema>;
@@ -123,3 +208,12 @@ export type InsertGallery = z.infer<typeof insertGallerySchema>;
 
 export type Subscriber = typeof subscribers.$inferSelect;
 export type InsertSubscriber = z.infer<typeof insertSubscriberSchema>;
+
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+
+export type NurseLicense = typeof nurseLicenses.$inferSelect;
+export type InsertNurseLicense = z.infer<typeof insertNurseLicenseSchema>;
+
+export type Ticket = typeof tickets.$inferSelect;
+export type InsertTicket = z.infer<typeof insertTicketSchema>;

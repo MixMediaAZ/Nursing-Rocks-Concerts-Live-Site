@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "./db";
 import { 
   Event, InsertEvent, 
@@ -6,7 +6,11 @@ import {
   Venue, InsertVenue, 
   Gallery, InsertGallery, 
   Subscriber, InsertSubscriber,
-  events, artists, venues, gallery, subscribers
+  User, InsertUser,
+  NurseLicense, InsertNurseLicense,
+  Ticket, InsertTicket,
+  events, artists, venues, gallery, subscribers,
+  users, nurseLicenses, tickets
 } from "@shared/schema";
 import { IStorage } from "./storage";
 
@@ -108,5 +112,140 @@ export class DatabaseStorage implements IStorage {
       .from(subscribers)
       .where(eq(subscribers.email, email));
     return subscriber;
+  }
+  
+  // User Management
+  async createUser(user: InsertUser, passwordHash: string): Promise<User> {
+    const [newUser] = await db
+      .insert(users)
+      .values({
+        email: user.email,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        password_hash: passwordHash,
+        is_verified: false
+      })
+      .returning();
+    return newUser;
+  }
+  
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email));
+    return user;
+  }
+  
+  async getUserById(id: number): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, id));
+    return user;
+  }
+  
+  async updateUserVerificationStatus(userId: number, isVerified: boolean): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ is_verified: isVerified })
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser;
+  }
+  
+  // Nurse License Verification
+  async createNurseLicense(license: InsertNurseLicense, userId: number): Promise<NurseLicense> {
+    const [newLicense] = await db
+      .insert(nurseLicenses)
+      .values({
+        user_id: userId,
+        license_number: license.license_number,
+        state: license.state,
+        expiration_date: license.expiration_date,
+        status: 'pending'
+      })
+      .returning();
+    return newLicense;
+  }
+  
+  async getNurseLicensesByUserId(userId: number): Promise<NurseLicense[]> {
+    return await db
+      .select()
+      .from(nurseLicenses)
+      .where(eq(nurseLicenses.user_id, userId));
+  }
+  
+  async getNurseLicenseById(id: number): Promise<NurseLicense | undefined> {
+    const [license] = await db
+      .select()
+      .from(nurseLicenses)
+      .where(eq(nurseLicenses.id, id));
+    return license;
+  }
+  
+  async updateNurseLicenseVerification(
+    licenseId: number, 
+    status: string, 
+    verificationDate: Date, 
+    verificationSource: string,
+    verificationResult: any
+  ): Promise<NurseLicense> {
+    const [updatedLicense] = await db
+      .update(nurseLicenses)
+      .set({
+        status,
+        verification_date: verificationDate,
+        verification_source: verificationSource,
+        verification_result: verificationResult
+      })
+      .where(eq(nurseLicenses.id, licenseId))
+      .returning();
+    return updatedLicense;
+  }
+  
+  // Ticket Management
+  async createTicket(
+    ticket: InsertTicket, 
+    userId: number, 
+    eventId: number, 
+    ticketCode: string
+  ): Promise<Ticket> {
+    const [newTicket] = await db
+      .insert(tickets)
+      .values({
+        user_id: userId,
+        event_id: eventId,
+        ticket_type: ticket.ticket_type,
+        price: ticket.price,
+        ticket_code: ticketCode,
+        is_used: false
+      })
+      .returning();
+    return newTicket;
+  }
+  
+  async getTicketsByUserId(userId: number): Promise<Ticket[]> {
+    return await db
+      .select()
+      .from(tickets)
+      .where(eq(tickets.user_id, userId));
+  }
+  
+  async getTicketByCode(ticketCode: string): Promise<Ticket | undefined> {
+    const [ticket] = await db
+      .select()
+      .from(tickets)
+      .where(eq(tickets.ticket_code, ticketCode));
+    return ticket;
+  }
+  
+  async markTicketAsUsed(ticketId: number): Promise<Ticket> {
+    const [updatedTicket] = await db
+      .update(tickets)
+      .set({ is_used: true })
+      .where(eq(tickets.id, ticketId))
+      .returning();
+    return updatedTicket;
   }
 }
