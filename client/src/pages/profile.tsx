@@ -1,162 +1,265 @@
-import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { AlertTriangle, BadgeCheck, Clock, QrCode, Ticket } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { CheckCircle, XCircle } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 import { formatDate } from "@/lib/utils";
 
 export default function ProfilePage() {
-  const [, setLocation] = useLocation();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { toast } = useToast();
+  const [_, setLocation] = useLocation();
+  const [userData, setUserData] = useState<any>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   
+  // Check authentication status on mount
   useEffect(() => {
-    // Check if user is logged in
     const token = localStorage.getItem("token");
-    if (!token) {
-      // Redirect to login if not logged in
-      setLocation("/login?redirect=/profile");
+    const storedUser = localStorage.getItem("user");
+    
+    if (!token || !storedUser) {
+      setIsAuthenticated(false);
+      toast({
+        variant: "destructive",
+        title: "Authentication Required",
+        description: "Please login to view your profile.",
+      });
+      setLocation("/login");
     } else {
-      setIsLoggedIn(true);
+      setIsAuthenticated(true);
+      try {
+        setUserData(JSON.parse(storedUser));
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+        setUserData(null);
+      }
     }
-  }, [setLocation]);
+  }, []);
   
-  const { data: tickets = [], isLoading: ticketsLoading } = useQuery<any[]>({
-    queryKey: ["/api/tickets"],
-    enabled: isLoggedIn,
+  // Fetch licenses
+  const { data: licenses } = useQuery({
+    queryKey: ['/api/auth/licenses'],
+    enabled: isAuthenticated === true,
   });
   
-  if (!isLoggedIn) {
-    return null;
+  // Fetch tickets
+  const { data: tickets } = useQuery({
+    queryKey: ['/api/auth/tickets'],
+    enabled: isAuthenticated === true,
+  });
+  
+  // Handle logout
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    toast({
+      title: "Logged Out",
+      description: "You have been successfully logged out.",
+    });
+    setLocation("/login");
+  };
+  
+  if (isAuthenticated === false || !userData) {
+    return null; // Redirecting to login or loading
   }
   
+  // Get initials for avatar
+  const getInitials = () => {
+    if (userData?.first_name && userData?.last_name) {
+      return `${userData.first_name[0]}${userData.last_name[0]}`.toUpperCase();
+    }
+    return userData?.email?.[0]?.toUpperCase() || "U";
+  };
+  
   return (
-    <div className="container py-10">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">My Profile</h1>
-        
-        <Tabs defaultValue="tickets" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="tickets">My Tickets</TabsTrigger>
-            <TabsTrigger value="account">Account Settings</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="tickets" className="mt-6">
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold flex items-center gap-2">
-                <Ticket className="h-5 w-5" />
-                My Concert Tickets
-              </h2>
+    <div className="container max-w-4xl py-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="md:col-span-1">
+          <Card>
+            <CardHeader className="text-center">
+              <Avatar className="w-20 h-20 mx-auto">
+                <AvatarFallback className="text-xl bg-primary text-primary-foreground">
+                  {getInitials()}
+                </AvatarFallback>
+              </Avatar>
+              <CardTitle className="mt-4">{userData.first_name} {userData.last_name}</CardTitle>
+              <CardDescription>{userData.email}</CardDescription>
               
-              {ticketsLoading ? (
-                <p>Loading your tickets...</p>
-              ) : tickets.length > 0 ? (
-                <div className="grid gap-4">
-                  {tickets.map((ticket: any) => (
-                    <Card key={ticket.id}>
-                      <CardHeader className="pb-2">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <CardTitle>{ticket.event?.title || "Event Name"}</CardTitle>
-                            <CardDescription>
-                              {ticket.event?.date ? formatDate(ticket.event.date) : "Date TBD"} • {ticket.event?.venue?.name || "Venue"}
-                            </CardDescription>
-                          </div>
-                          <Button variant="outline" size="sm" className="flex items-center gap-2">
-                            <QrCode className="h-4 w-4" />
-                            View Ticket
-                          </Button>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex justify-between items-center text-sm">
-                          <div>
-                            <p className="text-muted-foreground">Ticket Type</p>
-                            <p className="font-medium">{ticket.ticket_type}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Purchase Date</p>
-                            <p className="font-medium">{formatDate(ticket.created_at)}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Price</p>
-                            <p className="font-medium">${ticket.price}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Status</p>
-                            <p className={`font-medium ${ticket.is_used ? "text-amber-500" : "text-green-500"}`}>
-                              {ticket.is_used ? "Used" : "Valid"}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+              <div className="mt-2">
+                {userData.is_verified ? (
+                  <Badge className="bg-green-100 text-green-800 hover:bg-green-200 flex items-center gap-1 mx-auto">
+                    <CheckCircle className="h-3 w-3" />
+                    Verified Nurse
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200 hover:bg-yellow-100 flex items-center gap-1 mx-auto">
+                    <XCircle className="h-3 w-3" />
+                    Unverified
+                  </Badge>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+                <div className="flex justify-between">
+                  <span>Member Since:</span>
+                  <span className="font-medium">{userData.created_at ? formatDate(userData.created_at) : "N/A"}</span>
                 </div>
-              ) : (
-                <Alert>
-                  <AlertTriangle className="h-5 w-5" />
-                  <AlertTitle>No tickets found</AlertTitle>
-                  <AlertDescription>
-                    You haven't purchased any tickets yet. Browse our upcoming concerts to find your next event!
-                  </AlertDescription>
-                  <Button 
-                    variant="outline" 
-                    className="mt-4"
-                    onClick={() => setLocation("/")}
-                  >
-                    Browse Concerts
-                  </Button>
-                </Alert>
-              )}
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="account" className="mt-6">
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold">Account Settings</h2>
+                <div className="flex justify-between">
+                  <span>Tickets Purchased:</span>
+                  <span className="font-medium">{tickets?.tickets?.length || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Licenses Submitted:</span>
+                  <span className="font-medium">{licenses?.licenses?.length || 0}</span>
+                </div>
+              </div>
               
-              <Card>
-                <CardHeader>
-                  <CardTitle>Personal Information</CardTitle>
-                  <CardDescription>
-                    Manage your account details and preferences
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-muted-foreground">Email</p>
-                      <p className="font-medium">user@example.com</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Name</p>
-                      <p className="font-medium">John Doe</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Member Since</p>
-                      <p className="font-medium">January 1, 2023</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">License Status</p>
-                      <div className="flex items-center gap-2">
-                        <BadgeCheck className="h-5 w-5 text-green-500" />
-                        <span className="text-green-500 font-medium">Verified</span>
+              <div className="mt-6 space-y-2">
+                {!userData.is_verified && (
+                  <Button variant="outline" className="w-full" onClick={() => setLocation("/license")}>
+                    Verify Your License
+                  </Button>
+                )}
+                <Button variant="outline" className="w-full" onClick={() => setLocation("/tickets")}>
+                  Your Tickets
+                </Button>
+                <Button variant="destructive" className="w-full" onClick={handleLogout}>
+                  Logout
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        <div className="md:col-span-2">
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle>Your Account</CardTitle>
+              <CardDescription>
+                Manage your account information and view your tickets
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="licenses">
+                <TabsList className="mb-4">
+                  <TabsTrigger value="licenses">Licenses</TabsTrigger>
+                  <TabsTrigger value="tickets">Tickets</TabsTrigger>
+                  <TabsTrigger value="preferences">Preferences</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="licenses">
+                  {licenses?.licenses?.length > 0 ? (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">Your Nursing Licenses</h3>
+                      <div className="border rounded-md divide-y">
+                        {licenses.licenses.map((license: any) => (
+                          <div key={license.id} className="p-4">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <div className="font-medium">License #{license.license_number}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {license.state} • Expires: {formatDate(license.expiration_date)}
+                                </div>
+                              </div>
+                              <Badge 
+                                variant={license.status === 'verified' ? 'default' : 'outline'}
+                                className={license.status === 'verified' 
+                                  ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                                  : license.status === 'pending'
+                                    ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+                                    : 'bg-red-50 text-red-800 border-red-200 hover:bg-red-100'
+                                }
+                              >
+                                {license.status === 'verified' 
+                                  ? 'Verified' 
+                                  : license.status === 'pending'
+                                    ? 'Pending'
+                                    : 'Invalid'
+                                }
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
                       </div>
+                      <Button variant="outline" onClick={() => setLocation("/license")}>
+                        Manage Licenses
+                      </Button>
                     </div>
-                    
-                    <div className="flex gap-2 pt-4">
-                      <Button variant="outline">Edit Profile</Button>
-                      <Button variant="outline" className="text-red-500">Change Password</Button>
+                  ) : (
+                    <div className="py-8 text-center">
+                      <p className="text-muted-foreground mb-4">You haven't submitted any nursing licenses yet.</p>
+                      <Button onClick={() => setLocation("/license")}>
+                        Verify Your License
+                      </Button>
                     </div>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="tickets">
+                  {tickets?.tickets?.length > 0 ? (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">Your Event Tickets</h3>
+                      <div className="border rounded-md divide-y">
+                        {tickets.tickets.map((ticket: any) => (
+                          <div key={ticket.id} className="p-4">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <div className="font-medium">{ticket.event?.title || "Event"}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {ticket.ticket_type} • ${parseFloat(ticket.price).toFixed(2)}
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  Code: {ticket.ticket_code}
+                                </div>
+                              </div>
+                              <Badge 
+                                variant={ticket.is_used ? 'outline' : 'default'}
+                                className={ticket.is_used 
+                                  ? 'bg-gray-50 text-gray-800 border-gray-200 hover:bg-gray-100' 
+                                  : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                                }
+                              >
+                                {ticket.is_used ? 'Used' : 'Valid'}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <Button variant="outline" onClick={() => setLocation("/tickets")}>
+                        View All Tickets
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="py-8 text-center">
+                      <p className="text-muted-foreground mb-4">You haven't purchased any tickets yet.</p>
+                      <Button onClick={() => setLocation("/")}>
+                        Browse Events
+                      </Button>
+                    </div>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="preferences">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Account Preferences</h3>
+                    <p className="text-muted-foreground">
+                      Manage your account settings and preferences. This feature is coming soon.
+                    </p>
+                    <Button variant="outline" disabled>
+                      Edit Profile
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

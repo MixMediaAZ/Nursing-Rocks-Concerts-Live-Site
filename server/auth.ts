@@ -51,12 +51,8 @@ export async function register(req: Request, res: Response) {
     // Create user
     const user = await storage.createUser({ email, first_name, last_name, password }, passwordHash);
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { id: user.id, email: user.email, is_verified: user.is_verified },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    // Generate JWT token using our helper module
+    const token = generateToken(user);
 
     // Return user data without password hash
     const { password_hash, ...userData } = user;
@@ -92,13 +88,9 @@ export async function login(req: Request, res: Response) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { id: user.id, email: user.email, is_verified: user.is_verified },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-
+    // Generate JWT token using our helper module
+    const token = generateToken(user);
+    
     // Return user data without password hash
     const { password_hash, ...userData } = user;
     return res.status(200).json({
@@ -249,8 +241,16 @@ export function authenticateToken(req: Request, res: Response, next: Function) {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    (req as any).user = decoded;
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return res.status(403).json({ message: 'Invalid or expired token' });
+    }
+    
+    (req as any).user = {
+      id: decoded.userId,
+      email: decoded.email,
+      is_verified: decoded.isVerified
+    };
     next();
   } catch (error) {
     return res.status(403).json({ message: 'Invalid or expired token' });
