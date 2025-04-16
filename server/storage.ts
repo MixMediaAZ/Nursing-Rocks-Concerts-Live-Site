@@ -7,8 +7,16 @@ import {
   User, InsertUser,
   NurseLicense, InsertNurseLicense,
   Ticket, InsertTicket,
+  Employer, InsertEmployer,
+  JobListing, InsertJobListing,
+  NurseProfile, InsertNurseProfile,
+  JobApplication, InsertJobApplication,
+  SavedJob, InsertSavedJob,
+  JobAlert, InsertJobAlert,
   events, artists, venues, gallery, subscribers,
-  users, nurseLicenses, tickets
+  users, nurseLicenses, tickets,
+  employers, jobListings, nurseProfiles, 
+  jobApplications, savedJobs, jobAlerts
 } from "@shared/schema";
 import { DatabaseStorage } from "./storage-db";
 
@@ -66,6 +74,74 @@ export interface IStorage {
   getTicketsByUserId(userId: number): Promise<Ticket[]>;
   getTicketByCode(ticketCode: string): Promise<Ticket | undefined>;
   markTicketAsUsed(ticketId: number): Promise<Ticket>;
+  
+  // ========== JOB BOARD FUNCTIONS ==========
+  
+  // Employer Management
+  createEmployer(employer: InsertEmployer, userId: number): Promise<Employer>;
+  getEmployerById(id: number): Promise<Employer | undefined>;
+  getEmployerByUserId(userId: number): Promise<Employer | undefined>;
+  getAllEmployers(): Promise<Employer[]>;
+  getVerifiedEmployers(): Promise<Employer[]>;
+  updateEmployer(id: number, data: Partial<InsertEmployer>): Promise<Employer>;
+  verifyEmployer(id: number): Promise<Employer>;
+  
+  // Job Listings
+  createJobListing(jobListing: InsertJobListing, employerId: number): Promise<JobListing>;
+  getJobListingById(id: number): Promise<JobListing | undefined>;
+  getAllJobListings(filters?: {
+    specialty?: string | string[];
+    location?: string | string[];
+    jobType?: string | string[];
+    experienceLevel?: string | string[];
+    salaryMin?: number;
+    keywords?: string;
+    employerId?: number;
+    isActive?: boolean;
+    isFeatured?: boolean;
+  }): Promise<JobListing[]>;
+  getFeaturedJobListings(limit?: number): Promise<JobListing[]>;
+  getRecentJobListings(limit?: number): Promise<JobListing[]>;
+  updateJobListing(id: number, data: Partial<InsertJobListing>): Promise<JobListing>;
+  incrementJobListingViews(id: number): Promise<JobListing>;
+  incrementJobApplicationsCount(id: number): Promise<JobListing>;
+  
+  // Nurse Profiles
+  createNurseProfile(profile: InsertNurseProfile, userId: number): Promise<NurseProfile>;
+  getNurseProfileByUserId(userId: number): Promise<NurseProfile | undefined>;
+  getNurseProfileById(id: number): Promise<NurseProfile | undefined>;
+  updateNurseProfile(id: number, data: Partial<InsertNurseProfile>): Promise<NurseProfile>;
+  getPublicNurseProfiles(filters?: {
+    specialties?: string | string[];
+    skills?: string | string[];
+    yearsOfExperience?: number;
+    preferredLocations?: string | string[];
+    preferredShift?: string;
+  }): Promise<NurseProfile[]>;
+  
+  // Job Applications
+  createJobApplication(application: InsertJobApplication, userId: number, jobId: number): Promise<JobApplication>;
+  getJobApplicationById(id: number): Promise<JobApplication | undefined>;
+  getJobApplicationsByUserId(userId: number): Promise<JobApplication[]>;
+  getJobApplicationsByJobId(jobId: number): Promise<JobApplication[]>;
+  updateJobApplicationStatus(id: number, status: string, notes?: string): Promise<JobApplication>;
+  withdrawJobApplication(id: number): Promise<JobApplication>;
+  
+  // Saved Jobs
+  saveJob(userId: number, jobId: number, notes?: string): Promise<SavedJob>;
+  unsaveJob(userId: number, jobId: number): Promise<void>;
+  getSavedJobsByUserId(userId: number): Promise<SavedJob[]>;
+  
+  // Job Alerts
+  createJobAlert(alert: InsertJobAlert, userId: number): Promise<JobAlert>;
+  getJobAlertsByUserId(userId: number): Promise<JobAlert[]>;
+  updateJobAlert(id: number, data: Partial<InsertJobAlert>): Promise<JobAlert>;
+  deleteJobAlert(id: number): Promise<void>;
+  
+  // Job Search & Recommendations
+  searchJobs(query: string, filters?: any): Promise<JobListing[]>;
+  getRecommendedJobs(userId: number, limit?: number): Promise<JobListing[]>;
+  getSimilarJobs(jobId: number, limit?: number): Promise<JobListing[]>;
 }
 
 export class MemStorage implements IStorage {

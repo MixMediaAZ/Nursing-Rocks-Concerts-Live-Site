@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Menu, X, User, Stethoscope, Music, Map, Users, Building2, HeartPulse } from "lucide-react";
+import { Menu, X, User, Stethoscope, Music, Map, Users, Building2, HeartPulse, Briefcase } from "lucide-react";
 import logoPath from "../assets/nursing-rocks-logo.png";
 import newLogoPath from "../assets/NursingRocks_NewLogo.png";
 import { useIsMobile } from "@/hooks/use-mobile";
