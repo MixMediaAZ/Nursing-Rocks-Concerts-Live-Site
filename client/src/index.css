@@ -3,11 +3,70 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --medical-blue: 195 75% 40%;
+    --nurse-teal: 180 65% 35%;
+    --light-blue: 195 60% 90%;
+    --heartbeat-red: 350 80% 55%;
+    --mint-green: 160 50% 90%;
+  }
+
   * {
     @apply border-border;
   }
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    background-image: 
+      linear-gradient(to right, rgba(var(--light-blue), 0.1) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(var(--light-blue), 0.1) 1px, transparent 1px);
+    background-size: 30px 30px;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight font-bold;
+  }
+
+  /* Medical-themed accent elements */
+  .medical-card {
+    @apply border-l-4 border-primary shadow-sm hover:shadow-md transition-shadow;
+    border-top-right-radius: 12px;
+    border-bottom-right-radius: 12px;
+  }
+
+  .heartbeat-animation {
+    @apply relative inline-block;
+  }
+
+  .heartbeat-animation::after {
+    content: '';
+    position: absolute;
+    height: 2px;
+    background: hsl(var(--heartbeat-red));
+    width: 100%;
+    bottom: -3px;
+    left: 0;
+    mask-image: url("data:image/svg+xml,%3Csvg width='100%' height='100%' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,50 L20,50 L25,20 L35,80 L45,50 L50,60 L55,40 L65,50 L100,50' stroke='%23ff0000' stroke-width='3' fill='none' /%3E%3C/svg%3E");
+    mask-size: 100% 100%;
+  }
+
+  /* Accent section with medical cross pattern */
+  .medical-bg {
+    background-color: hsl(var(--medical-blue)/10%);
+    background-image: 
+      repeating-linear-gradient(90deg, hsl(var(--medical-blue)/5%) 0px, hsl(var(--medical-blue)/5%) 2px, transparent 2px, transparent 20px),
+      repeating-linear-gradient(0deg, hsl(var(--medical-blue)/5%) 0px, hsl(var(--medical-blue)/5%) 2px, transparent 2px, transparent 20px);
+  }
+
+  .nurse-gradient {
+    @apply bg-gradient-to-r from-primary/90 to-[hsl(var(--nurse-teal))];
+  }
+}
+
+/* Override button styles for a more medical look */
+@layer components {
+  .btn-medical {
+    @apply rounded-full bg-primary text-white hover:bg-primary/90 active:scale-95 transition-all;
+    border-bottom: 3px solid hsl(var(--nurse-teal));
   }
 }

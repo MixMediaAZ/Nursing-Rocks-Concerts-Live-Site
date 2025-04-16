@@ -57,14 +57,14 @@ export function MediaManager({
     <div className={`${className}`}>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         {!showLibraryOnly && (
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="upload" className="flex items-center gap-1">
+          <TabsList className="grid w-full grid-cols-2 mb-6 rounded-full overflow-hidden p-1 bg-primary/5 border-primary/20">
+            <TabsTrigger value="upload" className="flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-white">
               <Upload className="h-4 w-4" />
-              Upload
+              Upload Resources
             </TabsTrigger>
-            <TabsTrigger value="browse" className="flex items-center gap-1">
+            <TabsTrigger value="browse" className="flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-white">
               <Image className="h-4 w-4" />
-              Media Library
+              Resource Library
             </TabsTrigger>
           </TabsList>
         )}
@@ -78,19 +78,19 @@ export function MediaManager({
         <TabsContent value="browse" className={showLibraryOnly ? '' : ''}>
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center">
-              <div className="grid grid-cols-5 gap-1 rounded-md overflow-hidden border p-1 w-fit">
+              <div className="grid grid-cols-5 gap-1 rounded-full overflow-hidden border border-primary/20 p-1 w-fit bg-primary/5">
                 <Button 
                   variant={selectedFilter === 'all' ? 'default' : 'ghost'} 
                   size="sm"
-                  className="text-xs px-2"
+                  className="text-xs px-2 rounded-full"
                   onClick={() => setSelectedFilter('all')}
                 >
-                  All
+                  All Types
                 </Button>
                 <Button 
                   variant={selectedFilter === 'image' ? 'default' : 'ghost'} 
                   size="sm"
-                  className="text-xs px-2"
+                  className="text-xs px-2 rounded-full"
                   onClick={() => setSelectedFilter('image')}
                 >
                   <Image className="h-3 w-3 mr-1" />
@@ -99,7 +99,7 @@ export function MediaManager({
                 <Button 
                   variant={selectedFilter === 'video' ? 'default' : 'ghost'} 
                   size="sm"
-                  className="text-xs px-2"
+                  className="text-xs px-2 rounded-full"
                   onClick={() => setSelectedFilter('video')}
                 >
                   <FileVideo className="h-3 w-3 mr-1" />
@@ -108,7 +108,7 @@ export function MediaManager({
                 <Button 
                   variant={selectedFilter === 'audio' ? 'default' : 'ghost'} 
                   size="sm"
-                  className="text-xs px-2"
+                  className="text-xs px-2 rounded-full"
                   onClick={() => setSelectedFilter('audio')}
                 >
                   <FileAudio className="h-3 w-3 mr-1" />
@@ -117,7 +117,7 @@ export function MediaManager({
                 <Button 
                   variant={selectedFilter === 'document' ? 'default' : 'ghost'} 
                   size="sm"
-                  className="text-xs px-2"
+                  className="text-xs px-2 rounded-full"
                   onClick={() => setSelectedFilter('document')}
                 >
                   <File className="h-3 w-3 mr-1" />
@@ -130,10 +130,10 @@ export function MediaManager({
               variant="outline" 
               size="sm" 
               onClick={() => refetch()}
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 rounded-full border-primary/30 text-primary"
             >
               <RefreshCw className="h-3 w-3" />
-              Refresh
+              Refresh Resources
             </Button>
           </div>
           
@@ -147,53 +147,88 @@ export function MediaManager({
             ) : filteredAssets.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {filteredAssets.map((asset) => (
-                  <Card key={asset.id} className="overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all" onClick={() => handleMediaSelect(asset)}>
+                  <Card key={asset.id} className="medical-card overflow-hidden cursor-pointer hover:shadow-md transition-all" onClick={() => handleMediaSelect(asset)}>
                     {/* Preview based on media type */}
-                    <div className="h-40 bg-muted">
+                    <div className="h-40 bg-primary/5 relative">
                       {asset.type === 'image' ? (
-                        <img 
-                          src={asset.path} 
-                          alt={asset.alt || 'Image'} 
-                          className="w-full h-full object-cover"
-                        />
+                        <>
+                          <img 
+                            src={asset.path} 
+                            alt={asset.alt || 'Image'} 
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-sm">
+                            <Image className="h-4 w-4 text-primary" />
+                          </div>
+                        </>
                       ) : asset.type === 'video' ? (
-                        <div className="flex items-center justify-center h-full bg-black/10">
-                          <FileVideo className="h-12 w-12 text-primary/70" />
+                        <div className="flex items-center justify-center h-full">
+                          <div className="p-3 bg-primary/10 rounded-full">
+                            <FileVideo className="h-10 w-10 text-primary" />
+                          </div>
+                          <div className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-sm">
+                            <FileVideo className="h-4 w-4 text-primary" />
+                          </div>
                         </div>
                       ) : asset.type === 'audio' ? (
-                        <div className="flex items-center justify-center h-full bg-black/10">
-                          <FileAudio className="h-12 w-12 text-primary/70" />
+                        <div className="flex items-center justify-center h-full">
+                          <div className="p-3 bg-primary/10 rounded-full">
+                            <FileAudio className="h-10 w-10 text-primary" />
+                          </div>
+                          <div className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-sm">
+                            <FileAudio className="h-4 w-4 text-primary" />
+                          </div>
                         </div>
                       ) : (
-                        <div className="flex items-center justify-center h-full bg-black/10">
-                          <File className="h-12 w-12 text-primary/70" />
+                        <div className="flex items-center justify-center h-full">
+                          <div className="p-3 bg-primary/10 rounded-full">
+                            <File className="h-10 w-10 text-primary" />
+                          </div>
+                          <div className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-sm">
+                            <File className="h-4 w-4 text-primary" />
+                          </div>
                         </div>
                       )}
                     </div>
                     
-                    <div className="p-3">
+                    <div className="p-4 border-t border-primary/10">
                       <h3 className="text-sm font-medium truncate">
                         {asset.title || asset.originalname || asset.filename}
                       </h3>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {(asset.filesize ? (asset.filesize / 1024).toFixed(1) : '0')} KB · {asset.created_at ? new Date(asset.created_at).toLocaleDateString() : 'Unknown date'}
-                      </p>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                          {asset.type}
+                        </span>
+                        <p className="text-xs text-muted-foreground">
+                          {(asset.filesize ? (asset.filesize / 1024).toFixed(1) : '0')} KB
+                        </p>
+                      </div>
                     </div>
                   </Card>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 border rounded-md">
-                <File className="h-8 w-8 mx-auto text-muted-foreground" />
-                <p className="mt-2 text-muted-foreground">No media assets found</p>
+              <div className="text-center py-12 border border-dashed border-primary/20 rounded-md bg-primary/5">
+                <div className="p-3 bg-white rounded-full inline-flex shadow-sm mx-auto mb-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-primary/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+                <h3 className="font-medium text-primary">No Clinical Resources Found</h3>
+                <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
+                  Your medical resource library is currently empty. Upload new resources to begin building your collection.
+                </p>
                 {!showLibraryOnly && (
                   <Button 
-                    variant="outline" 
+                    variant="default" 
                     size="sm" 
-                    className="mt-4"
+                    className="mt-4 rounded-full"
                     onClick={() => setActiveTab('upload')}
                   >
-                    Upload Media
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Medical Resources
                   </Button>
                 )}
               </div>
