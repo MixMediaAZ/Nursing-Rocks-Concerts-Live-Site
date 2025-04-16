@@ -5,8 +5,11 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import EventDetails from "@/pages/event-details";
-import Header from "@/components/header";
-import Footer from "@/components/footer";
+import LicensePage from "@/pages/license";
+import LoginPage from "@/pages/login";
+import RegisterPage from "@/pages/register";
+import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
 
 function Router() {
   return (
@@ -16,6 +19,7 @@ function Router() {
         <Switch>
           <Route path="/" component={Home} />
           <Route path="/events/:id" component={EventDetails} />
+          <Route path="/license" component={LicensePage} />
           <Route component={NotFound} />
         </Switch>
       </main>
