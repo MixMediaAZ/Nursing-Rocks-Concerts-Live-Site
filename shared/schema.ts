@@ -1,4 +1,5 @@
 import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -24,6 +25,17 @@ export const insertEventSchema = createInsertSchema(events).omit({
   id: true,
 });
 
+export const eventsRelations = relations(events, ({ one }) => ({
+  artist: one(artists, {
+    fields: [events.artist_id],
+    references: [artists.id],
+  }),
+  venue: one(venues, {
+    fields: [events.venue_id],
+    references: [venues.id],
+  }),
+}));
+
 // Artist model
 export const artists = pgTable("artists", {
   id: serial("id").primaryKey(),
@@ -41,6 +53,10 @@ export const insertArtistSchema = createInsertSchema(artists).omit({
   id: true,
 });
 
+export const artistsRelations = relations(artists, ({ many }) => ({
+  events: many(events),
+}));
+
 // Venue model
 export const venues = pgTable("venues", {
   id: serial("id").primaryKey(),
@@ -57,6 +73,10 @@ export const insertVenueSchema = createInsertSchema(venues).omit({
   id: true,
 });
 
+export const venuesRelations = relations(venues, ({ many }) => ({
+  events: many(events),
+}));
+
 // Gallery model
 export const gallery = pgTable("gallery", {
   id: serial("id").primaryKey(),
@@ -68,6 +88,13 @@ export const gallery = pgTable("gallery", {
 export const insertGallerySchema = createInsertSchema(gallery).omit({
   id: true,
 });
+
+export const galleryRelations = relations(gallery, ({ one }) => ({
+  event: one(events, {
+    fields: [gallery.event_id],
+    references: [events.id],
+  }),
+}));
 
 // Newsletter subscribers
 export const subscribers = pgTable("subscribers", {
