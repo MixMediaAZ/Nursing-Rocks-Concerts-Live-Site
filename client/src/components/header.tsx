@@ -112,6 +112,11 @@ export function Header() {
                       <div className="w-full cursor-pointer">My Tickets</div>
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin">
+                      <div className="w-full cursor-pointer">Admin Dashboard</div>
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                     Logout
                   </DropdownMenuItem>
@@ -186,6 +191,14 @@ export function Header() {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     My Tickets
+                  </div>
+                </Link>
+                <Link href="/admin">
+                  <div
+                    className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Admin Dashboard
                   </div>
                 </Link>
                 <a

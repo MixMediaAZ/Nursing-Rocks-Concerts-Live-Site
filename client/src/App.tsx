@@ -13,6 +13,7 @@ import TicketsPage from "@/pages/tickets";
 import CitiesPage from "@/pages/cities";
 import CityDetailsPage from "@/pages/city-details";
 import SponsorsPage from "@/pages/sponsors";
+import AdminPage from "@/pages/admin";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 
@@ -32,6 +33,7 @@ function Router() {
           <Route path="/cities" component={CitiesPage} />
           <Route path="/cities/:cityId" component={CityDetailsPage} />
           <Route path="/sponsors" component={SponsorsPage} />
+          <Route path="/admin" component={AdminPage} />
           <Route component={NotFound} />
         </Switch>
       </main>
