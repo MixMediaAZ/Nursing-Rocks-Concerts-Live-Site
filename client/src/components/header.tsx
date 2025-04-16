@@ -48,6 +48,7 @@ export function Header() {
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/events", label: "Concerts" },
+    { href: "/cities", label: "Concert Cities" },
     { href: "/artists", label: "Artists" },
     { href: "/venues", label: "Venues" },
   ];

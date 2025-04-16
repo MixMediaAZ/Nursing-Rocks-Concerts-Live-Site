@@ -7,14 +7,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/queryClient";
 
 // Login form validation schema
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters" }),
+  password: z.string().min(1, { message: "Password is required" }),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -45,7 +45,7 @@ export default function LoginPage() {
       
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Login failed. Please check your credentials and try again.");
+        throw new Error(error.message || "Login failed. Please check your credentials.");
       }
       
       return response.json();
@@ -73,13 +73,15 @@ export default function LoginPage() {
   
   // Redirect after successful login
   function handleLoginSuccess() {
-    // Check if the user is verified
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    // Check if user is verified
+    const userData = JSON.parse(localStorage.getItem("user") || "{}");
     
-    if (user.is_verified) {
-      setLocation("/"); // Redirect to home if verified
+    if (userData.is_verified) {
+      // If verified, go to profile
+      setLocation("/profile");
     } else {
-      setLocation("/license"); // Redirect to license verification if not verified
+      // If not verified, prompt for license verification
+      setLocation("/license");
     }
   }
   
@@ -92,7 +94,7 @@ export default function LoginPage() {
     <div className="container max-w-md py-8">
       <Card>
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Login</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
           <CardDescription className="text-center">
             Enter your credentials to access your account
           </CardDescription>
@@ -107,7 +109,7 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="your.email@example.com" {...field} />
+                      <Input placeholder="john.doe@example.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -130,33 +132,32 @@ export default function LoginPage() {
               
               <Button 
                 type="submit" 
-                className="w-full" 
+                className="w-full"
                 disabled={loginMutation.isPending}
               >
-                {loginMutation.isPending ? "Signing in..." : "Sign In"}
+                {loginMutation.isPending ? "Signing In..." : "Sign In"}
               </Button>
             </form>
           </Form>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-sm text-center text-muted-foreground">
-            Don't have an account?{" "}
+            Don't have an account yet?{" "}
             <Button 
               variant="link" 
               onClick={() => setLocation("/register")} 
               className="p-0"
             >
-              Register
+              Create Account
             </Button>
           </div>
-          <div className="text-sm text-center text-muted-foreground">
-            Need to verify your nursing license?{" "}
+          <div className="text-xs text-center text-muted-foreground">
             <Button 
               variant="link" 
-              onClick={() => setLocation("/license")} 
-              className="p-0"
+              onClick={() => setLocation("/reset-password")} 
+              className="p-0 text-xs"
             >
-              Verify License
+              Forgot your password?
             </Button>
           </div>
         </CardFooter>

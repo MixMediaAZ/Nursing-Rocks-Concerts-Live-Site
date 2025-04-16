@@ -10,6 +10,9 @@ import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
 import ProfilePage from "@/pages/profile";
 import TicketsPage from "@/pages/tickets";
+import CitiesPage from "@/pages/cities";
+import CityDetailsPage from "@/pages/city-details";
+import SponsorsPage from "@/pages/sponsors";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 
@@ -26,6 +29,8 @@ function Router() {
           <Route path="/register" component={RegisterPage} />
           <Route path="/profile" component={ProfilePage} />
           <Route path="/tickets" component={TicketsPage} />
+          <Route path="/cities" component={CitiesPage} />
+          <Route path="/cities/:cityId" component={CityDetailsPage} />
           <Route component={NotFound} />
         </Switch>
       </main>
