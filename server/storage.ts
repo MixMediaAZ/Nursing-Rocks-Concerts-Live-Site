@@ -156,95 +156,95 @@ export class MemStorage implements IStorage {
   private initSampleData() {
     // Create Artists
     const astralWaves = this.setupArtist({
-      name: "The Astral Waves",
-      bio: "Born from the fusion of classical rock influences and modern electronic sounds, The Astral Waves have been redefining the music landscape since 2015. Their unique sound, characterized by haunting vocals and ethereal guitar riffs, has earned them critical acclaim and a dedicated global following.",
+      name: "The Healing Harmonies",
+      bio: "Founded by a group of musically talented nurses, The Healing Harmonies combine powerful vocals with uplifting melodies. Since 2015, these healthcare professionals have been using music to inspire and support both patients and fellow medical workers, earning acclaim for their moving performances.",
       image_url: "https://images.unsplash.com/photo-1499364615650-ec38552f4f34?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&h=600&q=80",
-      genre: "Alternative Rock, Psychedelic, Electronic",
-      latest_album: "Cosmic Harmony (2023)",
+      genre: "Pop Rock, Inspirational",
+      latest_album: "Heroes in Scrubs (2023)",
       social_links: { spotify: "#", apple: "#", youtube: "#", instagram: "#" },
-      featured_song: "Interstellar Dreams",
+      featured_song: "Healing Hands",
       song_duration: "3:45"
     });
     
     const neonDreams = this.setupArtist({
-      name: "Neon Dreams",
-      bio: "Neon Dreams blends synth-pop with modern electronic beats to create a nostalgic yet fresh sound that has captivated audiences worldwide.",
+      name: "Vital Signs",
+      bio: "Vital Signs is a dynamic band composed of physicians and medical students who bring infectious energy to their performances. Their music combines medical themes with upbeat melodies, creating anthems of hope and resilience.",
       image_url: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
       genre: "Pop, Electronic",
-      latest_album: "Synth Revival (2023)",
+      latest_album: "Code Blue (2023)",
       social_links: { spotify: "#", apple: "#", youtube: "#", instagram: "#" },
-      featured_song: "Neon Lights",
+      featured_song: "Frontline Heroes",
       song_duration: "3:22"
     });
     
     const violetEchoes = this.setupArtist({
-      name: "Violet Echoes",
-      bio: "Violet Echoes creates dreamy, atmospheric indie music that transports listeners to another dimension. Their introspective lyrics and haunting melodies have garnered a dedicated following.",
+      name: "Night Shift",
+      bio: "Night Shift brings together ER nurses who find solace in music after long shifts. Their soul-stirring melodies and heartfelt lyrics reflect their experiences on the frontlines of healthcare, resonating deeply with audiences everywhere.",
       image_url: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
-      genre: "Indie, Dream Pop",
-      latest_album: "Midnight Reverie (2023)",
+      genre: "Indie, Folk",
+      latest_album: "After Hours (2023)",
       social_links: { spotify: "#", apple: "#", youtube: "#", instagram: "#" },
-      featured_song: "Twilight Whispers",
+      featured_song: "Sacred Silence",
       song_duration: "4:15"
     });
     
     const emberJazz = this.setupArtist({
-      name: "Ember Jazz Collective",
-      bio: "The Ember Jazz Collective brings together accomplished jazz musicians to create sophisticated, soulful compositions that push the boundaries of contemporary jazz.",
+      name: "The Caregivers Collective",
+      bio: "The Caregivers Collective unites healthcare workers from diverse specialties who share a passion for jazz. Their soulful compositions celebrate the art of caregiving while raising awareness about healthcare issues.",
       image_url: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
-      genre: "Jazz, Fusion",
-      latest_album: "Autumn Sessions (2023)",
+      genre: "Jazz, Soul",
+      latest_album: "Compassionate Care (2023)",
       social_links: { spotify: "#", apple: "#", youtube: "#", instagram: "#" },
-      featured_song: "Crimson Leaves",
+      featured_song: "Healing Rhythms",
       song_duration: "5:30"
     });
     
     // Create Venues
     const riversideArena = this.setupVenue({
-      name: "Riverside Arena",
+      name: "City Medical Center Auditorium",
       location: "New York, NY",
       capacity: 1800,
       image_url: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
-      description: "A state-of-the-art venue featuring exceptional acoustics and an intimate setting despite its size. Perfect for rock and alternative shows.",
+      description: "This modern auditorium within NYC's largest hospital has been transformed into a concert venue to celebrate healthcare workers. Features exceptional acoustics and comfortable seating.",
       rating: 5,
       seating_chart_url: "#"
     });
     
     const metroHall = this.setupVenue({
-      name: "Metro Hall",
+      name: "Nurses Memorial Hall",
       location: "Chicago, IL",
       capacity: 1100,
       image_url: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
-      description: "Historic venue with amazing ambiance, known for its perfect sound engineering. Popular for indie and pop performances.",
+      description: "Historic venue dedicated to the nursing profession with amazing ambiance. Recently renovated to provide perfect sound engineering while maintaining its historic charm.",
       rating: 4,
       seating_chart_url: "#"
     });
     
     const echoLounge = this.setupVenue({
-      name: "The Echo Lounge",
+      name: "The Healing Center",
       location: "Los Angeles, CA",
       capacity: 750,
       image_url: "https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
-      description: "Intimate venue with incredible atmosphere, perfect for discovering new artists. Known for showcasing up-and-coming indie talent.",
+      description: "An intimate venue created by healthcare professionals to showcase medical talent. The space doubles as a wellness center during the day and transforms into a concert venue at night.",
       rating: 4,
       seating_chart_url: "#"
     });
     
     const blueNote = this.setupVenue({
-      name: "Blue Note",
+      name: "Grace Medical Theater",
       location: "San Francisco, CA",
       capacity: 500,
       image_url: "https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
-      description: "Legendary jazz venue with intimate seating and superior acoustics. The perfect place to experience world-class jazz performances.",
+      description: "Once a medical lecture hall, this intimate venue now hosts concerts by healthcare professionals with a portion of proceeds benefiting medical research and education.",
       rating: 5,
       seating_chart_url: "#"
     });
     
     // Create Events
     const oct21Event = this.setupEvent({
-      title: "The Astral Waves",
-      subtitle: "Cosmic Harmony Tour",
-      description: "Experience the ultimate live show with The Astral Waves, featuring special guests The Lunar Tides",
+      title: "The Healing Harmonies",
+      subtitle: "Heroes in Scrubs Tour",
+      description: "Experience a powerful night of music performed by nurses who are using their musical talents to inspire hope and healing. Proceeds support the Healthcare Workers Foundation.",
       date: new Date("2023-10-21T20:00:00"),
       venue_id: riversideArena.id,
       artist_id: astralWaves.id,
@@ -253,14 +253,14 @@ export class MemStorage implements IStorage {
       doors_time: "7:00 PM",
       price: "$45-$120",
       is_featured: true,
-      genre: "Rock",
+      genre: "Inspirational",
       tickets_url: "#"
     });
     
     const oct28Event = this.setupEvent({
-      title: "Neon Dreams",
-      subtitle: "Synth Revival",
-      description: "Step into a world of vibrant synth-pop and mesmerizing visuals with Neon Dreams' groundbreaking show",
+      title: "Vital Signs",
+      subtitle: "Frontline Heroes Tribute",
+      description: "Join this dynamic group of physicians and medical students for an energetic performance celebrating the resilience of healthcare workers everywhere.",
       date: new Date("2023-10-28T19:30:00"),
       venue_id: metroHall.id,
       artist_id: neonDreams.id,
@@ -274,9 +274,9 @@ export class MemStorage implements IStorage {
     });
     
     const nov4Event = this.setupEvent({
-      title: "Violet Echoes",
-      subtitle: "Midnight Reverie",
-      description: "Let Violet Echoes transport you through their ethereal soundscapes and captivating performances",
+      title: "Night Shift",
+      subtitle: "After Hours Tour",
+      description: "ER nurses by day, musicians by night - experience the soulful melodies inspired by their frontline experiences in healthcare during this intimate performance.",
       date: new Date("2023-11-04T21:00:00"),
       venue_id: echoLounge.id,
       artist_id: violetEchoes.id,
@@ -285,14 +285,14 @@ export class MemStorage implements IStorage {
       doors_time: "8:00 PM",
       price: "$30-$65",
       is_featured: false,
-      genre: "Indie",
+      genre: "Folk",
       tickets_url: "#"
     });
     
     const nov11Event = this.setupEvent({
-      title: "Ember Jazz Collective",
-      subtitle: "Autumn Sessions",
-      description: "An evening of sophisticated jazz improvisations and soulful melodies with the acclaimed Ember Jazz Collective",
+      title: "The Caregivers Collective",
+      subtitle: "Healing Rhythms Benefit",
+      description: "An evening of soulful jazz performed by healthcare professionals united by their passion for music and healing. Ticket sales benefit nursing scholarship programs.",
       date: new Date("2023-11-11T20:30:00"),
       venue_id: blueNote.id,
       artist_id: emberJazz.id,
@@ -318,7 +318,7 @@ export class MemStorage implements IStorage {
     ].forEach((url, index) => {
       this.setupGalleryImage({
         image_url: url,
-        alt_text: "Concert moment",
+        alt_text: "Healthcare heroes concert",
         event_id: index % 2 === 0 ? oct21Event.id : oct28Event.id
       });
     });

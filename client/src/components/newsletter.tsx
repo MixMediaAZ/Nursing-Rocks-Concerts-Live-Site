@@ -58,17 +58,17 @@ const Newsletter = () => {
     <section className="py-16 bg-gradient-to-r from-[#5D3FD3] to-[#FF3366] text-white">
       <div className="container mx-auto px-4">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="font-heading text-3xl md:text-4xl font-bold mb-4">Never Miss a Beat</h2>
+          <h2 className="font-heading text-3xl md:text-4xl font-bold mb-4">Stay Connected with Nursing Rocks!</h2>
           <p className="mb-8 text-white/90">
-            Subscribe to our newsletter and be the first to know about upcoming concerts, presale access, and exclusive offers.
+            Subscribe to our newsletter and be the first to know about upcoming healthcare heroes concerts, presale access, special discounts for medical professionals, and exclusive offers.
           </p>
           
           {isSuccess ? (
             <div className="bg-white/20 rounded-lg p-6">
-              <h3 className="font-heading text-xl font-bold mb-2">Thank You for Subscribing!</h3>
+              <h3 className="font-heading text-xl font-bold mb-2">Thank You for Supporting Healthcare Heroes!</h3>
               <p>
-                You'll now receive updates about our latest concerts and exclusive offers. 
-                Get ready for an amazing musical journey!
+                You'll now receive updates about our latest concerts celebrating nursing professionals.
+                Get ready for amazing music while supporting the healthcare community!
               </p>
             </div>
           ) : (
