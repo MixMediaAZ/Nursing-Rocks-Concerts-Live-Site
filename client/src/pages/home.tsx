@@ -11,8 +11,8 @@ const Home = () => {
   return (
     <>
       <Helmet>
-        <title>SoundStage - Live Music Concerts & Events</title>
-        <meta name="description" content="Experience the magic of live music with SoundStage. Browse upcoming concerts, discover artists, and book tickets to your favorite shows." />
+        <title>Nursing Rocks! - Concert Series Celebrating Healthcare Heroes</title>
+        <meta name="description" content="Experience the magic of live music with Nursing Rocks! Concert Series. Browse upcoming concerts celebrating healthcare heroes, discover artists, and book tickets to your favorite shows." />
       </Helmet>
       
       <HeroSection />

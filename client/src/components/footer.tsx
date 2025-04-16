@@ -37,12 +37,12 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           <div className="lg:col-span-2">
             <Link href="/" className="text-2xl font-heading font-bold flex items-center">
-              <span className="text-[#FF3366]">Sound</span>
-              <span className="text-[#00A3E0]">Stage</span>
-              <i className="fas fa-music ml-2 text-white"></i>
+              <span className="text-[#FF3366]">Nursing</span>
+              <span className="text-[#00A3E0]">Rocks!</span>
+              <i className="fas fa-heartbeat ml-2 text-white"></i>
             </Link>
             <p className="mt-4 mb-6">
-              Experience the magic of live music with SoundStage. From intimate venues to grand arenas, we bring you the best concerts and live performances.
+              Experience the magic of live music with Nursing Rocks! From intimate venues to grand arenas, we bring you the best concerts and performances celebrating healthcare heroes.
             </p>
             <div className="flex space-x-4">
               {socialLinks.map((link) => (
@@ -98,14 +98,14 @@ const Footer = () => {
               </li>
               <li className="flex items-center">
                 <i className="fas fa-envelope mr-2"></i>
-                <span>info@soundstage.com</span>
+                <span>info@nursingrocks.com</span>
               </li>
             </ul>
           </div>
         </div>
         
         <div className="border-t border-white/20 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <p>© {new Date().getFullYear()} SoundStage. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Nursing Rocks! Concert Series. All rights reserved.</p>
           <div className="flex space-x-6 mt-4 md:mt-0">
             {policyLinks.map((link) => (
               <a 

@@ -33,9 +33,9 @@ const Header = () => {
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center">
             <Link href="/" className="text-2xl font-heading font-bold flex items-center">
-              <span className="text-[#FF3366]">Sound</span>
-              <span className="text-[#00A3E0]">Stage</span>
-              <i className="fas fa-music ml-2 text-white"></i>
+              <span className="text-[#FF3366]">Nursing</span>
+              <span className="text-[#00A3E0]">Rocks!</span>
+              <i className="fas fa-heartbeat ml-2 text-white"></i>
             </Link>
           </div>
 
