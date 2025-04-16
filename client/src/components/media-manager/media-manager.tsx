@@ -176,7 +176,7 @@ export function MediaManager({
                         {asset.title || asset.originalname || asset.filename}
                       </h3>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {(asset.filesize / 1024).toFixed(1)} KB · {new Date(asset.created_at).toLocaleDateString()}
+                        {(asset.filesize ? (asset.filesize / 1024).toFixed(1) : '0')} KB · {asset.created_at ? new Date(asset.created_at).toLocaleDateString() : 'Unknown date'}
                       </p>
                     </div>
                   </Card>
