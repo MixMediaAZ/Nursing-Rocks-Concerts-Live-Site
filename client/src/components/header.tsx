@@ -7,8 +7,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Menu, X, User } from "lucide-react";
+import { Menu, X, User, Stethoscope, Music, Map, Users, Building2, HeartPulse } from "lucide-react";
 import logoPath from "../assets/nursing-rocks-logo.png";
+import newLogoPath from "../assets/NursingRocks_NewLogo.png";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export function Header() {
@@ -46,12 +47,12 @@ export function Header() {
   };
 
   const navLinks = [
-    { href: "/", label: "Home" },
-    { href: "/events", label: "Concerts" },
-    { href: "/cities", label: "Concert Cities" },
-    { href: "/artists", label: "Artists" },
-    { href: "/venues", label: "Venues" },
-    { href: "/sponsors", label: "Sponsors" },
+    { href: "/", label: "Home", icon: <HeartPulse className="h-4 w-4" /> },
+    { href: "/events", label: "Concerts", icon: <Music className="h-4 w-4" /> },
+    { href: "/cities", label: "Concert Cities", icon: <Map className="h-4 w-4" /> },
+    { href: "/artists", label: "Artists", icon: <Users className="h-4 w-4" /> },
+    { href: "/venues", label: "Venues", icon: <Building2 className="h-4 w-4" /> },
+    { href: "/sponsors", label: "Sponsors", icon: <Stethoscope className="h-4 w-4" /> },
   ];
 
   const isActive = (path: string) => {
@@ -59,16 +60,24 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-primary/20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      {/* Medical-themed top strip */}
+      <div className="w-full h-1.5 nurse-gradient"></div>
+      
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-2">
           <Link href="/">
             <div className="flex items-center gap-2 cursor-pointer">
               <img
-                src={logoPath}
+                src={newLogoPath}
                 alt="Nursing Rocks!"
-                className="h-12 md:h-14 w-auto"
+                className="h-12 md:h-14 w-auto drop-shadow-sm"
               />
+              <div className="hidden md:block">
+                <span className="heartbeat-animation text-sm font-medium text-primary">
+                  Concert Series
+                </span>
+              </div>
             </div>
           </Link>
         </div>
@@ -78,12 +87,13 @@ export function Header() {
             {navLinks.map((link) => (
               <Link key={link.href} href={link.href}>
                 <div
-                  className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer ${
+                  className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer flex items-center gap-1.5 ${
                     isActive(link.href)
                       ? "text-primary"
                       : "text-muted-foreground"
                   }`}
                 >
+                  {link.icon}
                   {link.label}
                 </div>
               </Link>
@@ -150,82 +160,112 @@ export function Header() {
       
       {/* Mobile Menu */}
       {isMobile && isMenuOpen && (
-        <div className="container py-4 bg-background border-t">
-          <nav className="flex flex-col space-y-4">
-            {navLinks.map((link) => (
-              <Link key={link.href} href={link.href}>
-                <div
-                  className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer ${
-                    isActive(link.href)
-                      ? "text-primary"
-                      : "text-muted-foreground"
-                  }`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {link.label}
+        <div className="container py-4 bg-background border-t border-primary/10">
+          <div className="bg-primary/5 rounded-md p-4">
+            <div className="flex items-center mb-3">
+              <span className="p-1.5 bg-primary text-white rounded-full mr-2">
+                <Stethoscope className="h-3.5 w-3.5" />
+              </span>
+              <span className="text-sm font-medium text-primary">Navigation</span>
+            </div>
+            <nav className="flex flex-col space-y-3">
+              {navLinks.map((link) => (
+                <Link key={link.href} href={link.href}>
+                  <div
+                    className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md ${
+                      isActive(link.href)
+                        ? "text-primary bg-primary/10"
+                        : "text-muted-foreground"
+                    }`}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {link.icon}
+                    {link.label}
+                  </div>
+                </Link>
+              ))}
+              
+              {isLoggedIn ? (
+                <>
+                  <Link href="/profile">
+                    <div
+                      className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <User className="h-4 w-4" />
+                      My Profile
+                    </div>
+                  </Link>
+                  <Link href="/license">
+                    <div
+                      className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Stethoscope className="h-4 w-4" />
+                      License Verification
+                    </div>
+                  </Link>
+                  <Link href="/tickets">
+                    <div
+                      className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                      </svg>
+                      My Tickets
+                    </div>
+                  </Link>
+                  <Link href="/admin">
+                    <div
+                      className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                      </svg>
+                      Admin Dashboard
+                    </div>
+                  </Link>
+                  <div
+                    className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md"
+                    onClick={() => {
+                      handleLogout();
+                      setIsMenuOpen(false);
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Logout
+                  </div>
+                </>
+              ) : (
+                <div className="pt-4 mt-4 border-t border-primary/10">
+                  <Button variant="outline" asChild className="w-full mb-2 rounded-full">
+                    <Link href="/login">
+                      <div className="cursor-pointer flex items-center justify-center gap-2" onClick={() => setIsMenuOpen(false)}>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                        </svg>
+                        Login
+                      </div>
+                    </Link>
+                  </Button>
+                  <Button asChild className="w-full rounded-full">
+                    <Link href="/register">
+                      <div className="cursor-pointer flex items-center justify-center gap-2" onClick={() => setIsMenuOpen(false)}>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                        </svg>
+                        Register
+                      </div>
+                    </Link>
+                  </Button>
                 </div>
-              </Link>
-            ))}
-            
-            {isLoggedIn ? (
-              <>
-                <Link href="/profile">
-                  <div
-                    className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    My Profile
-                  </div>
-                </Link>
-                <Link href="/license">
-                  <div
-                    className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    License Verification
-                  </div>
-                </Link>
-                <Link href="/tickets">
-                  <div
-                    className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    My Tickets
-                  </div>
-                </Link>
-                <Link href="/admin">
-                  <div
-                    className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Admin Dashboard
-                  </div>
-                </Link>
-                <a
-                  className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer"
-                  onClick={() => {
-                    handleLogout();
-                    setIsMenuOpen(false);
-                  }}
-                >
-                  Logout
-                </a>
-              </>
-            ) : (
-              <div className="flex flex-col space-y-2">
-                <Button variant="outline" asChild className="w-full">
-                  <Link href="/login">
-                    <div className="cursor-pointer" onClick={() => setIsMenuOpen(false)}>Login</div>
-                  </Link>
-                </Button>
-                <Button asChild className="w-full">
-                  <Link href="/register">
-                    <div className="cursor-pointer" onClick={() => setIsMenuOpen(false)}>Register</div>
-                  </Link>
-                </Button>
-              </div>
-            )}
-          </nav>
+              )}
+            </nav>
+          </div>
         </div>
       )}
     </header>
