@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SUPPORTED_MEDIA_TYPES, getMediaType } from '@/lib/assetLoader';
+import { MediaAsset } from '@shared/schema';
 import { Upload, Image, FileVideo, FileAudio, FileText, RefreshCw, X, Check } from 'lucide-react';
 
 interface MediaUploadProps {

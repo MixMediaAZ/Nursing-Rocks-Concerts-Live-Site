@@ -6,6 +6,19 @@ import { v4 as uuidv4 } from 'uuid';
 import { MediaAsset } from '@shared/schema';
 import { authenticateToken } from './auth';
 
+// Add user interface to Request type (extending Express Request)
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        userId: number;
+        email: string;
+        isVerified: boolean;
+      };
+    }
+  }
+}
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
@@ -79,7 +92,7 @@ export async function uploadMediaFiles(req: Request, res: Response) {
     // Process each file and create asset records
     files.forEach((file, index) => {
       // Get metadata for this file if available
-      let metadata = {};
+      let metadata: Record<string, any> = {};
       if (req.body[`metadata[${index}]`]) {
         try {
           metadata = JSON.parse(req.body[`metadata[${index}]`]);
@@ -289,7 +302,7 @@ export async function getMediaById(req: Request, res: Response) {
 export async function updateMedia(req: Request, res: Response) {
   try {
     const { id } = req.params;
-    const { metadata } = req.body;
+    const { metadata }: { metadata?: Record<string, any> } = req.body;
     
     if (!metadata) {
       return res.status(400).json({

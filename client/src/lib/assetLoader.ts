@@ -1,159 +1,107 @@
-/**
- * Asset Loader utility for handling various media types
- * 
- * This module provides functions to safely load and validate different types of media
- * assets including images, videos, audio, and documents.
- */
+import { MediaAsset } from '@shared/schema';
 
-// Supported media types and their allowed extensions
+// Supported file extensions by type
 export const SUPPORTED_MEDIA_TYPES = {
-  IMAGE: ['.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp'],
+  IMAGE: ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'],
   VIDEO: ['.mp4', '.webm', '.ogg', '.mov'],
   AUDIO: ['.mp3', '.wav', '.ogg', '.m4a'],
   DOCUMENT: ['.pdf', '.doc', '.docx', '.txt', '.rtf'],
-} as const;
+};
+
+// Registry to store loaded assets
+const assetRegistry = new Map<string, MediaAsset>();
 
 /**
- * Media asset type with required properties
+ * Determine media type based on filename extension
  */
-export interface MediaAsset {
-  id: string;
-  path: string;
-  type: 'image' | 'video' | 'audio' | 'document' | 'other';
-  alt?: string;
-  title?: string;
-  description?: string;
-  metadata?: Record<string, any>;
-}
-
-/**
- * Gets file extension from path
- */
-export function getFileExtension(path: string): string {
-  return path.substring(path.lastIndexOf('.')).toLowerCase();
-}
-
-/**
- * Determines media type based on file extension
- */
-export function getMediaType(path: string): MediaAsset['type'] {
-  const extension = getFileExtension(path);
+export function getMediaType(filename: string): 'image' | 'video' | 'audio' | 'document' | 'other' {
+  const ext = `.${filename.split('.').pop()?.toLowerCase()}`;
   
-  if (SUPPORTED_MEDIA_TYPES.IMAGE.includes(extension as any)) return 'image';
-  if (SUPPORTED_MEDIA_TYPES.VIDEO.includes(extension as any)) return 'video';
-  if (SUPPORTED_MEDIA_TYPES.AUDIO.includes(extension as any)) return 'audio';
-  if (SUPPORTED_MEDIA_TYPES.DOCUMENT.includes(extension as any)) return 'document';
+  if (SUPPORTED_MEDIA_TYPES.IMAGE.includes(ext)) return 'image';
+  if (SUPPORTED_MEDIA_TYPES.VIDEO.includes(ext)) return 'video';
+  if (SUPPORTED_MEDIA_TYPES.AUDIO.includes(ext)) return 'audio';
+  if (SUPPORTED_MEDIA_TYPES.DOCUMENT.includes(ext)) return 'document';
   
   return 'other';
 }
 
 /**
- * Load an image and return a promise that resolves when the image is loaded
- * or rejects if the image fails to load
- */
-export function preloadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error(`Failed to load image at ${src}`));
-    img.src = src;
-  });
-}
-
-/**
- * Safe image component props
- */
-export interface SafeImageProps {
-  src: string;
-  alt: string;
-  fallbackSrc?: string;
-  className?: string;
-  width?: number | string;
-  height?: number | string;
-}
-
-/**
- * Create a media asset object from path and metadata
- */
-export function createMediaAsset(
-  path: string, 
-  id?: string, 
-  metadata?: Partial<Omit<MediaAsset, 'id' | 'path' | 'type'>>
-): MediaAsset {
-  return {
-    id: id || path.split('/').pop()?.split('.')[0] || Math.random().toString(36).substring(2, 9),
-    path,
-    type: getMediaType(path),
-    alt: metadata?.alt || '',
-    title: metadata?.title || '',
-    description: metadata?.description || '',
-    metadata: metadata?.metadata || {},
-  };
-}
-
-/**
- * Validates that a file path exists and is accessible
- * Note: This is a client-side utility and doesn't actually check the file system
- * It only verifies that the path is properly formatted
- */
-export function validateAssetPath(path: string): boolean {
-  // Check if path is a URL
-  if (path.startsWith('http://') || path.startsWith('https://')) {
-    try {
-      new URL(path);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-  
-  // Check if path is a relative import path
-  if (path.startsWith('@assets/') || path.startsWith('./') || path.startsWith('../')) {
-    return true;
-  }
-  
-  // Check if path is absolute
-  if (path.startsWith('/')) {
-    return true;
-  }
-  
-  return false;
-}
-
-// Asset registry for keeping track of all loaded assets
-const assetRegistry: Map<string, MediaAsset> = new Map();
-
-/**
- * Register an asset in the global registry
+ * Register a media asset in the registry
  */
 export function registerAsset(asset: MediaAsset): void {
   assetRegistry.set(asset.id, asset);
 }
 
 /**
- * Get an asset from the registry by ID
+ * Get a media asset from the registry by ID
  */
 export function getAssetById(id: string): MediaAsset | undefined {
   return assetRegistry.get(id);
 }
 
 /**
- * Get all registered assets
+ * Get all assets from the registry
  */
 export function getAllAssets(): MediaAsset[] {
   return Array.from(assetRegistry.values());
 }
 
 /**
- * Get all assets of a specific type
+ * Filter assets by type
  */
-export function getAssetsByType(type: MediaAsset['type']): MediaAsset[] {
+export function getAssetsByType(type: 'image' | 'video' | 'audio' | 'document' | 'other'): MediaAsset[] {
   return Array.from(assetRegistry.values()).filter(asset => asset.type === type);
 }
 
 /**
- * Clear asset registry
+ * Create a new media asset object
+ * Useful for creating assets client-side before uploading
  */
-export function clearAssetRegistry(): void {
-  assetRegistry.clear();
+export function createMediaAsset(
+  path: string, 
+  type: 'image' | 'video' | 'audio' | 'document' | 'other',
+  metadata: Partial<MediaAsset> = {}
+): MediaAsset {
+  // Generate temporary ID
+  const id = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  
+  // Extract filename from path
+  const filename = path.split('/').pop() || '';
+  
+  return {
+    id,
+    path,
+    type,
+    title: metadata.title || filename,
+    alt: metadata.alt || filename,
+    description: metadata.description || '',
+    created_at: new Date(),
+    updated_at: new Date(),
+    user_id: null,
+    filesize: metadata.filesize || 0,
+    filename,
+    originalname: metadata.originalname || filename,
+    mimetype: metadata.mimetype || '',
+    ...metadata,
+  };
+}
+
+/**
+ * Preload a list of assets
+ * Useful for preventing layout shifts
+ */
+export async function preloadAssets(assets: MediaAsset[]): Promise<void> {
+  const imageAssets = assets.filter(asset => asset.type === 'image');
+  
+  // Preload images
+  const preloadPromises = imageAssets.map(asset => {
+    return new Promise<void>((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve();
+      img.onerror = () => resolve(); // Resolve even on error to prevent blocking
+      img.src = asset.path;
+    });
+  });
+  
+  await Promise.all(preloadPromises);
 }

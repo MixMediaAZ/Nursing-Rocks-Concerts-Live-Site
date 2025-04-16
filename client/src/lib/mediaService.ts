@@ -1,4 +1,5 @@
-import { MediaAsset, createMediaAsset, registerAsset } from './assetLoader';
+import { MediaAsset } from '@shared/schema';
+import { registerAsset, createMediaAsset } from './assetLoader';
 import { apiRequest } from './queryClient';
 
 /**

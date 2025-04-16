@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -6,10 +6,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { MediaLibrary } from '@/components/media';
 import { MediaUpload } from './media-upload';
 import { mediaService } from '@/lib/mediaService';
-import { MediaAsset } from '@/lib/assetLoader';
+import { MediaAsset } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Trash2, Pencil, RefreshCw, ImagePlus } from 'lucide-react';
+import { Trash2, Pencil, RefreshCw, ImagePlus, FileVideo, FileAudio, File } from 'lucide-react';
 
 interface MediaManagerProps {
   onSelect?: (asset: MediaAsset) => void;

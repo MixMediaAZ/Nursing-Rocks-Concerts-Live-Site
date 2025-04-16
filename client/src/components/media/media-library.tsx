@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { MediaAsset } from '@shared/schema';
 import { mediaService } from '@/lib/mediaService';
 import { useQuery } from '@tanstack/react-query';
@@ -7,9 +7,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Image, FileVideo, FileAudio, File, RefreshCw } from 'lucide-react';
 
+type MediaType = 'image' | 'video' | 'audio' | 'document' | 'other';
+type MediaFilterType = 'all' | MediaType;
+
 interface MediaLibraryProps {
   onSelect?: (asset: MediaAsset) => void;
-  filter?: 'all' | 'image' | 'video' | 'audio' | 'document' | 'other';
+  filter?: MediaFilterType;
   className?: string;
 }
 
@@ -21,7 +24,7 @@ export function MediaLibrary({
   filter = 'all',
   className = '',
 }: MediaLibraryProps) {
-  const [selectedTab, setSelectedTab] = useState(filter === 'all' ? 'image' : filter);
+  const [selectedTab, setSelectedTab] = useState<MediaFilterType>(filter === 'all' ? 'image' : filter);
   
   // Fetch media assets from the server
   const { data: assets = [], isLoading } = useQuery({
@@ -47,7 +50,7 @@ export function MediaLibrary({
   };
   
   // Get icon for media type
-  const getTypeIcon = (type: 'image' | 'video' | 'audio' | 'document' | 'other') => {
+  const getTypeIcon = (type: MediaType) => {
     switch (type) {
       case 'image':
         return <Image className="h-4 w-4" />;
@@ -64,7 +67,7 @@ export function MediaLibrary({
   
   return (
     <div className={`border rounded-md ${className}`}>
-      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+      <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as MediaFilterType)} className="w-full">
         <TabsList className="w-full grid grid-cols-5">
           <TabsTrigger value="all" className="text-xs flex gap-1 items-center">
             All
