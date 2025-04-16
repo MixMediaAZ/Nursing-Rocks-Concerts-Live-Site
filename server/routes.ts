@@ -15,6 +15,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/events/featured", async (_req: Request, res: Response) => {
+    try {
+      const featuredEvent = await storage.getFeaturedEvent();
+      if (!featuredEvent) {
+        return res.status(404).json({ message: "No featured event found" });
+      }
+      
+      res.json(featuredEvent);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch featured event" });
+    }
+  });
+  
   app.get("/api/events/:id", async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
@@ -30,19 +43,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(event);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch event" });
-    }
-  });
-  
-  app.get("/api/events/featured", async (_req: Request, res: Response) => {
-    try {
-      const featuredEvent = await storage.getFeaturedEvent();
-      if (!featuredEvent) {
-        return res.status(404).json({ message: "No featured event found" });
-      }
-      
-      res.json(featuredEvent);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch featured event" });
     }
   });
 
