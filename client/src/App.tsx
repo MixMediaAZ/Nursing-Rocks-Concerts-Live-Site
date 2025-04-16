@@ -31,6 +31,7 @@ function Router() {
           <Route path="/tickets" component={TicketsPage} />
           <Route path="/cities" component={CitiesPage} />
           <Route path="/cities/:cityId" component={CityDetailsPage} />
+          <Route path="/sponsors" component={SponsorsPage} />
           <Route component={NotFound} />
         </Switch>
       </main>

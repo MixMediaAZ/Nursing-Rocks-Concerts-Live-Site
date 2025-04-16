@@ -51,6 +51,7 @@ export function Header() {
     { href: "/cities", label: "Concert Cities" },
     { href: "/artists", label: "Artists" },
     { href: "/venues", label: "Venues" },
+    { href: "/sponsors", label: "Sponsors" },
   ];
 
   const isActive = (path: string) => {
