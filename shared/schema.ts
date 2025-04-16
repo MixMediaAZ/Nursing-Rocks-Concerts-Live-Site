@@ -217,3 +217,35 @@ export type InsertNurseLicense = z.infer<typeof insertNurseLicenseSchema>;
 
 export type Ticket = typeof tickets.$inferSelect;
 export type InsertTicket = z.infer<typeof insertTicketSchema>;
+
+// Media Assets for file uploads
+export const mediaAssets = pgTable("media_assets", {
+  id: text("id").primaryKey(),
+  path: text("path").notNull(),
+  type: text("type").notNull().default("other"),
+  title: text("title"),
+  alt: text("alt"),
+  description: text("description"),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+  user_id: integer("user_id").references(() => users.id),
+  filesize: integer("filesize"),
+  filename: text("filename"),
+  originalname: text("originalname"),
+  mimetype: text("mimetype"),
+});
+
+export const insertMediaAssetSchema = createInsertSchema(mediaAssets).omit({
+  created_at: true,
+  updated_at: true,
+});
+
+export const mediaAssetsRelations = relations(mediaAssets, ({ one }) => ({
+  user: one(users, {
+    fields: [mediaAssets.user_id],
+    references: [users.id],
+  }),
+}));
+
+export type MediaAsset = typeof mediaAssets.$inferSelect;
+export type InsertMediaAsset = z.infer<typeof insertMediaAssetSchema>;
