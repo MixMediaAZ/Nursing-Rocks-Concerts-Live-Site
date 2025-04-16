@@ -1,14 +1,12 @@
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import fetch from 'node-fetch';
 import { storage } from './storage';
+import { generateToken, verifyToken, getUserIdFromRequest, isUserVerified } from './jwt';
 
-// JWT Secret should be in environment variables in production
-const JWT_SECRET = process.env.JWT_SECRET || 'nursing-rocks-concert-series-secret';
 const SALT_ROUNDS = 10;
 
 // API key should be stored as an environment variable

@@ -8,6 +8,8 @@ import EventDetails from "@/pages/event-details";
 import LicensePage from "@/pages/license";
 import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
+import ProfilePage from "@/pages/profile";
+import TicketsPage from "@/pages/tickets";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 
@@ -20,6 +22,10 @@ function Router() {
           <Route path="/" component={Home} />
           <Route path="/events/:id" component={EventDetails} />
           <Route path="/license" component={LicensePage} />
+          <Route path="/login" component={LoginPage} />
+          <Route path="/register" component={RegisterPage} />
+          <Route path="/profile" component={ProfilePage} />
+          <Route path="/tickets" component={TicketsPage} />
           <Route component={NotFound} />
         </Switch>
       </main>
