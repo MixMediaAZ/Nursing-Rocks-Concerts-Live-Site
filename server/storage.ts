@@ -6,6 +6,7 @@ import {
   Subscriber, InsertSubscriber,
   events, artists, venues, gallery, subscribers
 } from "@shared/schema";
+import { DatabaseStorage } from "./storage-db";
 
 export interface IStorage {
   // Events
@@ -353,4 +354,11 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// To switch between memory storage and database storage,
+// uncomment one of the following lines:
+
+// Use in-memory storage for development/testing
+// export const storage = new MemStorage();
+
+// Use database storage for production
+export const storage = new DatabaseStorage();
