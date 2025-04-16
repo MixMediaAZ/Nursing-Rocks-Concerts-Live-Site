@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, date } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, date, decimal, varchar } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -249,3 +249,250 @@ export const mediaAssetsRelations = relations(mediaAssets, ({ one }) => ({
 
 export type MediaAsset = typeof mediaAssets.$inferSelect;
 export type InsertMediaAsset = z.infer<typeof insertMediaAssetSchema>;
+
+// ========== JOBS BOARD MODELS ==========
+
+// Employer model
+export const employers = pgTable("employers", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  website: text("website"),
+  logo_url: text("logo_url"),
+  address: text("address"),
+  city: text("city"),
+  state: text("state"),
+  zip_code: text("zip_code"),
+  contact_email: text("contact_email").notNull(),
+  contact_phone: text("contact_phone"),
+  user_id: integer("user_id").references(() => users.id),
+  is_verified: boolean("is_verified").default(false),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+export const insertEmployerSchema = createInsertSchema(employers).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+  is_verified: true,
+});
+
+// Job listing model
+export const jobListings = pgTable("job_listings", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  employer_id: integer("employer_id").notNull().references(() => employers.id),
+  description: text("description").notNull(),
+  responsibilities: text("responsibilities"),
+  requirements: text("requirements"),
+  benefits: text("benefits"),
+  location: text("location").notNull(),
+  job_type: text("job_type").notNull(), // Full-time, Part-time, Contract, etc.
+  work_arrangement: text("work_arrangement").notNull(), // On-site, Remote, Hybrid
+  specialty: text("specialty").notNull(), // Nursing specialty
+  experience_level: text("experience_level").notNull(), // Entry, Mid, Senior
+  education_required: text("education_required"), // Degree requirements
+  certification_required: text("certification_required").array(), // Required certifications
+  shift_type: text("shift_type"), // Day, Night, Rotating
+  salary_min: decimal("salary_min", { precision: 10, scale: 2 }),
+  salary_max: decimal("salary_max", { precision: 10, scale: 2 }),
+  salary_period: text("salary_period").default("annual"), // annual, hourly, etc.
+  application_url: text("application_url"),
+  contact_email: text("contact_email"),
+  is_featured: boolean("is_featured").default(false),
+  is_active: boolean("is_active").default(true),
+  posted_date: timestamp("posted_date").defaultNow(),
+  expiry_date: timestamp("expiry_date"),
+  views_count: integer("views_count").default(0),
+  applications_count: integer("applications_count").default(0),
+});
+
+export const insertJobListingSchema = createInsertSchema(jobListings).omit({
+  id: true,
+  posted_date: true,
+  views_count: true,
+  applications_count: true,
+});
+
+// Nurse profiles (extension of user profiles)
+export const nurseProfiles = pgTable("nurse_profiles", {
+  id: serial("id").primaryKey(),
+  user_id: integer("user_id").notNull().references(() => users.id).unique(),
+  headline: text("headline"),
+  summary: text("summary"),
+  years_of_experience: integer("years_of_experience"),
+  specialties: text("specialties").array(),
+  skills: text("skills").array(),
+  certifications: jsonb("certifications"),
+  education: jsonb("education"),
+  resume_url: text("resume_url"),
+  profile_image_url: text("profile_image_url"),
+  availability: text("availability"),
+  preferred_shift: text("preferred_shift"),
+  preferred_work_arrangement: text("preferred_work_arrangement"),
+  preferred_locations: text("preferred_locations").array(),
+  current_employer: text("current_employer"),
+  is_public: boolean("is_public").default(false),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+export const insertNurseProfileSchema = createInsertSchema(nurseProfiles).omit({
+  id: true,
+  user_id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+// Job applications
+export const jobApplications = pgTable("job_applications", {
+  id: serial("id").primaryKey(),
+  job_id: integer("job_id").notNull().references(() => jobListings.id),
+  user_id: integer("user_id").notNull().references(() => users.id),
+  cover_letter: text("cover_letter"),
+  resume_url: text("resume_url"),
+  status: text("status").default("pending"), // pending, reviewed, interviewed, offered, hired, rejected
+  application_date: timestamp("application_date").defaultNow(),
+  last_updated: timestamp("last_updated").defaultNow(),
+  employer_notes: text("employer_notes"),
+  is_withdrawn: boolean("is_withdrawn").default(false),
+});
+
+export const insertJobApplicationSchema = createInsertSchema(jobApplications).omit({
+  id: true,
+  application_date: true,
+  last_updated: true,
+  employer_notes: true,
+  is_withdrawn: true,
+});
+
+// Saved jobs (favorites)
+export const savedJobs = pgTable("saved_jobs", {
+  id: serial("id").primaryKey(),
+  user_id: integer("user_id").notNull().references(() => users.id),
+  job_id: integer("job_id").notNull().references(() => jobListings.id),
+  saved_date: timestamp("saved_date").defaultNow(),
+  notes: text("notes"),
+});
+
+export const insertSavedJobSchema = createInsertSchema(savedJobs).omit({
+  id: true,
+  saved_date: true,
+});
+
+// Job alerts for users
+export const jobAlerts = pgTable("job_alerts", {
+  id: serial("id").primaryKey(),
+  user_id: integer("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  keywords: text("keywords"),
+  specialties: text("specialties").array(),
+  locations: text("locations").array(),
+  job_types: text("job_types").array(),
+  experience_levels: text("experience_levels").array(),
+  salary_min: decimal("salary_min", { precision: 10, scale: 2 }),
+  frequency: text("frequency").default("daily"), // daily, weekly, immediate
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  last_sent: timestamp("last_sent"),
+});
+
+export const insertJobAlertSchema = createInsertSchema(jobAlerts).omit({
+  id: true,
+  created_at: true,
+  last_sent: true,
+});
+
+// Relations
+export const employersRelations = relations(employers, ({ many, one }) => ({
+  jobListings: many(jobListings),
+  user: one(users, {
+    fields: [employers.user_id],
+    references: [users.id],
+  }),
+}));
+
+export const jobListingsRelations = relations(jobListings, ({ one, many }) => ({
+  employer: one(employers, {
+    fields: [jobListings.employer_id],
+    references: [employers.id],
+  }),
+  applications: many(jobApplications),
+  savedBy: many(savedJobs),
+}));
+
+export const nurseProfilesRelations = relations(nurseProfiles, ({ one, many }) => ({
+  user: one(users, {
+    fields: [nurseProfiles.user_id],
+    references: [users.id],
+  }),
+  applications: many(jobApplications, { relationName: "profile_applications" }),
+  savedJobs: many(savedJobs, { relationName: "profile_saved_jobs" }),
+  alerts: many(jobAlerts, { relationName: "profile_job_alerts" }),
+}));
+
+export const jobApplicationsRelations = relations(jobApplications, ({ one }) => ({
+  job: one(jobListings, {
+    fields: [jobApplications.job_id],
+    references: [jobListings.id],
+  }),
+  applicant: one(users, {
+    fields: [jobApplications.user_id],
+    references: [users.id],
+  }),
+}));
+
+export const savedJobsRelations = relations(savedJobs, ({ one }) => ({
+  job: one(jobListings, {
+    fields: [savedJobs.job_id],
+    references: [jobListings.id],
+  }),
+  user: one(users, {
+    fields: [savedJobs.user_id],
+    references: [users.id],
+  }),
+}));
+
+export const jobAlertsRelations = relations(jobAlerts, ({ one }) => ({
+  user: one(users, {
+    fields: [jobAlerts.user_id],
+    references: [users.id],
+  }),
+}));
+
+// Update user relations to include jobs relationships
+export const updatedUsersRelations = relations(users, ({ many, one }) => ({
+  licenses: many(nurseLicenses),
+  tickets: many(tickets),
+  profile: one(nurseProfiles, {
+    fields: [users.id],
+    references: [nurseProfiles.user_id],
+  }),
+  jobApplications: many(jobApplications),
+  savedJobs: many(savedJobs),
+  jobAlerts: many(jobAlerts),
+  employer: one(employers, {
+    fields: [users.id],
+    references: [employers.user_id],
+  }),
+}));
+
+// Job board types
+export type Employer = typeof employers.$inferSelect;
+export type InsertEmployer = z.infer<typeof insertEmployerSchema>;
+
+export type JobListing = typeof jobListings.$inferSelect;
+export type InsertJobListing = z.infer<typeof insertJobListingSchema>;
+
+export type NurseProfile = typeof nurseProfiles.$inferSelect;
+export type InsertNurseProfile = z.infer<typeof insertNurseProfileSchema>;
+
+export type JobApplication = typeof jobApplications.$inferSelect;
+export type InsertJobApplication = z.infer<typeof insertJobApplicationSchema>;
+
+export type SavedJob = typeof savedJobs.$inferSelect;
+export type InsertSavedJob = z.infer<typeof insertSavedJobSchema>;
+
+export type JobAlert = typeof jobAlerts.$inferSelect;
+export type InsertJobAlert = z.infer<typeof insertJobAlertSchema>;
