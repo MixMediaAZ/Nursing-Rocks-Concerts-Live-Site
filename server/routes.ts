@@ -15,6 +15,14 @@ import {
   getUserTickets,
   authenticateToken
 } from "./auth";
+import {
+  upload,
+  uploadMediaFiles,
+  getMediaList,
+  getMediaById,
+  updateMedia,
+  deleteMedia
+} from "./media";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Events
@@ -177,6 +185,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/license", authenticateToken, getNurseLicenses);
   app.post("/api/tickets/purchase", authenticateToken, purchaseTicket);
   app.get("/api/tickets", authenticateToken, getUserTickets);
+
+  // Media Management API
+  app.get("/api/media", getMediaList);
+  app.get("/api/media/:id", getMediaById);
+  app.post("/api/media/upload", upload.array('files'), uploadMediaFiles);
+  app.patch("/api/media/:id", authenticateToken, updateMedia);
+  app.delete("/api/media/:id", authenticateToken, deleteMedia);
 
   // Create HTTP server
   const httpServer = createServer(app);
