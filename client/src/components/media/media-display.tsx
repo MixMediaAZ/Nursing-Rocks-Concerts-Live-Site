@@ -68,17 +68,16 @@ export function MediaDisplay({
         );
         
       case 'document':
-        // For documents, we can't preview them directly, so we'll show an icon and link
         return (
-          <div className="flex flex-col items-center">
-            <File className="h-16 w-16 text-primary/70 mb-2" />
+          <div className="flex flex-col items-center justify-center">
+            <File className="h-12 w-12 mb-2 text-primary/70" />
             <h3 className="text-center text-sm mb-2">{asset.title || asset.filename}</h3>
             <a
               href={asset.path}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-3 py-1 bg-primary text-primary-foreground rounded-md text-sm"
-              onClick={() => onLoad && onLoad()}
+              className="text-primary underline text-sm"
+              onClick={(e) => e.stopPropagation()}
             >
               View Document
             </a>
@@ -86,20 +85,12 @@ export function MediaDisplay({
         );
         
       default:
-        // For unknown types, just show an icon and link
         return (
-          <div className="flex flex-col items-center">
-            <File className="h-16 w-16 text-muted-foreground mb-2" />
-            <h3 className="text-center text-sm mb-2">{asset.title || asset.filename}</h3>
-            <a
-              href={asset.path}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-1 bg-primary text-primary-foreground rounded-md text-sm"
-              onClick={() => onLoad && onLoad()}
-            >
-              Download File
-            </a>
+          <div className="flex flex-col items-center justify-center">
+            <File className="h-12 w-12 mb-2 text-muted-foreground" />
+            <p className="text-center text-sm text-muted-foreground">
+              Unknown media type
+            </p>
           </div>
         );
     }
@@ -163,49 +154,6 @@ export function AudioPlayer({
       >
         Your browser does not support the audio tag.
       </audio>
-    </div>
-  );
-}
-
-/**
- * A component for displaying a video player with custom styling
- */
-export function VideoPlayer({
-  asset,
-  className = '',
-  showTitle = true,
-}: {
-  asset: MediaAsset;
-  className?: string;
-  showTitle?: boolean;
-}) {
-  if (asset.type !== 'video') {
-    return (
-      <div className="text-sm text-muted-foreground py-2 px-3 bg-muted/50 rounded-md">
-        This is not a video asset.
-      </div>
-    );
-  }
-  
-  return (
-    <div className={className}>
-      {showTitle && (
-        <div className="mb-2">
-          <div className="flex items-center">
-            <FileVideo className="h-6 w-6 text-primary mr-2" />
-            <span className="font-medium">{asset.title || asset.filename}</span>
-          </div>
-        </div>
-      )}
-      <div className="relative rounded-md overflow-hidden">
-        <video
-          src={asset.path}
-          controls
-          className="w-full"
-        >
-          Your browser does not support the video tag.
-        </video>
-      </div>
     </div>
   );
 }

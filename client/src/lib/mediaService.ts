@@ -16,7 +16,79 @@ export interface MediaUploadResponse {
  */
 export const mediaService = {
   /**
-   * Upload files to the server
+   * Upload a single media file with progress tracking
+   * @param formData FormData object with file and metadata
+   * @param progressCallback Optional callback for upload progress
+   * @returns Promise with upload response
+   */
+  async uploadMedia(formData: FormData, progressCallback?: (progress: number) => void): Promise<MediaUploadResponse> {
+    try {
+      // Use XMLHttpRequest for progress tracking
+      return await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        
+        // Track upload progress
+        if (progressCallback) {
+          xhr.upload.addEventListener('progress', (event) => {
+            if (event.lengthComputable) {
+              const progress = Math.round((event.loaded / event.total) * 100);
+              progressCallback(progress);
+            }
+          });
+        }
+        
+        // Handle completion
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const result = JSON.parse(xhr.responseText);
+              
+              // Register uploaded assets in the client asset registry
+              if (result.assets && Array.isArray(result.assets)) {
+                result.assets.forEach((asset: MediaAsset) => {
+                  registerAsset(asset);
+                });
+              }
+              
+              resolve(result);
+            } catch (e) {
+              reject(new Error('Invalid server response'));
+            }
+          } else {
+            try {
+              const error = JSON.parse(xhr.responseText);
+              reject(new Error(error.message || 'Upload failed'));
+            } catch (e) {
+              reject(new Error(`HTTP error: ${xhr.status}`));
+            }
+          }
+        });
+        
+        // Handle errors
+        xhr.addEventListener('error', () => {
+          reject(new Error('Network error during upload'));
+        });
+        
+        xhr.addEventListener('abort', () => {
+          reject(new Error('Upload aborted'));
+        });
+        
+        // Send the request
+        xhr.open('POST', '/api/media');
+        xhr.send(formData);
+      });
+    } catch (error: any) {
+      console.error('Media upload error:', error);
+      return {
+        success: false,
+        assets: [],
+        errors: [error.message || 'Unknown error during upload'],
+      };
+    }
+  },
+  
+  /**
+   * Upload multiple files to the server
    * @param files Array of files to upload
    * @param metadata Array of metadata objects corresponding to files
    * @returns Promise with upload response
