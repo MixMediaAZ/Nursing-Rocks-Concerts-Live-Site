@@ -53,6 +53,7 @@ export function Header() {
     { href: "/artists", label: "Artists", icon: <Users className="h-4 w-4" /> },
     { href: "/venues", label: "Venues", icon: <Building2 className="h-4 w-4" /> },
     { href: "/sponsors", label: "Sponsors", icon: <Stethoscope className="h-4 w-4" /> },
+    { href: "/jobs", label: "Jobs Board", icon: <Briefcase className="h-4 w-4" /> },
   ];
 
   const isActive = (path: string) => {

@@ -1,7 +1,14 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertSubscriberSchema } from "@shared/schema";
+import { 
+  insertSubscriberSchema, 
+  insertJobListingSchema, 
+  insertEmployerSchema,
+  insertNurseProfileSchema,
+  insertJobApplicationSchema,
+  insertJobAlertSchema
+} from "@shared/schema";
 import { z } from "zod";
 import {
   register,
@@ -192,6 +199,411 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/media/upload", upload.array('files'), uploadMediaFiles);
   app.patch("/api/media/:id", authenticateToken, updateMedia);
   app.delete("/api/media/:id", authenticateToken, deleteMedia);
+
+  // ========== JOB BOARD API ==========
+  
+  // Job Listings
+  app.get("/api/jobs", async (req: Request, res: Response) => {
+    try {
+      const filters: any = {};
+      
+      // Extract filter parameters from query
+      if (req.query.specialty) filters.specialty = req.query.specialty;
+      if (req.query.location) filters.location = req.query.location;
+      if (req.query.jobType) filters.jobType = req.query.jobType;
+      if (req.query.experienceLevel) filters.experienceLevel = req.query.experienceLevel;
+      if (req.query.keywords) filters.keywords = req.query.keywords as string;
+      if (req.query.salaryMin) filters.salaryMin = parseInt(req.query.salaryMin as string);
+      if (req.query.employerId) filters.employerId = parseInt(req.query.employerId as string);
+      
+      // Default to active jobs only
+      filters.isActive = req.query.showInactive ? undefined : true;
+      
+      const jobs = await storage.getAllJobListings(filters);
+      res.json(jobs);
+    } catch (error) {
+      console.error("Error fetching jobs:", error);
+      res.status(500).json({ message: "Failed to fetch jobs" });
+    }
+  });
+  
+  app.get("/api/jobs/featured", async (req: Request, res: Response) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 3;
+      const featuredJobs = await storage.getFeaturedJobListings(limit);
+      res.json(featuredJobs);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch featured jobs" });
+    }
+  });
+  
+  app.get("/api/jobs/recent", async (req: Request, res: Response) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
+      const recentJobs = await storage.getRecentJobListings(limit);
+      res.json(recentJobs);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch recent jobs" });
+    }
+  });
+  
+  app.get("/api/jobs/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid job ID" });
+      }
+      
+      const job = await storage.getJobListingById(id);
+      if (!job) {
+        return res.status(404).json({ message: "Job not found" });
+      }
+      
+      // Increment view count
+      await storage.incrementJobListingViews(id);
+      
+      // Add user-specific fields if authenticated
+      let hasApplied = false;
+      let isSaved = false;
+      
+      if (req.user?.userId) {
+        const applications = await storage.getJobApplicationsByUserId(req.user.userId);
+        hasApplied = applications.some(app => app.job_id === id);
+        
+        const savedJobs = await storage.getSavedJobsByUserId(req.user.userId);
+        isSaved = savedJobs.some(saved => saved.job_id === id);
+      }
+      
+      res.json({
+        ...job,
+        has_applied: hasApplied,
+        is_saved: isSaved
+      });
+    } catch (error) {
+      console.error("Error fetching job:", error);
+      res.status(500).json({ message: "Failed to fetch job" });
+    }
+  });
+  
+  app.get("/api/jobs/similar/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid job ID" });
+      }
+      
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 3;
+      const similarJobs = await storage.getSimilarJobs(id, limit);
+      res.json(similarJobs);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch similar jobs" });
+    }
+  });
+  
+  app.post("/api/jobs", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      if (!req.user?.isVerified) {
+        return res.status(403).json({ message: "You must be verified to post jobs" });
+      }
+      
+      // Validate job listing data
+      const validationResult = insertJobListingSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({
+          message: "Invalid job listing data",
+          errors: validationResult.error.format()
+        });
+      }
+      
+      // Get employer for the user
+      const employer = await storage.getEmployerByUserId(req.user.userId);
+      if (!employer) {
+        return res.status(403).json({ message: "You must register as an employer first" });
+      }
+      
+      const jobListing = await storage.createJobListing(validationResult.data, employer.id);
+      res.status(201).json({ 
+        id: jobListing.id,
+        message: "Job listing created successfully"
+      });
+    } catch (error) {
+      console.error("Error creating job:", error);
+      res.status(500).json({ message: "Failed to create job listing" });
+    }
+  });
+  
+  // Employers
+  app.get("/api/employers", async (_req: Request, res: Response) => {
+    try {
+      const employers = await storage.getVerifiedEmployers();
+      res.json(employers);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch employers" });
+    }
+  });
+  
+  app.get("/api/employers/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid employer ID" });
+      }
+      
+      const employer = await storage.getEmployerById(id);
+      if (!employer) {
+        return res.status(404).json({ message: "Employer not found" });
+      }
+      
+      res.json(employer);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch employer" });
+    }
+  });
+  
+  app.post("/api/employers", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      if (!req.user?.isVerified) {
+        return res.status(403).json({ message: "You must be verified to register as an employer" });
+      }
+      
+      // Validate employer data
+      const validationResult = insertEmployerSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({
+          message: "Invalid employer data",
+          errors: validationResult.error.format()
+        });
+      }
+      
+      // Check if user already has an employer profile
+      const existingEmployer = await storage.getEmployerByUserId(req.user.userId);
+      if (existingEmployer) {
+        return res.status(409).json({ message: "You have already registered as an employer" });
+      }
+      
+      const employer = await storage.createEmployer(validationResult.data, req.user.userId);
+      res.status(201).json({ 
+        id: employer.id,
+        message: "Employer profile created successfully"
+      });
+    } catch (error) {
+      console.error("Error creating employer:", error);
+      res.status(500).json({ message: "Failed to create employer profile" });
+    }
+  });
+  
+  // Nurse Profiles
+  app.get("/api/profile", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const profile = await storage.getNurseProfileByUserId(req.user!.userId);
+      if (!profile) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+      
+      res.json(profile);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch profile" });
+    }
+  });
+  
+  app.post("/api/profile", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      if (!req.user?.isVerified) {
+        return res.status(403).json({ message: "You must be verified to create a profile" });
+      }
+      
+      // Validate profile data
+      const validationResult = insertNurseProfileSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({
+          message: "Invalid profile data",
+          errors: validationResult.error.format()
+        });
+      }
+      
+      // Check if user already has a profile
+      const existingProfile = await storage.getNurseProfileByUserId(req.user.userId);
+      if (existingProfile) {
+        const updatedProfile = await storage.updateNurseProfile(existingProfile.id, validationResult.data);
+        return res.json({ 
+          id: updatedProfile.id,
+          message: "Profile updated successfully"
+        });
+      }
+      
+      const profile = await storage.createNurseProfile(validationResult.data, req.user.userId);
+      res.status(201).json({ 
+        id: profile.id,
+        message: "Profile created successfully"
+      });
+    } catch (error) {
+      console.error("Error with profile:", error);
+      res.status(500).json({ message: "Failed to process profile" });
+    }
+  });
+  
+  // Job Applications
+  app.post("/api/jobs/apply", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      if (!req.user?.isVerified) {
+        return res.status(403).json({ message: "You must be verified to apply for jobs" });
+      }
+      
+      const { jobId, coverLetter, resumeUrl } = req.body;
+      if (!jobId) {
+        return res.status(400).json({ message: "Job ID is required" });
+      }
+      
+      // Check if job exists
+      const job = await storage.getJobListingById(parseInt(jobId));
+      if (!job) {
+        return res.status(404).json({ message: "Job not found" });
+      }
+      
+      // Check if user has already applied
+      const applications = await storage.getJobApplicationsByUserId(req.user.userId);
+      if (applications.some(app => app.job_id === parseInt(jobId))) {
+        return res.status(409).json({ message: "You have already applied for this job" });
+      }
+      
+      // Create application
+      const application = await storage.createJobApplication(
+        { 
+          cover_letter: coverLetter, 
+          resume_url: resumeUrl,
+          status: "submitted",
+          submitted_at: new Date()
+        }, 
+        req.user.userId, 
+        parseInt(jobId)
+      );
+      
+      // Increment job application count
+      await storage.incrementJobApplicationsCount(parseInt(jobId));
+      
+      res.status(201).json({ 
+        id: application.id,
+        message: "Application submitted successfully"
+      });
+    } catch (error) {
+      console.error("Error applying for job:", error);
+      res.status(500).json({ message: "Failed to submit application" });
+    }
+  });
+  
+  app.get("/api/jobs/applications", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const applications = await storage.getJobApplicationsByUserId(req.user!.userId);
+      res.json(applications);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch applications" });
+    }
+  });
+  
+  // Saved Jobs
+  app.post("/api/jobs/save", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const { jobId, notes } = req.body;
+      if (!jobId) {
+        return res.status(400).json({ message: "Job ID is required" });
+      }
+      
+      // Check if job exists
+      const job = await storage.getJobListingById(parseInt(jobId));
+      if (!job) {
+        return res.status(404).json({ message: "Job not found" });
+      }
+      
+      // Check if already saved and remove if it is (toggle behavior)
+      const savedJobs = await storage.getSavedJobsByUserId(req.user!.userId);
+      const existingSaved = savedJobs.find(saved => saved.job_id === parseInt(jobId));
+      
+      if (existingSaved) {
+        await storage.unsaveJob(req.user!.userId, parseInt(jobId));
+        return res.json({ message: "Job removed from saved jobs" });
+      }
+      
+      // Save the job
+      const savedJob = await storage.saveJob(req.user!.userId, parseInt(jobId), notes);
+      res.status(201).json({ 
+        id: savedJob.id,
+        message: "Job saved successfully"
+      });
+    } catch (error) {
+      console.error("Error saving job:", error);
+      res.status(500).json({ message: "Failed to save job" });
+    }
+  });
+  
+  app.get("/api/jobs/saved", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const savedJobs = await storage.getSavedJobsByUserId(req.user!.userId);
+      res.json(savedJobs);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch saved jobs" });
+    }
+  });
+  
+  // Job Alerts
+  app.post("/api/jobs/alerts", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      // Validate alert data
+      const validationResult = insertJobAlertSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({
+          message: "Invalid job alert data",
+          errors: validationResult.error.format()
+        });
+      }
+      
+      const alert = await storage.createJobAlert(validationResult.data, req.user!.userId);
+      res.status(201).json({ 
+        id: alert.id,
+        message: "Job alert created successfully"
+      });
+    } catch (error) {
+      console.error("Error creating alert:", error);
+      res.status(500).json({ message: "Failed to create job alert" });
+    }
+  });
+  
+  app.get("/api/jobs/alerts", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const alerts = await storage.getJobAlertsByUserId(req.user!.userId);
+      res.json(alerts);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch job alerts" });
+    }
+  });
+  
+  app.delete("/api/jobs/alerts/:id", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid alert ID" });
+      }
+      
+      await storage.deleteJobAlert(id);
+      res.json({ message: "Job alert deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete job alert" });
+    }
+  });
+  
+  // Authentication status
+  app.get("/api/auth/status", (req: Request, res: Response) => {
+    const isAuthenticated = !!req.user;
+    const isVerified = !!req.user?.isVerified;
+    
+    res.json({
+      isAuthenticated,
+      isVerified,
+      user: req.user ? {
+        id: req.user.userId,
+        email: req.user.email
+      } : null
+    });
+  });
 
   // Create HTTP server
   const httpServer = createServer(app);
