@@ -783,7 +783,7 @@ export default function JobDetailsPage() {
                   <ScrollArea className="h-72">
                     <div className="space-y-3 pr-3">
                       {similarJobs.map((similarJob: any) => (
-                        <Link
+                        <WouterLink
                           key={similarJob.id}
                           href={`/jobs/${similarJob.id}`}
                           className="block"
@@ -809,7 +809,7 @@ export default function JobDetailsPage() {
                               </span>
                             </div>
                           </div>
-                        </Link>
+                        </WouterLink>
                       ))}
                     </div>
                   </ScrollArea>
@@ -853,7 +853,7 @@ export default function JobDetailsPage() {
                         </div>
                       </div>
                       <Button variant="outline" size="sm" asChild>
-                        <Link href="/profile?tab=resume">Update Resume</Link>
+                        <WouterLink href="/profile?tab=resume">Update Resume</WouterLink>
                       </Button>
                     </div>
                   ) : (
@@ -863,7 +863,7 @@ export default function JobDetailsPage() {
                         You haven't uploaded your resume yet
                       </p>
                       <Button size="sm" asChild>
-                        <Link href="/profile?tab=resume">Upload Resume</Link>
+                        <WouterLink href="/profile?tab=resume">Upload Resume</WouterLink>
                       </Button>
                     </div>
                   )}
@@ -1013,17 +1013,4 @@ function JobDetailsSkeleton() {
   );
 }
 
-function Link({ href, children, className, ...props }: any) {
-  const [, navigate] = useLocation();
-  
-  const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    navigate(href);
-  };
-  
-  return (
-    <a href={href} onClick={handleClick} className={className} {...props}>
-      {children}
-    </a>
-  );
-}
+// Custom Link component removed as all instances now use WouterLink
