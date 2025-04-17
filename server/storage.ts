@@ -150,12 +150,30 @@ export class MemStorage implements IStorage {
   private venues: Map<number, Venue>;
   private gallery: Map<number, Gallery>;
   private subscribers: Map<number, Subscriber>;
+  private users: Map<number, User>;
+  private nurseLicenses: Map<number, NurseLicense>;
+  private tickets: Map<number, Ticket>;
+  private employers: Map<number, Employer>;
+  private jobListings: Map<number, JobListing>;
+  private nurseProfiles: Map<number, NurseProfile>;
+  private jobApplications: Map<number, JobApplication>;
+  private savedJobs: Map<number, SavedJob>;
+  private jobAlerts: Map<number, JobAlert>;
   
   private eventId: number;
   private artistId: number;
   private venueId: number;
   private galleryId: number;
   private subscriberId: number;
+  private userId: number;
+  private nurseLicenseId: number;
+  private ticketId: number;
+  private employerId: number;
+  private jobListingId: number;
+  private nurseProfileId: number;
+  private jobApplicationId: number;
+  private savedJobId: number;
+  private jobAlertId: number;
   
   constructor() {
     this.events = new Map();
@@ -163,12 +181,30 @@ export class MemStorage implements IStorage {
     this.venues = new Map();
     this.gallery = new Map();
     this.subscribers = new Map();
+    this.users = new Map();
+    this.nurseLicenses = new Map();
+    this.tickets = new Map();
+    this.employers = new Map();
+    this.jobListings = new Map();
+    this.nurseProfiles = new Map();
+    this.jobApplications = new Map();
+    this.savedJobs = new Map();
+    this.jobAlerts = new Map();
     
     this.eventId = 1;
     this.artistId = 1;
     this.venueId = 1;
     this.galleryId = 1;
     this.subscriberId = 1;
+    this.userId = 1;
+    this.nurseLicenseId = 1;
+    this.ticketId = 1;
+    this.employerId = 1;
+    this.jobListingId = 1;
+    this.nurseProfileId = 1;
+    this.jobApplicationId = 1;
+    this.savedJobId = 1;
+    this.jobAlertId = 1;
     
     // Initialize with sample data
     this.initSampleData();
@@ -264,6 +300,9 @@ export class MemStorage implements IStorage {
   
   // Initialize with sample data
   private initSampleData() {
+    // Initialize some sample job data
+    this.initializeJobBoardData();
+    
     // Create Artists
     const astralWaves = this.setupArtist({
       name: "The Healing Harmonies",
@@ -461,13 +500,1140 @@ export class MemStorage implements IStorage {
     this.gallery.set(id, newImage);
     return newImage;
   }
+  
+  // Initialize job board data with sample data for testing
+  private initializeJobBoardData() {
+    // Create a demo admin user
+    const adminUser: User = {
+      id: this.userId++,
+      email: 'admin@nursingrocks.com',
+      password_hash: '$2b$10$X/4YF4r7EYeAK6c1x2gkn.Wa3Wx4Bq2YtZIzNSESzwXMJ1vkEJRRm', // 'password123'
+      first_name: 'Admin',
+      last_name: 'User',
+      created_at: new Date(),
+      updated_at: new Date(),
+      is_admin: true,
+      is_verified: true
+    };
+    this.users.set(adminUser.id, adminUser);
+    
+    // Create some demo nurse users
+    const nurseUser1: User = {
+      id: this.userId++,
+      email: 'jane.doe@example.com',
+      password_hash: '$2b$10$X/4YF4r7EYeAK6c1x2gkn.Wa3Wx4Bq2YtZIzNSESzwXMJ1vkEJRRm', // 'password123'
+      first_name: 'Jane',
+      last_name: 'Doe',
+      created_at: new Date(),
+      updated_at: new Date(),
+      is_admin: false,
+      is_verified: true
+    };
+    this.users.set(nurseUser1.id, nurseUser1);
+    
+    const nurseUser2: User = {
+      id: this.userId++,
+      email: 'john.smith@example.com',
+      password_hash: '$2b$10$X/4YF4r7EYeAK6c1x2gkn.Wa3Wx4Bq2YtZIzNSESzwXMJ1vkEJRRm', // 'password123'
+      first_name: 'John',
+      last_name: 'Smith',
+      created_at: new Date(),
+      updated_at: new Date(),
+      is_admin: false,
+      is_verified: true
+    };
+    this.users.set(nurseUser2.id, nurseUser2);
+    
+    // Create sample nurse profiles
+    const nurseProfile1: NurseProfile = {
+      id: this.nurseProfileId++,
+      user_id: nurseUser1.id,
+      headline: "Experienced ICU Nurse",
+      summary: "Dedicated ICU nurse with over 5 years of experience in high-pressure medical environments, specializing in cardiac care and trauma response.",
+      years_of_experience: 5,
+      specialties: ["ICU", "Cardiac Care", "Trauma"],
+      skills: ["Critical Care", "Ventilator Management", "Advanced Cardiac Life Support"],
+      education: [
+        {
+          degree: "BSN",
+          institution: "University of Nursing",
+          year: "2018"
+        }
+      ],
+      certifications: [
+        {
+          name: "ACLS",
+          issuer: "American Heart Association",
+          year: "2020"
+        },
+        {
+          name: "PALS",
+          issuer: "American Heart Association",
+          year: "2019"
+        }
+      ],
+      preferred_shift: "Day",
+      preferred_locations: ["New York, NY", "Boston, MA"],
+      resume_url: "https://example.com/jane-doe-resume.pdf",
+      is_public: true,
+      created_at: new Date(),
+      updated_at: new Date()
+    };
+    this.nurseProfiles.set(nurseProfile1.id, nurseProfile1);
+    
+    const nurseProfile2: NurseProfile = {
+      id: this.nurseProfileId++,
+      user_id: nurseUser2.id,
+      headline: "Experienced ER Nurse",
+      summary: "Emergency Room nurse with 3 years of experience in fast-paced hospital settings. Skilled in triage and emergency response procedures.",
+      years_of_experience: 3,
+      specialties: ["Emergency Medicine", "Triage", "Trauma"],
+      skills: ["Emergency Response", "Wound Care", "Patient Assessment"],
+      education: [
+        {
+          degree: "BSN",
+          institution: "Metro College of Nursing",
+          year: "2019"
+        }
+      ],
+      certifications: [
+        {
+          name: "BLS",
+          issuer: "American Heart Association",
+          year: "2020"
+        }
+      ],
+      preferred_shift: "Night",
+      preferred_locations: ["Chicago, IL", "Milwaukee, WI"],
+      resume_url: "https://example.com/john-smith-resume.pdf",
+      is_public: true,
+      created_at: new Date(),
+      updated_at: new Date()
+    };
+    this.nurseProfiles.set(nurseProfile2.id, nurseProfile2);
+    
+    // Create sample employers
+    const employer1: Employer = {
+      id: this.employerId++,
+      name: "General Hospital Medical Center",
+      user_id: this.userId++,
+      description: "A leading healthcare provider with multiple facilities across the United States. Known for excellence in patient care and innovative medical practices.",
+      logo_url: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&h=300&q=80",
+      website: "https://www.generalhospital.example.com",
+      location: "New York, NY",
+      contact_email: "careers@generalhospital.example.com",
+      contact_phone: "212-555-1000",
+      industry: "Healthcare",
+      size: "Large (1000+ employees)",
+      founded_year: "1950",
+      is_verified: true,
+      verification_date: new Date(),
+      created_at: new Date(),
+      updated_at: new Date()
+    };
+    this.employers.set(employer1.id, employer1);
+    
+    const employer2: Employer = {
+      id: this.employerId++,
+      name: "Caring Hearts Clinic",
+      user_id: this.userId++,
+      description: "A community-focused clinic providing compassionate healthcare services to underserved populations. We prioritize patient-centered care and holistic treatment approaches.",
+      logo_url: "https://images.unsplash.com/photo-1518152006812-edab29b069ac?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&h=300&q=80",
+      website: "https://www.caringhearts.example.com",
+      location: "Chicago, IL",
+      contact_email: "jobs@caringhearts.example.com",
+      contact_phone: "312-555-2000",
+      industry: "Healthcare",
+      size: "Medium (100-999 employees)",
+      founded_year: "1995",
+      is_verified: true,
+      verification_date: new Date(),
+      created_at: new Date(),
+      updated_at: new Date()
+    };
+    this.employers.set(employer2.id, employer2);
+    
+    const employer3: Employer = {
+      id: this.employerId++,
+      name: "Nightingale Healthcare Services",
+      user_id: this.userId++,
+      description: "A premier healthcare staffing agency providing temporary and permanent placement services for nurses and healthcare professionals across the country.",
+      logo_url: "https://images.unsplash.com/photo-1527613426441-4da17471b66d?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&h=300&q=80",
+      website: "https://www.nightingalehcs.example.com",
+      location: "Boston, MA",
+      contact_email: "careers@nightingalehcs.example.com",
+      contact_phone: "617-555-3000",
+      industry: "Healthcare Staffing",
+      size: "Medium (100-999 employees)",
+      founded_year: "2005",
+      is_verified: true,
+      verification_date: new Date(),
+      created_at: new Date(),
+      updated_at: new Date()
+    };
+    this.employers.set(employer3.id, employer3);
+    
+    // Create sample job listings
+    const job1: JobListing = {
+      id: this.jobListingId++,
+      title: "ICU Registered Nurse",
+      employer_id: employer1.id,
+      description: "Join our Intensive Care Unit team at General Hospital Medical Center, where you'll provide critical care to patients in need. As an ICU RN, you'll be responsible for monitoring, assessing, and caring for critically ill patients with complex medical needs.",
+      responsibilities: "• Monitor and assess critically ill patients\n• Administer medications and treatments\n• Collaborate with interdisciplinary team members\n• Respond quickly to changes in patient condition\n• Document patient care and progress\n• Provide education and support to patients and families",
+      requirements: "• Active RN license\n• BSN preferred\n• 2+ years of ICU experience\n• BLS and ACLS certifications\n• Strong critical thinking and problem-solving skills\n• Excellent communication abilities",
+      benefits: "• Competitive salary\n• Comprehensive health benefits\n• 401(k) with employer match\n• Tuition reimbursement\n• Professional development opportunities\n• Relocation assistance available",
+      location: "New York, NY",
+      job_type: "Full-time",
+      shift_type: "Day",
+      experience_level: "Mid-Level",
+      specialty: "ICU",
+      education_required: "Bachelor's Degree",
+      certification_required: "ACLS, BLS",
+      salary_min: 85000,
+      salary_max: 110000,
+      salary_period: "yearly",
+      contact_email: "careers@generalhospital.example.com",
+      contact_phone: "212-555-1234",
+      is_featured: true,
+      is_active: true,
+      posted_date: new Date(),
+      updated_at: new Date(),
+      views_count: 125,
+      applications_count: 12
+    };
+    this.jobListings.set(job1.id, job1);
+    
+    const job2: JobListing = {
+      id: this.jobListingId++,
+      title: "Emergency Room Nurse",
+      employer_id: employer2.id,
+      description: "Caring Hearts Clinic is seeking an experienced Emergency Room Nurse to join our dedicated team. In this role, you'll provide immediate assessment and care to patients with urgent medical needs in our fast-paced ER department.",
+      responsibilities: "• Triage and assess patients with varying levels of acuity\n• Administer medications and treatments as ordered\n• Assist with procedures and tests\n• Monitor patient vital signs and condition\n• Document patient care accurately\n• Provide discharge instructions to patients",
+      requirements: "• Active RN license\n• 1+ years of ER experience\n• BLS and ACLS certifications\n• Strong assessment skills\n• Ability to work under pressure\n• Excellent multitasking capabilities",
+      benefits: "• Competitive hourly rates\n• Flexible scheduling\n• Health insurance options\n• Retirement savings plans\n• Continuing education support\n• Employee wellness program",
+      location: "Chicago, IL",
+      job_type: "Full-time",
+      shift_type: "Night",
+      experience_level: "Entry-Level",
+      specialty: "Emergency",
+      education_required: "Associate's Degree",
+      certification_required: "BLS, ACLS",
+      salary_min: 75000,
+      salary_max: 95000,
+      salary_period: "yearly",
+      contact_email: "jobs@caringhearts.example.com",
+      contact_phone: "312-555-2345",
+      is_featured: false,
+      is_active: true,
+      posted_date: new Date(),
+      updated_at: new Date(),
+      views_count: 98,
+      applications_count: 8
+    };
+    this.jobListings.set(job2.id, job2);
+    
+    const job3: JobListing = {
+      id: this.jobListingId++,
+      title: "Cardiac Care Unit Nurse",
+      employer_id: employer1.id,
+      description: "General Hospital Medical Center is recruiting for a skilled Cardiac Care Unit Nurse to join our specialized cardiac team. This position involves caring for patients recovering from cardiac surgeries, heart attacks, and other cardiovascular conditions.",
+      responsibilities: "• Monitor cardiac patients using telemetry and other equipment\n• Administer cardiac medications\n• Assist with cardiac procedures\n• Educate patients on heart health and recovery\n• Collaborate with cardiologists and cardiac surgeons\n• Respond to cardiac emergencies",
+      requirements: "• Active RN license\n• BSN preferred\n• 2+ years of cardiac nursing experience\n• BLS and ACLS certifications\n• Knowledge of cardiac medications and treatments\n• Experience with cardiac monitoring equipment",
+      benefits: "• Competitive salary with clinical ladder advancement\n• Comprehensive benefits package\n• Night shift differential\n• Continuing education reimbursement\n• On-site fitness center\n• Employee assistance program",
+      location: "New York, NY",
+      job_type: "Full-time",
+      shift_type: "Night",
+      experience_level: "Mid-Level",
+      specialty: "Cardiac",
+      education_required: "Bachelor's Degree",
+      certification_required: "ACLS, BLS",
+      salary_min: 90000,
+      salary_max: 115000,
+      salary_period: "yearly",
+      contact_email: "careers@generalhospital.example.com",
+      contact_phone: "212-555-1234",
+      is_featured: true,
+      is_active: true,
+      posted_date: new Date(),
+      updated_at: new Date(),
+      views_count: 110,
+      applications_count: 9
+    };
+    this.jobListings.set(job3.id, job3);
+    
+    const job4: JobListing = {
+      id: this.jobListingId++,
+      title: "Travel ICU Nurse",
+      employer_id: employer3.id,
+      description: "Nightingale Healthcare Services is looking for experienced Travel ICU Nurses for 13-week assignments in various locations nationwide. This is an excellent opportunity to gain diverse clinical experience while traveling to different healthcare facilities.",
+      responsibilities: "• Provide critical care to ICU patients at assigned facilities\n• Adapt quickly to new hospital systems and protocols\n• Monitor and assess critically ill patients\n• Administer medications and treatments per orders\n• Document patient care according to facility requirements\n• Communicate effectively with new healthcare teams",
+      requirements: "• Active RN license (or compact license)\n• BSN preferred\n• Minimum 2 years recent ICU experience\n• BLS and ACLS certifications\n• Flexibility to relocate for assignments\n• Strong adaptability and independent practice skills",
+      benefits: "• Premium pay rates\n• Tax-free housing stipend\n• Travel reimbursement\n• Medical benefits from day one\n• 401(k) with immediate vesting\n• 24/7 clinical support",
+      location: "Multiple Locations",
+      job_type: "Contract",
+      shift_type: "Various",
+      experience_level: "Mid-Level",
+      specialty: "ICU",
+      education_required: "Bachelor's Degree",
+      certification_required: "ACLS, BLS",
+      salary_min: 100000,
+      salary_max: 140000,
+      salary_period: "yearly",
+      contact_email: "careers@nightingalehcs.example.com",
+      contact_phone: "617-555-3456",
+      is_featured: true,
+      is_active: true,
+      posted_date: new Date(),
+      updated_at: new Date(),
+      views_count: 205,
+      applications_count: 18
+    };
+    this.jobListings.set(job4.id, job4);
+    
+    const job5: JobListing = {
+      id: this.jobListingId++,
+      title: "Pediatric Nurse",
+      employer_id: employer2.id,
+      description: "Caring Hearts Clinic is seeking a compassionate Pediatric Nurse to join our children's health department. In this role, you'll provide care to infants, children, and adolescents in an outpatient setting.",
+      responsibilities: "• Assess pediatric patients of various ages\n• Administer vaccinations and medications\n• Assist with well-child visits and sick appointments\n• Provide patient and family education\n• Document growth and development milestones\n• Collaborate with pediatricians",
+      requirements: "• Active RN license\n• 1+ years of pediatric nursing experience\n• BLS certification\n• PALS certification preferred\n• Strong communication skills with children and families\n• Patience and compassion",
+      benefits: "• Competitive salary\n• Family-friendly scheduling\n• Comprehensive benefits\n• Continuing education opportunities\n• Child care assistance program\n• Work-life balance initiatives",
+      location: "Chicago, IL",
+      job_type: "Full-time",
+      shift_type: "Day",
+      experience_level: "Entry-Level",
+      specialty: "Pediatrics",
+      education_required: "Associate's Degree",
+      certification_required: "BLS",
+      salary_min: 70000,
+      salary_max: 90000,
+      salary_period: "yearly",
+      contact_email: "jobs@caringhearts.example.com",
+      contact_phone: "312-555-2345",
+      is_featured: false,
+      is_active: true,
+      posted_date: new Date(),
+      updated_at: new Date(),
+      views_count: 87,
+      applications_count: 7
+    };
+    this.jobListings.set(job5.id, job5);
+    
+    // Create a sample job application
+    const jobApplication1: JobApplication = {
+      id: this.jobApplicationId++,
+      user_id: nurseUser1.id,
+      job_id: job1.id,
+      cover_letter: "I am very interested in the ICU Registered Nurse position at General Hospital Medical Center. With my 5 years of experience in critical care and specialization in cardiac patients, I believe I would be an excellent fit for your team.",
+      resume_url: "https://example.com/jane-doe-resume.pdf",
+      status: "submitted",
+      application_date: new Date(),
+      updated_at: new Date(),
+      employer_notes: null,
+      is_withdrawn: false
+    };
+    this.jobApplications.set(jobApplication1.id, jobApplication1);
+    
+    // Create sample saved jobs
+    const savedJob1: SavedJob = {
+      id: this.savedJobId++,
+      user_id: nurseUser1.id,
+      job_id: job3.id,
+      saved_date: new Date(),
+      notes: "Great opportunity for career advancement in cardiac care"
+    };
+    this.savedJobs.set(savedJob1.id, savedJob1);
+    
+    const savedJob2: SavedJob = {
+      id: this.savedJobId++,
+      user_id: nurseUser2.id,
+      job_id: job2.id,
+      saved_date: new Date(),
+      notes: "Perfect match for my ER experience and night shift preference"
+    };
+    this.savedJobs.set(savedJob2.id, savedJob2);
+    
+    // Create sample job alerts
+    const jobAlert1: JobAlert = {
+      id: this.jobAlertId++,
+      user_id: nurseUser1.id,
+      name: "ICU Positions in New York",
+      specialties: ["ICU", "Cardiac"],
+      locations: ["New York, NY", "Boston, MA"],
+      job_types: ["Full-time"],
+      experience_levels: ["Mid-Level", "Senior"],
+      salary_min: "85000",
+      keywords: "cardiac, critical care",
+      frequency: "daily",
+      is_active: true,
+      created_at: new Date(),
+      updated_at: new Date(),
+      last_sent: null
+    };
+    this.jobAlerts.set(jobAlert1.id, jobAlert1);
+  }
+  
+  // User Management
+  async createUser(user: InsertUser, passwordHash: string): Promise<User> {
+    const id = this.userId++;
+    const newUser: User = { 
+      ...user, 
+      id, 
+      password_hash: passwordHash,
+      created_at: new Date(),
+      updated_at: new Date(),
+      is_admin: false,
+      is_verified: false
+    };
+    this.users.set(id, newUser);
+    return newUser;
+  }
+  
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(user => user.email === email);
+  }
+  
+  async getUserById(id: number): Promise<User | undefined> {
+    return this.users.get(id);
+  }
+  
+  async updateUserVerificationStatus(userId: number, isVerified: boolean): Promise<User> {
+    const user = this.users.get(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    const updatedUser = { ...user, is_verified: isVerified, updated_at: new Date() };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+  
+  // Nurse License Verification
+  async createNurseLicense(license: InsertNurseLicense, userId: number): Promise<NurseLicense> {
+    const id = this.nurseLicenseId++;
+    const newLicense: NurseLicense = {
+      ...license,
+      id,
+      user_id: userId,
+      submission_date: new Date(),
+      verification_date: null,
+      verification_status: "pending",
+      verification_source: null,
+      verification_result: null
+    };
+    this.nurseLicenses.set(id, newLicense);
+    return newLicense;
+  }
+  
+  async getNurseLicensesByUserId(userId: number): Promise<NurseLicense[]> {
+    return Array.from(this.nurseLicenses.values()).filter(
+      license => license.user_id === userId
+    );
+  }
+  
+  async getNurseLicenseById(id: number): Promise<NurseLicense | undefined> {
+    return this.nurseLicenses.get(id);
+  }
+  
+  async updateNurseLicenseVerification(
+    licenseId: number,
+    status: string,
+    verificationDate: Date,
+    verificationSource: string,
+    verificationResult: any
+  ): Promise<NurseLicense> {
+    const license = this.nurseLicenses.get(licenseId);
+    if (!license) {
+      throw new Error("License not found");
+    }
+    
+    const updatedLicense: NurseLicense = {
+      ...license,
+      verification_status: status,
+      verification_date: verificationDate,
+      verification_source: verificationSource,
+      verification_result: verificationResult
+    };
+    this.nurseLicenses.set(licenseId, updatedLicense);
+    return updatedLicense;
+  }
+  
+  // Ticket Management
+  async createTicket(
+    ticket: InsertTicket,
+    userId: number,
+    eventId: number,
+    ticketCode: string
+  ): Promise<Ticket> {
+    const id = this.ticketId++;
+    const newTicket: Ticket = {
+      ...ticket,
+      id,
+      user_id: userId,
+      event_id: eventId,
+      ticket_code: ticketCode,
+      purchase_date: new Date(),
+      used: false,
+      used_date: null
+    };
+    this.tickets.set(id, newTicket);
+    return newTicket;
+  }
+  
+  async getTicketsByUserId(userId: number): Promise<Ticket[]> {
+    return Array.from(this.tickets.values()).filter(
+      ticket => ticket.user_id === userId
+    );
+  }
+  
+  async getTicketByCode(ticketCode: string): Promise<Ticket | undefined> {
+    return Array.from(this.tickets.values()).find(
+      ticket => ticket.ticket_code === ticketCode
+    );
+  }
+  
+  async markTicketAsUsed(ticketId: number): Promise<Ticket> {
+    const ticket = this.tickets.get(ticketId);
+    if (!ticket) {
+      throw new Error("Ticket not found");
+    }
+    
+    const updatedTicket: Ticket = {
+      ...ticket,
+      used: true,
+      used_date: new Date()
+    };
+    this.tickets.set(ticketId, updatedTicket);
+    return updatedTicket;
+  }
+  
+  // ========== JOB BOARD METHODS ==========
+  
+  // Employer Management
+  async createEmployer(employer: InsertEmployer, userId: number): Promise<Employer> {
+    const id = this.employerId++;
+    const newEmployer: Employer = {
+      ...employer,
+      id,
+      user_id: userId,
+      created_at: new Date(),
+      updated_at: new Date(),
+      is_verified: false,
+      verification_date: null
+    };
+    this.employers.set(id, newEmployer);
+    return newEmployer;
+  }
+  
+  async getEmployerById(id: number): Promise<Employer | undefined> {
+    return this.employers.get(id);
+  }
+  
+  async getEmployerByUserId(userId: number): Promise<Employer | undefined> {
+    return Array.from(this.employers.values()).find(
+      employer => employer.user_id === userId
+    );
+  }
+  
+  async getAllEmployers(): Promise<Employer[]> {
+    return Array.from(this.employers.values());
+  }
+  
+  async getVerifiedEmployers(): Promise<Employer[]> {
+    return Array.from(this.employers.values()).filter(
+      employer => employer.is_verified
+    );
+  }
+  
+  async updateEmployer(id: number, data: Partial<InsertEmployer>): Promise<Employer> {
+    const employer = this.employers.get(id);
+    if (!employer) {
+      throw new Error("Employer not found");
+    }
+    
+    const updatedEmployer: Employer = {
+      ...employer,
+      ...data,
+      updated_at: new Date()
+    };
+    this.employers.set(id, updatedEmployer);
+    return updatedEmployer;
+  }
+  
+  async verifyEmployer(id: number): Promise<Employer> {
+    const employer = this.employers.get(id);
+    if (!employer) {
+      throw new Error("Employer not found");
+    }
+    
+    const updatedEmployer: Employer = {
+      ...employer,
+      is_verified: true,
+      verification_date: new Date(),
+      updated_at: new Date()
+    };
+    this.employers.set(id, updatedEmployer);
+    return updatedEmployer;
+  }
+  
+  // Job Listings
+  async createJobListing(jobListing: InsertJobListing, employerId: number): Promise<JobListing> {
+    const id = this.jobListingId++;
+    const newJobListing: JobListing = {
+      ...jobListing,
+      id,
+      employer_id: employerId,
+      posted_date: new Date(),
+      updated_at: new Date(),
+      views_count: 0,
+      applications_count: 0
+    };
+    this.jobListings.set(id, newJobListing);
+    return newJobListing;
+  }
+  
+  async getJobListingById(id: number): Promise<JobListing | undefined> {
+    return this.jobListings.get(id);
+  }
+  
+  async getAllJobListings(filters?: {
+    specialty?: string | string[];
+    location?: string | string[];
+    jobType?: string | string[];
+    experienceLevel?: string | string[];
+    salaryMin?: number;
+    keywords?: string;
+    employerId?: number;
+    isActive?: boolean;
+    isFeatured?: boolean;
+  }): Promise<JobListing[]> {
+    let jobs = Array.from(this.jobListings.values());
+    
+    if (filters) {
+      // Filter by employerId
+      if (filters.employerId) {
+        jobs = jobs.filter(job => job.employer_id === filters.employerId);
+      }
+      
+      // Filter by isActive
+      if (filters.isActive !== undefined) {
+        jobs = jobs.filter(job => job.is_active === filters.isActive);
+      }
+      
+      // Filter by isFeatured
+      if (filters.isFeatured !== undefined) {
+        jobs = jobs.filter(job => job.is_featured === filters.isFeatured);
+      }
+      
+      // Filter by specialty
+      if (filters.specialty) {
+        const specialties = Array.isArray(filters.specialty) 
+          ? filters.specialty 
+          : [filters.specialty];
+        jobs = jobs.filter(job => specialties.includes(job.specialty));
+      }
+      
+      // Filter by location
+      if (filters.location) {
+        const locations = Array.isArray(filters.location) 
+          ? filters.location 
+          : [filters.location];
+        jobs = jobs.filter(job => 
+          locations.some(loc => job.location.toLowerCase().includes(loc.toLowerCase()))
+        );
+      }
+      
+      // Filter by jobType
+      if (filters.jobType) {
+        const jobTypes = Array.isArray(filters.jobType) 
+          ? filters.jobType 
+          : [filters.jobType];
+        jobs = jobs.filter(job => jobTypes.includes(job.job_type));
+      }
+      
+      // Filter by experienceLevel
+      if (filters.experienceLevel) {
+        const expLevels = Array.isArray(filters.experienceLevel) 
+          ? filters.experienceLevel 
+          : [filters.experienceLevel];
+        jobs = jobs.filter(job => expLevels.includes(job.experience_level));
+      }
+      
+      // Filter by minimum salary
+      if (filters.salaryMin !== undefined) {
+        jobs = jobs.filter(job => 
+          job.salary_min !== null && job.salary_min >= filters.salaryMin!
+        );
+      }
+      
+      // Filter by keywords
+      if (filters.keywords) {
+        const keywords = filters.keywords.toLowerCase();
+        jobs = jobs.filter(job => 
+          job.title.toLowerCase().includes(keywords) ||
+          (job.description && job.description.toLowerCase().includes(keywords)) ||
+          (job.responsibilities && job.responsibilities.toLowerCase().includes(keywords)) ||
+          (job.requirements && job.requirements.toLowerCase().includes(keywords))
+        );
+      }
+    }
+    
+    // Sort by posted date (newest first)
+    return jobs.sort((a, b) => 
+      new Date(b.posted_date).getTime() - new Date(a.posted_date).getTime()
+    );
+  }
+  
+  async getFeaturedJobListings(limit?: number): Promise<JobListing[]> {
+    const featuredJobs = Array.from(this.jobListings.values())
+      .filter(job => job.is_featured && job.is_active)
+      .sort((a, b) => 
+        new Date(b.posted_date).getTime() - new Date(a.posted_date).getTime()
+      );
+    
+    return limit ? featuredJobs.slice(0, limit) : featuredJobs;
+  }
+  
+  async getRecentJobListings(limit?: number): Promise<JobListing[]> {
+    const recentJobs = Array.from(this.jobListings.values())
+      .filter(job => job.is_active)
+      .sort((a, b) => 
+        new Date(b.posted_date).getTime() - new Date(a.posted_date).getTime()
+      );
+    
+    return limit ? recentJobs.slice(0, limit) : recentJobs;
+  }
+  
+  async updateJobListing(id: number, data: Partial<InsertJobListing>): Promise<JobListing> {
+    const jobListing = this.jobListings.get(id);
+    if (!jobListing) {
+      throw new Error("Job listing not found");
+    }
+    
+    const updatedJobListing: JobListing = {
+      ...jobListing,
+      ...data,
+      updated_at: new Date()
+    };
+    this.jobListings.set(id, updatedJobListing);
+    return updatedJobListing;
+  }
+  
+  async incrementJobListingViews(id: number): Promise<JobListing> {
+    const jobListing = this.jobListings.get(id);
+    if (!jobListing) {
+      throw new Error("Job listing not found");
+    }
+    
+    const updatedJobListing: JobListing = {
+      ...jobListing,
+      views_count: jobListing.views_count + 1
+    };
+    this.jobListings.set(id, updatedJobListing);
+    return updatedJobListing;
+  }
+  
+  async incrementJobApplicationsCount(id: number): Promise<JobListing> {
+    const jobListing = this.jobListings.get(id);
+    if (!jobListing) {
+      throw new Error("Job listing not found");
+    }
+    
+    const updatedJobListing: JobListing = {
+      ...jobListing,
+      applications_count: jobListing.applications_count + 1
+    };
+    this.jobListings.set(id, updatedJobListing);
+    return updatedJobListing;
+  }
+  
+  // Nurse Profiles
+  async createNurseProfile(profile: InsertNurseProfile, userId: number): Promise<NurseProfile> {
+    const id = this.nurseProfileId++;
+    const newProfile: NurseProfile = {
+      ...profile,
+      id,
+      user_id: userId,
+      created_at: new Date(),
+      updated_at: new Date()
+    };
+    this.nurseProfiles.set(id, newProfile);
+    return newProfile;
+  }
+  
+  async getNurseProfileByUserId(userId: number): Promise<NurseProfile | undefined> {
+    return Array.from(this.nurseProfiles.values()).find(
+      profile => profile.user_id === userId
+    );
+  }
+  
+  async getNurseProfileById(id: number): Promise<NurseProfile | undefined> {
+    return this.nurseProfiles.get(id);
+  }
+  
+  async updateNurseProfile(id: number, data: Partial<InsertNurseProfile>): Promise<NurseProfile> {
+    const profile = this.nurseProfiles.get(id);
+    if (!profile) {
+      throw new Error("Profile not found");
+    }
+    
+    const updatedProfile: NurseProfile = {
+      ...profile,
+      ...data,
+      updated_at: new Date()
+    };
+    this.nurseProfiles.set(id, updatedProfile);
+    return updatedProfile;
+  }
+  
+  async getPublicNurseProfiles(filters?: {
+    specialties?: string | string[];
+    skills?: string | string[];
+    yearsOfExperience?: number;
+    preferredLocations?: string | string[];
+    preferredShift?: string;
+  }): Promise<NurseProfile[]> {
+    let profiles = Array.from(this.nurseProfiles.values())
+      .filter(profile => profile.public_profile);
+    
+    if (filters) {
+      // Filter by specialties
+      if (filters.specialties) {
+        const specialtiesArray = Array.isArray(filters.specialties) 
+          ? filters.specialties 
+          : [filters.specialties];
+        profiles = profiles.filter(profile => 
+          profile.specialties.some(specialty => 
+            specialtiesArray.includes(specialty)
+          )
+        );
+      }
+      
+      // Filter by skills
+      if (filters.skills) {
+        const skillsArray = Array.isArray(filters.skills) 
+          ? filters.skills 
+          : [filters.skills];
+        profiles = profiles.filter(profile => 
+          profile.skills && profile.skills.some(skill => 
+            skillsArray.includes(skill)
+          )
+        );
+      }
+      
+      // Filter by years of experience
+      if (filters.yearsOfExperience !== undefined) {
+        profiles = profiles.filter(profile => 
+          profile.years_experience >= filters.yearsOfExperience!
+        );
+      }
+      
+      // Filter by preferred locations
+      if (filters.preferredLocations) {
+        const locationsArray = Array.isArray(filters.preferredLocations) 
+          ? filters.preferredLocations 
+          : [filters.preferredLocations];
+        profiles = profiles.filter(profile => 
+          profile.preferred_locations && profile.preferred_locations.some(location => 
+            locationsArray.includes(location)
+          )
+        );
+      }
+      
+      // Filter by preferred shift
+      if (filters.preferredShift) {
+        profiles = profiles.filter(profile => 
+          profile.preferred_shift === filters.preferredShift
+        );
+      }
+    }
+    
+    return profiles;
+  }
+  
+  // Job Applications
+  async createJobApplication(application: InsertJobApplication, userId: number, jobId: number): Promise<JobApplication> {
+    const id = this.jobApplicationId++;
+    const newApplication: JobApplication = {
+      ...application,
+      id,
+      user_id: userId,
+      job_id: jobId,
+      application_date: new Date(),
+      status: "submitted",
+      updated_at: new Date(),
+      employer_notes: null
+    };
+    this.jobApplications.set(id, newApplication);
+    return newApplication;
+  }
+  
+  async getJobApplicationById(id: number): Promise<JobApplication | undefined> {
+    return this.jobApplications.get(id);
+  }
+  
+  async getJobApplicationsByUserId(userId: number): Promise<JobApplication[]> {
+    return Array.from(this.jobApplications.values())
+      .filter(app => app.user_id === userId)
+      .sort((a, b) => 
+        new Date(b.application_date).getTime() - new Date(a.application_date).getTime()
+      );
+  }
+  
+  async getJobApplicationsByJobId(jobId: number): Promise<JobApplication[]> {
+    return Array.from(this.jobApplications.values())
+      .filter(app => app.job_id === jobId)
+      .sort((a, b) => 
+        new Date(b.application_date).getTime() - new Date(a.application_date).getTime()
+      );
+  }
+  
+  async updateJobApplicationStatus(id: number, status: string, notes?: string): Promise<JobApplication> {
+    const application = this.jobApplications.get(id);
+    if (!application) {
+      throw new Error("Application not found");
+    }
+    
+    const updatedApplication: JobApplication = {
+      ...application,
+      status,
+      employer_notes: notes || application.employer_notes,
+      updated_at: new Date()
+    };
+    this.jobApplications.set(id, updatedApplication);
+    return updatedApplication;
+  }
+  
+  async withdrawJobApplication(id: number): Promise<JobApplication> {
+    const application = this.jobApplications.get(id);
+    if (!application) {
+      throw new Error("Application not found");
+    }
+    
+    const updatedApplication: JobApplication = {
+      ...application,
+      status: "withdrawn",
+      updated_at: new Date()
+    };
+    this.jobApplications.set(id, updatedApplication);
+    return updatedApplication;
+  }
+  
+  // Saved Jobs
+  async saveJob(userId: number, jobId: number, notes?: string): Promise<SavedJob> {
+    const id = this.savedJobId++;
+    const newSavedJob: SavedJob = {
+      id,
+      user_id: userId,
+      job_id: jobId,
+      saved_date: new Date(),
+      notes: notes || null
+    };
+    this.savedJobs.set(id, newSavedJob);
+    return newSavedJob;
+  }
+  
+  async unsaveJob(userId: number, jobId: number): Promise<void> {
+    const savedJobEntry = Array.from(this.savedJobs.values()).find(
+      saved => saved.user_id === userId && saved.job_id === jobId
+    );
+    
+    if (savedJobEntry) {
+      this.savedJobs.delete(savedJobEntry.id);
+    }
+  }
+  
+  async getSavedJobsByUserId(userId: number): Promise<SavedJob[]> {
+    return Array.from(this.savedJobs.values())
+      .filter(saved => saved.user_id === userId)
+      .sort((a, b) => 
+        new Date(b.saved_date).getTime() - new Date(a.saved_date).getTime()
+      );
+  }
+  
+  // Job Alerts
+  async createJobAlert(alert: InsertJobAlert, userId: number): Promise<JobAlert> {
+    const id = this.jobAlertId++;
+    const newAlert: JobAlert = {
+      ...alert,
+      id,
+      user_id: userId,
+      created_at: new Date(),
+      updated_at: new Date()
+    };
+    this.jobAlerts.set(id, newAlert);
+    return newAlert;
+  }
+  
+  async getJobAlertsByUserId(userId: number): Promise<JobAlert[]> {
+    return Array.from(this.jobAlerts.values())
+      .filter(alert => alert.user_id === userId)
+      .sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+  }
+  
+  async updateJobAlert(id: number, data: Partial<InsertJobAlert>): Promise<JobAlert> {
+    const alert = this.jobAlerts.get(id);
+    if (!alert) {
+      throw new Error("Job alert not found");
+    }
+    
+    const updatedAlert: JobAlert = {
+      ...alert,
+      ...data,
+      updated_at: new Date()
+    };
+    this.jobAlerts.set(id, updatedAlert);
+    return updatedAlert;
+  }
+  
+  async deleteJobAlert(id: number): Promise<void> {
+    if (!this.jobAlerts.has(id)) {
+      throw new Error("Job alert not found");
+    }
+    this.jobAlerts.delete(id);
+  }
+  
+  // Job Search & Recommendations
+  async searchJobs(query: string, filters?: any): Promise<JobListing[]> {
+    const keywords = query.toLowerCase();
+    let jobs = Array.from(this.jobListings.values()).filter(job => 
+      job.is_active && (
+        job.title.toLowerCase().includes(keywords) ||
+        (job.description && job.description.toLowerCase().includes(keywords)) ||
+        (job.responsibilities && job.responsibilities.toLowerCase().includes(keywords)) ||
+        (job.requirements && job.requirements.toLowerCase().includes(keywords)) ||
+        (job.location.toLowerCase().includes(keywords)) ||
+        (job.specialty.toLowerCase().includes(keywords))
+      )
+    );
+    
+    if (filters) {
+      // Apply additional filters similar to getAllJobListings method
+    }
+    
+    return jobs.sort((a, b) => 
+      new Date(b.posted_date).getTime() - new Date(a.posted_date).getTime()
+    );
+  }
+  
+  async getRecommendedJobs(userId: number, limit?: number): Promise<JobListing[]> {
+    // Get the nurse profile to determine recommendations
+    const profile = await this.getNurseProfileByUserId(userId);
+    if (!profile) {
+      return [];
+    }
+    
+    // Get active jobs
+    let jobs = Array.from(this.jobListings.values()).filter(job => job.is_active);
+    
+    // Score jobs based on profile match
+    const scoredJobs = jobs.map(job => {
+      let score = 0;
+      
+      // Match specialty (highest weight)
+      if (profile.specialties.includes(job.specialty)) {
+        score += 5;
+      }
+      
+      // Match location
+      if (profile.preferred_locations && 
+          profile.preferred_locations.some(loc => 
+            job.location.toLowerCase().includes(loc.toLowerCase())
+          )) {
+        score += 3;
+      }
+      
+      // Match shift preference
+      if (profile.preferred_shift && job.shift_type && 
+          profile.preferred_shift === job.shift_type) {
+        score += 2;
+      }
+      
+      // Match job type
+      if (profile.preferred_job_type && 
+          profile.preferred_job_type === job.job_type) {
+        score += 2;
+      }
+      
+      return { job, score };
+    });
+    
+    // Sort by score (highest first) and then by date (newest first)
+    const sortedJobs = scoredJobs
+      .sort((a, b) => {
+        if (b.score !== a.score) {
+          return b.score - a.score;
+        }
+        return new Date(b.job.posted_date).getTime() - new Date(a.job.posted_date).getTime();
+      })
+      .map(item => item.job);
+    
+    return limit ? sortedJobs.slice(0, limit) : sortedJobs;
+  }
+  
+  async getSimilarJobs(jobId: number, limit?: number): Promise<JobListing[]> {
+    const job = await this.getJobListingById(jobId);
+    if (!job) {
+      return [];
+    }
+    
+    // Get active jobs except the current one
+    let jobs = Array.from(this.jobListings.values()).filter(j => 
+      j.is_active && j.id !== jobId
+    );
+    
+    // Score jobs based on similarity
+    const scoredJobs = jobs.map(j => {
+      let score = 0;
+      
+      // Match specialty (highest weight)
+      if (j.specialty === job.specialty) {
+        score += 5;
+      }
+      
+      // Match location
+      if (j.location === job.location) {
+        score += 3;
+      }
+      
+      // Match job type
+      if (j.job_type === job.job_type) {
+        score += 2;
+      }
+      
+      // Match shift type
+      if (j.shift_type && job.shift_type && j.shift_type === job.shift_type) {
+        score += 2;
+      }
+      
+      // Match experience level
+      if (j.experience_level === job.experience_level) {
+        score += 1;
+      }
+      
+      return { job: j, score };
+    });
+    
+    // Sort by score (highest first) and then by date (newest first)
+    const sortedJobs = scoredJobs
+      .sort((a, b) => {
+        if (b.score !== a.score) {
+          return b.score - a.score;
+        }
+        return new Date(b.job.posted_date).getTime() - new Date(a.job.posted_date).getTime();
+      })
+      .map(item => item.job);
+    
+    return limit ? sortedJobs.slice(0, limit) : sortedJobs;
+  }
 }
 
 // To switch between memory storage and database storage,
 // uncomment one of the following lines:
 
 // Use in-memory storage for development/testing
-// export const storage = new MemStorage();
+export const storage = new MemStorage();
 
 // Use database storage for production
-export const storage = new DatabaseStorage();
+// export const storage = new DatabaseStorage();
