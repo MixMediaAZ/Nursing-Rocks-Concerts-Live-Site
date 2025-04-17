@@ -113,11 +113,13 @@ export default function JobsPage() {
   const { data: jobs, isLoading } = useQuery({
     queryKey: ['/api/jobs', searchValues, sortBy],
     enabled: true,
+    select: (data) => data || [],
   });
 
   const { data: featuredJobs, isLoading: featuredLoading } = useQuery({
     queryKey: ['/api/jobs/featured'],
     enabled: true,
+    select: (data) => data || [],
   });
 
   // Handle search form submission
@@ -776,14 +778,14 @@ export default function JobsPage() {
                 <Skeleton className="h-24 w-full" />
                 <Skeleton className="h-24 w-full" />
               </div>
-            ) : featuredJobs && featuredJobs.length > 0 ? (
+            ) : featuredJobs && Array.isArray(featuredJobs) && featuredJobs.length > 0 ? (
               <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
                 <div className="flex items-center mb-4">
                   <Sparkles className="h-5 w-5 text-primary mr-2" />
                   <h3 className="font-semibold">Featured Opportunities</h3>
                 </div>
                 <div className="grid grid-cols-1 gap-4">
-                  {featuredJobs.map((job) => (
+                  {featuredJobs.map((job: any) => (
                     <FeaturedJobCard key={job.id} job={job} />
                   ))}
                 </div>
@@ -797,9 +799,9 @@ export default function JobsPage() {
                   <JobCardSkeleton key={i} />
                 ))}
               </div>
-            ) : jobs && jobs.length > 0 ? (
+            ) : jobs && Array.isArray(jobs) && jobs.length > 0 ? (
               <div className="space-y-4">
-                {jobs.map((job) => (
+                {jobs.map((job: any) => (
                   <JobCard key={job.id} job={job} />
                 ))}
               </div>
@@ -835,7 +837,39 @@ export default function JobsPage() {
 }
 
 interface JobCardProps {
-  job: any;
+  job: {
+    id: number;
+    title: string;
+    employer_id: number;
+    employer?: {
+      name: string;
+      logo_url: string | null;
+    };
+    description: string;
+    responsibilities: string | null;
+    requirements: string | null;
+    benefits: string | null;
+    location: string;
+    job_type: string;
+    work_arrangement: string;
+    specialty: string;
+    experience_level: string;
+    education_required: string | null;
+    certification_required: string[] | null;
+    shift_type: string | null;
+    salary_min: number | null;
+    salary_max: number | null;
+    salary_period: string;
+    application_url: string | null;
+    contact_email: string | null;
+    is_featured: boolean;
+    is_active: boolean;
+    posted_date: string;
+    views_count: number;
+    applications_count: number;
+    has_applied?: boolean;
+    is_saved?: boolean;
+  };
 }
 
 const FeaturedJobCard = ({ job }: JobCardProps) => {
