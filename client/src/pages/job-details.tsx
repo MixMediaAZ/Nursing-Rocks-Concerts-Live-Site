@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useLocation } from "wouter";
+import { useParams, useLocation, Link as WouterLink } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -72,9 +72,10 @@ export default function JobDetailsPage() {
     data: job,
     isLoading,
     error,
-  } = useQuery({
+  } = useQuery<any>({
     queryKey: [`/api/jobs/${id}`],
     enabled: !!id,
+    retry: false,
     onError: (err: any) => {
       toast({
         title: "Error loading job",
@@ -86,25 +87,27 @@ export default function JobDetailsPage() {
   });
 
   // Fetch employer details
-  const { data: employer, isLoading: isLoadingEmployer } = useQuery({
+  const { data: employer, isLoading: isLoadingEmployer } = useQuery<any>({
     queryKey: [`/api/employers/${job?.employer_id}`],
     enabled: !!job?.employer_id,
   });
 
   // Fetch similar jobs
-  const { data: similarJobs, isLoading: isLoadingSimilarJobs } = useQuery({
+  const { data: similarJobs, isLoading: isLoadingSimilarJobs } = useQuery<any[]>({
     queryKey: [`/api/jobs/similar/${id}`],
     enabled: !!id,
+    initialData: [],
   });
 
   // Fetch nurse profile
-  const { data: profile, isLoading: isLoadingProfile } = useQuery({
+  const { data: profile, isLoading: isLoadingProfile } = useQuery<any>({
     queryKey: ['/api/profile'],
   });
 
   // User authentication status
-  const { data: authStatus } = useQuery({
+  const { data: authStatus } = useQuery<any>({
     queryKey: ['/api/auth/status'],
+    initialData: { isAuthenticated: false, isVerified: false },
   });
   
   const isAuthenticated = authStatus?.isAuthenticated;
@@ -288,12 +291,12 @@ export default function JobDetailsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground mb-2">
-            <Link
+            <WouterLink
               href="/jobs"
               className="hover:text-primary transition-colors"
             >
               Jobs
-            </Link>
+            </WouterLink>
             <ChevronRight className="h-4 w-4" />
             <span>{job.specialty}</span>
             <ChevronRight className="h-4 w-4" />
@@ -547,17 +550,17 @@ export default function JobDetailsPage() {
                     </Button>
                     {!isAuthenticated && (
                       <div className="mt-2 text-sm text-muted-foreground">
-                        <Link href="/login" className="text-primary hover:underline">
+                        <WouterLink href="/login" className="text-primary hover:underline">
                           Sign in
-                        </Link>{" "}
+                        </WouterLink>{" "}
                         to apply for this job
                       </div>
                     )}
                     {isAuthenticated && !isVerified && (
                       <div className="mt-2 text-sm text-muted-foreground">
-                        <Link href="/license" className="text-primary hover:underline">
+                        <WouterLink href="/license" className="text-primary hover:underline">
                           Verify your nursing license
-                        </Link>{" "}
+                        </WouterLink>{" "}
                         to apply for jobs
                       </div>
                     )}
@@ -750,10 +753,10 @@ export default function JobDetailsPage() {
                     </div>
                     
                     <Button variant="outline" className="w-full" asChild>
-                      <Link href={`/employers/${employer.id}`}>
+                      <WouterLink href={`/employers/${employer.id}`}>
                         View Employer Profile
                         <ExternalLink className="h-4 w-4 ml-2" />
-                      </Link>
+                      </WouterLink>
                     </Button>
                   </div>
                 ) : (
@@ -819,10 +822,10 @@ export default function JobDetailsPage() {
               </CardContent>
               <CardFooter className="pt-0 border-t">
                 <Button variant="ghost" className="w-full" asChild>
-                  <Link href="/jobs">
+                  <WouterLink href="/jobs">
                     Browse All Jobs
                     <ChevronRight className="h-4 w-4 ml-1" />
-                  </Link>
+                  </WouterLink>
                 </Button>
               </CardFooter>
             </Card>
