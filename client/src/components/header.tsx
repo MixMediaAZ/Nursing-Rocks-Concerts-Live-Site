@@ -117,6 +117,18 @@ export function Header() {
               </Link>
             ))}
             
+            {/* Shopping Cart */}
+            <Link href="/cart">
+              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                <ShoppingCart className="h-5 w-5" />
+                {totalItems > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                    {totalItems > 99 ? '99+' : totalItems}
+                  </Badge>
+                )}
+              </Button>
+            </Link>
+            
             {isLoggedIn ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -202,6 +214,22 @@ export function Header() {
                   </div>
                 </Link>
               ))}
+              
+              {/* Cart link in mobile menu */}
+              <Link href="/cart">
+                <div
+                  className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  Shopping Cart
+                  {totalItems > 0 && (
+                    <Badge variant="secondary" className="ml-1">
+                      {totalItems}
+                    </Badge>
+                  )}
+                </div>
+              </Link>
               
               {isLoggedIn ? (
                 <>
