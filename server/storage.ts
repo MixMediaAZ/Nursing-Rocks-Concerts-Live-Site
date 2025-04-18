@@ -13,10 +13,14 @@ import {
   JobApplication, InsertJobApplication,
   SavedJob, InsertSavedJob,
   JobAlert, InsertJobAlert,
+  StoreProduct, InsertStoreProduct,
+  StoreOrder, InsertStoreOrder,
+  StoreOrderItem, InsertStoreOrderItem,
   events, artists, venues, gallery, subscribers,
   users, nurseLicenses, tickets,
   employers, jobListings, nurseProfiles, 
-  jobApplications, savedJobs, jobAlerts
+  jobApplications, savedJobs, jobAlerts,
+  storeProducts, storeOrders, storeOrderItems
 } from "@shared/schema";
 import { DatabaseStorage } from "./storage-db";
 
@@ -180,6 +184,9 @@ export class MemStorage implements IStorage {
   private jobApplications: Map<number, JobApplication>;
   private savedJobs: Map<number, SavedJob>;
   private jobAlerts: Map<number, JobAlert>;
+  private storeProducts: Map<number, StoreProduct>;
+  private storeOrders: Map<number, StoreOrder>;
+  private storeOrderItems: Map<number, StoreOrderItem>;
   
   private eventId: number;
   private artistId: number;
@@ -195,6 +202,9 @@ export class MemStorage implements IStorage {
   private jobApplicationId: number;
   private savedJobId: number;
   private jobAlertId: number;
+  private storeProductId: number;
+  private storeOrderId: number;
+  private storeOrderItemId: number;
   
   constructor() {
     this.events = new Map();
@@ -211,6 +221,9 @@ export class MemStorage implements IStorage {
     this.jobApplications = new Map();
     this.savedJobs = new Map();
     this.jobAlerts = new Map();
+    this.storeProducts = new Map();
+    this.storeOrders = new Map();
+    this.storeOrderItems = new Map();
     
     this.eventId = 1;
     this.artistId = 1;
@@ -226,6 +239,9 @@ export class MemStorage implements IStorage {
     this.jobApplicationId = 1;
     this.savedJobId = 1;
     this.jobAlertId = 1;
+    this.storeProductId = 1;
+    this.storeOrderId = 1;
+    this.storeOrderItemId = 1;
     
     // Initialize with sample data
     this.initSampleData();
@@ -321,6 +337,9 @@ export class MemStorage implements IStorage {
   
   // Initialize with sample data
   private initSampleData() {
+    // Initialize store products data
+    this.initializeStoreData();
+    
     // Initialize some sample job data
     this.initializeJobBoardData();
     
@@ -520,6 +539,229 @@ export class MemStorage implements IStorage {
     const newImage: Gallery = { ...image, id };
     this.gallery.set(id, newImage);
     return newImage;
+  }
+  
+  // Store Products
+  async getAllStoreProducts(): Promise<StoreProduct[]> {
+    return Array.from(this.storeProducts.values());
+  }
+  
+  async getStoreProductById(id: number): Promise<StoreProduct | undefined> {
+    return this.storeProducts.get(id);
+  }
+  
+  async getFeaturedStoreProducts(limit?: number): Promise<StoreProduct[]> {
+    const featured = Array.from(this.storeProducts.values())
+      .filter(product => product.is_featured);
+    
+    return limit ? featured.slice(0, limit) : featured;
+  }
+  
+  async getStoreProductsByCategory(category: string): Promise<StoreProduct[]> {
+    return Array.from(this.storeProducts.values())
+      .filter(product => product.category === category);
+  }
+  
+  async createStoreProduct(product: InsertStoreProduct): Promise<StoreProduct> {
+    const id = this.storeProductId++;
+    const created_at = new Date();
+    const updated_at = new Date();
+    const newProduct: StoreProduct = { 
+      ...product, 
+      id, 
+      created_at, 
+      updated_at,
+    };
+    this.storeProducts.set(id, newProduct);
+    return newProduct;
+  }
+  
+  async updateStoreProduct(id: number, data: Partial<InsertStoreProduct>): Promise<StoreProduct> {
+    const product = this.storeProducts.get(id);
+    if (!product) {
+      throw new Error(`Store product with ID ${id} not found`);
+    }
+    
+    const updatedProduct: StoreProduct = { 
+      ...product, 
+      ...data, 
+      updated_at: new Date() 
+    };
+    
+    this.storeProducts.set(id, updatedProduct);
+    return updatedProduct;
+  }
+  
+  async deleteStoreProduct(id: number): Promise<void> {
+    if (!this.storeProducts.has(id)) {
+      throw new Error(`Store product with ID ${id} not found`);
+    }
+    
+    this.storeProducts.delete(id);
+  }
+  
+  // Store Orders
+  async createStoreOrder(order: InsertStoreOrder, items: InsertStoreOrderItem[]): Promise<StoreOrder> {
+    const orderId = this.storeOrderId++;
+    const created_at = new Date();
+    const updated_at = new Date();
+    
+    // Create the order
+    const newOrder: StoreOrder = {
+      ...order,
+      id: orderId,
+      created_at,
+      updated_at
+    };
+    
+    this.storeOrders.set(orderId, newOrder);
+    
+    // Create the order items
+    for (const item of items) {
+      const itemId = this.storeOrderItemId++;
+      const orderItem: StoreOrderItem = {
+        ...item,
+        id: itemId,
+        order_id: orderId,
+        created_at: new Date()
+      };
+      
+      this.storeOrderItems.set(itemId, orderItem);
+    }
+    
+    return newOrder;
+  }
+  
+  async getStoreOrderById(id: number): Promise<StoreOrder | undefined> {
+    return this.storeOrders.get(id);
+  }
+  
+  async getStoreOrdersByUserId(userId: number): Promise<StoreOrder[]> {
+    return Array.from(this.storeOrders.values())
+      .filter(order => order.user_id === userId);
+  }
+  
+  async updateStoreOrderStatus(id: number, status: string): Promise<StoreOrder> {
+    const order = this.storeOrders.get(id);
+    if (!order) {
+      throw new Error(`Store order with ID ${id} not found`);
+    }
+    
+    const updatedOrder: StoreOrder = {
+      ...order,
+      status,
+      updated_at: new Date()
+    };
+    
+    this.storeOrders.set(id, updatedOrder);
+    return updatedOrder;
+  }
+  
+  async updateStoreOrderPaymentStatus(id: number, paymentStatus: string): Promise<StoreOrder> {
+    const order = this.storeOrders.get(id);
+    if (!order) {
+      throw new Error(`Store order with ID ${id} not found`);
+    }
+    
+    const updatedOrder: StoreOrder = {
+      ...order,
+      payment_status: paymentStatus,
+      updated_at: new Date()
+    };
+    
+    this.storeOrders.set(id, updatedOrder);
+    return updatedOrder;
+  }
+  
+  // Store Order Items
+  async getStoreOrderItemsByOrderId(orderId: number): Promise<StoreOrderItem[]> {
+    return Array.from(this.storeOrderItems.values())
+      .filter(item => item.order_id === orderId);
+  }
+
+  // Initialize the store with sample data
+  private initializeStoreData() {
+    // T-shirts
+    this.createStoreProduct({
+      name: "Nursing Rocks Logo T-Shirt",
+      description: "Show your nursing pride with this comfortable cotton t-shirt featuring the Nursing Rocks concert series logo.",
+      price: "24.99",
+      image_url: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
+      category: "Apparel",
+      is_featured: true,
+      is_available: true,
+      stock_quantity: 100
+    });
+    
+    this.createStoreProduct({
+      name: "Healthcare Heroes Concert Tour T-Shirt",
+      description: "Commemorate the Healthcare Heroes tour with this limited edition t-shirt. Features tour dates on the back.",
+      price: "29.99",
+      image_url: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
+      category: "Apparel",
+      is_featured: true,
+      is_available: true,
+      stock_quantity: 75
+    });
+    
+    // Accessories
+    this.createStoreProduct({
+      name: "Nursing Rocks Stethoscope ID Tag",
+      description: "Personalize your stethoscope with this stylish ID tag featuring the Nursing Rocks logo.",
+      price: "12.99",
+      image_url: "https://images.unsplash.com/photo-1584982751601-97dcc096659c?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
+      category: "Accessories",
+      is_featured: false,
+      is_available: true,
+      stock_quantity: 150
+    });
+    
+    this.createStoreProduct({
+      name: "Healing Harmonies Medical Badge Holder",
+      description: "Keep your ID badge secure and stylish with this retractable badge holder featuring artwork from The Healing Harmonies.",
+      price: "14.99",
+      image_url: "https://images.unsplash.com/photo-1584982751601-97dcc096659c?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
+      category: "Accessories",
+      is_featured: false,
+      is_available: true,
+      stock_quantity: 120
+    });
+    
+    // Music
+    this.createStoreProduct({
+      name: "The Healing Harmonies - Heroes in Scrubs Album",
+      description: "Digital download of the critically acclaimed album by The Healing Harmonies, performed by real nurses.",
+      price: "9.99",
+      image_url: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
+      category: "Music",
+      is_featured: true,
+      is_available: true,
+      stock_quantity: 999
+    });
+    
+    // Drinkware
+    this.createStoreProduct({
+      name: "Night Shift Insulated Travel Mug",
+      description: "Keep your coffee hot during those long shifts with this insulated travel mug inspired by the Night Shift band.",
+      price: "19.99",
+      image_url: "https://images.unsplash.com/photo-1530968033775-2c92736b131e?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
+      category: "Drinkware",
+      is_featured: false,
+      is_available: true,
+      stock_quantity: 85
+    });
+    
+    // Gift Items
+    this.createStoreProduct({
+      name: "Nursing Rocks Gift Box",
+      description: "The perfect gift for the music-loving nurse in your life! Includes t-shirt, stethoscope tag, badge holder, and digital album download.",
+      price: "49.99",
+      image_url: "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
+      category: "Gift Items",
+      is_featured: true,
+      is_available: true,
+      stock_quantity: 50
+    });
   }
   
   // Initialize job board data with sample data for testing
