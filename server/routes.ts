@@ -7,7 +7,10 @@ import {
   insertEmployerSchema,
   insertNurseProfileSchema,
   insertJobApplicationSchema,
-  insertJobAlertSchema
+  insertJobAlertSchema,
+  insertStoreProductSchema,
+  insertStoreOrderSchema,
+  insertStoreOrderItemSchema
 } from "@shared/schema";
 import { z } from "zod";
 import {
@@ -603,6 +606,367 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: req.user.email
       } : null
     });
+  });
+
+  // ========== STORE API ==========
+  
+  // Products
+  app.get("/api/store/products", async (_req: Request, res: Response) => {
+    try {
+      const products = await storage.getAllStoreProducts();
+      res.json(products);
+    } catch (error) {
+      console.error("Error fetching store products:", error);
+      res.status(500).json({ message: "Failed to fetch store products" });
+    }
+  });
+  
+  app.get("/api/store/products/featured", async (req: Request, res: Response) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const products = await storage.getFeaturedStoreProducts(limit);
+      res.json(products);
+    } catch (error) {
+      console.error("Error fetching featured products:", error);
+      res.status(500).json({ message: "Failed to fetch featured products" });
+    }
+  });
+  
+  app.get("/api/store/products/category/:category", async (req: Request, res: Response) => {
+    try {
+      const category = req.params.category;
+      const products = await storage.getStoreProductsByCategory(category);
+      res.json(products);
+    } catch (error) {
+      console.error("Error fetching products by category:", error);
+      res.status(500).json({ message: "Failed to fetch products by category" });
+    }
+  });
+  
+  app.get("/api/store/products/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid product ID" });
+      }
+      
+      const product = await storage.getStoreProductById(id);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      
+      res.json(product);
+    } catch (error) {
+      console.error("Error fetching product:", error);
+      res.status(500).json({ message: "Failed to fetch product" });
+    }
+  });
+  
+  app.post("/api/store/products", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      // Only admins can create products
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized: Admin privileges required" });
+      }
+      
+      // Validate product data
+      const validationResult = insertStoreProductSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({
+          message: "Invalid product data",
+          errors: validationResult.error.format()
+        });
+      }
+      
+      const product = await storage.createStoreProduct(validationResult.data);
+      res.status(201).json({ 
+        id: product.id,
+        message: "Product created successfully"
+      });
+    } catch (error) {
+      console.error("Error creating product:", error);
+      res.status(500).json({ message: "Failed to create product" });
+    }
+  });
+  
+  app.patch("/api/store/products/:id", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      // Only admins can update products
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized: Admin privileges required" });
+      }
+      
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid product ID" });
+      }
+      
+      // Check if product exists
+      const existingProduct = await storage.getStoreProductById(id);
+      if (!existingProduct) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      
+      // Validate update data
+      const validationResult = insertStoreProductSchema.partial().safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({
+          message: "Invalid product data",
+          errors: validationResult.error.format()
+        });
+      }
+      
+      const updatedProduct = await storage.updateStoreProduct(id, validationResult.data);
+      res.json({ 
+        id: updatedProduct.id,
+        message: "Product updated successfully"
+      });
+    } catch (error) {
+      console.error("Error updating product:", error);
+      res.status(500).json({ message: "Failed to update product" });
+    }
+  });
+  
+  app.delete("/api/store/products/:id", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      // Only admins can delete products
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized: Admin privileges required" });
+      }
+      
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid product ID" });
+      }
+      
+      // Check if product exists
+      const existingProduct = await storage.getStoreProductById(id);
+      if (!existingProduct) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      
+      await storage.deleteStoreProduct(id);
+      res.json({ message: "Product deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      res.status(500).json({ message: "Failed to delete product" });
+    }
+  });
+  
+  // Orders
+  app.post("/api/store/orders", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const { order, items } = req.body;
+      
+      if (!order || !items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ message: "Invalid order data" });
+      }
+      
+      // Validate order data
+      const orderValidation = insertStoreOrderSchema.safeParse({
+        ...order,
+        user_id: req.user!.userId
+      });
+      
+      if (!orderValidation.success) {
+        return res.status(400).json({
+          message: "Invalid order data",
+          errors: orderValidation.error.format()
+        });
+      }
+      
+      // Validate order items
+      for (const item of items) {
+        const itemValidation = insertStoreOrderItemSchema.safeParse(item);
+        if (!itemValidation.success) {
+          return res.status(400).json({
+            message: "Invalid order item data",
+            errors: itemValidation.error.format()
+          });
+        }
+        
+        // Verify product exists
+        const product = await storage.getStoreProductById(item.product_id);
+        if (!product) {
+          return res.status(404).json({ 
+            message: `Product with ID ${item.product_id} not found` 
+          });
+        }
+        
+        // Check stock availability
+        if (product.stock_quantity < item.quantity) {
+          return res.status(400).json({ 
+            message: `Insufficient stock for product ${product.name}` 
+          });
+        }
+      }
+      
+      const createdOrder = await storage.createStoreOrder(
+        orderValidation.data,
+        items
+      );
+      
+      res.status(201).json({ 
+        id: createdOrder.id,
+        message: "Order created successfully"
+      });
+    } catch (error) {
+      console.error("Error creating order:", error);
+      res.status(500).json({ message: "Failed to create order" });
+    }
+  });
+  
+  app.get("/api/store/orders/user/:userId", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // Check if user is requesting their own orders or is an admin
+      if (userId !== req.user!.userId && !req.user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized: Cannot view orders for other users" });
+      }
+      
+      const orders = await storage.getStoreOrdersByUserId(userId);
+      res.json(orders);
+    } catch (error) {
+      console.error("Error fetching user orders:", error);
+      res.status(500).json({ message: "Failed to fetch user orders" });
+    }
+  });
+  
+  app.get("/api/store/orders/:id", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid order ID" });
+      }
+      
+      const order = await storage.getStoreOrderById(id);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+      
+      // Check if user is requesting their own order or is an admin
+      if (order.user_id !== req.user!.userId && !req.user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized: Cannot view orders for other users" });
+      }
+      
+      res.json(order);
+    } catch (error) {
+      console.error("Error fetching order:", error);
+      res.status(500).json({ message: "Failed to fetch order" });
+    }
+  });
+  
+  app.get("/api/store/orders/:id/items", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid order ID" });
+      }
+      
+      const order = await storage.getStoreOrderById(id);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+      
+      // Check if user is requesting their own order items or is an admin
+      if (order.user_id !== req.user!.userId && !req.user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized: Cannot view order items for other users" });
+      }
+      
+      const items = await storage.getStoreOrderItemsByOrderId(id);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching order items:", error);
+      res.status(500).json({ message: "Failed to fetch order items" });
+    }
+  });
+  
+  app.patch("/api/store/orders/:id/status", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      // Only admins can update order status
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized: Admin privileges required" });
+      }
+      
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid order ID" });
+      }
+      
+      const { status } = req.body;
+      if (!status) {
+        return res.status(400).json({ message: "Status is required" });
+      }
+      
+      // Check if valid status
+      const validStatuses = ["pending", "processing", "shipped", "delivered", "cancelled"];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ 
+          message: `Invalid status. Must be one of: ${validStatuses.join(", ")}` 
+        });
+      }
+      
+      // Check if order exists
+      const existingOrder = await storage.getStoreOrderById(id);
+      if (!existingOrder) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+      
+      const updatedOrder = await storage.updateStoreOrderStatus(id, status);
+      res.json({ 
+        id: updatedOrder.id,
+        message: "Order status updated successfully"
+      });
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      res.status(500).json({ message: "Failed to update order status" });
+    }
+  });
+  
+  app.patch("/api/store/orders/:id/payment", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      // Only admins can update payment status
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized: Admin privileges required" });
+      }
+      
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid order ID" });
+      }
+      
+      const { payment_status } = req.body;
+      if (!payment_status) {
+        return res.status(400).json({ message: "Payment status is required" });
+      }
+      
+      // Check if valid payment status
+      const validPaymentStatuses = ["pending", "paid", "failed", "refunded"];
+      if (!validPaymentStatuses.includes(payment_status)) {
+        return res.status(400).json({ 
+          message: `Invalid payment status. Must be one of: ${validPaymentStatuses.join(", ")}` 
+        });
+      }
+      
+      // Check if order exists
+      const existingOrder = await storage.getStoreOrderById(id);
+      if (!existingOrder) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+      
+      const updatedOrder = await storage.updateStoreOrderPaymentStatus(id, payment_status);
+      res.json({ 
+        id: updatedOrder.id,
+        message: "Order payment status updated successfully"
+      });
+    } catch (error) {
+      console.error("Error updating order payment status:", error);
+      res.status(500).json({ message: "Failed to update order payment status" });
+    }
   });
 
   // Create HTTP server
