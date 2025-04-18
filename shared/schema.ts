@@ -496,3 +496,116 @@ export type InsertSavedJob = z.infer<typeof insertSavedJobSchema>;
 
 export type JobAlert = typeof jobAlerts.$inferSelect;
 export type InsertJobAlert = z.infer<typeof insertJobAlertSchema>;
+
+// ========== STORE MODELS ==========
+
+// Store Product model
+export const storeProducts = pgTable("store_products", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  image_url: text("image_url"),
+  category: text("category").notNull(),
+  is_featured: boolean("is_featured").default(false),
+  is_available: boolean("is_available").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+  stock_quantity: integer("stock_quantity").default(0),
+});
+
+export const insertStoreProductSchema = createInsertSchema(storeProducts).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+// Store Order model
+export const storeOrders = pgTable("store_orders", {
+  id: serial("id").primaryKey(),
+  user_id: integer("user_id").notNull().references(() => users.id),
+  total_amount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+  status: text("status").default("pending"), // pending, processing, shipped, delivered, cancelled
+  payment_status: text("payment_status").default("pending"), // pending, paid, failed, refunded
+  shipping_address: jsonb("shipping_address"),
+  contact_email: text("contact_email").notNull(),
+  contact_phone: text("contact_phone"),
+  tracking_number: text("tracking_number"),
+  notes: text("notes"),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+export const insertStoreOrderSchema = createInsertSchema(storeOrders).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+// Store Order Items model (junction table between orders and products)
+export const storeOrderItems = pgTable("store_order_items", {
+  id: serial("id").primaryKey(),
+  order_id: integer("order_id").notNull().references(() => storeOrders.id),
+  product_id: integer("product_id").notNull().references(() => storeProducts.id),
+  quantity: integer("quantity").notNull().default(1),
+  price_at_time: decimal("price_at_time", { precision: 10, scale: 2 }).notNull(),
+  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+export const insertStoreOrderItemSchema = createInsertSchema(storeOrderItems).omit({
+  id: true,
+  created_at: true,
+});
+
+// Relations
+export const storeProductsRelations = relations(storeProducts, ({ many }) => ({
+  orderItems: many(storeOrderItems),
+}));
+
+export const storeOrdersRelations = relations(storeOrders, ({ one, many }) => ({
+  user: one(users, {
+    fields: [storeOrders.user_id],
+    references: [users.id],
+  }),
+  orderItems: many(storeOrderItems),
+}));
+
+export const storeOrderItemsRelations = relations(storeOrderItems, ({ one }) => ({
+  order: one(storeOrders, {
+    fields: [storeOrderItems.order_id],
+    references: [storeOrders.id],
+  }),
+  product: one(storeProducts, {
+    fields: [storeOrderItems.product_id],
+    references: [storeProducts.id],
+  }),
+}));
+
+// Update user relations to include store relationships
+export const updatedUsersRelationsWithStore = relations(users, ({ many, one }) => ({
+  licenses: many(nurseLicenses),
+  tickets: many(tickets),
+  profile: one(nurseProfiles, {
+    fields: [users.id],
+    references: [nurseProfiles.user_id],
+  }),
+  jobApplications: many(jobApplications),
+  savedJobs: many(savedJobs),
+  jobAlerts: many(jobAlerts),
+  employer: one(employers, {
+    fields: [users.id],
+    references: [employers.user_id],
+  }),
+  storeOrders: many(storeOrders),
+}));
+
+// Store types
+export type StoreProduct = typeof storeProducts.$inferSelect;
+export type InsertStoreProduct = z.infer<typeof insertStoreProductSchema>;
+
+export type StoreOrder = typeof storeOrders.$inferSelect;
+export type InsertStoreOrder = z.infer<typeof insertStoreOrderSchema>;
+
+export type StoreOrderItem = typeof storeOrderItems.$inferSelect;
+export type InsertStoreOrderItem = z.infer<typeof insertStoreOrderItemSchema>;

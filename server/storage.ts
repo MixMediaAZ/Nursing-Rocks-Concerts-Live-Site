@@ -142,6 +142,27 @@ export interface IStorage {
   searchJobs(query: string, filters?: any): Promise<JobListing[]>;
   getRecommendedJobs(userId: number, limit?: number): Promise<JobListing[]>;
   getSimilarJobs(jobId: number, limit?: number): Promise<JobListing[]>;
+  
+  // ========== STORE FUNCTIONS ==========
+  
+  // Store Products
+  getAllStoreProducts(): Promise<StoreProduct[]>;
+  getStoreProductById(id: number): Promise<StoreProduct | undefined>;
+  getFeaturedStoreProducts(limit?: number): Promise<StoreProduct[]>;
+  getStoreProductsByCategory(category: string): Promise<StoreProduct[]>;
+  createStoreProduct(product: InsertStoreProduct): Promise<StoreProduct>;
+  updateStoreProduct(id: number, data: Partial<InsertStoreProduct>): Promise<StoreProduct>;
+  deleteStoreProduct(id: number): Promise<void>;
+  
+  // Store Orders
+  createStoreOrder(order: InsertStoreOrder, items: InsertStoreOrderItem[]): Promise<StoreOrder>;
+  getStoreOrderById(id: number): Promise<StoreOrder | undefined>;
+  getStoreOrdersByUserId(userId: number): Promise<StoreOrder[]>;
+  updateStoreOrderStatus(id: number, status: string): Promise<StoreOrder>;
+  updateStoreOrderPaymentStatus(id: number, paymentStatus: string): Promise<StoreOrder>;
+  
+  // Store Order Items
+  getStoreOrderItemsByOrderId(orderId: number): Promise<StoreOrderItem[]>;
 }
 
 export class MemStorage implements IStorage {
