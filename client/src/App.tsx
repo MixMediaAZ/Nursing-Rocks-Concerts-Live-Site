@@ -16,8 +16,15 @@ import SponsorsPage from "@/pages/sponsors";
 import AdminPage from "@/pages/admin";
 import JobsPage from "@/pages/jobs";
 import JobDetailsPage from "@/pages/job-details";
+import StorePage from "@/pages/store";
+import ProductDetailsPage from "@/pages/product-details";
+import StoreCategoryPage from "@/pages/store-category";
+import CartPage from "@/pages/cart";
+import OrderConfirmationPage from "@/pages/order-confirmation";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import { CartProvider } from "@/hooks/use-cart";
+import { AuthProvider } from "@/hooks/use-auth";
 
 function Router() {
   return (
@@ -38,6 +45,11 @@ function Router() {
           <Route path="/admin" component={AdminPage} />
           <Route path="/jobs" component={JobsPage} />
           <Route path="/jobs/:id" component={JobDetailsPage} />
+          <Route path="/store" component={StorePage} />
+          <Route path="/store/products/:id" component={ProductDetailsPage} />
+          <Route path="/store/category/:category" component={StoreCategoryPage} />
+          <Route path="/cart" component={CartPage} />
+          <Route path="/store/order-confirmation" component={OrderConfirmationPage} />
           <Route component={NotFound} />
         </Switch>
       </main>
@@ -49,8 +61,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
-      <Toaster />
+      <AuthProvider>
+        <CartProvider>
+          <Router />
+          <Toaster />
+        </CartProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

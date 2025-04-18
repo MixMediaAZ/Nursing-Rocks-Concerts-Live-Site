@@ -7,10 +7,25 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Menu, X, User, Stethoscope, Music, Map, Users, Building2, HeartPulse, Briefcase } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Menu, 
+  X, 
+  User, 
+  Stethoscope, 
+  Music, 
+  Map, 
+  Users, 
+  Building2, 
+  HeartPulse, 
+  Briefcase, 
+  ShoppingBag, 
+  ShoppingCart 
+} from "lucide-react";
 import logoPath from "../assets/nursing-rocks-logo.png";
 import newLogoPath from "../assets/NursingRocks_NewLogo.png";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useCart } from "@/hooks/use-cart";
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -18,6 +33,7 @@ export function Header() {
   const [user, setUser] = useState<any>(null);
   const isMobile = useIsMobile();
   const [location] = useLocation();
+  const { totalItems } = useCart();
 
   useEffect(() => {
     // Check if user is logged in
@@ -54,6 +70,7 @@ export function Header() {
     { href: "/venues", label: "Venues", icon: <Building2 className="h-4 w-4" /> },
     { href: "/sponsors", label: "Sponsors", icon: <Stethoscope className="h-4 w-4" /> },
     { href: "/jobs", label: "Jobs Board", icon: <Briefcase className="h-4 w-4" /> },
+    { href: "/store", label: "Store", icon: <ShoppingBag className="h-4 w-4" /> },
   ];
 
   const isActive = (path: string) => {
