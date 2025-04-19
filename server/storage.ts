@@ -704,6 +704,29 @@ export class MemStorage implements IStorage {
       stock_quantity: 75
     });
     
+    // Support a Nurse merchandise
+    this.createStoreProduct({
+      name: "Support a Nurse T-Shirt",
+      description: "Help support nursing scholarships with this special edition t-shirt. 50% of proceeds go directly to the Nursing Rocks Scholarship Fund.",
+      price: "29.99",
+      image_url: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
+      category: "Support a Nurse",
+      is_featured: true,
+      is_available: true,
+      stock_quantity: 100
+    });
+    
+    this.createStoreProduct({
+      name: "Support a Nurse Tank Top",
+      description: "This comfortable tank top supports nursing education initiatives. 50% of proceeds go to nursing scholarships.",
+      price: "24.99",
+      image_url: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
+      category: "Support a Nurse",
+      is_featured: true,
+      is_available: true,
+      stock_quantity: 85
+    });
+    
     // Accessories
     this.createStoreProduct({
       name: "Nursing Rocks Stethoscope ID Tag",

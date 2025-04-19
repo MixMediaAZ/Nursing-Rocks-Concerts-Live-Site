@@ -70,6 +70,7 @@ export function Header() {
     { href: "/venues", label: "Venues", icon: <Building2 className="h-4 w-4" /> },
     { href: "/sponsors", label: "Sponsors", icon: <Stethoscope className="h-4 w-4" /> },
     { href: "/jobs", label: "Jobs Board", icon: <Briefcase className="h-4 w-4" /> },
+    { href: "/nursing-jobs", label: "Nursing Jobs", icon: <Stethoscope className="h-4 w-4" /> },
     { href: "/store", label: "Store", icon: <ShoppingBag className="h-4 w-4" /> },
   ];
 
