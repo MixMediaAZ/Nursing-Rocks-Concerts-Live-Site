@@ -12,9 +12,17 @@ import {
   StoreProduct, InsertStoreProduct,
   StoreOrder, InsertStoreOrder,
   StoreOrderItem, InsertStoreOrderItem,
+  Employer, InsertEmployer,
+  JobListing, InsertJobListing,
+  NurseProfile, InsertNurseProfile,
+  JobApplication, InsertJobApplication,
+  SavedJob, InsertSavedJob,
+  JobAlert, InsertJobAlert,
   events, artists, venues, gallery, subscribers,
   users, nurseLicenses, tickets,
-  storeProducts, storeOrders, storeOrderItems
+  storeProducts, storeOrders, storeOrderItems,
+  employers, jobListings, nurseProfiles,
+  jobApplications, savedJobs, jobAlerts
 } from "@shared/schema";
 import { IStorage } from "./storage";
 
