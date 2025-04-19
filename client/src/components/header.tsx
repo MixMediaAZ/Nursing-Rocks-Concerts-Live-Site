@@ -70,10 +70,7 @@ export function Header() {
     { href: "/cities", label: "Concert Cities", icon: <Map className="h-4 w-4" /> },
     { href: "/artists", label: "Artists", icon: <Users className="h-4 w-4" /> },
     { href: "/venues", label: "Venues", icon: <Building2 className="h-4 w-4" /> },
-    { href: "/license", label: "License Verification", icon: <Stethoscope className="h-4 w-4" /> },
     { href: "/sponsors", label: "Sponsors", icon: <HeartPulse className="h-4 w-4" /> },
-    { href: "/jobs", label: "Jobs Board", icon: <Briefcase className="h-4 w-4" /> },
-    { href: "/nursing-jobs", label: "Nursing Jobs", icon: <Stethoscope className="h-4 w-4" /> },
     { href: "/store", label: "Store", icon: <ShoppingBag className="h-4 w-4" /> },
   ];
 
@@ -163,6 +160,16 @@ export function Header() {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigateTo("/license")}>
                     <div className="w-full cursor-pointer">License Verification</div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/jobs">
+                      <div className="w-full cursor-pointer">Jobs Board</div>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/nursing-jobs">
+                      <div className="w-full cursor-pointer">Nursing Jobs</div>
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/tickets">
@@ -287,6 +294,24 @@ export function Header() {
                      <Stethoscope className="h-4 w-4" />
                      License Verification
                    </div>
+                  <Link href="/jobs">
+                    <div
+                      className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Briefcase className="h-4 w-4" />
+                      Jobs Board
+                    </div>
+                  </Link>
+                  <Link href="/nursing-jobs">
+                    <div
+                      className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Stethoscope className="h-4 w-4" />
+                      Nursing Jobs
+                    </div>
+                  </Link>
                   <Link href="/tickets">
                     <div
                       className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md"
