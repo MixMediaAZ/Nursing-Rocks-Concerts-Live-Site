@@ -215,6 +215,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/media/:id", authenticateToken, updateMedia);
   app.delete("/api/media/:id", authenticateToken, deleteMedia);
 
+  // Nurse License API Routes
+  app.get("/api/licenses", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const licenses = await storage.getNurseLicensesByUserId(userId);
+      return res.status(200).json(licenses);
+    } catch (error) {
+      console.error("Error getting licenses:", error);
+      return res.status(500).json({ message: 'Server error while retrieving licenses' });
+    }
+  });
+
+  app.post("/api/licenses", authenticateToken, licenseValidation, submitNurseLicense);
+
   // Stripe Payment Integration
   app.post("/api/create-payment-intent", async (req: Request, res: Response) => {
     try {

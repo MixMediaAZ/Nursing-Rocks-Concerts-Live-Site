@@ -1,5 +1,5 @@
 import { Request } from 'express';
-import * as jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import { User } from '@shared/schema';
 
 // Use environment variable or fallback for development
