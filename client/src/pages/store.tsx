@@ -4,6 +4,8 @@ import { Link } from "wouter";
 import { StoreHero } from "@/components/store/hero";
 import { StoreProductCard } from "@/components/store/product-card";
 import { FeaturedProducts } from "@/components/store/featured-products";
+import { CategoryScroller } from "@/components/store/category-scroller";
+import { PromotionsSection } from "@/components/store/promotions-section";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -87,7 +89,13 @@ export default function StorePage() {
     <div>
       <StoreHero />
       
+      <div className="container py-8">
+        <CategoryScroller />
+      </div>
+      
       <FeaturedProducts />
+      
+      <PromotionsSection />
       
       <div className="container py-12">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
