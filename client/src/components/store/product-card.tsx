@@ -90,12 +90,14 @@ export function StoreProductCard({ product, featured = false }: ProductCardProps
             variant="outline" 
             size="sm" 
             className="flex-1"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              window.location.href = `/store/product/${product.id}`;
+            }}
           >
-            <Link href={`/store/product/${product.id}`} className="flex items-center justify-center w-full">
-              <Eye className="mr-2 h-4 w-4" />
-              View Details
-            </Link>
+            <Eye className="mr-2 h-4 w-4" />
+            View Details
           </Button>
           
           <Button 
