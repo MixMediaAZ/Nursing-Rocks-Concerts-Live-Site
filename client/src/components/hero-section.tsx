@@ -38,7 +38,7 @@ const HeroSection = () => {
               <Skeleton className="h-8 w-48 bg-white/20" />
             </div>
             {/* Skeleton for ticket button */}
-            <div className="mb-8 space-y-4">
+            <div className="mb-8">
               <Skeleton className="h-16 w-full md:w-96 bg-[#F61D7A]/30" />
             </div>
             
@@ -94,6 +94,22 @@ const HeroSection = () => {
                 <span>{`${venue.name} • ${venue.location}`}</span>
               </div>
             )}
+          </div>
+
+          {/* Free Ticket Button */}
+          <div className="mb-8">
+            <Button
+              asChild
+              size="lg"
+              className="bg-gradient-to-r from-[#F61D7A] to-[#FF3366] hover:from-[#FF3366] hover:to-[#F61D7A] text-white font-accent font-bold text-lg py-6 px-8 rounded-xl shadow-lg transform transition-transform hover:scale-105 w-full md:w-auto animate-pulse"
+            >
+              <Link href="/register">
+                NURSES, GET YOUR FREE TICKETS HERE!
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 ml-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </Link>
+            </Button>
           </div>
 
 
