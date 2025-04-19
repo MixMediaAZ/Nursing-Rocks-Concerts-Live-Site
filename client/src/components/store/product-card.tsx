@@ -1,24 +1,32 @@
 import { Link } from "wouter";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/use-cart";
 import { StoreProduct } from "@shared/schema";
 
 interface ProductCardProps {
   product: StoreProduct;
+  featured?: boolean;
 }
 
-export function StoreProductCard({ product }: ProductCardProps) {
+export function StoreProductCard({ product, featured = false }: ProductCardProps) {
   const { toast } = useToast();
   const { addToCart } = useCart();
+  
+  // Helper function to check if product is out of stock
+  const isOutOfStock = (p: StoreProduct): boolean => {
+    return p.stock_quantity !== undefined && 
+           p.stock_quantity !== null && 
+           p.stock_quantity <= 0;
+  };
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     addToCart({
       productId: product.id,
       name: product.name,
@@ -26,65 +34,81 @@ export function StoreProductCard({ product }: ProductCardProps) {
       imageUrl: product.image_url || '',
       quantity: 1
     });
-    
+
     toast({
       title: "Added to cart",
       description: `${product.name} added to your cart`,
     });
   };
 
-  const isOutOfStock = product.stock_quantity !== null && product.stock_quantity <= 0;
-
   return (
-    <Link href={`/store/products/${product.id}`}>
-      <Card className="overflow-hidden group transition-all duration-300 hover:shadow-md cursor-pointer h-full flex flex-col">
-        <div className="relative">
-          <div className="aspect-square overflow-hidden bg-muted">
-            <img
-              src={product.image_url || ''}
-              alt={product.name}
-              className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
-            />
-          </div>
-          
-          {product.is_featured && (
-            <Badge className="absolute top-2 left-2" variant="secondary">
+    <Card className={`overflow-hidden transition-all duration-200 hover:shadow-md ${featured ? 'md:col-span-2' : ''}`}>
+      <Link href={`/store/product/${product.id}`}>
+        <div className="relative h-48 overflow-hidden bg-muted">
+          {product.is_featured && !featured && (
+            <Badge className="absolute top-2 right-2 z-10" variant="secondary">
               Featured
             </Badge>
           )}
           
-          {isOutOfStock && (
-            <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-              <Badge variant="destructive" className="text-sm">Out of Stock</Badge>
-            </div>
+          {isOutOfStock(product) && (
+            <Badge 
+              className="absolute top-2 left-2 z-10" 
+              variant="destructive"
+            >
+              Out of Stock
+            </Badge>
           )}
+          
+          <img 
+            src={product.image_url || ''} 
+            alt={product.name} 
+            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
+          />
         </div>
         
-        <CardContent className="p-4 flex-grow">
-          <div className="space-y-1">
-            <Badge variant="outline" className="mb-1">
-              {product.category}
-            </Badge>
-            <h3 className="font-medium group-hover:text-primary transition-colors line-clamp-2">
-              {product.name}
-            </h3>
-            <p className="text-primary font-bold">${product.price}</p>
+        <CardContent className="p-4">
+          <div className="flex justify-between items-start mb-2">
+            <div>
+              <div className="text-xs text-muted-foreground mb-1 uppercase">
+                {product.category}
+              </div>
+              <h3 className="font-semibold line-clamp-1">{product.name}</h3>
+            </div>
+            <div className="text-primary font-medium">
+              ${product.price}
+            </div>
           </div>
+          
+          <p className="text-sm text-muted-foreground line-clamp-2">
+            {product.description}
+          </p>
         </CardContent>
         
-        <CardFooter className="p-4 pt-0">
+        <CardFooter className="p-4 pt-0 flex gap-2">
           <Button 
-            variant="secondary" 
+            variant="outline" 
             size="sm" 
-            className="w-full"
+            className="flex-1"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Link href={`/store/product/${product.id}`} className="flex items-center justify-center w-full">
+              <Eye className="mr-2 h-4 w-4" />
+              View Details
+            </Link>
+          </Button>
+          
+          <Button 
+            size="sm" 
+            className="flex-1"
             onClick={handleAddToCart}
-            disabled={isOutOfStock}
+            disabled={isOutOfStock(product)}
           >
             <ShoppingCart className="mr-2 h-4 w-4" />
             Add to Cart
           </Button>
         </CardFooter>
-      </Card>
-    </Link>
+      </Link>
+    </Card>
   );
 }
