@@ -1,8 +1,9 @@
-import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useNavigation } from "@/hooks/use-navigation";
 
 export default function LicenseVerificationPromo() {
+  const { navigateTo } = useNavigation();
   return (
     <section className="py-16 bg-gradient-to-r from-[#F8F9FA] to-[#E9ECEF]">
       <div className="container mx-auto px-4">
@@ -69,7 +70,7 @@ export default function LicenseVerificationPromo() {
               <Button 
                 className="bg-[#5D3FD3] hover:bg-[#4924C9] text-white font-medium py-2 px-6 rounded-lg"
                 size="lg"
-                onClick={() => window.location.href = "/license"}
+                onClick={() => navigateTo("/license")}
               >
                 Verify Your License Now
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
