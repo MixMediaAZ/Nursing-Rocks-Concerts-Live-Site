@@ -1,14 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
 import { StoreProductCard } from "@/components/store/product-card";
-import { ChevronRight, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StoreProduct } from "@shared/schema";
+import { Loader2, MoreHorizontal } from "lucide-react";
 
 export function FeaturedProducts() {
+  const [activeCategory, setActiveCategory] = useState("all");
+
+  // Fetch featured products
   const { 
-    data: featuredProducts, 
+    data: products, 
     isLoading, 
     error 
   } = useQuery<StoreProduct[]>({
@@ -22,78 +26,127 @@ export function FeaturedProducts() {
     }
   });
 
-  const [categories, setCategories] = useState<string[]>([]);
+  // Extract categories from featured products
+  const categories = products 
+    ? Array.from(new Set(products.map(product => product.category)))
+    : [];
 
-  // Extract unique categories from featured products
-  useEffect(() => {
-    if (featuredProducts && featuredProducts.length > 0) {
-      const uniqueCategories = Array.from(
-        new Set(featuredProducts.map(product => product.category))
-      );
-      setCategories(uniqueCategories);
-    }
-  }, [featuredProducts]);
-
-  if (isLoading) {
-    return (
-      <div className="py-12 flex justify-center items-center" id="featured-products">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (error || !featuredProducts || featuredProducts.length === 0) {
-    return null;
-  }
+  // Filter products by active category
+  const filteredProducts = products && activeCategory !== "all"
+    ? products.filter(product => product.category === activeCategory)
+    : products;
 
   return (
-    <div className="py-12" id="featured-products">
-      <div className="container">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-          <div>
-            <h2 className="text-3xl font-bold">Featured Products</h2>
-            <p className="text-muted-foreground mt-1">
-              Discover our most popular healthcare-themed merchandise
-            </p>
-          </div>
-          
-          <div className="flex flex-wrap gap-2 mt-4 md:mt-0">
-            {categories.map((category) => (
-              <Button 
-                key={category} 
-                variant="outline" 
-                size="sm" 
-                asChild
-              >
-                <Link href={`/store/category/${encodeURIComponent(category.toLowerCase())}`}>
-                  {category}
-                </Link>
-              </Button>
+    <div id="featured-products" className="container py-16">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+          <h2 className="text-3xl font-bold mb-2">Featured Products</h2>
+          <p className="text-muted-foreground">
+            Our most popular Nursing Rocks merchandise handpicked for you
+          </p>
+        </div>
+        
+        <Button asChild variant="outline">
+          <Link href="/store">
+            <MoreHorizontal className="mr-2 h-4 w-4" />
+            View All Products
+          </Link>
+        </Button>
+      </div>
+      
+      {categories.length > 0 && (
+        <Tabs 
+          defaultValue="all" 
+          value={activeCategory}
+          onValueChange={setActiveCategory}
+          className="mb-8"
+        >
+          <TabsList className="mb-2">
+            <TabsTrigger value="all">All</TabsTrigger>
+            {categories.map(category => (
+              <TabsTrigger key={category} value={category}>
+                {category}
+              </TabsTrigger>
             ))}
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {featuredProducts.map((product) => (
-            <StoreProductCard 
-              key={product.id} 
-              product={product} 
-              featured={product.id === featuredProducts[0]?.id}
-            />
-          ))}
-        </div>
-        
-        <div className="mt-10 text-center">
-          <Button 
-            variant="outline" 
-            size="lg" 
-            asChild
-          >
-            <Link href="/store" className="inline-flex items-center">
-              View All Products
-              <ChevronRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+          </TabsList>
+          
+          <TabsContent value={activeCategory}>
+            {isLoading ? (
+              <div className="flex justify-center py-16">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : error ? (
+              <div className="text-center py-16">
+                <p className="text-red-500">
+                  Error loading featured products. Please try again later.
+                </p>
+              </div>
+            ) : filteredProducts?.length === 0 ? (
+              <div className="text-center py-16">
+                <p>No featured products available in this category yet.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {filteredProducts?.map((product) => (
+                  <StoreProductCard 
+                    key={product.id} 
+                    product={product} 
+                    featured={true} 
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      )}
+      
+      {/* Category Cards section */}
+      <div className="mt-16">
+        <h3 className="text-xl font-bold mb-8">Shop by Category</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Link href="/store/category/apparel">
+            <div className="group relative h-64 rounded-lg overflow-hidden bg-muted border">
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60 z-10" />
+              <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity z-10" />
+              <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
+                <h4 className="text-white font-medium text-lg">Apparel</h4>
+                <p className="text-white/80 text-sm">T-shirts, hoodies, and more</p>
+              </div>
+            </div>
+          </Link>
+          
+          <Link href="/store/category/accessories">
+            <div className="group relative h-64 rounded-lg overflow-hidden bg-muted border">
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60 z-10" />
+              <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity z-10" />
+              <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
+                <h4 className="text-white font-medium text-lg">Accessories</h4>
+                <p className="text-white/80 text-sm">Bags, pins, and jewelry</p>
+              </div>
+            </div>
+          </Link>
+          
+          <Link href="/store/category/drinkware">
+            <div className="group relative h-64 rounded-lg overflow-hidden bg-muted border">
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60 z-10" />
+              <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity z-10" />
+              <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
+                <h4 className="text-white font-medium text-lg">Drinkware</h4>
+                <p className="text-white/80 text-sm">Mugs, tumblers, and water bottles</p>
+              </div>
+            </div>
+          </Link>
+          
+          <Link href="/store/category/home-goods">
+            <div className="group relative h-64 rounded-lg overflow-hidden bg-muted border">
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60 z-10" />
+              <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity z-10" />
+              <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
+                <h4 className="text-white font-medium text-lg">Home Goods</h4>
+                <p className="text-white/80 text-sm">Candles, decor, and more</p>
+              </div>
+            </div>
+          </Link>
         </div>
       </div>
     </div>

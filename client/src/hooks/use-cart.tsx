@@ -15,6 +15,7 @@ interface CartState {
   removeFromCart: (productId: number) => void;
   updateQuantity: (productId: number, quantity: number) => void;
   clearCart: () => void;
+  isEmpty: () => boolean;
   totalItems: number;
   totalPrice: string;
 }
@@ -63,6 +64,10 @@ export const useCart = create<CartState>()(
 
       clearCart: () => {
         set({ items: [] });
+      },
+      
+      isEmpty: () => {
+        return get().items.length === 0;
       },
 
       get totalItems() {

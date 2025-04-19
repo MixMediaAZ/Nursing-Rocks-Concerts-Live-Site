@@ -61,9 +61,9 @@ export default function StorePage() {
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     switch (sortOrder) {
       case "price-low-high":
-        return a.price - b.price;
+        return Number(a.price) - Number(b.price);
       case "price-high-low":
-        return b.price - a.price;
+        return Number(b.price) - Number(a.price);
       case "newest":
         return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
       case "featured":
