@@ -1,6 +1,18 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
+import Stripe from "stripe";
 import { storage } from "./storage";
+
+// Initialize Stripe with the secret key if it exists
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+let stripe: Stripe | undefined;
+if (stripeSecretKey) {
+  stripe = new Stripe(stripeSecretKey, {
+    apiVersion: "2022-11-15", // Use a supported API version
+  });
+} else {
+  console.warn("Missing Stripe secret key. Payment functionality will be simulated.");
+}
 import { 
   insertSubscriberSchema, 
   insertJobListingSchema, 
@@ -202,6 +214,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/media/upload", upload.array('files'), uploadMediaFiles);
   app.patch("/api/media/:id", authenticateToken, updateMedia);
   app.delete("/api/media/:id", authenticateToken, deleteMedia);
+
+  // Stripe Payment Integration
+  app.post("/api/create-payment-intent", async (req: Request, res: Response) => {
+    try {
+      const { amount, items } = req.body;
+      
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ message: "Invalid amount" });
+      }
+
+      // If Stripe is not initialized, simulate a payment intent
+      if (!stripe) {
+        console.log("Simulating payment intent creation");
+        return res.json({
+          clientSecret: "simulated_client_secret",
+          amount
+        });
+      }
+
+      // Create a PaymentIntent with the order amount and currency
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount), // amount in cents
+        currency: "usd",
+        automatic_payment_methods: {
+          enabled: true,
+        },
+        metadata: {
+          items: JSON.stringify(items.map((item: any) => ({ 
+            id: item.id, 
+            quantity: item.quantity 
+          })))
+        }
+      });
+
+      res.json({
+        clientSecret: paymentIntent.client_secret,
+        amount
+      });
+    } catch (error: any) {
+      console.error("Error creating payment intent:", error);
+      res.status(500).json({ message: error.message || "Failed to create payment intent" });
+    }
+  });
 
   // ========== JOB BOARD API ==========
   
