@@ -1,8 +1,9 @@
 import { db } from "./db";
 import { 
-  events, artists, venues, gallery,
-  InsertArtist, InsertVenue, InsertEvent, InsertGallery
+  events, artists, venues, gallery, storeProducts,
+  InsertArtist, InsertVenue, InsertEvent, InsertGallery, InsertStoreProduct
 } from "@shared/schema";
+import { seedStoreProducts } from "./seed-store";
 
 async function seed() {
   console.log("🌱 Seeding database...");
@@ -219,6 +220,13 @@ async function seed() {
     
     const galleryInserted = await db.insert(gallery).values(galleryData).returning();
     console.log(`✓ Inserted ${galleryInserted.length} gallery images`);
+    
+    // Clear store products first
+    await db.delete(storeProducts);
+    
+    // Seed store products
+    await seedStoreProducts();
+    console.log("✓ Inserted store products");
     
     console.log("✅ Database seeding completed successfully!");
   } catch (error) {
