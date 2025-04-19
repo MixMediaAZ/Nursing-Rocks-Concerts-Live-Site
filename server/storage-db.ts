@@ -9,8 +9,12 @@ import {
   User, InsertUser,
   NurseLicense, InsertNurseLicense,
   Ticket, InsertTicket,
+  StoreProduct, InsertStoreProduct,
+  StoreOrder, InsertStoreOrder,
+  StoreOrderItem, InsertStoreOrderItem,
   events, artists, venues, gallery, subscribers,
-  users, nurseLicenses, tickets
+  users, nurseLicenses, tickets,
+  storeProducts, storeOrders, storeOrderItems
 } from "@shared/schema";
 import { IStorage } from "./storage";
 
@@ -247,5 +251,290 @@ export class DatabaseStorage implements IStorage {
       .where(eq(tickets.id, ticketId))
       .returning();
     return updatedTicket;
+  }
+
+  // ========== STORE FUNCTIONS ==========
+  
+  // Store Products
+  async getAllStoreProducts(): Promise<StoreProduct[]> {
+    return await db.select().from(storeProducts);
+  }
+  
+  async getStoreProductById(id: number): Promise<StoreProduct | undefined> {
+    const [product] = await db
+      .select()
+      .from(storeProducts)
+      .where(eq(storeProducts.id, id));
+    return product;
+  }
+  
+  async getFeaturedStoreProducts(limit?: number): Promise<StoreProduct[]> {
+    const products = await db
+      .select()
+      .from(storeProducts)
+      .where(eq(storeProducts.is_featured, true));
+    
+    return limit ? products.slice(0, limit) : products;
+  }
+  
+  async getStoreProductsByCategory(category: string): Promise<StoreProduct[]> {
+    return await db
+      .select()
+      .from(storeProducts)
+      .where(eq(storeProducts.category, category));
+  }
+  
+  async createStoreProduct(product: InsertStoreProduct): Promise<StoreProduct> {
+    const [newProduct] = await db
+      .insert(storeProducts)
+      .values(product)
+      .returning();
+    return newProduct;
+  }
+  
+  async updateStoreProduct(id: number, data: Partial<InsertStoreProduct>): Promise<StoreProduct> {
+    const [updatedProduct] = await db
+      .update(storeProducts)
+      .set(data)
+      .where(eq(storeProducts.id, id))
+      .returning();
+    return updatedProduct;
+  }
+  
+  async deleteStoreProduct(id: number): Promise<void> {
+    await db
+      .delete(storeProducts)
+      .where(eq(storeProducts.id, id));
+  }
+  
+  // Store Orders
+  async createStoreOrder(order: InsertStoreOrder, items: InsertStoreOrderItem[]): Promise<StoreOrder> {
+    // Insert the order first
+    const [newOrder] = await db
+      .insert(storeOrders)
+      .values(order)
+      .returning();
+    
+    // Then insert all order items
+    const orderItems = items.map(item => ({
+      ...item,
+      order_id: newOrder.id
+    }));
+    
+    await db
+      .insert(storeOrderItems)
+      .values(orderItems);
+    
+    return newOrder;
+  }
+  
+  async getStoreOrderById(id: number): Promise<StoreOrder | undefined> {
+    const [order] = await db
+      .select()
+      .from(storeOrders)
+      .where(eq(storeOrders.id, id));
+    return order;
+  }
+  
+  async getStoreOrdersByUserId(userId: number): Promise<StoreOrder[]> {
+    return await db
+      .select()
+      .from(storeOrders)
+      .where(eq(storeOrders.user_id, userId));
+  }
+  
+  async updateStoreOrderStatus(id: number, status: string): Promise<StoreOrder> {
+    const [updatedOrder] = await db
+      .update(storeOrders)
+      .set({ status })
+      .where(eq(storeOrders.id, id))
+      .returning();
+    return updatedOrder;
+  }
+  
+  async updateStoreOrderPaymentStatus(id: number, paymentStatus: string): Promise<StoreOrder> {
+    const [updatedOrder] = await db
+      .update(storeOrders)
+      .set({ payment_status: paymentStatus })
+      .where(eq(storeOrders.id, id))
+      .returning();
+    return updatedOrder;
+  }
+  
+  // Store Order Items
+  async getStoreOrderItemsByOrderId(orderId: number): Promise<StoreOrderItem[]> {
+    return await db
+      .select()
+      .from(storeOrderItems)
+      .where(eq(storeOrderItems.order_id, orderId));
+  }
+
+  // ========== JOB BOARD FUNCTIONS ==========
+  
+  // Employer Management
+  async createEmployer(employer: InsertEmployer, userId: number): Promise<Employer> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getEmployerById(id: number): Promise<Employer | undefined> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getEmployerByUserId(userId: number): Promise<Employer | undefined> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getAllEmployers(): Promise<Employer[]> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getVerifiedEmployers(): Promise<Employer[]> {
+    throw new Error("Method not implemented.");
+  }
+
+  async updateEmployer(id: number, data: Partial<InsertEmployer>): Promise<Employer> {
+    throw new Error("Method not implemented.");
+  }
+
+  async verifyEmployer(id: number): Promise<Employer> {
+    throw new Error("Method not implemented.");
+  }
+  
+  // Job Listings
+  async createJobListing(jobListing: InsertJobListing, employerId: number): Promise<JobListing> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getJobListingById(id: number): Promise<JobListing | undefined> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getAllJobListings(filters?: {
+    specialty?: string | string[];
+    location?: string | string[];
+    jobType?: string | string[];
+    experienceLevel?: string | string[];
+    salaryMin?: number;
+    keywords?: string;
+    employerId?: number;
+    isActive?: boolean;
+    isFeatured?: boolean;
+  }): Promise<JobListing[]> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getFeaturedJobListings(limit?: number): Promise<JobListing[]> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getRecentJobListings(limit?: number): Promise<JobListing[]> {
+    throw new Error("Method not implemented.");
+  }
+
+  async updateJobListing(id: number, data: Partial<InsertJobListing>): Promise<JobListing> {
+    throw new Error("Method not implemented.");
+  }
+
+  async incrementJobListingViews(id: number): Promise<JobListing> {
+    throw new Error("Method not implemented.");
+  }
+
+  async incrementJobApplicationsCount(id: number): Promise<JobListing> {
+    throw new Error("Method not implemented.");
+  }
+  
+  // Nurse Profiles
+  async createNurseProfile(profile: InsertNurseProfile, userId: number): Promise<NurseProfile> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getNurseProfileByUserId(userId: number): Promise<NurseProfile | undefined> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getNurseProfileById(id: number): Promise<NurseProfile | undefined> {
+    throw new Error("Method not implemented.");
+  }
+
+  async updateNurseProfile(id: number, data: Partial<InsertNurseProfile>): Promise<NurseProfile> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getPublicNurseProfiles(filters?: {
+    specialties?: string | string[];
+    skills?: string | string[];
+    yearsOfExperience?: number;
+    preferredLocations?: string | string[];
+    preferredShift?: string;
+  }): Promise<NurseProfile[]> {
+    throw new Error("Method not implemented.");
+  }
+  
+  // Job Applications
+  async createJobApplication(application: InsertJobApplication, userId: number, jobId: number): Promise<JobApplication> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getJobApplicationById(id: number): Promise<JobApplication | undefined> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getJobApplicationsByUserId(userId: number): Promise<JobApplication[]> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getJobApplicationsByJobId(jobId: number): Promise<JobApplication[]> {
+    throw new Error("Method not implemented.");
+  }
+
+  async updateJobApplicationStatus(id: number, status: string, notes?: string): Promise<JobApplication> {
+    throw new Error("Method not implemented.");
+  }
+
+  async withdrawJobApplication(id: number): Promise<JobApplication> {
+    throw new Error("Method not implemented.");
+  }
+  
+  // Saved Jobs
+  async saveJob(userId: number, jobId: number, notes?: string): Promise<SavedJob> {
+    throw new Error("Method not implemented.");
+  }
+
+  async unsaveJob(userId: number, jobId: number): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getSavedJobsByUserId(userId: number): Promise<SavedJob[]> {
+    throw new Error("Method not implemented.");
+  }
+  
+  // Job Alerts
+  async createJobAlert(alert: InsertJobAlert, userId: number): Promise<JobAlert> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getJobAlertsByUserId(userId: number): Promise<JobAlert[]> {
+    throw new Error("Method not implemented.");
+  }
+
+  async updateJobAlert(id: number, data: Partial<InsertJobAlert>): Promise<JobAlert> {
+    throw new Error("Method not implemented.");
+  }
+
+  async deleteJobAlert(id: number): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  
+  // Job Search & Recommendations
+  async searchJobs(query: string, filters?: any): Promise<JobListing[]> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getRecommendedJobs(userId: number, limit?: number): Promise<JobListing[]> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getSimilarJobs(jobId: number, limit?: number): Promise<JobListing[]> {
+    throw new Error("Method not implemented.");
   }
 }
