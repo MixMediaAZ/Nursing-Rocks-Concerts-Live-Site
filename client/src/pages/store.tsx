@@ -18,7 +18,7 @@ import { StoreProduct } from "@shared/schema";
 
 export default function StorePage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<string>("featured");
 
   // Fetch all products
@@ -50,9 +50,7 @@ export default function StorePage() {
             (product.description ? product.description.toLowerCase().includes(searchQuery.toLowerCase()) : false)
           : true;
         
-        const matchesCategory = selectedCategory
-          ? product.category === selectedCategory
-          : true;
+        const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
           
         return matchesSearch && matchesCategory;
       })
@@ -81,7 +79,7 @@ export default function StorePage() {
 
   const handleReset = () => {
     setSearchQuery("");
-    setSelectedCategory("");
+    setSelectedCategory("all");
     setSortOrder("featured");
   };
 
@@ -125,7 +123,7 @@ export default function StorePage() {
                   <Filter className="h-4 w-4" />
                   Filters
                 </h3>
-                {(searchQuery || selectedCategory || sortOrder !== "featured") && (
+                {(searchQuery || selectedCategory !== "all" || sortOrder !== "featured") && (
                   <Button 
                     variant="ghost" 
                     size="sm"
@@ -147,7 +145,7 @@ export default function StorePage() {
                       <SelectValue placeholder="All Categories" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Categories</SelectItem>
+                      <SelectItem value="all">All Categories</SelectItem>
                       {categories.map(category => (
                         <SelectItem key={category} value={category}>
                           {category}
