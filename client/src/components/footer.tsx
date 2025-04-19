@@ -89,9 +89,9 @@ export function Footer() {
               <div className="flex items-start gap-2">
                 <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                 <span className="text-sm text-muted-foreground">
-                  123 Healthcare Ave<br />
-                  Suite 456<br />
-                  Medical City, CA 90210
+                  732 S 6th St<br />
+                  Suite V<br />
+                  Las Vegas, NV 89101
                 </span>
               </div>
             </div>
