@@ -144,10 +144,8 @@ export function Header() {
                       <div className="w-full cursor-pointer">My Profile</div>
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/license">
-                      <div className="w-full cursor-pointer">License Verification</div>
-                    </Link>
+                  <DropdownMenuItem onClick={() => window.location.href = "/license"}>
+                    <div className="w-full cursor-pointer">License Verification</div>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/tickets">
@@ -244,15 +242,16 @@ export function Header() {
                       My Profile
                     </div>
                   </Link>
-                  <Link href="/license">
-                    <div
-                      className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <Stethoscope className="h-4 w-4" />
-                      License Verification
-                    </div>
-                  </Link>
+                  <div
+                     className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md"
+                     onClick={() => {
+                       setIsMenuOpen(false);
+                       window.location.href = "/license";
+                     }}
+                   >
+                     <Stethoscope className="h-4 w-4" />
+                     License Verification
+                   </div>
                   <Link href="/tickets">
                     <div
                       className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md"

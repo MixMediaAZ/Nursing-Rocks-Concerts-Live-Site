@@ -67,16 +67,14 @@ export default function LicenseVerificationPromo() {
               </div>
               
               <Button 
-                asChild
                 className="bg-[#5D3FD3] hover:bg-[#4924C9] text-white font-medium py-2 px-6 rounded-lg"
                 size="lg"
+                onClick={() => window.location.href = "/license"}
               >
-                <Link href="/license">
-                  Verify Your License Now
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
+                Verify Your License Now
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </Button>
             </div>
             

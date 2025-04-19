@@ -24,6 +24,7 @@ import CheckoutPage from "@/pages/checkout";
 import OrderConfirmationPage from "@/pages/order-confirmation";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import LicenseButtonDebug from "@/components/license-button-debug";
 // We use Zustand for cart management, no provider needed
 import { AuthProvider } from "@/hooks/use-auth";
 
@@ -65,6 +66,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router />
+        <LicenseButtonDebug />
         <Toaster />
       </AuthProvider>
     </QueryClientProvider>
