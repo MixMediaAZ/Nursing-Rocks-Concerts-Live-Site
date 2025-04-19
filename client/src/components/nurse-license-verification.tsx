@@ -5,9 +5,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -25,10 +26,17 @@ import { useToast } from "@/hooks/use-toast";
 
 // Schema for license verification form
 const licenseSchema = z.object({
+  first_name: z.string().min(2, "First name is required"),
+  last_name: z.string().min(2, "Last name is required"),
+  email: z.string().email("Please enter a valid email address"),
+  phone: z.string().min(10, "Please enter a valid phone number"),
   license_number: z.string().min(4, "License number is too short"),
   state: z.string().min(2, "Please select a state"),
   expiration_date: z.date({
     required_error: "Please select an expiration date",
+  }),
+  agree_to_terms: z.boolean().refine(val => val === true, {
+    message: "You must agree to the terms and conditions",
   }),
 });
 
@@ -140,8 +148,13 @@ export function NurseLicenseVerification() {
   const form = useForm<z.infer<typeof licenseSchema>>({
     resolver: zodResolver(licenseSchema),
     defaultValues: {
+      first_name: "",
+      last_name: "",
+      email: "",
+      phone: "",
       license_number: "",
       state: "",
+      agree_to_terms: false,
     },
   });
   
@@ -155,6 +168,10 @@ export function NurseLicenseVerification() {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          email: formData.email,
+          phone: formData.phone,
           license_number: formData.license_number,
           state: formData.state,
           expiration_date: format(formData.expiration_date, "yyyy-MM-dd")
@@ -343,6 +360,80 @@ export function NurseLicenseVerification() {
                   ) : (
                     <Form {...form}>
                       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                        <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-6">
+                          <h3 className="font-medium text-blue-700 mb-2">Personal Information</h3>
+                          <p className="text-sm text-blue-600 mb-1">
+                            Please provide your personal information for verification purposes.
+                          </p>
+                        </div>
+                      
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="first_name"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>First Name</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Enter your first name" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="last_name"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Last Name</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Enter your last name" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Email</FormLabel>
+                                <FormControl>
+                                  <Input type="email" placeholder="Enter your email address" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="phone"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Phone Number</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="(555) 123-4567" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      
+                        <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mt-2">
+                          <h3 className="font-medium text-blue-700 mb-2">License Information</h3>
+                          <p className="text-sm text-blue-600 mb-1">
+                            Enter your nursing license details exactly as they appear on your license.
+                          </p>
+                        </div>
+                      
                         <FormField
                           control={form.control}
                           name="license_number"
@@ -420,6 +511,29 @@ export function NurseLicenseVerification() {
                                 </PopoverContent>
                               </Popover>
                               <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="agree_to_terms"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel>
+                                  I acknowledge that the information provided is accurate and complete
+                                </FormLabel>
+                                <FormDescription>
+                                  By checking this box, you confirm that your nursing license is valid and current.
+                                </FormDescription>
+                              </div>
                             </FormItem>
                           )}
                         />
