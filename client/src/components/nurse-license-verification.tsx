@@ -527,12 +527,12 @@ export function NurseLicenseVerification() {
                                 />
                               </FormControl>
                               <div className="space-y-1 leading-none">
-                                <FormLabel>
+                                <p className="font-medium text-sm">
                                   I acknowledge that the information provided is accurate and complete
-                                </FormLabel>
-                                <FormDescription>
+                                </p>
+                                <p className="text-sm text-muted-foreground">
                                   By checking this box, you confirm that your nursing license is valid and current.
-                                </FormDescription>
+                                </p>
                               </div>
                             </FormItem>
                           )}
