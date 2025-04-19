@@ -28,7 +28,7 @@ import { StoreProduct } from "@shared/schema";
 
 export default function StorePage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
   // Fetch all products
   const { data: products, isLoading, error } = useQuery<StoreProduct[]>({
@@ -37,7 +37,7 @@ export default function StorePage() {
 
   // Get all unique categories
   const categories = products 
-    ? [...new Set(products.map(product => product.category))]
+    ? Array.from(new Set(products.map(product => product.category)))
     : [];
 
   // Filter products based on search query and category
@@ -48,7 +48,7 @@ export default function StorePage() {
             (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()))
           : true;
         
-        const matchesCategory = categoryFilter 
+        const matchesCategory = categoryFilter && categoryFilter !== "all"
           ? product.category === categoryFilter
           : true;
           
@@ -84,14 +84,14 @@ export default function StorePage() {
             </div>
             
             <Select
-              value={categoryFilter || ""}
-              onValueChange={(value) => setCategoryFilter(value || null)}
+              value={categoryFilter}
+              onValueChange={(value) => setCategoryFilter(value)}
             >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 {categories.map(category => (
                   <SelectItem key={category} value={category}>{category}</SelectItem>
                 ))}

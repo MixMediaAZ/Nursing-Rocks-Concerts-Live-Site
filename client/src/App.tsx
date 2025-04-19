@@ -23,7 +23,7 @@ import CartPage from "@/pages/cart";
 import OrderConfirmationPage from "@/pages/order-confirmation";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
-import { CartProvider } from "@/hooks/use-cart";
+// We use Zustand for cart management, no provider needed
 import { AuthProvider } from "@/hooks/use-auth";
 
 function Router() {
@@ -62,10 +62,8 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <CartProvider>
-          <Router />
-          <Toaster />
-        </CartProvider>
+        <Router />
+        <Toaster />
       </AuthProvider>
     </QueryClientProvider>
   );

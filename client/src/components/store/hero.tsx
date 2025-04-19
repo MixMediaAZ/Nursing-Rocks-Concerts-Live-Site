@@ -15,10 +15,10 @@ export function StoreHero() {
           </p>
           <div className="flex flex-wrap gap-4">
             <Button asChild size="lg">
-              <Link href="#featured-products">
+              <a href="#featured-products">
                 <ShoppingBag className="mr-2 h-4 w-4" />
                 Featured Items
-              </Link>
+              </a>
             </Button>
             <Button variant="outline" asChild size="lg">
               <Link href="/store/category/Apparel">
