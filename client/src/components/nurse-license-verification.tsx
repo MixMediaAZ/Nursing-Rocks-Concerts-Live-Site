@@ -121,8 +121,13 @@ export function NurseLicenseVerification() {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
         });
-        if (!response.ok) return [];
-        return response.json();
+        if (!response.ok) {
+          console.error("License fetch error:", response.status, response.statusText);
+          return [];
+        }
+        const data = await response.json();
+        console.log("License data:", data);
+        return data.licenses || data || [];
       } catch (error) {
         console.error("Error fetching licenses:", error);
         return [];
@@ -155,6 +160,13 @@ export function NurseLicenseVerification() {
           expiration_date: format(formData.expiration_date, "yyyy-MM-dd")
         })
       });
+      
+      // Handle non-OK responses
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error submitting license');
+      }
+      
       return response.json();
     },
     onSuccess: () => {
