@@ -58,11 +58,13 @@ const formSchema = z.object({
 
 type CheckoutFormValues = z.infer<typeof formSchema>;
 
-export function CheckoutForm() {
+interface CheckoutFormProps {
+  onSubmit: (data: any) => void;
+}
+
+export function CheckoutForm({ onSubmit: handleFormSubmit }: CheckoutFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { clearCart } = useCart();
   const { toast } = useToast();
-  const [, navigate] = useLocation();
 
   const form = useForm<CheckoutFormValues>({
     resolver: zodResolver(formSchema),
@@ -91,28 +93,21 @@ export function CheckoutForm() {
     setIsSubmitting(true);
     
     try {
-      // In a real app, you would send the order data to the server
-      // const response = await fetch('/api/store/orders', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ ...data, items: cart.items })
-      // });
-      
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Success flow
+      // Pass the data to parent component
+      handleFormSubmit(data);
+      
+      // Success toast
       toast({
-        title: "Order placed successfully!",
-        description: "Thank you for your purchase. You will receive a confirmation email shortly.",
+        title: "Information saved!",
+        description: "Your details have been saved. Proceeding to payment.",
       });
-      
-      clearCart();
-      navigate("/store/order-confirmation");
     } catch (error) {
       toast({
         title: "Something went wrong",
-        description: "There was an error processing your order. Please try again.",
+        description: "There was an error processing your information. Please try again.",
         variant: "destructive",
       });
     } finally {

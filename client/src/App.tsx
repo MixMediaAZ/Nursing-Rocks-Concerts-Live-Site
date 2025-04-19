@@ -20,6 +20,7 @@ import StorePage from "@/pages/store";
 import ProductDetailsPage from "@/pages/product-details";
 import StoreCategoryPage from "@/pages/store-category";
 import CartPage from "@/pages/cart";
+import CheckoutPage from "@/pages/checkout";
 import OrderConfirmationPage from "@/pages/order-confirmation";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
@@ -49,6 +50,7 @@ function Router() {
           <Route path="/store/products/:id" component={ProductDetailsPage} />
           <Route path="/store/category/:category" component={StoreCategoryPage} />
           <Route path="/cart" component={CartPage} />
+          <Route path="/checkout" component={CheckoutPage} />
           <Route path="/store/order-confirmation" component={OrderConfirmationPage} />
           <Route component={NotFound} />
         </Switch>

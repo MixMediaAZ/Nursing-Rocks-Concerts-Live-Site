@@ -144,15 +144,15 @@ export default function CheckoutPage() {
               <ScrollArea className="h-[240px] pr-4">
                 <div className="space-y-4">
                   {items.map((item) => (
-                    <div key={`${item.productId}-${item.variantId}`} className="flex items-start gap-3">
+                    <div key={`${item.productId}`} className="flex items-start gap-3">
                       <div 
                         className="w-16 h-16 rounded bg-muted flex-shrink-0 bg-cover bg-center"
-                        style={{ backgroundImage: `url(${item.image})` }}
+                        style={{ backgroundImage: `url(${item.imageUrl})` }}
                       ></div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{item.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {item.variant && `${item.variant} • `}Qty: {item.quantity}
+                          Qty: {item.quantity}
                         </p>
                         <p className="text-sm font-medium mt-1">${item.price}</p>
                       </div>
