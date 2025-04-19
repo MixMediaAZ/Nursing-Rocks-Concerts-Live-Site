@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { useNavigation } from "@/hooks/use-navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +35,7 @@ export function Header() {
   const isMobile = useIsMobile();
   const [location] = useLocation();
   const { totalItems } = useCart();
+  const { navigateTo } = useNavigation();
 
   useEffect(() => {
     // Check if user is logged in
@@ -104,9 +106,11 @@ export function Header() {
         
         {!isMobile ? (
           <nav className="flex items-center gap-6">
-            {navLinks.map((link) => (
-              <Link key={link.href} href={link.href}>
+            {navLinks.map((link) => 
+              link.href === "/license" ? (
                 <div
+                  key={link.href}
+                  onClick={() => navigateTo("/license")}
                   className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer flex items-center gap-1.5 ${
                     isActive(link.href)
                       ? "text-primary"
@@ -116,8 +120,21 @@ export function Header() {
                   {link.icon}
                   {link.label}
                 </div>
-              </Link>
-            ))}
+              ) : (
+                <Link key={link.href} href={link.href}>
+                  <div
+                    className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer flex items-center gap-1.5 ${
+                      isActive(link.href)
+                        ? "text-primary"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {link.icon}
+                    {link.label}
+                  </div>
+                </Link>
+              )
+            )}
             
             {/* Shopping Cart */}
             <Link href="/cart">
@@ -144,7 +161,7 @@ export function Header() {
                       <div className="w-full cursor-pointer">My Profile</div>
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => window.location.href = "/license"}>
+                  <DropdownMenuItem onClick={() => navigateTo("/license")}>
                     <div className="w-full cursor-pointer">License Verification</div>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -199,21 +216,39 @@ export function Header() {
               <span className="text-sm font-medium text-primary">Navigation</span>
             </div>
             <nav className="flex flex-col space-y-3">
-              {navLinks.map((link) => (
-                <Link key={link.href} href={link.href}>
+              {navLinks.map((link) => 
+                link.href === "/license" ? (
                   <div
+                    key={link.href}
                     className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md ${
                       isActive(link.href)
                         ? "text-primary bg-primary/10"
                         : "text-muted-foreground"
                     }`}
-                    onClick={() => setIsMenuOpen(false)}
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      navigateTo("/license");
+                    }}
                   >
                     {link.icon}
                     {link.label}
                   </div>
-                </Link>
-              ))}
+                ) : (
+                  <Link key={link.href} href={link.href}>
+                    <div
+                      className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md ${
+                        isActive(link.href)
+                          ? "text-primary bg-primary/10"
+                          : "text-muted-foreground"
+                      }`}
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {link.icon}
+                      {link.label}
+                    </div>
+                  </Link>
+                )
+              )}
               
               {/* Cart link in mobile menu */}
               <Link href="/cart">
@@ -246,7 +281,7 @@ export function Header() {
                      className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md"
                      onClick={() => {
                        setIsMenuOpen(false);
-                       window.location.href = "/license";
+                       navigateTo("/license");
                      }}
                    >
                      <Stethoscope className="h-4 w-4" />
