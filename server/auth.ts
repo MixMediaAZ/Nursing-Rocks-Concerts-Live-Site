@@ -112,7 +112,7 @@ export async function submitNurseLicense(req: Request, res: Response) {
     }
 
     // Get user from JWT token (assuming middleware has set req.user)
-    const userId = (req as any).user?.id;
+    const userId = (req as any).user?.id || (req as any).user?.userId;
     if (!userId) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
@@ -153,7 +153,7 @@ export async function submitNurseLicense(req: Request, res: Response) {
 export async function getNurseLicenses(req: Request, res: Response) {
   try {
     // Get user from JWT token (assuming middleware has set req.user)
-    const userId = (req as any).user?.id;
+    const userId = (req as any).user?.id || (req as any).user?.userId;
     if (!userId) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
