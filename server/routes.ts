@@ -218,7 +218,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Nurse License API Routes
   app.get("/api/licenses", authenticateToken, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).user?.userId;
+      // Get the user id from the request (could be id or userId depending on the source)
+      const userId = (req as any).user?.id || (req as any).user?.userId;
       if (!userId) {
         return res.status(401).json({ message: 'Unauthorized' });
       }

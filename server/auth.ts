@@ -248,6 +248,7 @@ export function authenticateToken(req: Request, res: Response, next: Function) {
     
     (req as any).user = {
       id: decoded.userId,
+      userId: decoded.userId, // Add userId for consistency
       email: decoded.email,
       is_verified: decoded.isVerified
     };
