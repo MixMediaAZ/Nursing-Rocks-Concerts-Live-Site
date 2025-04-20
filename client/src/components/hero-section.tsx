@@ -46,9 +46,16 @@ const HeroSection = () => {
               <Skeleton className="h-12 w-full bg-[#00A3E0]/50 rounded-full" />
             </div>
             
-            {/* Video Placeholder - Positioned to the right */}
-            <div className="absolute top-16 right-6 md:top-28 md:right-12 lg:top-32 lg:right-16 z-20 hidden sm:block">
-              <Skeleton className="aspect-video w-[220px] md:w-[280px] lg:w-[320px] bg-black/40 rounded-lg border-2 border-white/10" />
+            {/* Video Placeholder - Positioned for optimal visibility */}
+            <div className="fixed top-1/2 right-6 -translate-y-1/2 z-20 hidden sm:block">
+              <div className="relative">
+                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-purple-500/30 to-pink-500/30 opacity-75 blur-sm"></div>
+                <Skeleton className="aspect-video w-[260px] md:w-[340px] lg:w-[400px] bg-black/40 rounded-xl border-4 border-white/20 relative z-10" />
+                {/* Play Button Skeleton */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Skeleton className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/20" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -132,22 +139,41 @@ const HeroSection = () => {
             </Button>
           </div>
           
-          {/* YouTube Video - Positioned to the right */}
-          <div className="absolute top-16 right-6 md:top-28 md:right-12 lg:top-32 lg:right-16 z-20 hidden sm:block">
-            <div className="aspect-video w-[220px] md:w-[280px] lg:w-[320px] bg-black rounded-lg overflow-hidden shadow-2xl border-2 border-white/20">
-              <YouTube 
-                videoId="dQw4w9WgXcQ" 
-                opts={{
-                  width: '100%',
-                  height: '100%',
-                  playerVars: {
-                    autoplay: 0,
-                    modestbranding: 1,
-                    rel: 0
-                  }
-                }}
-                className="w-full h-full"
-              />
+          {/* YouTube Video - Positioned for optimal visibility */}
+          <div className="fixed top-1/2 right-6 -translate-y-1/2 z-20 hidden sm:block">
+            <div className="aspect-video w-[260px] md:w-[340px] lg:w-[400px] bg-black rounded-xl overflow-hidden shadow-xl border-4 border-white/30 transform hover:scale-105 transition-transform duration-300">
+              <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 opacity-75 blur-sm"></div>
+              <div className="relative z-10">
+                <YouTube 
+                  videoId="dQw4w9WgXcQ" 
+                  opts={{
+                    width: '100%',
+                    height: '100%',
+                    playerVars: {
+                      autoplay: 0,
+                      modestbranding: 1,
+                      rel: 0,
+                      controls: 1,
+                      showinfo: 0
+                    }
+                  }}
+                  className="w-full h-full"
+                  onReady={(event: any) => {
+                    // Optional: Add a play button overlay or customize player
+                    if (event && event.target && typeof event.target.pauseVideo === 'function') {
+                      event.target.pauseVideo();
+                    }
+                  }}
+                />
+              </div>
+              {/* Play Indicator */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="bg-white/20 rounded-full p-3 md:p-4 backdrop-blur-sm opacity-80 hover:opacity-100 transition-opacity">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-8 h-8 md:w-10 md:h-10">
+                    <path fillRule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
         </div>
