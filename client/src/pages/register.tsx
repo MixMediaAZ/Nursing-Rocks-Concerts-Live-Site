@@ -268,7 +268,7 @@ export default function RegisterPage() {
                     className="w-full"
                     onClick={handleAccountStep}
                   >
-                    Continue to License Verification
+                    Continue
                   </Button>
                 </>
               ) : (
