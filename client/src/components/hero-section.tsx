@@ -29,11 +29,11 @@ const HeroSection = () => {
     return (
       <section className="relative overflow-hidden bg-[#333333] text-white min-h-[600px]">
         {/* Skeleton for Video Player in Monitor (3 inch) */}
-        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 md:top-8 md:right-8 z-30 max-w-[80px] sm:max-w-[100px] md:max-w-[120px] lg:max-w-[150px]">
+        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 md:top-8 md:right-8 z-30 max-w-[100px] sm:max-w-[130px] md:max-w-[150px] lg:max-w-[180px]">
           <div className="relative">
-            <Skeleton className="aspect-video w-full rounded-lg bg-black/40" />
-            <div className="h-1 sm:h-1.5 md:h-2 bg-[#333] w-1/2 mx-auto rounded-b-md" />
-            <div className="h-1.5 sm:h-2 md:h-3 bg-[#222] w-1/4 mx-auto rounded-b-md" />
+            <Skeleton className="aspect-video w-full rounded-lg bg-black/70 border-4 border-[#444]" />
+            <div className="h-1.5 sm:h-2 md:h-2.5 bg-[#444] w-1/2 mx-auto rounded-b-md" />
+            <div className="h-2 sm:h-2.5 md:h-3.5 bg-[#333] w-1/4 mx-auto rounded-b-md" />
           </div>
         </div>
       
@@ -79,18 +79,18 @@ const HeroSection = () => {
       </div>
 
       {/* Video Player in Monitor - Upper Right (3 inch) */}
-      <div className="absolute top-2 right-2 sm:top-4 sm:right-4 md:top-8 md:right-8 z-30 max-w-[80px] sm:max-w-[100px] md:max-w-[120px] lg:max-w-[150px]">
+      <div className="absolute top-2 right-2 sm:top-4 sm:right-4 md:top-8 md:right-8 z-30 max-w-[100px] sm:max-w-[130px] md:max-w-[150px] lg:max-w-[180px]">
         <div className="relative">
           {/* Monitor Frame */}
-          <div className="absolute inset-0 bg-black/80 rounded-lg border-2 sm:border-3 md:border-4 border-[#333] shadow-2xl" />
+          <div className="absolute inset-0 bg-black rounded-lg border-4 border-[#444] shadow-2xl" />
           
           {/* Video Screen */}
-          <div className="relative rounded-lg overflow-hidden shadow-inner border-2 border-[#444] aspect-video cursor-pointer group hover:border-[#5D3FD3] transition-colors">
+          <div className="relative rounded-lg overflow-hidden shadow-inner border-2 border-[#666] aspect-video cursor-pointer group hover:border-[#5D3FD3] transition-colors">
             <div className="absolute inset-0 bg-gradient-to-br from-[#222] to-[#111]">
               {/* Video Content */}
               <div className="w-full h-full flex items-center justify-center">
-                <div className="bg-white/10 rounded-full p-1 sm:p-1.5 md:p-2 group-hover:bg-[#5D3FD3]/30 group-hover:scale-110 transition">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white sm:w-[15px] sm:h-[15px] md:w-[20px] md:h-[20px]">
+                <div className="bg-white/20 rounded-full p-2 sm:p-2.5 md:p-3 group-hover:bg-[#5D3FD3]/40 group-hover:scale-110 transition">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white sm:w-[18px] sm:h-[18px] md:w-[22px] md:h-[22px]">
                     <polygon points="5 3 19 12 5 21 5 3"></polygon>
                   </svg>
                 </div>
@@ -98,7 +98,7 @@ const HeroSection = () => {
               
               {/* Video Title */}
               <div className="absolute bottom-1 left-0 right-0 text-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <span className="text-[8px] text-white/80 font-medium bg-black/40 px-1 py-0.5 rounded">
+                <span className="text-[8px] sm:text-[10px] text-white font-medium bg-black/60 px-1 py-0.5 rounded">
                   Watch Trailer
                 </span>
               </div>
@@ -106,8 +106,8 @@ const HeroSection = () => {
           </div>
           
           {/* Monitor Base */}
-          <div className="h-1 sm:h-1.5 md:h-2 bg-[#333] w-1/2 mx-auto rounded-b-md shadow-md" />
-          <div className="h-1.5 sm:h-2 md:h-3 bg-[#222] w-1/4 mx-auto rounded-b-md shadow-md" />
+          <div className="h-1.5 sm:h-2 md:h-2.5 bg-[#444] w-1/2 mx-auto rounded-b-md shadow-md" />
+          <div className="h-2 sm:h-2.5 md:h-3.5 bg-[#333] w-1/4 mx-auto rounded-b-md shadow-md" />
         </div>
       </div>
 
