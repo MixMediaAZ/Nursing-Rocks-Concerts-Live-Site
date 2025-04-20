@@ -40,18 +40,15 @@ const HeroSection = () => {
               <Skeleton className="h-8 w-48 bg-white/20" />
             </div>
             
-            {/* Skeleton for buttons and video */}
-            <div className="flex flex-wrap md:flex-nowrap gap-8 items-start">
-              {/* Buttons Column */}
-              <div className="flex flex-col gap-4 w-full max-w-sm">
-                <Skeleton className="h-14 w-full bg-[#F61D7A]/30 rounded-full" />
-                <Skeleton className="h-12 w-full bg-[#00A3E0]/50 rounded-full" />
-              </div>
-              
-              {/* Video Placeholder */}
-              <div className="w-full md:w-auto mt-4 md:mt-0">
-                <Skeleton className="aspect-video w-full md:w-[280px] lg:w-[320px] bg-black/40 rounded-lg border-2 border-white/10" />
-              </div>
+            {/* Skeleton for buttons */}
+            <div className="flex flex-col gap-4 w-full max-w-sm">
+              <Skeleton className="h-14 w-full bg-[#F61D7A]/30 rounded-full" />
+              <Skeleton className="h-12 w-full bg-[#00A3E0]/50 rounded-full" />
+            </div>
+            
+            {/* Video Placeholder - Positioned to the right */}
+            <div className="absolute top-16 right-6 md:top-28 md:right-12 lg:top-32 lg:right-16 z-20 hidden sm:block">
+              <Skeleton className="aspect-video w-[220px] md:w-[280px] lg:w-[320px] bg-black/40 rounded-lg border-2 border-white/10" />
             </div>
           </div>
         </div>
@@ -107,52 +104,50 @@ const HeroSection = () => {
             )}
           </div>
           
-          <div className="flex flex-wrap md:flex-nowrap gap-8 items-start">
-            {/* Buttons Column */}
-            <div className="flex flex-col gap-4 w-full max-w-sm">
-              {/* Free Ticket Button */}
-              <Button
-                asChild
-                size="lg"
-                className="bg-gradient-to-r from-[#F61D7A] to-[#FF3366] hover:from-[#FF3366] hover:to-[#F61D7A] text-white font-accent font-bold text-sm md:text-lg py-4 px-6 rounded-full shadow-lg transform transition-transform hover:scale-105 animate-pulse"
-              >
-                <Link href="/register">
-                  <span className="uppercase">Nurses, Get Your Free Tickets Here!</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5 ml-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                </Link>
-              </Button>
-              
-              {/* Store Button */}
-              <Button
-                asChild
-                className="bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold text-sm md:text-base py-3 px-6 rounded-full"
-              >
-                <Link href="/store">
-                  Visit Our Store
-                  <i className="fas fa-shopping-bag ml-2"></i>
-                </Link>
-              </Button>
-            </div>
+          {/* Buttons Column */}
+          <div className="flex flex-col gap-4 w-full max-w-sm">
+            {/* Free Ticket Button */}
+            <Button
+              asChild
+              size="lg"
+              className="bg-gradient-to-r from-[#F61D7A] to-[#FF3366] hover:from-[#FF3366] hover:to-[#F61D7A] text-white font-accent font-bold text-sm md:text-lg py-4 px-6 rounded-full shadow-lg transform transition-transform hover:scale-105 animate-pulse"
+            >
+              <Link href="/register">
+                <span className="uppercase">Nurses, Get Your Free Tickets Here!</span>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5 ml-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </Link>
+            </Button>
             
-            {/* YouTube Video */}
-            <div className="w-full md:w-auto">
-              <div className="aspect-video w-full md:w-[280px] lg:w-[320px] bg-black rounded-lg overflow-hidden shadow-2xl border-2 border-white/20">
-                <YouTube 
-                  videoId="dQw4w9WgXcQ" 
-                  opts={{
-                    width: '100%',
-                    height: '100%',
-                    playerVars: {
-                      autoplay: 0,
-                      modestbranding: 1,
-                      rel: 0
-                    }
-                  }}
-                  className="w-full h-full"
-                />
-              </div>
+            {/* Store Button */}
+            <Button
+              asChild
+              className="bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold text-sm md:text-base py-3 px-6 rounded-full"
+            >
+              <Link href="/store">
+                Visit Our Store
+                <i className="fas fa-shopping-bag ml-2"></i>
+              </Link>
+            </Button>
+          </div>
+          
+          {/* YouTube Video - Positioned to the right */}
+          <div className="absolute top-16 right-6 md:top-28 md:right-12 lg:top-32 lg:right-16 z-20 hidden sm:block">
+            <div className="aspect-video w-[220px] md:w-[280px] lg:w-[320px] bg-black rounded-lg overflow-hidden shadow-2xl border-2 border-white/20">
+              <YouTube 
+                videoId="dQw4w9WgXcQ" 
+                opts={{
+                  width: '100%',
+                  height: '100%',
+                  playerVars: {
+                    autoplay: 0,
+                    modestbranding: 1,
+                    rel: 0
+                  }
+                }}
+                className="w-full h-full"
+              />
             </div>
           </div>
         </div>
