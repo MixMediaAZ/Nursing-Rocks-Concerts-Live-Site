@@ -116,18 +116,11 @@ const HeroSection = () => {
           <div className="inline-block bg-[#FF3366] text-white px-5 py-2 rounded-full mb-6 font-accent text-base md:text-lg font-semibold">
             NURSING ROCKS! CONCERT SERIES
           </div>
-          <h1 className="font-heading text-3xl md:text-5xl font-bold mb-4">
+          <h2 className="font-heading text-2xl md:text-3xl font-bold mb-4">
             Mission
-          </h1>
-          <p className="text-lg mb-6">
-            Empowering and honoring nurses through the uplifting power of live music, our mission is to foster a positive impact within the nursing community at nationwide events. We strive to elevate awareness of the nursing profession and support its advancement through scholarship opportunities for further education.
-          </p>
-          
-          <h2 className="font-heading text-2xl md:text-3xl font-bold mt-6 mb-3">
-            About
           </h2>
           <p className="text-lg mb-8">
-            The Nursing Rocks! Concert Series is a sponsored live music event dedicated to nationwide nurse appreciation, showcasing top touring bands. Founded by Spencer Coon, a seasoned nurse advocate of over 25 years, our initiative unites local communities and businesses in honoring their dedicated nurses. Through Silent Auctions, we raise scholarship funds to support ongoing education, partnering with nationally accredited and local nursing schools to empower aspiring nurses in each community.
+            Empowering and honoring nurses through the uplifting power of live music, our mission is to foster a positive impact within the nursing community at nationwide events. We strive to elevate awareness of the nursing profession and support its advancement through scholarship opportunities for further education.
           </p>
 
           <div className="border-t border-white/20 my-8 pt-6">
