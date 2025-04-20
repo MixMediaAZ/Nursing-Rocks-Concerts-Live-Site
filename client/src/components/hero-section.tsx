@@ -68,7 +68,7 @@ const HeroSection = () => {
   }
 
   return (
-    <section className="relative overflow-hidden bg-[#333333] text-white min-h-[600px]">
+    <section className="relative overflow-hidden bg-[#333333] text-white min-h-[600px] pb-24 xs:pb-16">
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-r from-[#5D3FD3]/80 to-[#FF3366]/80 mix-blend-multiply"></div>
         <img
@@ -78,7 +78,7 @@ const HeroSection = () => {
         />
       </div>
 
-      <div className="container mx-auto px-4 py-16 md:py-28 relative z-10">
+      <div className="container mx-auto px-4 py-16 md:py-28 pb-16 xs:pb-0 relative z-10">
         <div className="max-w-3xl">
           <div className="inline-block bg-[#FF3366] text-white px-6 py-3 rounded-full mb-6 font-accent text-2xl md:text-3xl font-bold">
             NURSING ROCKS! CONCERT SERIES
@@ -140,8 +140,8 @@ const HeroSection = () => {
           </div>
           
           {/* YouTube Video - Responsive across all platforms */}
-          <div className="absolute bottom-6 right-6 md:bottom-12 md:right-12 lg:bottom-16 lg:right-16 z-20 block">
-            <div className="aspect-video w-[180px] sm:w-[220px] md:w-[320px] lg:w-[380px] bg-black rounded-xl overflow-hidden shadow-xl border-4 border-white/30 transform hover:scale-105 transition-transform duration-300">
+          <div className="absolute bottom-20 xs:bottom-6 right-6 md:bottom-12 md:right-12 lg:bottom-16 lg:right-16 z-20 block">
+            <div className="aspect-video w-[120px] xs:w-[180px] sm:w-[220px] md:w-[320px] lg:w-[380px] bg-black rounded-xl overflow-hidden shadow-xl border-4 border-white/30 transform hover:scale-105 transition-transform duration-300">
               <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 opacity-75 blur-sm"></div>
               <div className="relative z-10">
                 <YouTube 
@@ -169,8 +169,8 @@ const HeroSection = () => {
               </div>
               {/* Play Indicator - Responsive sizing */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="bg-white/20 rounded-full p-2 sm:p-3 md:p-4 backdrop-blur-sm opacity-80 hover:opacity-100 transition-opacity">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10">
+                <div className="bg-white/20 rounded-full p-1 xs:p-2 sm:p-3 md:p-4 backdrop-blur-sm opacity-80 hover:opacity-100 transition-opacity">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-4 h-4 xs:w-6 xs:h-6 sm:w-8 sm:h-8 md:w-10 md:h-10">
                     <path fillRule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z" clipRule="evenodd" />
                   </svg>
                 </div>
