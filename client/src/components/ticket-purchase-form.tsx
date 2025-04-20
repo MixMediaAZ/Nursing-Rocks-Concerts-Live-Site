@@ -222,13 +222,13 @@ export function TicketPurchaseForm({
         <div className="bg-amber-50 border border-amber-200 rounded-md p-4 text-amber-800">
           <h4 className="font-medium mb-2">Nurse Verification Required</h4>
           <p className="text-sm mb-4">
-            To purchase tickets for {eventTitle}, you need to verify your nursing license. This is a one-time process that ensures our events remain exclusive to healthcare professionals.
+            To purchase tickets for {eventTitle}, you need to register and verify your nursing license. This is a one-time process that ensures our events remain exclusive to healthcare professionals.
           </p>
           <Button 
             variant="outline"
-            onClick={() => window.location.href = "/license"}
+            onClick={() => window.location.href = "/register"}
           >
-            Verify Your License
+            Register as a Nurse
           </Button>
         </div>
       )}

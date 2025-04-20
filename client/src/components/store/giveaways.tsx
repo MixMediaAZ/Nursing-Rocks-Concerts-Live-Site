@@ -314,12 +314,12 @@ export function Giveaways() {
           <div className="flex-1">
             <h3 className="text-xl font-semibold mb-2">Are you a registered nurse?</h3>
             <p className="text-muted-foreground mb-4">
-              Verify your nursing license to unlock exclusive merchandise, ticket giveaways, and special promotions just for healthcare professionals.
+              Register as a verified nursing professional to unlock exclusive merchandise, free concert tickets, giveaways, and special promotions just for healthcare professionals.
             </p>
           </div>
           <div className="flex-shrink-0">
             <Button asChild size="lg">
-              <Link href="/license">Verify License</Link>
+              <Link href="/register">Register as a Nurse</Link>
             </Button>
           </div>
         </div>
