@@ -66,7 +66,7 @@ export function Footer() {
 
               <li>
                 <a href="https://nursingrocks.org" target="_blank" rel="noopener noreferrer">
-                  <div className="inline-block text-muted-foreground hover:text-primary transition-colors cursor-pointer">NursingRocks.Org</div>
+                  <div className="inline-block text-muted-foreground hover:text-primary transition-colors cursor-pointer">NursingRocks.org</div>
                 </a>
               </li>
             </ul>
