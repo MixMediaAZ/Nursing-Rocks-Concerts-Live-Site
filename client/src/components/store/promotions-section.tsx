@@ -45,31 +45,31 @@ export function PromotionsSection() {
             <div className="h-2 bg-gradient-to-r from-purple-400 to-pink-500"></div>
           </div>
           
-          {/* Free Concert Tickets */}
+          {/* Concert Discount Package */}
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <div className="p-6">
               <div className="flex items-center gap-3 mb-4">
                 <span className="p-2 rounded-full bg-blue-100">
                   <Gift className="h-5 w-5 text-blue-600" />
                 </span>
-                <h3 className="text-xl font-semibold">Free Concert Tickets</h3>
+                <h3 className="text-xl font-semibold">Concert Discount Package</h3>
               </div>
               
               <p className="text-muted-foreground mb-6">
-                Licensed nurses can register to receive free tickets to select 
-                Nursing Rocks concerts. Verify your nursing license to qualify.
+                Get a special discount when purchasing merchandise and concert tickets 
+                together. Save up to 20% on select items and shows.
               </p>
               
               <div className="flex items-center justify-between">
-                <Link href="/register">
+                <Link href="/store/promotion/discount-package">
                   <Button variant="outline" className="gap-2 group">
-                    Verify License
+                    View Packages
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Button>
                 </Link>
                 <div className="text-sm font-medium text-blue-600 flex items-center gap-1">
                   <Sparkles className="h-4 w-4" />
-                  For Verified Nurses
+                  Limited Time Offer
                 </div>
               </div>
             </div>
