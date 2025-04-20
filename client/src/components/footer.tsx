@@ -63,10 +63,11 @@ export function Footer() {
                   <div className="inline-block text-muted-foreground hover:text-primary transition-colors cursor-pointer">Venues</div>
                 </Link>
               </li>
+
               <li>
-                <Link href="/license">
-                  <div className="inline-block text-muted-foreground hover:text-primary transition-colors cursor-pointer">License Verification</div>
-                </Link>
+                <a href="https://nursingrocks.org" target="_blank" rel="noopener noreferrer">
+                  <div className="inline-block text-muted-foreground hover:text-primary transition-colors cursor-pointer">NursingRocks.Org</div>
+                </a>
               </li>
             </ul>
           </div>
@@ -74,12 +75,7 @@ export function Footer() {
           <div className="flex flex-col gap-2">
             <h3 className="text-lg font-bold">Contact Us</h3>
             <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">
-                  (800) NURSING
-                </span>
-              </div>
+
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">
