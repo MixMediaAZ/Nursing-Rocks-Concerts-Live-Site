@@ -29,11 +29,11 @@ const HeroSection = () => {
     return (
       <section className="relative overflow-hidden bg-[#333333] text-white min-h-[600px]">
         {/* Skeleton for Video Player in Monitor (3 inch) */}
-        <div className="absolute top-4 right-4 md:top-8 md:right-8 z-20 max-w-[120px] md:max-w-[150px]">
+        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 md:top-8 md:right-8 z-20 max-w-[80px] sm:max-w-[100px] md:max-w-[120px] lg:max-w-[150px]">
           <div className="relative">
             <Skeleton className="aspect-video w-full rounded-lg bg-black/40" />
-            <div className="h-2 bg-[#333] w-1/2 mx-auto rounded-b-md" />
-            <div className="h-3 bg-[#222] w-1/4 mx-auto rounded-b-md" />
+            <div className="h-1 sm:h-1.5 md:h-2 bg-[#333] w-1/2 mx-auto rounded-b-md" />
+            <div className="h-1.5 sm:h-2 md:h-3 bg-[#222] w-1/4 mx-auto rounded-b-md" />
           </div>
         </div>
       
@@ -56,8 +56,8 @@ const HeroSection = () => {
         </div>
         
         {/* Skeleton for ticket button at bottom left */}
-        <div className="absolute bottom-8 left-8 md:bottom-16 md:left-16 z-20">
-          <Skeleton className="h-16 w-80 md:w-96 bg-[#F61D7A]/30 rounded-xl" />
+        <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 md:bottom-16 md:left-16 z-20">
+          <Skeleton className="h-10 sm:h-12 md:h-16 w-40 sm:w-60 md:w-80 lg:w-96 bg-[#F61D7A]/30 rounded-lg md:rounded-xl" />
         </div>
       </section>
     );
@@ -79,18 +79,18 @@ const HeroSection = () => {
       </div>
 
       {/* Video Player in Monitor - Upper Right (3 inch) */}
-      <div className="absolute top-4 right-4 md:top-8 md:right-8 z-20 max-w-[120px] md:max-w-[150px]">
+      <div className="absolute top-2 right-2 sm:top-4 sm:right-4 md:top-8 md:right-8 z-20 max-w-[80px] sm:max-w-[100px] md:max-w-[120px] lg:max-w-[150px]">
         <div className="relative">
           {/* Monitor Frame */}
-          <div className="absolute inset-0 bg-black/80 rounded-lg border-4 border-[#333] shadow-2xl" />
+          <div className="absolute inset-0 bg-black/80 rounded-lg border-2 sm:border-3 md:border-4 border-[#333] shadow-2xl" />
           
           {/* Video Screen */}
           <div className="relative rounded-lg overflow-hidden shadow-inner border-2 border-[#444] aspect-video cursor-pointer group hover:border-[#5D3FD3] transition-colors">
             <div className="absolute inset-0 bg-gradient-to-br from-[#222] to-[#111]">
               {/* Video Content */}
               <div className="w-full h-full flex items-center justify-center">
-                <div className="bg-white/10 rounded-full p-2 group-hover:bg-[#5D3FD3]/30 group-hover:scale-110 transition">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                <div className="bg-white/10 rounded-full p-1 sm:p-1.5 md:p-2 group-hover:bg-[#5D3FD3]/30 group-hover:scale-110 transition">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white sm:w-[15px] sm:h-[15px] md:w-[20px] md:h-[20px]">
                     <polygon points="5 3 19 12 5 21 5 3"></polygon>
                   </svg>
                 </div>
@@ -106,8 +106,8 @@ const HeroSection = () => {
           </div>
           
           {/* Monitor Base */}
-          <div className="h-2 bg-[#333] w-1/2 mx-auto rounded-b-md shadow-md" />
-          <div className="h-3 bg-[#222] w-1/4 mx-auto rounded-b-md shadow-md" />
+          <div className="h-1 sm:h-1.5 md:h-2 bg-[#333] w-1/2 mx-auto rounded-b-md shadow-md" />
+          <div className="h-1.5 sm:h-2 md:h-3 bg-[#222] w-1/4 mx-auto rounded-b-md shadow-md" />
         </div>
       </div>
 
@@ -165,15 +165,16 @@ const HeroSection = () => {
       </div>
       
       {/* Free Ticket Button - Positioned at bottom left */}
-      <div className="absolute bottom-8 left-8 md:bottom-16 md:left-16 z-20">
+      <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 md:bottom-16 md:left-16 z-20">
         <Button
           asChild
           size="lg"
-          className="bg-gradient-to-r from-[#F61D7A] to-[#FF3366] hover:from-[#FF3366] hover:to-[#F61D7A] text-white font-accent font-bold text-lg py-6 px-8 rounded-xl shadow-lg transform transition-transform hover:scale-105 w-full md:w-auto animate-pulse"
+          className="bg-gradient-to-r from-[#F61D7A] to-[#FF3366] hover:from-[#FF3366] hover:to-[#F61D7A] text-white font-accent font-bold text-xs sm:text-sm md:text-lg py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-lg md:rounded-xl shadow-lg transform transition-transform hover:scale-105 w-auto animate-pulse"
         >
           <Link href="/register">
-            NURSES, GET YOUR FREE TICKETS HERE!
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 ml-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <span className="hidden sm:inline">NURSES, GET YOUR FREE TICKETS HERE!</span>
+            <span className="sm:hidden">FREE TICKETS HERE!</span>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 ml-1 sm:ml-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
           </Link>
