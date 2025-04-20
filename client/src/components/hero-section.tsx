@@ -113,10 +113,10 @@ const HeroSection = () => {
 
       <div className="container mx-auto px-4 py-16 md:py-28 relative z-10">
         <div className="max-w-3xl">
-          <div className="inline-block bg-[#FF3366] text-white px-5 py-2 rounded-full mb-6 font-accent text-base md:text-lg font-semibold">
+          <div className="inline-block bg-[#FF3366] text-white px-6 py-3 rounded-full mb-6 font-accent text-2xl md:text-3xl font-bold">
             NURSING ROCKS! CONCERT SERIES
           </div>
-          <h2 className="font-heading text-2xl md:text-3xl font-bold mb-4">
+          <h2 className="font-heading text-base md:text-lg font-semibold mb-4">
             Mission
           </h2>
           <p className="text-lg mb-8">
@@ -152,16 +152,6 @@ const HeroSection = () => {
               <Link href="/store">
                 Visit Our Store
                 <i className="fas fa-shopping-bag ml-2"></i>
-              </Link>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              className="bg-transparent border-2 border-white hover:bg-white/10 text-white font-accent font-semibold py-3 px-8 rounded-full"
-            >
-              <Link href={`/events/${featuredEvent.id}`}>
-                More Info
-                <i className="fas fa-arrow-right ml-2"></i>
               </Link>
             </Button>
           </div>
