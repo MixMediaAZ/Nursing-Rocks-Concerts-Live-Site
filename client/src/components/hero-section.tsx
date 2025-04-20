@@ -117,11 +117,11 @@ const HeroSection = () => {
             <Button
               asChild
               size="lg"
-              className="bg-gradient-to-r from-[#F61D7A] to-[#FF3366] hover:from-[#FF3366] hover:to-[#F61D7A] text-white font-accent font-bold text-sm md:text-lg py-4 px-6 rounded-full shadow-lg transform transition-transform hover:scale-105 animate-pulse"
+              className="bg-gradient-to-r from-[#F61D7A] to-[#FF3366] hover:from-[#FF3366] hover:to-[#F61D7A] text-white font-accent font-bold text-xs sm:text-sm md:text-base py-4 px-4 sm:px-6 rounded-full shadow-lg transform transition-transform hover:scale-105 animate-pulse"
             >
               <Link href="/register">
                 <span className="uppercase">Nurses, Get Your Free Tickets Here!</span>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5 ml-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 ml-1 sm:ml-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </Link>
@@ -130,11 +130,11 @@ const HeroSection = () => {
             {/* Store Button */}
             <Button
               asChild
-              className="bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold text-sm md:text-base py-3 px-6 rounded-full"
+              className="bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full"
             >
               <Link href="/store">
                 Visit Our Store
-                <i className="fas fa-shopping-bag ml-2"></i>
+                <i className="fas fa-shopping-bag ml-1 sm:ml-2"></i>
               </Link>
             </Button>
             
