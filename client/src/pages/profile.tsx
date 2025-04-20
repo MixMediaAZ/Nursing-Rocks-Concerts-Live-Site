@@ -122,7 +122,7 @@ export default function ProfilePage() {
               
               <div className="mt-6 space-y-2">
                 {!userData.is_verified && (
-                  <Button variant="outline" className="w-full" onClick={() => setLocation("/license")}>
+                  <Button variant="outline" className="w-full" onClick={() => setLocation("/register")}>
                     Verify Your License
                   </Button>
                 )}
@@ -187,14 +187,14 @@ export default function ProfilePage() {
                           </div>
                         ))}
                       </div>
-                      <Button variant="outline" onClick={() => setLocation("/license")}>
+                      <Button variant="outline" onClick={() => setLocation("/register")}>
                         Manage Licenses
                       </Button>
                     </div>
                   ) : (
                     <div className="py-8 text-center">
                       <p className="text-muted-foreground mb-4">You haven't submitted any nursing licenses yet.</p>
-                      <Button onClick={() => setLocation("/license")}>
+                      <Button onClick={() => setLocation("/register")}>
                         Verify Your License
                       </Button>
                     </div>

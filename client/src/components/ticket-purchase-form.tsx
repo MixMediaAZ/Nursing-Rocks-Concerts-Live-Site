@@ -142,7 +142,7 @@ export function TicketPurchaseForm({
   
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold">Purchase Tickets</h3>
+      <h3 className="text-lg font-semibold">Get Tickets</h3>
       
       {isVerified ? (
         <Form {...form}>
