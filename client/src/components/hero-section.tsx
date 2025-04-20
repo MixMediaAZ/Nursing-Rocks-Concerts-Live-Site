@@ -144,10 +144,25 @@ const HeroSection = () => {
             )}
           </div>
           
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-col gap-4 w-full max-w-md">
+            {/* Free Ticket Button */}
             <Button
               asChild
-              className="bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold py-3 px-8 rounded-full"
+              size="lg"
+              className="bg-gradient-to-r from-[#F61D7A] to-[#FF3366] hover:from-[#FF3366] hover:to-[#F61D7A] text-white font-accent font-bold text-sm md:text-lg py-4 px-6 rounded-full shadow-lg transform transition-transform hover:scale-105 animate-pulse"
+            >
+              <Link href="/register">
+                <span className="uppercase">Nurses, Get Your Free Tickets Here!</span>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5 ml-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </Link>
+            </Button>
+            
+            {/* Store Button */}
+            <Button
+              asChild
+              className="bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold text-sm md:text-base py-3 px-6 rounded-full"
             >
               <Link href="/store">
                 Visit Our Store
@@ -156,23 +171,6 @@ const HeroSection = () => {
             </Button>
           </div>
         </div>
-      </div>
-      
-      {/* Free Ticket Button - Positioned at bottom left */}
-      <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 md:bottom-16 md:left-16 z-30">
-        <Button
-          asChild
-          size="lg"
-          className="bg-gradient-to-r from-[#F61D7A] to-[#FF3366] hover:from-[#FF3366] hover:to-[#F61D7A] text-white font-accent font-bold text-xs sm:text-sm md:text-lg py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-lg md:rounded-xl shadow-lg transform transition-transform hover:scale-105 w-auto animate-pulse"
-        >
-          <Link href="/register">
-            <span className="hidden sm:inline">NURSES, GET YOUR FREE TICKETS HERE!</span>
-            <span className="sm:hidden">FREE TICKETS HERE!</span>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 ml-1 sm:ml-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
-          </Link>
-        </Button>
       </div>
     </section>
   );
