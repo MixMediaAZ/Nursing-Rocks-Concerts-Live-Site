@@ -213,7 +213,7 @@ const EventDetails = () => {
                 className="w-full bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold py-4 px-8 rounded-full text-lg"
               >
                 <a href={event.tickets_url || "#"}>
-                  Buy Tickets Now
+                  Get Tickets Now
                   <i className="fas fa-ticket-alt ml-2"></i>
                 </a>
               </Button>

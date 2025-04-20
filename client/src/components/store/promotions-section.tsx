@@ -61,7 +61,7 @@ export function PromotionsSection() {
               </p>
               
               <div className="flex items-center justify-between">
-                <Link href="/license">
+                <Link href="/register">
                   <Button variant="outline" className="gap-2 group">
                     Verify License
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />

@@ -54,7 +54,7 @@ const EventCard = ({ event }: { event: Event }) => {
           asChild
           className="w-full bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white font-accent font-semibold py-2.5 px-6 rounded-full"
         >
-          <Link href={event.tickets_url || "#"}>Buy Tickets</Link>
+          <Link href={event.tickets_url || "#"}>Get Tickets</Link>
         </Button>
       </CardContent>
     </Card>

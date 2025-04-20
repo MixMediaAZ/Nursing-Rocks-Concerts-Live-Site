@@ -214,7 +214,7 @@ export function TicketPurchaseForm({
               className="w-full"
               disabled={purchaseTicketMutation.isPending}
             >
-              {purchaseTicketMutation.isPending ? "Processing..." : "Purchase Tickets"}
+              {purchaseTicketMutation.isPending ? "Processing..." : "Get Tickets"}
             </Button>
           </form>
         </Form>
