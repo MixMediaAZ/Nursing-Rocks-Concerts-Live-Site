@@ -29,7 +29,7 @@ const HeroSection = () => {
     return (
       <section className="relative overflow-hidden bg-[#333333] text-white min-h-[600px]">
         {/* Skeleton for Video Player in Monitor (3 inch) */}
-        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 md:top-8 md:right-8 z-20 max-w-[80px] sm:max-w-[100px] md:max-w-[120px] lg:max-w-[150px]">
+        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 md:top-8 md:right-8 z-30 max-w-[80px] sm:max-w-[100px] md:max-w-[120px] lg:max-w-[150px]">
           <div className="relative">
             <Skeleton className="aspect-video w-full rounded-lg bg-black/40" />
             <div className="h-1 sm:h-1.5 md:h-2 bg-[#333] w-1/2 mx-auto rounded-b-md" />
@@ -56,7 +56,7 @@ const HeroSection = () => {
         </div>
         
         {/* Skeleton for ticket button at bottom left */}
-        <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 md:bottom-16 md:left-16 z-20">
+        <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 md:bottom-16 md:left-16 z-30">
           <Skeleton className="h-10 sm:h-12 md:h-16 w-40 sm:w-60 md:w-80 lg:w-96 bg-[#F61D7A]/30 rounded-lg md:rounded-xl" />
         </div>
       </section>
@@ -79,7 +79,7 @@ const HeroSection = () => {
       </div>
 
       {/* Video Player in Monitor - Upper Right (3 inch) */}
-      <div className="absolute top-2 right-2 sm:top-4 sm:right-4 md:top-8 md:right-8 z-20 max-w-[80px] sm:max-w-[100px] md:max-w-[120px] lg:max-w-[150px]">
+      <div className="absolute top-2 right-2 sm:top-4 sm:right-4 md:top-8 md:right-8 z-30 max-w-[80px] sm:max-w-[100px] md:max-w-[120px] lg:max-w-[150px]">
         <div className="relative">
           {/* Monitor Frame */}
           <div className="absolute inset-0 bg-black/80 rounded-lg border-2 sm:border-3 md:border-4 border-[#333] shadow-2xl" />
@@ -165,7 +165,7 @@ const HeroSection = () => {
       </div>
       
       {/* Free Ticket Button - Positioned at bottom left */}
-      <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 md:bottom-16 md:left-16 z-20">
+      <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 md:bottom-16 md:left-16 z-30">
         <Button
           asChild
           size="lg"
