@@ -29,7 +29,7 @@ const HeroSection = () => {
     return (
       <section className="relative overflow-hidden bg-[#333333] text-white min-h-[600px]">
         {/* Skeleton for Video Player in Monitor (3 inch) */}
-        <div className="absolute top-2 left-2 sm:top-4 sm:left-4 md:top-8 md:left-8 z-30 max-w-[100px] sm:max-w-[130px] md:max-w-[150px] lg:max-w-[180px]">
+        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 md:top-8 md:right-8 z-30 max-w-[100px] sm:max-w-[130px] md:max-w-[150px] lg:max-w-[180px]">
           <div className="relative">
             <Skeleton className="aspect-video w-full rounded-lg bg-black/70 border-4 border-[#444]" />
             <div className="h-1.5 sm:h-2 md:h-2.5 bg-[#444] w-1/2 mx-auto rounded-b-md" />
@@ -78,8 +78,8 @@ const HeroSection = () => {
         />
       </div>
 
-      {/* Video Player in Monitor - Upper Left (3 inch) */}
-      <div className="absolute top-2 left-2 sm:top-4 sm:left-4 md:top-8 md:left-8 z-30 max-w-[100px] sm:max-w-[130px] md:max-w-[150px] lg:max-w-[180px]">
+      {/* Video Player in Monitor - Upper Right (3 inch) */}
+      <div className="absolute top-2 right-2 sm:top-4 sm:right-4 md:top-8 md:right-8 z-30 max-w-[100px] sm:max-w-[130px] md:max-w-[150px] lg:max-w-[180px]">
         <div className="relative">
           {/* Monitor Frame */}
           <div className="absolute inset-0 bg-black rounded-lg border-4 border-[#444] shadow-2xl" />
