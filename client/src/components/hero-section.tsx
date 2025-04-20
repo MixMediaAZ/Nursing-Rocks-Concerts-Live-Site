@@ -46,14 +46,14 @@ const HeroSection = () => {
               <Skeleton className="h-12 w-full bg-[#00A3E0]/50 rounded-full" />
             </div>
             
-            {/* Video Placeholder - Positioned in lower right corner */}
-            <div className="absolute bottom-6 right-6 md:bottom-12 md:right-12 lg:bottom-16 lg:right-16 z-20 hidden sm:block">
+            {/* Video Placeholder - Responsive across all platforms */}
+            <div className="absolute bottom-6 right-6 md:bottom-12 md:right-12 lg:bottom-16 lg:right-16 z-20 block">
               <div className="relative">
                 <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-purple-500/30 to-pink-500/30 opacity-75 blur-sm"></div>
-                <Skeleton className="aspect-video w-[240px] md:w-[320px] lg:w-[380px] bg-black/40 rounded-xl border-4 border-white/20 relative z-10" />
-                {/* Play Button Skeleton */}
+                <Skeleton className="aspect-video w-[180px] sm:w-[220px] md:w-[320px] lg:w-[380px] bg-black/40 rounded-xl border-4 border-white/20 relative z-10" />
+                {/* Play Button Skeleton - Responsive sizing */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <Skeleton className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/20" />
+                  <Skeleton className="w-8 h-8 sm:w-10 sm:h-10 md:w-14 md:h-14 rounded-full bg-white/20" />
                 </div>
               </div>
             </div>
@@ -139,9 +139,9 @@ const HeroSection = () => {
             </Button>
           </div>
           
-          {/* YouTube Video - Positioned in lower right corner */}
-          <div className="absolute bottom-6 right-6 md:bottom-12 md:right-12 lg:bottom-16 lg:right-16 z-20 hidden sm:block">
-            <div className="aspect-video w-[240px] md:w-[320px] lg:w-[380px] bg-black rounded-xl overflow-hidden shadow-xl border-4 border-white/30 transform hover:scale-105 transition-transform duration-300">
+          {/* YouTube Video - Responsive across all platforms */}
+          <div className="absolute bottom-6 right-6 md:bottom-12 md:right-12 lg:bottom-16 lg:right-16 z-20 block">
+            <div className="aspect-video w-[180px] sm:w-[220px] md:w-[320px] lg:w-[380px] bg-black rounded-xl overflow-hidden shadow-xl border-4 border-white/30 transform hover:scale-105 transition-transform duration-300">
               <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 opacity-75 blur-sm"></div>
               <div className="relative z-10">
                 <YouTube 
@@ -154,7 +154,8 @@ const HeroSection = () => {
                       modestbranding: 1,
                       rel: 0,
                       controls: 1,
-                      showinfo: 0
+                      showinfo: 0,
+                      playsinline: 1 // Better for mobile
                     }
                   }}
                   className="w-full h-full"
@@ -166,10 +167,10 @@ const HeroSection = () => {
                   }}
                 />
               </div>
-              {/* Play Indicator */}
+              {/* Play Indicator - Responsive sizing */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="bg-white/20 rounded-full p-3 md:p-4 backdrop-blur-sm opacity-80 hover:opacity-100 transition-opacity">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-8 h-8 md:w-10 md:h-10">
+                <div className="bg-white/20 rounded-full p-2 sm:p-3 md:p-4 backdrop-blur-sm opacity-80 hover:opacity-100 transition-opacity">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10">
                     <path fillRule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z" clipRule="evenodd" />
                   </svg>
                 </div>
