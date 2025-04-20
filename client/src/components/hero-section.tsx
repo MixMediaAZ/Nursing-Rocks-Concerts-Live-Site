@@ -112,16 +112,27 @@ const HeroSection = () => {
       </div>
 
       <div className="container mx-auto px-4 py-16 md:py-28 relative z-10">
-        <div className="max-w-2xl">
+        <div className="max-w-3xl">
           <div className="inline-block bg-[#FF3366] text-white px-4 py-1 rounded-full mb-4 font-accent text-sm">
-            HEALTHCARE HEROES CONCERT
+            NURSING ROCKS! CONCERT SERIES
           </div>
           <h1 className="font-heading text-3xl md:text-5xl font-bold mb-4">
-            {featuredEvent.title}
+            Mission
           </h1>
           <p className="text-lg mb-6">
-            {featuredEvent.description || featuredEvent.subtitle}
+            Empowering and honoring nurses through the uplifting power of live music, our mission is to foster a positive impact within the nursing community at nationwide events. We strive to elevate awareness of the nursing profession and support its advancement through scholarship opportunities for further education.
           </p>
+          
+          <h2 className="font-heading text-2xl md:text-3xl font-bold mt-6 mb-3">
+            About
+          </h2>
+          <p className="text-lg mb-8">
+            The Nursing Rocks! Concert Series is a sponsored live music event dedicated to nationwide nurse appreciation, showcasing top touring bands. Founded by Spencer Coon, a seasoned nurse advocate of over 25 years, our initiative unites local communities and businesses in honoring their dedicated nurses. Through Silent Auctions, we raise scholarship funds to support ongoing education, partnering with nationally accredited and local nursing schools to empower aspiring nurses in each community.
+          </p>
+
+          <div className="border-t border-white/20 my-8 pt-6">
+            <h3 className="font-heading text-xl font-semibold mb-4">Upcoming Featured Event</h3>
+          </div>
 
           <div className="flex flex-wrap items-center gap-4 mb-8">
             <div className="flex items-center">
