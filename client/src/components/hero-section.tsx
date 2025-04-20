@@ -27,7 +27,7 @@ const HeroSection = () => {
 
   if (isLoading) {
     return (
-      <section className="relative overflow-hidden bg-[#333333] text-white min-h-[500px]">
+      <section className="relative overflow-hidden bg-[#333333] text-white min-h-[600px]">
         <div className="container mx-auto px-4 py-16 md:py-28 relative z-10">
           <div className="max-w-3xl">
             <Skeleton className="h-8 w-32 bg-white/20 mb-4" />
@@ -37,16 +37,18 @@ const HeroSection = () => {
               <Skeleton className="h-8 w-56 bg-white/20" />
               <Skeleton className="h-8 w-48 bg-white/20" />
             </div>
-            {/* Skeleton for ticket button */}
-            <div className="mb-8">
-              <Skeleton className="h-16 w-full md:w-96 bg-[#F61D7A]/30" />
-            </div>
             
+            {/* Skeleton for store and info buttons */}
             <div className="flex flex-wrap gap-4">
-              <Skeleton className="h-12 w-36 bg-white/20" />
+              <Skeleton className="h-12 w-36 bg-[#00A3E0]/50" />
               <Skeleton className="h-12 w-36 bg-white/20" />
             </div>
           </div>
+        </div>
+        
+        {/* Skeleton for ticket button at bottom left */}
+        <div className="absolute bottom-8 left-8 md:bottom-16 md:left-16 z-20">
+          <Skeleton className="h-16 w-80 md:w-96 bg-[#F61D7A]/30 rounded-xl" />
         </div>
       </section>
     );
@@ -57,7 +59,7 @@ const HeroSection = () => {
   }
 
   return (
-    <section className="relative overflow-hidden bg-[#333333] text-white">
+    <section className="relative overflow-hidden bg-[#333333] text-white min-h-[600px]">
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-r from-[#5D3FD3]/80 to-[#FF3366]/80 mix-blend-multiply"></div>
         <img
@@ -95,25 +97,45 @@ const HeroSection = () => {
               </div>
             )}
           </div>
-
-          {/* Free Ticket Button */}
-          <div className="mb-8">
+          
+          <div className="flex flex-wrap gap-4">
             <Button
               asChild
-              size="lg"
-              className="bg-gradient-to-r from-[#F61D7A] to-[#FF3366] hover:from-[#FF3366] hover:to-[#F61D7A] text-white font-accent font-bold text-lg py-6 px-8 rounded-xl shadow-lg transform transition-transform hover:scale-105 w-full md:w-auto animate-pulse"
+              className="bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold py-3 px-8 rounded-full"
             >
-              <Link href="/register">
-                NURSES, GET YOUR FREE TICKETS HERE!
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 ml-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
+              <Link href="/store">
+                Visit Our Store
+                <i className="fas fa-shopping-bag ml-2"></i>
+              </Link>
+            </Button>
+            <Button
+              asChild
+              variant="outline"
+              className="bg-transparent border-2 border-white hover:bg-white/10 text-white font-accent font-semibold py-3 px-8 rounded-full"
+            >
+              <Link href={`/events/${featuredEvent.id}`}>
+                More Info
+                <i className="fas fa-arrow-right ml-2"></i>
               </Link>
             </Button>
           </div>
-
-
         </div>
+      </div>
+      
+      {/* Free Ticket Button - Positioned at bottom left */}
+      <div className="absolute bottom-8 left-8 md:bottom-16 md:left-16 z-20">
+        <Button
+          asChild
+          size="lg"
+          className="bg-gradient-to-r from-[#F61D7A] to-[#FF3366] hover:from-[#FF3366] hover:to-[#F61D7A] text-white font-accent font-bold text-lg py-6 px-8 rounded-xl shadow-lg transform transition-transform hover:scale-105 w-full md:w-auto animate-pulse"
+        >
+          <Link href="/register">
+            NURSES, GET YOUR FREE TICKETS HERE!
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 ml-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </Link>
+        </Button>
       </div>
     </section>
   );
