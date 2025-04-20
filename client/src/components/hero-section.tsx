@@ -46,11 +46,11 @@ const HeroSection = () => {
               <Skeleton className="h-12 w-full bg-[#00A3E0]/50 rounded-full" />
             </div>
             
-            {/* Video Placeholder - Positioned for optimal visibility */}
-            <div className="fixed top-1/2 right-6 -translate-y-1/2 z-20 hidden sm:block">
+            {/* Video Placeholder - Positioned in lower right corner */}
+            <div className="absolute bottom-6 right-6 md:bottom-12 md:right-12 lg:bottom-16 lg:right-16 z-20 hidden sm:block">
               <div className="relative">
                 <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-purple-500/30 to-pink-500/30 opacity-75 blur-sm"></div>
-                <Skeleton className="aspect-video w-[260px] md:w-[340px] lg:w-[400px] bg-black/40 rounded-xl border-4 border-white/20 relative z-10" />
+                <Skeleton className="aspect-video w-[240px] md:w-[320px] lg:w-[380px] bg-black/40 rounded-xl border-4 border-white/20 relative z-10" />
                 {/* Play Button Skeleton */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <Skeleton className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/20" />
@@ -139,9 +139,9 @@ const HeroSection = () => {
             </Button>
           </div>
           
-          {/* YouTube Video - Positioned for optimal visibility */}
-          <div className="fixed top-1/2 right-6 -translate-y-1/2 z-20 hidden sm:block">
-            <div className="aspect-video w-[260px] md:w-[340px] lg:w-[400px] bg-black rounded-xl overflow-hidden shadow-xl border-4 border-white/30 transform hover:scale-105 transition-transform duration-300">
+          {/* YouTube Video - Positioned in lower right corner */}
+          <div className="absolute bottom-6 right-6 md:bottom-12 md:right-12 lg:bottom-16 lg:right-16 z-20 hidden sm:block">
+            <div className="aspect-video w-[240px] md:w-[320px] lg:w-[380px] bg-black rounded-xl overflow-hidden shadow-xl border-4 border-white/30 transform hover:scale-105 transition-transform duration-300">
               <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 opacity-75 blur-sm"></div>
               <div className="relative z-10">
                 <YouTube 
