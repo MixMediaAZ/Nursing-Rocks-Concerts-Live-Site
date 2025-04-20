@@ -4,20 +4,19 @@ import { Event, Artist, Venue } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import AudioPlayer from "@/components/audio-player";
+import { SocialShare } from "@/components/social-share";
 import { formatDate } from "@/lib/utils";
-import { Calendar, Clock, MapPin, Ticket, Music, Users } from "lucide-react";
+import { Calendar, Clock, MapPin, Ticket, Music, Users, Share2 } from "lucide-react";
 
 const EventDetails = () => {
   const { id } = useParams();
   const [, navigate] = useLocation();
   
-  const eventId = parseInt(id);
+  const eventId = id ? parseInt(id) : 0;
   
   const { data: event, isLoading: isLoadingEvent } = useQuery<Event>({
     queryKey: [`/api/events/${eventId}`],
-    onError: () => {
-      navigate('/not-found');
-    }
+    enabled: !!eventId,
   });
   
   const { data: artist, isLoading: isLoadingArtist } = useQuery<Artist>({
@@ -30,7 +29,11 @@ const EventDetails = () => {
     enabled: !!event?.venue_id,
   });
   
-  const { data: galleryImages } = useQuery<any[]>({
+  const { data: galleryImages } = useQuery<{
+    id: number;
+    image_url: string;
+    alt_text: string | null;
+  }[]>({
     queryKey: [`/api/gallery/event/${eventId}`],
     enabled: !!eventId,
   });
@@ -75,8 +78,20 @@ const EventDetails = () => {
     <>
       <div className="bg-gradient-to-r from-[#5D3FD3]/90 to-[#FF3366]/90 text-white">
         <div className="container mx-auto px-4 py-12">
-          <h1 className="font-heading text-4xl md:text-5xl font-bold">{event.title}</h1>
-          <p className="text-xl mt-2">{event.subtitle}</p>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+              <h1 className="font-heading text-4xl md:text-5xl font-bold">{event.title}</h1>
+              <p className="text-xl mt-2">{event.subtitle}</p>
+            </div>
+            <div className="mt-4 md:mt-0">
+              <SocialShare
+                title={`${event.title} - Nursing Rocks Concert Series`}
+                description={`Join us at ${venue.name} for ${event.title}. ${event.description?.substring(0, 80)}...`}
+                hashtags={['NursingRocks', 'Concert', event.genre ? event.genre.replace(/\s+/g, '') : 'Music'].filter(Boolean) as string[]}
+                compact={true}
+              />
+            </div>
+          </div>
         </div>
       </div>
       
@@ -91,9 +106,18 @@ const EventDetails = () => {
               />
               
               <h2 className="font-heading text-2xl font-bold mb-4">Event Details</h2>
-              <p className="text-[#333333]/80 mb-6 leading-relaxed">
+              <p className="text-[#333333]/80 mb-4 leading-relaxed">
                 {event.description}
               </p>
+              
+              <div className="mb-6">
+                <SocialShare
+                  title={`${event.title} - Nursing Rocks Concert Series`}
+                  description={`Join us at ${venue.name} for ${event.title}. ${event.description?.substring(0, 80)}...`}
+                  hashtags={['NursingRocks', 'Concert', event.genre ? event.genre.replace(/\s+/g, '') : 'Music'].filter(Boolean) as string[]}
+                  className="mb-2"
+                />
+              </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div className="bg-[#F5F5F5] p-4 rounded-lg">
