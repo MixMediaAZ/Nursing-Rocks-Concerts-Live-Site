@@ -42,13 +42,13 @@ export default function ProfilePage() {
   }, []);
   
   // Fetch licenses
-  const { data: licenses } = useQuery({
+  const { data: licenses = { licenses: [] } } = useQuery<{ licenses: any[] }>({
     queryKey: ['/api/auth/licenses'],
     enabled: isAuthenticated === true,
   });
   
   // Fetch tickets
-  const { data: tickets } = useQuery({
+  const { data: tickets = { tickets: [] } } = useQuery<{ tickets: any[] }>({
     queryKey: ['/api/auth/tickets'],
     enabled: isAuthenticated === true,
   });
