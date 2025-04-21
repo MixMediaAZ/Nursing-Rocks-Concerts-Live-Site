@@ -5,6 +5,7 @@ import ConcertCalendar from "@/components/concert-calendar";
 import Venues from "@/components/venues";
 import GallerySection from "@/components/gallery";
 import Newsletter from "@/components/newsletter";
+import PromotionButtons from "@/components/promotion-buttons";
 import { Helmet } from "react-helmet";
 
 const Home = () => {
@@ -16,6 +17,7 @@ const Home = () => {
       </Helmet>
       
       <HeroSection />
+      <PromotionButtons />
       <UpcomingEvents />
       <FeaturedArtist />
       <ConcertCalendar />
