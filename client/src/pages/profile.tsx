@@ -129,6 +129,19 @@ export default function ProfilePage() {
                 <Button variant="outline" className="w-full" onClick={() => setLocation("/tickets")}>
                   Your Tickets
                 </Button>
+                <Button variant="outline" className="w-full" onClick={() => setLocation("/jobs")}>
+                  Jobs Board
+                </Button>
+                <Button variant="outline" className="w-full" onClick={() => setLocation("/free-tickets")}>
+                  Get Free Tickets
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={() => window.open("https://www.nursingworld.org/resources/", "_blank")}
+                >
+                  ANA Resources
+                </Button>
                 <Button variant="destructive" className="w-full" onClick={handleLogout}>
                   Logout
                 </Button>
