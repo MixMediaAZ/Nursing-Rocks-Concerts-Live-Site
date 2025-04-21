@@ -194,6 +194,8 @@ export function NurseLicenseVerification() {
       queryClient.invalidateQueries({queryKey: ['/api/licenses']});
       queryClient.invalidateQueries({queryKey: ['/api/auth/status']});
       form.reset();
+      // Redirect to profile page after successful submission
+      setLocation("/profile");
     },
     onError: (error: any) => {
       toast({
