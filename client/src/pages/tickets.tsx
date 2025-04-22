@@ -7,9 +7,39 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Clock, MapPin, Ticket } from "lucide-react";
+import { Calendar, Clock, MapPin, Ticket, Download } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { formatDate, formatTime } from "@/lib/utils";
+import QRCode from "react-qr-code";
+
+// Define types for our data
+interface TicketData {
+  id: number;
+  user_id: number;
+  event_id: number;
+  ticket_code: string;
+  ticket_type: string;
+  price: string | number;
+  purchase_date: string;
+  is_used: boolean;
+  usage_date?: string;
+  event?: {
+    id: number;
+    title: string;
+    date: string;
+    start_time: string;
+    end_time?: string;
+    image_url?: string;
+    venue?: {
+      name: string;
+      location: string;
+    }
+  }
+}
+
+interface TicketsResponse {
+  tickets: TicketData[];
+}
 
 export default function TicketsPage() {
   const { toast } = useToast();
@@ -33,7 +63,7 @@ export default function TicketsPage() {
   }, []);
   
   // Fetch tickets
-  const { data: ticketsData, isLoading } = useQuery({
+  const { data: ticketsData, isLoading } = useQuery<TicketsResponse>({
     queryKey: ['/api/auth/tickets'],
     enabled: isAuthenticated === true,
   });
@@ -43,8 +73,8 @@ export default function TicketsPage() {
   }
   
   // Group tickets by used/unused status
-  const upcomingTickets = ticketsData?.tickets?.filter((ticket: any) => !ticket.is_used) || [];
-  const pastTickets = ticketsData?.tickets?.filter((ticket: any) => ticket.is_used) || [];
+  const upcomingTickets = ticketsData?.tickets?.filter(ticket => !ticket.is_used) || [];
+  const pastTickets = ticketsData?.tickets?.filter(ticket => ticket.is_used) || [];
   
   return (
     <div className="container max-w-4xl py-8">
@@ -62,7 +92,7 @@ export default function TicketsPage() {
               <Skeleton className="h-48 w-full" />
               <Skeleton className="h-48 w-full" />
             </div>
-          ) : ticketsData?.tickets?.length > 0 ? (
+          ) : (ticketsData?.tickets && ticketsData.tickets.length > 0) ? (
             <Tabs defaultValue="upcoming">
               <TabsList className="mb-6">
                 <TabsTrigger value="upcoming">
@@ -138,6 +168,7 @@ interface TicketCardProps {
 }
 
 function TicketCard({ ticket, isUsed }: TicketCardProps) {
+  const [showQR, setShowQR] = useState(false);
   const event = ticket.event || {
     title: "Event Title",
     date: new Date().toISOString(),
@@ -149,7 +180,15 @@ function TicketCard({ ticket, isUsed }: TicketCardProps) {
     <div className={`border rounded-lg overflow-hidden ${isUsed ? 'opacity-75' : ''}`}>
       <div className="p-4 md:p-6 flex flex-col md:flex-row gap-4 md:gap-6">
         <div className="md:w-1/4">
-          {event.image_url ? (
+          {showQR ? (
+            <div className="bg-white p-4 rounded-md flex items-center justify-center h-full">
+              <QRCode
+                size={128}
+                style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                value={ticket.ticket_code || "DEMO-TICKET-CODE"}
+              />
+            </div>
+          ) : event.image_url ? (
             <img 
               src={event.image_url} 
               alt={event.title} 
@@ -208,11 +247,31 @@ function TicketCard({ ticket, isUsed }: TicketCardProps) {
       </div>
       
       {!isUsed && (
-        <div className="bg-muted py-2 px-4 md:px-6 flex justify-between items-center">
+        <div className="bg-muted py-3 px-4 md:px-6 flex flex-wrap justify-between items-center gap-2">
           <span className="text-sm font-medium">Show this ticket at the event entrance</span>
-          <Button size="sm" variant="outline">
-            Download
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              size="sm" 
+              variant={showQR ? "default" : "outline"}
+              onClick={() => setShowQR(!showQR)}
+            >
+              {showQR ? "Hide QR" : "Show QR Code"}
+            </Button>
+            <Button size="sm" variant="outline">
+              <Download className="h-4 w-4 mr-1" />
+              Download
+            </Button>
+          </div>
+        </div>
+      )}
+      
+      {!isUsed && showQR && (
+        <div className="p-4 md:hidden bg-white flex justify-center border-t">
+          <QRCode
+            size={180}
+            style={{ height: "auto", maxWidth: "100%", width: "180px" }}
+            value={ticket.ticket_code || "DEMO-TICKET-CODE"}
+          />
         </div>
       )}
     </div>
