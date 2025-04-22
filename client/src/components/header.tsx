@@ -87,11 +87,11 @@ export function Header() {
               <img
                 src={newLogoPath}
                 alt="Nursing Rocks!"
-                className="h-14 md:h-16 lg:h-18 w-auto drop-shadow-md"
+                className="h-16 md:h-20 lg:h-24 w-auto drop-shadow-lg"
                 style={{ objectFit: "contain", maxWidth: "100%" }}
               />
               <div className="hidden md:block">
-                <span className="heartbeat-animation text-base md:text-lg font-medium text-primary">
+                <span className="heartbeat-animation text-lg md:text-xl font-semibold text-primary drop-shadow-sm">
                   Concert Series
                 </span>
               </div>
@@ -217,7 +217,7 @@ export function Header() {
             <img
               src={newLogoPath}
               alt="Nursing Rocks!"
-              className="h-16 w-auto drop-shadow-md"
+              className="h-20 w-auto drop-shadow-lg"
               style={{ objectFit: "contain" }}
             />
           </div>
