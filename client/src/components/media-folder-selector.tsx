@@ -55,9 +55,11 @@ export function MediaFolderSelector({
       description?: string;
       parent_id?: number | null;
     }) => {
-      const res = await apiRequest("POST", "/api/media-folders", { 
+      const res = await fetch("/api/media-folders", { 
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(folderData)
+        body: JSON.stringify(folderData),
+        credentials: "include"
       });
       if (!res.ok) {
         const error = await res.json();
