@@ -1,16 +1,12 @@
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Event, Artist, Venue } from "@shared/schema";
+import { Event, Artist } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, genreColorMap } from "@/lib/utils";
 
 const EventCard = ({ event }: { event: Event }) => {
-  const { data: venue } = useQuery<Venue>({
-    queryKey: [`/api/venues/${event.venue_id}`],
-  });
-
   const eventDate = new Date(event.date);
   const month = eventDate.toLocaleString('en-US', { month: 'short' }).toUpperCase();
   const day = eventDate.getDate();
@@ -40,10 +36,10 @@ const EventCard = ({ event }: { event: Event }) => {
             <p className="text-[#333333]/70">{event.subtitle}</p>
           </div>
         </div>
-        {venue && (
+        {event.location && (
           <div className="mb-4 flex items-center justify-center sm:justify-start text-[#333333]/70">
             <i className="fas fa-map-marker-alt mr-2"></i>
-            <span>{`${venue.name} • ${venue.location}`}</span>
+            <span>{event.location}</span>
           </div>
         )}
         <div className="mb-6 flex items-center justify-center sm:justify-start text-[#333333]/70">

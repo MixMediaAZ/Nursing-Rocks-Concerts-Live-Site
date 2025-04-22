@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Event, Venue } from "@shared/schema";
+import { Event } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,19 +9,6 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@
 import { formatDate, genreColorMap } from "@/lib/utils";
 
 const CalendarEvents = ({ events }: { events: Event[] }) => {
-  const venues = useQuery<Venue[]>({
-    queryKey: ["/api/venues"],
-  });
-
-  const getVenueName = (venueId: number) => {
-    const venue = venues.data?.find(v => v.id === venueId);
-    return venue ? venue.name : "";
-  };
-
-  const getVenueLocation = (venueId: number) => {
-    const venue = venues.data?.find(v => v.id === venueId);
-    return venue ? venue.location : "";
-  };
 
   return (
     <Table>

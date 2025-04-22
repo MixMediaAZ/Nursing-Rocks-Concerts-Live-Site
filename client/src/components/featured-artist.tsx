@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Artist, Event, Venue } from "@shared/schema";
+import { Artist, Event } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -21,12 +21,7 @@ const FeaturedArtist = () => {
     featuredArtist && e.artist_id === featuredArtist.id
   );
   
-  const { data: venue, isLoading: isLoadingVenue } = useQuery<Venue>({
-    queryKey: [`/api/venues/${artistEvent?.venue_id}`],
-    enabled: !!artistEvent?.venue_id,
-  });
-  
-  const isLoading = isLoadingArtists || isLoadingEvents || isLoadingVenue;
+  const isLoading = isLoadingArtists || isLoadingEvents;
 
   if (isLoading) {
     return (
@@ -114,13 +109,13 @@ const FeaturedArtist = () => {
                 className="w-full"
               />
               
-              {artistEvent && venue && (
+              {artistEvent && (
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#333333]/80 to-transparent p-6">
                   <div className="flex justify-between items-center">
                     <div>
                       <div className="text-white text-sm mb-1">Next Performance:</div>
                       <div className="text-white font-bold">
-                        {formatDate(artistEvent.date)} • {venue.name}
+                        {formatDate(artistEvent.date)} {artistEvent.location && `• ${artistEvent.location}`}
                       </div>
                     </div>
                     <Button
