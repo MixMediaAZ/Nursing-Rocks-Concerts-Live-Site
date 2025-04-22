@@ -31,6 +31,20 @@ import { Footer } from "@/components/footer";
 import { AuthProvider } from "@/hooks/use-auth";
 
 function Router() {
+  // Use location to conditionally render header and footer
+  const [location] = window.location.pathname.split('?');
+  const isAdminPage = location === '/admin';
+  
+  if (isAdminPage) {
+    // Admin page with no header/footer for a dedicated admin experience
+    return (
+      <main>
+        <Route path="/admin" component={AdminPage} />
+      </main>
+    );
+  }
+  
+  // Regular site with header and footer
   return (
     <>
       <Header />
@@ -51,7 +65,6 @@ function Router() {
           <Route path="/cities" component={CitiesPage} />
           <Route path="/cities/:cityId" component={CityDetailsPage} />
           <Route path="/sponsors" component={SponsorsPage} />
-          <Route path="/admin" component={AdminPage} />
           <Route path="/jobs" component={JobsPage} />
           <Route path="/jobs/:id" component={JobDetailsPage} />
           <Route path="/gallery" component={GalleryPage} />

@@ -1,133 +1,548 @@
-import { useState } from 'react';
-import { MediaManager } from '@/components/media-manager';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { Helmet } from "react-helmet";
+import { useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import { 
+  Key, 
+  KeyRound, 
+  Delete,  // Using Delete instead of Backspace which doesn't exist
+  LayoutDashboard, 
+  Settings, 
+  Calendar, 
+  ImageIcon, 
+  Music, 
+  Users, 
+  Store, 
+  FileEdit, 
+  Lock
+} from "lucide-react";
+
+// Admin PIN setup - in production, this should be stored securely
+const ADMIN_PIN = "1234567";
 
 export default function AdminPage() {
-  const [selectedAsset, setSelectedAsset] = useState<any>(null);
-  
-  return (
-    <div className="container mx-auto py-8 space-y-6">
-      <div className="medical-bg rounded-lg px-6 py-8 mb-8">
-        <h1 className="text-3xl font-bold text-center">
-          <span className="bg-clip-text text-transparent nurse-gradient">
-            Clinical Media Management
-          </span>
-        </h1>
-        <p className="text-center text-muted-foreground mt-2">
-          Organize and manage <span className="heartbeat-animation">medical media resources</span> for the Nursing Rocks Concert Series
-        </p>
-      </div>
-      
-      <Tabs defaultValue="media" className="w-full">
-        <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 rounded-full overflow-hidden">
-          <TabsTrigger value="media" className="data-[state=active]:bg-primary data-[state=active]:text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <circle cx="8.5" cy="8.5" r="1.5"></circle>
-              <polyline points="21 15 16 10 5 21"></polyline>
-            </svg>
-            Media Library
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="data-[state=active]:bg-primary data-[state=active]:text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
-              <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-            Settings
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="media" className="mt-6">
-          <Card className="medical-card">
-            <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
-              <div className="flex items-center">
-                <div className="p-2 bg-primary rounded-full mr-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <line x1="12" y1="18" x2="12" y2="12"></line>
-                    <line x1="9" y1="15" x2="15" y2="15"></line>
-                  </svg>
+  const [location, navigate] = useLocation();
+  const [pin, setPin] = useState<string>("");
+  const [authenticated, setAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  // Check existing authentication
+  useEffect(() => {
+    const isAdmin = localStorage.getItem("isAdmin");
+    if (isAdmin === "true") {
+      setAuthenticated(true);
+    }
+  }, []);
+
+  const handlePinInput = (digit: string) => {
+    if (pin.length < 7) {
+      setPin(prev => prev + digit);
+    }
+  };
+
+  const handleBackspace = () => {
+    setPin(prev => prev.slice(0, -1));
+  };
+
+  const handleClear = () => {
+    setPin("");
+  };
+
+  const handleSubmit = () => {
+    setLoading(true);
+    
+    // Simulate API call delay
+    setTimeout(() => {
+      if (pin === ADMIN_PIN) {
+        setAuthenticated(true);
+        localStorage.setItem("isAdmin", "true");
+        toast({
+          title: "Authentication Successful",
+          description: "Welcome to the admin dashboard",
+        });
+      } else {
+        toast({
+          title: "Authentication Failed",
+          description: "Invalid PIN code. Please try again.",
+          variant: "destructive",
+        });
+        setPin("");
+      }
+      setLoading(false);
+    }, 1000);
+  };
+
+  const handleLogout = () => {
+    setAuthenticated(false);
+    localStorage.removeItem("isAdmin");
+    setPin("");
+    toast({
+      title: "Logged Out",
+      description: "You have been logged out of the admin dashboard",
+    });
+  };
+
+  // PIN pad component
+  const PinPad = () => (
+    <div className="flex flex-col items-center">
+      <Card className="w-full max-w-md mx-auto bg-white shadow-lg">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
+            <Lock className="h-6 w-6" /> Admin Authentication
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-center mb-6">
+            <div className="flex gap-2">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div 
+                  key={i} 
+                  className={`w-8 h-12 border-2 rounded-md flex items-center justify-center text-xl font-bold
+                    ${pin[i] ? "border-primary bg-primary/10" : "border-gray-300"}`}
+                >
+                  {pin[i] ? "•" : ""}
                 </div>
-                <div>
-                  <CardTitle>Medical Media Resources</CardTitle>
-                  <CardDescription>
-                    Upload, organize, and manage media files for the Nursing Rocks platform
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Alert className="mb-6 border-l-4 border-l-primary bg-primary/5">
-                <AlertCircle className="h-4 w-4 text-primary" />
-                <AlertTitle>Clinical Administrator Access</AlertTitle>
-                <AlertDescription>
-                  This section requires administrator privileges. Some functionality may be limited based on your access level.
-                </AlertDescription>
-              </Alert>
-              
-              <MediaManager 
-                onSelect={(asset) => setSelectedAsset(asset)}
-              />
-              
-              {selectedAsset && (
-                <div className="mt-6 p-4 border rounded-md bg-primary/5">
-                  <h3 className="font-medium mb-2 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 9v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"></path>
-                      <path d="m14 2 5 5-5 5"></path>
-                      <path d="M9 15h5"></path>
-                    </svg>
-                    Selected Resource: {selectedAsset.title || selectedAsset.filename}
-                  </h3>
-                  <pre className="text-xs bg-white p-3 rounded-md overflow-auto max-h-40 border">
-                    {JSON.stringify(selectedAsset, null, 2)}
-                  </pre>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="settings" className="mt-6">
-          <Card className="medical-card">
-            <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
-              <div className="flex items-center">
-                <div className="p-2 bg-primary rounded-full mr-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                  </svg>
-                </div>
-                <div>
-                  <CardTitle>Clinical System Settings</CardTitle>
-                  <CardDescription>
-                    Manage global configuration for the Nursing Rocks Concert Series platform
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="p-8 text-center border border-dashed rounded-md bg-primary/5">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-primary/40 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M2 12h20"></path>
-                  <path d="M12 2v20"></path>
+              ))}
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+              <Button 
+                key={num} 
+                variant="outline" 
+                className="h-14 text-xl font-semibold"
+                onClick={() => handlePinInput(num.toString())}
+              >
+                {num}
+              </Button>
+            ))}
+            <Button 
+              variant="outline" 
+              className="h-14 text-xl font-semibold"
+              onClick={handleClear}
+            >
+              Clear
+            </Button>
+            <Button 
+              variant="outline" 
+              className="h-14 text-xl font-semibold"
+              onClick={() => handlePinInput("0")}
+            >
+              0
+            </Button>
+            <Button 
+              variant="outline" 
+              className="h-14 flex items-center justify-center"
+              onClick={handleBackspace}
+            >
+              <Delete className="h-6 w-6" />
+            </Button>
+          </div>
+          
+          <Button 
+            className="w-full h-12 mt-2 font-bold bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white"
+            onClick={handleSubmit}
+            disabled={pin.length !== 7 || loading}
+          >
+            {loading ? (
+              <span className="flex items-center">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <p className="text-muted-foreground font-medium">
-                  Clinical settings administration module coming soon
-                </p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  System update scheduled for next maintenance window
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                Verifying...
+              </span>
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                <KeyRound className="w-5 h-5" /> Sign In
+              </span>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
+  );
+
+  // Admin Dashboard Component
+  const AdminDashboard = () => {
+    const [activeTab, setActiveTab] = useState("overview");
+
+    return (
+      <div className="flex flex-col">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <LayoutDashboard className="h-7 w-7" /> Admin Dashboard
+          </h1>
+          <Button 
+            variant="destructive" 
+            onClick={handleLogout}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            Logout
+          </Button>
+        </div>
+
+        <Tabs defaultValue="overview" className="w-full" onValueChange={setActiveTab}>
+          <TabsList className="w-full grid grid-cols-2 md:grid-cols-6 mb-8">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="events">Events</TabsTrigger>
+            <TabsTrigger value="gallery">Gallery</TabsTrigger>
+            <TabsTrigger value="content">Content</TabsTrigger>
+            <TabsTrigger value="store">Store</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="overview">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5" /> Events
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">4</p>
+                  <p className="text-sm text-muted-foreground">Upcoming events</p>
+                  <Button variant="link" className="p-0 h-auto mt-2" onClick={() => setActiveTab("events")}>
+                    Manage Events
+                  </Button>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ImageIcon className="h-5 w-5" /> Gallery
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">87</p>
+                  <p className="text-sm text-muted-foreground">Media items</p>
+                  <Button variant="link" className="p-0 h-auto mt-2" onClick={() => setActiveTab("gallery")}>
+                    Manage Gallery
+                  </Button>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Store className="h-5 w-5" /> Store
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">23</p>
+                  <p className="text-sm text-muted-foreground">Products</p>
+                  <Button variant="link" className="p-0 h-auto mt-2" onClick={() => setActiveTab("store")}>
+                    Manage Store
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+            
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
+                    <Calendar className="h-6 w-6" />
+                    <span>Add New Event</span>
+                  </Button>
+                  <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
+                    <ImageIcon className="h-6 w-6" />
+                    <span>Upload Media</span>
+                  </Button>
+                  <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
+                    <FileEdit className="h-6 w-6" />
+                    <span>Edit Homepage</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="events">
+            <Card>
+              <CardHeader>
+                <CardTitle>Event Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>Manage concert events, venues, schedules, and ticket sales.</p>
+                <div className="mt-4 space-y-4">
+                  <div className="flex flex-col gap-2">
+                    <h3 className="font-semibold">Upcoming Events</h3>
+                    {["The Healing Harmonies - Chicago", "Heroes in Scrubs - New York", "Nurse Beats - Los Angeles", "Stethoscope Symphony - Miami"].map((event, i) => (
+                      <div key={i} className="p-3 border rounded-md flex justify-between items-center">
+                        <span>{event}</span>
+                        <div className="flex gap-2">
+                          <Button variant="ghost" size="sm">Edit</Button>
+                          <Button variant="ghost" size="sm" className="text-red-500">Delete</Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <Button className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white">
+                    Add New Event
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="gallery">
+            <Card>
+              <CardHeader>
+                <CardTitle>Gallery Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>Manage photos, videos, and media folders.</p>
+                <div className="mt-4 space-y-4">
+                  <div className="flex flex-col gap-2">
+                    <h3 className="font-semibold">Media Folders</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {["Concert Photos", "Videos", "Press", "Promotional Materials", "Artist Spotlights", "Attached Assets"].map((folder, i) => (
+                        <Card key={i} className="cursor-pointer hover:bg-gray-50">
+                          <CardContent className="p-4 flex items-center gap-3">
+                            <div className="h-10 w-10 bg-[#5D3FD3] rounded-md flex items-center justify-center text-white">
+                              <ImageIcon className="h-5 w-5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">{folder}</p>
+                              <p className="text-xs text-gray-500">12 items</p>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-4">
+                    <Button className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white">
+                      Upload Media
+                    </Button>
+                    <Button variant="outline">
+                      Create Folder
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="content">
+            <Card>
+              <CardHeader>
+                <CardTitle>Content Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>Edit website content, homepage features, and SEO settings.</p>
+                <div className="mt-4 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Homepage Settings</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <Button variant="outline" className="w-full justify-start">
+                            Edit Hero Banner
+                          </Button>
+                          <Button variant="outline" className="w-full justify-start">
+                            Featured Events
+                          </Button>
+                          <Button variant="outline" className="w-full justify-start">
+                            Testimonials
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">SEO Settings</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <Button variant="outline" className="w-full justify-start">
+                            Meta Tags
+                          </Button>
+                          <Button variant="outline" className="w-full justify-start">
+                            Site Description
+                          </Button>
+                          <Button variant="outline" className="w-full justify-start">
+                            Social Sharing
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="store">
+            <Card>
+              <CardHeader>
+                <CardTitle>Store Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>Manage products, orders, and promotions.</p>
+                <div className="mt-4 space-y-4">
+                  <div className="flex flex-col gap-2">
+                    <h3 className="font-semibold">Products</h3>
+                    <div className="border rounded-md overflow-hidden">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Product
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Price
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Stock
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {[
+                            { name: "Nursing Rocks T-Shirt", price: "$24.99", stock: 45 },
+                            { name: "Concert Mug", price: "$12.99", stock: 78 },
+                            { name: "Support a Nurse Bundle", price: "$49.99", stock: 23 },
+                            { name: "Exclusive Hoodie", price: "$39.99", stock: 12 },
+                          ].map((product, i) => (
+                            <tr key={i}>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-500">{product.price}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-500">{product.stock}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <div className="flex gap-2">
+                                  <Button variant="ghost" size="sm">Edit</Button>
+                                  <Button variant="ghost" size="sm" className="text-red-500">Delete</Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  
+                  <Button className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white">
+                    Add New Product
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="users">
+            <Card>
+              <CardHeader>
+                <CardTitle>User Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>Manage user accounts, permissions, and nurse verification status.</p>
+                <div className="mt-4 space-y-4">
+                  <div className="flex flex-col gap-2">
+                    <h3 className="font-semibold">Recent Users</h3>
+                    <div className="border rounded-md overflow-hidden">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Name
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Email
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Verification
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {[
+                            { name: "Sarah Johnson", email: "sarah.j@example.com", verified: true },
+                            { name: "Michael Chen", email: "m.chen@example.com", verified: true },
+                            { name: "Jessica Miller", email: "jess.miller@example.com", verified: false },
+                            { name: "David Wilson", email: "d.wilson@example.com", verified: false },
+                          ].map((user, i) => (
+                            <tr key={i}>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-500">{user.email}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                  user.verified 
+                                    ? "bg-green-100 text-green-800" 
+                                    : "bg-yellow-100 text-yellow-800"
+                                }`}>
+                                  {user.verified ? "Verified" : "Pending"}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <div className="flex gap-2">
+                                  <Button variant="ghost" size="sm">Edit</Button>
+                                  {!user.verified && (
+                                    <Button variant="ghost" size="sm" className="text-green-500">
+                                      Verify
+                                    </Button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <Helmet>
+        <title>Admin Dashboard | Nursing Rocks Concert Series</title>
+        <meta name="description" content="Admin dashboard for Nursing Rocks content management" />
+      </Helmet>
+      
+      <section className="py-16 bg-white min-h-screen">
+        <div className="container mx-auto px-4">
+          {authenticated ? <AdminDashboard /> : <PinPad />}
+        </div>
+      </section>
+    </>
   );
 }
