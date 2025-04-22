@@ -125,11 +125,11 @@ const ConcertCalendar = () => {
 
   return (
     <section className="py-16 bg-white">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-6 md:px-8">
         <h2 className="font-heading text-3xl font-bold mb-2 text-center">Concert Calendar</h2>
         <p className="text-[#333333]/70 text-center mb-12">Browse our upcoming performances by date</p>
         
-        <Card className="bg-[#F5F5F5] rounded-xl p-6 shadow-md">
+        <Card className="bg-white rounded-xl p-6 shadow-sm">
           <CardContent className="p-0">
             <div className="flex justify-between items-center mb-6">
               <div>

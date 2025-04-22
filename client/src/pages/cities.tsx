@@ -9,8 +9,8 @@ export default function CitiesPage() {
         <meta name="description" content="Explore Nursing Rocks! Concert Series venues across America. Find concerts in Chicago, New York, Los Angeles, and other major cities celebrating nursing professionals." />
       </Helmet>
       
-      <div className="py-8 bg-gradient-to-r from-[#5D3FD3]/5 to-[#FF3366]/5">
-        <div className="container text-center">
+      <div className="py-10 bg-gradient-to-r from-[#5D3FD3]/5 to-[#FF3366]/5">
+        <div className="container px-6 md:px-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Concert Cities</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             The Nursing Rocks! Concert Series is touring across America, celebrating nursing professionals in venues nationwide. Find a concert near you.
@@ -18,11 +18,13 @@ export default function CitiesPage() {
         </div>
       </div>
       
-      <CitySelector />
+      <div className="container px-6 md:px-8 py-8">
+        <CitySelector />
+      </div>
       
-      <div className="container py-12">
-        <div className="bg-muted rounded-lg p-6 md:p-8">
-          <h2 className="text-2xl font-bold mb-4">About Our Concert Series</h2>
+      <div className="container px-6 md:px-8 py-10">
+        <div className="bg-white rounded-lg p-6 md:p-8 shadow-sm">
+          <h2 className="text-2xl font-bold mb-4 text-center">About Our Concert Series</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
               <p className="mb-4">

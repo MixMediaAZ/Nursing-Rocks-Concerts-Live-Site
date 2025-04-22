@@ -18,7 +18,7 @@ const EventCard = ({ event }: { event: Event }) => {
   const genreStyle = genreColorMap[event.genre as keyof typeof genreColorMap] || genreColorMap.default;
 
   return (
-    <Card className="bg-white rounded-xl overflow-hidden shadow-lg transition-transform hover:-translate-y-1">
+    <Card className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
       <div className="relative h-48">
         <img
           src={event.image_url}
@@ -30,32 +30,34 @@ const EventCard = ({ event }: { event: Event }) => {
         </div>
       </div>
       <CardContent className="p-6">
-        <div className="flex items-center mb-4">
+        <div className="flex items-center mb-4 justify-center sm:justify-start">
           <div className="bg-[#F5F5F5] rounded-lg text-center p-2 mr-4">
             <span className="block text-sm text-[#333333]/70">{month}</span>
             <span className="block text-xl font-bold">{day}</span>
           </div>
           <div>
-            <h3 className="font-heading font-bold text-xl">{event.title}</h3>
+            <h3 className="font-heading font-bold text-xl text-center sm:text-left">{event.title}</h3>
             <p className="text-[#333333]/70">{event.subtitle}</p>
           </div>
         </div>
         {venue && (
-          <div className="mb-4 flex items-center text-[#333333]/70">
+          <div className="mb-4 flex items-center justify-center sm:justify-start text-[#333333]/70">
             <i className="fas fa-map-marker-alt mr-2"></i>
             <span>{`${venue.name} • ${venue.location}`}</span>
           </div>
         )}
-        <div className="mb-6 flex items-center text-[#333333]/70">
+        <div className="mb-6 flex items-center justify-center sm:justify-start text-[#333333]/70">
           <i className="far fa-clock mr-2"></i>
           <span>{`Doors: ${event.doors_time} • Show: ${event.start_time}`}</span>
         </div>
-        <Button
-          asChild
-          className="w-full bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white font-accent font-semibold py-2.5 px-6 rounded-full"
-        >
-          <Link href={event.tickets_url || "#"}>Get Tickets</Link>
-        </Button>
+        <div className="flex justify-center">
+          <Button
+            asChild
+            className="w-full md:w-4/5 bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white font-accent font-semibold py-2.5 px-6 rounded-full"
+          >
+            <Link href={event.tickets_url || "#"}>Get Tickets</Link>
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
@@ -75,9 +77,9 @@ const UpcomingEvents = () => {
 
   return (
     <section id="events" className="py-16 bg-white">
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-end mb-10">
-          <div>
+      <div className="container mx-auto px-6 md:px-8">
+        <div className="flex flex-col md:flex-row justify-between items-center md:items-end mb-10">
+          <div className="text-center md:text-left mb-4 md:mb-0">
             <h2 className="font-heading text-3xl font-bold mb-2">Upcoming Events</h2>
             <p className="text-[#333333]/70">Don't miss our exciting lineup of concerts and shows</p>
           </div>
