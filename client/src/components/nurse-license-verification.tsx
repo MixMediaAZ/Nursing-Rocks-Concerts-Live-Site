@@ -194,8 +194,12 @@ export function NurseLicenseVerification() {
       queryClient.invalidateQueries({queryKey: ['/api/licenses']});
       queryClient.invalidateQueries({queryKey: ['/api/auth/status']});
       form.reset();
-      // Redirect to tickets page with QR codes after successful submission
-      setLocation("/tickets");
+      
+      // Wait a short time for toast to be visible before redirect
+      setTimeout(() => {
+        // Use direct window location for more consistent cross-platform behavior
+        window.location.href = "/tickets";
+      }, 300);
     },
     onError: (error: any) => {
       toast({
@@ -260,10 +264,10 @@ export function NurseLicenseVerification() {
             </div>
           </CardContent>
           <CardFooter className="flex justify-center gap-4">
-            <Button onClick={() => setLocation("/events")} className="gap-1">
+            <Button onClick={() => window.location.href = "/events"} className="gap-1">
               Browse Concerts <ChevronRight className="h-4 w-4" />
             </Button>
-            <Button onClick={() => setLocation("/tickets")} variant="outline">
+            <Button onClick={() => window.location.href = "/tickets"} variant="outline">
               My Tickets
             </Button>
           </CardFooter>
