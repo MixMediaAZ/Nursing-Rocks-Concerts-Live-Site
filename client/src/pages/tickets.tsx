@@ -106,7 +106,7 @@ export default function TicketsPage() {
               <TabsContent value="upcoming">
                 <div className="space-y-6">
                   {upcomingTickets.length > 0 ? (
-                    upcomingTickets.map((ticket: any) => (
+                    upcomingTickets.map((ticket: TicketData) => (
                       <TicketCard 
                         key={ticket.id} 
                         ticket={ticket} 
@@ -127,7 +127,7 @@ export default function TicketsPage() {
               <TabsContent value="past">
                 <div className="space-y-6">
                   {pastTickets.length > 0 ? (
-                    pastTickets.map((ticket: any) => (
+                    pastTickets.map((ticket: TicketData) => (
                       <TicketCard 
                         key={ticket.id} 
                         ticket={ticket} 
@@ -163,17 +163,25 @@ export default function TicketsPage() {
 }
 
 interface TicketCardProps {
-  ticket: any;
+  ticket: TicketData;
   isUsed: boolean;
 }
 
 function TicketCard({ ticket, isUsed }: TicketCardProps) {
   const [showQR, setShowQR] = useState(false);
-  const event = ticket.event || {
+  
+  // Create a type-safe event object
+  const eventData = ticket.event || {
     title: "Event Title",
     date: new Date().toISOString(),
     start_time: "19:00:00",
     venue: { name: "Venue", location: "Location" }
+  };
+  
+  // Ensure we have a consistent event object with all optional properties defined
+  const event = {
+    ...eventData,
+    image_url: ticket.event?.image_url || undefined
   };
   
   return (
@@ -235,7 +243,9 @@ function TicketCard({ ticket, isUsed }: TicketCardProps) {
           <div className="mt-4 pt-4 border-t flex flex-wrap justify-between items-center gap-2">
             <div>
               <div className="text-sm font-medium">{ticket.ticket_type}</div>
-              <div className="text-lg font-bold">${parseFloat(ticket.price).toFixed(2)}</div>
+              <div className="text-lg font-bold">
+                ${Number(ticket.price).toFixed(2)}
+              </div>
             </div>
             
             <div className="text-right">
