@@ -143,7 +143,14 @@ export default function RegisterPage() {
         description: "Welcome to Nursing Rocks! Your nursing license verification is being processed.",
       });
       
-      setLocation("/profile"); // Redirect to profile/dashboard after successful registration
+      // Store token and user data (redundant check since we already do this in the mutation, but just to be safe)
+      if (data.token && data.user) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+      }
+      
+      // Redirect to profile/dashboard with window.location to ensure full page reload
+      window.location.href = "/profile";
     },
     onError: (error: Error) => {
       toast({
