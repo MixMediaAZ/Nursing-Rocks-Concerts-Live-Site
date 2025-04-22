@@ -61,21 +61,25 @@ export function Header() {
       
       <div className="container mx-auto">
         <div className="flex items-center justify-between h-20">
-          <Link href="/">
-            <div className="flex items-center gap-2 cursor-pointer">
-              <img
-                src={newLogoPath}
-                alt="Nursing Rocks!"
-                className="h-14 md:h-16 w-auto"
-              />
-              <span className="heartbeat-animation text-lg font-semibold">
-                Concert Series
-              </span>
-            </div>
-          </Link>
+          {/* Logo on left */}
+          <div className="flex-shrink-0">
+            <Link href="/">
+              <div className="flex items-center gap-2 cursor-pointer">
+                <img
+                  src={newLogoPath}
+                  alt="Nursing Rocks!"
+                  className="h-14 md:h-16 w-auto"
+                />
+                <span className="heartbeat-animation text-lg font-semibold">
+                  Concert Series
+                </span>
+              </div>
+            </Link>
+          </div>
           
+          {/* Navigation in center */}
           {!isMobile ? (
-            <nav className="flex items-center space-x-6">
+            <nav className="flex items-center justify-center space-x-8 flex-grow mx-4">
               {navLinks.map((link) => (
                 <Link key={link.href} href={link.href}>
                   <div
@@ -134,13 +138,15 @@ export function Header() {
               )}
             </nav>
           ) : (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </Button>
+            <div className="flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+              >
+                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              </Button>
+            </div>
           )}
         </div>
       </div>
