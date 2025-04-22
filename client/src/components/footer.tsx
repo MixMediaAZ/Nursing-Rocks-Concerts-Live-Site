@@ -9,14 +9,14 @@ export function Footer() {
   
   return (
     <footer className="border-t bg-background">
-      <div className="container px-4 py-8 mx-auto text-center">
+      <div className="container px-4 py-12 md:py-16 mx-auto text-center">
         {/* Logo Section */}
-        <div className="mb-8 flex justify-center">
+        <div className="mb-10 flex justify-center">
           <Link href="/">
             <img
               src={logoPath}
               alt="Nursing Rocks!"
-              className="h-16 w-auto"
+              className="h-24 w-auto"
             />
           </Link>
         </div>
