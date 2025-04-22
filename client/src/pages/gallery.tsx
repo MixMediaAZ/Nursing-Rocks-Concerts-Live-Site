@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Gallery } from "@shared/schema";
+import { Gallery, MediaFolder } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { 
   Search, X, Copy, Trash2, Download, Edit, Move, Layers, 
-  Replace, ChevronsUpDown, Save, CheckCircle2
+  Replace, ChevronsUpDown, Save, CheckCircle2, FolderPlus,
+  Plus, Grid, List, ImageIcon, Video, Music, Presentation, Filter, SlidersHorizontal
 } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -48,6 +49,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { MediaFolderSelector } from "@/components/media-folder-selector";
+import { GalleryUploader } from "@/components/gallery-uploader";
 
 // This component is a dedicated gallery page
 const GalleryPage = () => {

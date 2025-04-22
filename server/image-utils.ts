@@ -17,7 +17,7 @@ export const SUPPORTED_IMAGE_TYPES = [
  * Configuration for image resizing
  */
 interface ResizeConfig {
-  width: number;
+  width?: number;
   height?: number;
   fit?: 'cover' | 'contain' | 'fill' | 'inside' | 'outside';
   quality?: number;
@@ -27,33 +27,40 @@ interface ResizeConfig {
 /**
  * Standard image size presets
  */
-export const IMAGE_SIZES = {
+interface ImageSizePreset {
+  width?: number;
+  height?: number;
+  fit?: 'cover' | 'contain' | 'fill' | 'inside' | 'outside';
+  quality: number;
+  format: 'webp';
+}
+
+export const IMAGE_SIZES: Record<string, ImageSizePreset> = {
   thumbnail: {
     width: 150,
     height: 150,
-    fit: 'cover' as const,
+    fit: 'cover',
     quality: 80,
-    format: 'webp' as const
+    format: 'webp'
   },
   small: {
     width: 320,
     quality: 80,
-    format: 'webp' as const
+    format: 'webp'
   },
   medium: {
     width: 640,
     quality: 80,
-    format: 'webp' as const
+    format: 'webp'
   },
   large: {
     width: 1280,
     quality: 85,
-    format: 'webp' as const
+    format: 'webp'
   },
   original: {
-    // Original will keep dimensions but optimize quality
     quality: 90,
-    format: 'webp' as const
+    format: 'webp'
   }
 };
 
@@ -108,25 +115,13 @@ export async function processImage(
       }
       
       // Set output format and quality
-      if (config.format) {
-        // Apply format-specific options
-        switch (config.format) {
-          case 'jpeg':
-            pipeline = pipeline.jpeg({ quality: config.quality || 80 });
-            break;
-          case 'png':
-            pipeline = pipeline.png({ quality: config.quality || 80 });
-            break;
-          case 'webp':
-            pipeline = pipeline.webp({ quality: config.quality || 80 });
-            break;
-        }
-      }
+      // Always use webp format with specified quality
+      pipeline = pipeline.webp({ quality: config.quality || 80 });
       
       // Create output filename
       const outputFilename = size === 'original' 
-        ? `${baseFilename}.${config.format || 'webp'}`
-        : `${baseFilename}-${size}.${config.format || 'webp'}`;
+        ? `${baseFilename}.webp`
+        : `${baseFilename}-${size}.webp`;
       
       // Generate relative path (suitable for storage in DB)
       const relativePath = path.join('/uploads/gallery', path.relative(path.join(process.cwd(), 'uploads/gallery'), path.join(destinationDir, outputFilename)));
