@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Event, Artist, Venue } from "@shared/schema";
+import { Event, Artist } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
@@ -19,12 +19,9 @@ const HeroSection = () => {
     enabled: !!featuredEvent?.artist_id,
   });
 
-  const { data: venue, isLoading: isLoadingVenue } = useQuery<Venue>({
-    queryKey: [`/api/venues/${featuredEvent?.venue_id}`],
-    enabled: !!featuredEvent?.venue_id,
-  });
+  // Venue queries removed
 
-  const isLoading = isLoadingEvent || isLoadingArtist || isLoadingVenue;
+  const isLoading = isLoadingEvent || isLoadingArtist;
 
   if (isLoading) {
     return (
@@ -103,10 +100,10 @@ const HeroSection = () => {
                   : "Date to be announced"}
               </span>
             </div>
-            {venue && (
+            {featuredEvent.location && (
               <div className="flex items-center">
                 <i className="fas fa-map-marker-alt mr-2"></i>
-                <span>{`${venue.name} • ${venue.location}`}</span>
+                <span>{featuredEvent.location}</span>
               </div>
             )}
           </div>

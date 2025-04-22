@@ -27,7 +27,6 @@ interface City {
   name: string;
   state: string;
   region: string;
-  venueCapacity: number;
   coordinates: { lat: number; lng: number };
   upcomingEvent?: {
     date: string;
@@ -42,7 +41,6 @@ const CITIES: City[] = [
     name: "Chicago", 
     state: "IL", 
     region: "Midwest", 
-    venueCapacity: 5000,
     coordinates: { lat: 41.8781, lng: -87.6298 }
   },
   { 
@@ -50,7 +48,6 @@ const CITIES: City[] = [
     name: "Washington", 
     state: "DC", 
     region: "East", 
-    venueCapacity: 3200,
     coordinates: { lat: 38.9072, lng: -77.0369 }
   },
   { 
@@ -58,7 +55,6 @@ const CITIES: City[] = [
     name: "San Francisco", 
     state: "CA", 
     region: "West", 
-    venueCapacity: 4500,
     coordinates: { lat: 37.7749, lng: -122.4194 }
   },
   { 
@@ -66,7 +62,6 @@ const CITIES: City[] = [
     name: "Boston", 
     state: "MA", 
     region: "East", 
-    venueCapacity: 3800,
     coordinates: { lat: 42.3601, lng: -71.0589 }
   },
   { 
@@ -74,7 +69,6 @@ const CITIES: City[] = [
     name: "New York", 
     state: "NY", 
     region: "East", 
-    venueCapacity: 8000,
     coordinates: { lat: 40.7128, lng: -74.0060 }
   },
   { 
@@ -82,7 +76,6 @@ const CITIES: City[] = [
     name: "Houston", 
     state: "TX", 
     region: "South", 
-    venueCapacity: 6000,
     coordinates: { lat: 29.7604, lng: -95.3698 }
   },
   { 
@@ -90,7 +83,6 @@ const CITIES: City[] = [
     name: "Denver", 
     state: "CO", 
     region: "West", 
-    venueCapacity: 4200,
     coordinates: { lat: 39.7392, lng: -104.9903 }
   },
   { 
@@ -98,7 +90,6 @@ const CITIES: City[] = [
     name: "Atlanta", 
     state: "GA", 
     region: "South", 
-    venueCapacity: 5500,
     coordinates: { lat: 33.7490, lng: -84.3880 }
   },
   { 
@@ -106,7 +97,6 @@ const CITIES: City[] = [
     name: "Los Angeles", 
     state: "CA", 
     region: "West", 
-    venueCapacity: 7500,
     coordinates: { lat: 34.0522, lng: -118.2437 }
   },
   { 
@@ -114,7 +104,6 @@ const CITIES: City[] = [
     name: "Nashville", 
     state: "TN", 
     region: "South", 
-    venueCapacity: 3000,
     coordinates: { lat: 36.1627, lng: -86.7816 }
   },
   { 
@@ -122,7 +111,6 @@ const CITIES: City[] = [
     name: "Dallas", 
     state: "TX", 
     region: "South", 
-    venueCapacity: 4800,
     coordinates: { lat: 32.7767, lng: -96.7970 }
   }
 ];
