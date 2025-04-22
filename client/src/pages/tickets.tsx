@@ -170,18 +170,13 @@ interface TicketCardProps {
 function TicketCard({ ticket, isUsed }: TicketCardProps) {
   const [showQR, setShowQR] = useState(false);
   
-  // Create a type-safe event object
-  const eventData = ticket.event || {
+  // Create a type-safe event object with default values if event is undefined
+  const event = ticket.event || {
     title: "Event Title",
     date: new Date().toISOString(),
     start_time: "19:00:00",
+    image_url: undefined,
     venue: { name: "Venue", location: "Location" }
-  };
-  
-  // Ensure we have a consistent event object with all optional properties defined
-  const event = {
-    ...eventData,
-    image_url: ticket.event?.image_url || undefined
   };
   
   return (
