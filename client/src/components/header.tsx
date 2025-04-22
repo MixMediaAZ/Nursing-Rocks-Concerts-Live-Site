@@ -221,7 +221,7 @@ export function Header() {
             </div>
             <nav className="flex flex-col space-y-3">
               {navLinks.map((link) => 
-                link.href === "/license" ? (
+                link.href === "/license-verification" ? (
                   <div
                     key={link.href}
                     className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md ${
