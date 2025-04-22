@@ -157,69 +157,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Gallery media management endpoints
   app.post("/api/gallery/upload", galleryUpload.array('images', 20), uploadGalleryImages);
-  
-  app.delete("/api/gallery/:id", async (req: Request, res: Response) => {
-    try {
-      const imageId = parseInt(req.params.id);
-      if (isNaN(imageId)) {
-        return res.status(400).json({ message: "Invalid image ID" });
-      }
-      
-      // Get the image first to verify it exists
-      const [image] = await db.select().from(gallery).where(eq(gallery.id, imageId));
-      
-      if (!image) {
-        return res.status(404).json({ message: "Image not found" });
-      }
-      
-      // Delete the image
-      await db.delete(gallery).where(eq(gallery.id, imageId));
-      
-      // If it's a local file, delete the actual file
-      if (image.image_url.startsWith('/gallery/')) {
-        const filePath = path.join(process.cwd(), 'public', image.image_url);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-      }
-      
-      res.json({ message: "Image deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting gallery image:", error);
-      res.status(500).json({ message: "Failed to delete gallery image" });
-    }
-  });
-  
-  app.patch("/api/gallery/:id", async (req: Request, res: Response) => {
-    try {
-      const imageId = parseInt(req.params.id);
-      if (isNaN(imageId)) {
-        return res.status(400).json({ message: "Invalid image ID" });
-      }
-      
-      const { alt_text, event_id } = req.body;
-      const updates: any = {};
-      
-      if (alt_text !== undefined) updates.alt_text = alt_text;
-      if (event_id !== undefined) updates.event_id = parseInt(event_id);
-      
-      // Update the image
-      const [updatedImage] = await db
-        .update(gallery)
-        .set(updates)
-        .where(eq(gallery.id, imageId))
-        .returning();
-      
-      if (!updatedImage) {
-        return res.status(404).json({ message: "Image not found" });
-      }
-      
-      res.json(updatedImage);
-    } catch (error) {
-      console.error("Error updating gallery image:", error);
-      res.status(500).json({ message: "Failed to update gallery image" });
-    }
-  });
+  app.delete("/api/gallery/:id", deleteGalleryImage);
+  app.patch("/api/gallery/:id", updateGalleryImage);
 
   // Newsletter subscription
   app.post("/api/subscribe", async (req: Request, res: Response) => {
