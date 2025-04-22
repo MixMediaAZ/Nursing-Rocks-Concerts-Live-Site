@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -18,6 +18,7 @@ import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { AuthRedirect } from "@/lib/auth-redirect";
 
 // Combined registration schema for both account and license verification
 const registerSchema = z.object({
@@ -62,6 +63,21 @@ export default function RegisterPage() {
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
   const [step, setStep] = useState<'account' | 'license'>('account');
+  
+  // Check if user is already logged in on mount
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const user = localStorage.getItem("user");
+    
+    if (token && user) {
+      try {
+        // User is already logged in, redirect to profile
+        window.location.href = "/profile";
+      } catch (error) {
+        console.error("Error during auth check:", error);
+      }
+    }
+  }, []);
   
   // Form definition with validation for the two-step form
   const form = useForm<RegisterFormValues>({

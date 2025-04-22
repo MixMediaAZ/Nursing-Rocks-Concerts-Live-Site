@@ -21,48 +21,39 @@ export default function ProfilePage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Check auth status directly from API first
-        const response = await fetch('/api/auth/status');
-        const authData = await response.json();
-        
-        if (authData.isAuthenticated) {
-          setIsAuthenticated(true);
-          setUserData(authData.user);
-          return;
-        }
-        
-        // Fallback to local storage if API auth check fails
+        // Simplified auth checking using token from localStorage
         const token = localStorage.getItem("token");
         const storedUser = localStorage.getItem("user");
         
         if (!token || !storedUser) {
+          // No token or user data found, redirect to login
           setIsAuthenticated(false);
           toast({
             variant: "destructive",
             title: "Authentication Required",
             description: "Please login to view your profile.",
           });
-          setLocation("/login");
-        } else {
-          setIsAuthenticated(true);
-          try {
-            setUserData(JSON.parse(storedUser));
-            
-            // Add Authorization header for future requests
-            const headers = new Headers();
-            headers.append('Authorization', `Bearer ${token}`);
-            
-            // Force refresh auth state
-            fetch('/api/auth/status', { headers });
-          } catch (error) {
-            console.error("Error parsing user data:", error);
-            setUserData(null);
-          }
+          // Use direct href navigation for more reliable page reload
+          window.location.href = "/login";
+          return;
+        }
+        
+        // We have token and user data in localStorage
+        setIsAuthenticated(true);
+        try {
+          setUserData(JSON.parse(storedUser));
+        } catch (error) {
+          console.error("Error parsing user data:", error);
+          setUserData(null);
+          // Bad user data in localStorage, clear and redirect
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          window.location.href = "/login";
         }
       } catch (error) {
         console.error("Error checking authentication:", error);
         setIsAuthenticated(false);
-        setLocation("/login");
+        window.location.href = "/login";
       }
     };
     
