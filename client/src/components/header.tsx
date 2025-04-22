@@ -79,11 +79,11 @@ export function Header() {
       {/* Medical-themed top strip */}
       <div className="w-full h-1.5 nurse-gradient"></div>
       
-      <div className="container flex h-20 items-center justify-center">
-        <div className="flex items-center justify-between w-full max-w-6xl">
-          <div className="flex items-center gap-2">
+      <div className="flex flex-col items-center justify-center w-full">
+        <div className="container flex items-center justify-center h-20">
+          <div className="flex items-center justify-center w-full">
             <Link href="/">
-              <div className="flex items-center gap-2 cursor-pointer">
+              <div className="flex items-center justify-center gap-2 cursor-pointer">
                 <img
                   src={newLogoPath}
                   alt="Nursing Rocks!"
@@ -98,9 +98,11 @@ export function Header() {
               </div>
             </Link>
           </div>
-          
+        </div>
+        
+        <div className="container flex items-center justify-center w-full border-t border-primary/10 py-2">
           {!isMobile ? (
-            <nav className="flex items-center gap-8">
+            <nav className="flex items-center gap-8 justify-center">
               {navLinks.map((link) => 
                 link.href === "/license-verification" ? (
                   <div
