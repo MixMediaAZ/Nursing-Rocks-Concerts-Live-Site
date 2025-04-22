@@ -21,7 +21,7 @@ const EventCard = ({ event }: { event: Event }) => {
     <Card className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
       <div className="relative h-48">
         <img
-          src={event.image_url}
+          src={event.image_url || ''}
           alt={event.title}
           className="w-full h-full object-cover"
         />

@@ -100,7 +100,7 @@ const EventDetails = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
               <img 
-                src={event.image_url} 
+                src={event.image_url || ''} 
                 alt={event.title} 
                 className="w-full h-auto rounded-xl mb-8 shadow-lg" 
               />
@@ -163,7 +163,7 @@ const EventDetails = () => {
             <div>
               <div className="bg-white rounded-xl overflow-hidden shadow-lg mb-8">
                 <div className="h-48 relative">
-                  <img src={venue.image_url} alt={venue.name} className="w-full h-full object-cover" />
+                  <img src={venue.image_url || ''} alt={venue.name} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#333333]/60 to-transparent"></div>
                   <div className="absolute bottom-4 left-4 text-white">
                     <div className="font-heading font-bold text-xl">{venue.name}</div>
