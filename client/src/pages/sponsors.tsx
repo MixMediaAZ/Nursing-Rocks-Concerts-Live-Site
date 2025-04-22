@@ -10,8 +10,8 @@ export default function SponsorsPage() {
         <meta name="description" content="Meet the generous sponsors who make the Nursing Rocks! Concert Series possible by providing free tickets for nursing professionals across America." />
       </Helmet>
       
-      <div className="py-8 bg-gradient-to-r from-[#5D3FD3]/5 to-[#FF3366]/5">
-        <div className="container text-center">
+      <div className="py-10 bg-gradient-to-r from-[#5D3FD3]/5 to-[#FF3366]/5">
+        <div className="container px-6 md:px-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Our Sponsors</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             We celebrate the organizations that make our concerts free for nurses through their generous support.
@@ -19,9 +19,11 @@ export default function SponsorsPage() {
         </div>
       </div>
       
-      <SponsorsSection />
+      <div className="container px-6 md:px-8 py-8">
+        <SponsorsSection />
+      </div>
       
-      <section className="py-16 container">
+      <section className="py-10 container px-6 md:px-8">
         <div className="grid md:grid-cols-2 gap-12">
           <div>
             <h2 className="text-3xl font-bold mb-6">Sponsorship Benefits</h2>
