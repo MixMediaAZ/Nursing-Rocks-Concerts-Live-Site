@@ -67,7 +67,6 @@ export function Header() {
   const navLinks = [
     { href: "/", label: "Home", icon: <HeartPulse className="h-4 w-4" /> },
     { href: "/cities", label: "Concert Cities", icon: <Map className="h-4 w-4" /> },
-    { href: "/artists", label: "Artists", icon: <Users className="h-4 w-4" /> },
     { href: "/sponsors", label: "Sponsors", icon: <HeartPulse className="h-4 w-4" /> },
     { href: "/store", label: "Store", icon: <ShoppingBag className="h-4 w-4" /> },
   ];

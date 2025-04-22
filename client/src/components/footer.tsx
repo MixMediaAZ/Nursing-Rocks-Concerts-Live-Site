@@ -53,11 +53,7 @@ export function Footer() {
                   <div className="inline-block text-muted-foreground hover:text-primary transition-colors cursor-pointer">Concerts</div>
                 </Link>
               </li>
-              <li>
-                <Link href="/artists">
-                  <div className="inline-block text-muted-foreground hover:text-primary transition-colors cursor-pointer">Artists</div>
-                </Link>
-              </li>
+
               <li>
                 <Link href="/venues">
                   <div className="inline-block text-muted-foreground hover:text-primary transition-colors cursor-pointer">Venues</div>
