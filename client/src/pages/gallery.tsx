@@ -1,0 +1,104 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Gallery } from "@shared/schema";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Search, X } from "lucide-react";
+import { Helmet } from "react-helmet";
+
+// This component is similar to GallerySection but as a full page
+const GalleryPage = () => {
+  const { data: images, isLoading } = useQuery<Gallery[]>({
+    queryKey: ["/api/gallery"],
+  });
+  
+  const [visibleImages, setVisibleImages] = useState(12);
+  
+  const loadMoreImages = () => {
+    setVisibleImages(prev => prev + 12);
+  };
+
+  return (
+    <>
+      <Helmet>
+        <title>Gallery | Nursing Rocks Concert Series</title>
+        <meta name="description" content="Explore photos from past Nursing Rocks concerts and events celebrating healthcare heroes" />
+      </Helmet>
+      
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <h1 className="font-heading text-4xl font-bold mb-2 text-center">Concert Gallery</h1>
+          <p className="text-[#333333]/70 text-center mb-12">Relive the magic from our previous events</p>
+          
+          {isLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <Skeleton key={i} className="h-72 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {images?.slice(0, visibleImages).map((image) => (
+                  <GalleryImage key={image.id} image={image} />
+                ))}
+              </div>
+              
+              {images && visibleImages < images.length && (
+                <div className="text-center mt-12">
+                  <Button 
+                    onClick={loadMoreImages}
+                    className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white font-accent font-semibold py-3 px-8 rounded-full"
+                  >
+                    <span>View More Photos</span>
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </section>
+    </>
+  );
+};
+
+const GalleryImage = ({ image }: { image: Gallery }) => {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <div className="relative group overflow-hidden rounded-lg cursor-pointer">
+          <img 
+            src={image.image_url} 
+            alt={image.alt_text || "Concert moment"} 
+            className="w-full h-72 object-cover transition-transform duration-500 group-hover:scale-110" 
+          />
+          <div className="absolute inset-0 bg-[#5D3FD3]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+            <div className="bg-white/90 rounded-full p-3 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+              <Search className="text-[#5D3FD3]" size={16} />
+            </div>
+          </div>
+        </div>
+      </DialogTrigger>
+      <DialogContent className="max-w-4xl p-0 bg-transparent border-none">
+        <div className="relative">
+          <img 
+            src={image.image_url} 
+            alt={image.alt_text || "Concert moment"} 
+            className="w-full h-auto max-h-[80vh] object-contain rounded-lg" 
+          />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="absolute top-2 right-2 rounded-full bg-white/20 hover:bg-white/40 text-white"
+            aria-label="Close"
+          >
+            <X size={20} />
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default GalleryPage;
