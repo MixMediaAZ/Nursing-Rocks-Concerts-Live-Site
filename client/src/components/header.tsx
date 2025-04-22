@@ -91,7 +91,7 @@ export function Header() {
                 style={{ objectFit: "contain", maxWidth: "100%" }}
               />
               <div className="hidden md:block">
-                <span className="heartbeat-animation text-lg md:text-xl font-semibold text-primary drop-shadow-sm">
+                <span className="heartbeat-animation text-lg md:text-xl font-semibold text-slate-800 dark:text-slate-200 drop-shadow-sm">
                   Concert Series
                 </span>
               </div>
