@@ -44,12 +44,22 @@ export function Header() {
     window.location.href = "/";
   };
 
-  const navLinks = [
+  // Navigation links - some links are only for authenticated users
+  const publicNavLinks = [
     { href: "/", label: "Home", icon: <HeartPulse size={18} /> },
     { href: "/cities", label: "Concert Cities", icon: <Map size={18} /> },
-    { href: "/gallery", label: "Gallery", icon: <Image size={18} /> },
     { href: "/sponsors", label: "Sponsors", icon: <HeartPulse size={18} /> },
     { href: "/store", label: "Store", icon: <ShoppingBag size={18} /> },
+  ];
+  
+  const authenticatedNavLinks = [
+    { href: "/gallery", label: "Gallery", icon: <Image size={18} /> },
+  ];
+  
+  // Combine links based on authentication status
+  const navLinks = [
+    ...publicNavLinks,
+    ...(isLoggedIn ? authenticatedNavLinks : []),
   ];
 
   const isActive = (path: string) => {

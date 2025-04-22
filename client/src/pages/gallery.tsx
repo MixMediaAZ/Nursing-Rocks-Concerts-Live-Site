@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Gallery, MediaFolder } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,8 @@ import { MediaFolderSelector } from "@/components/media-folder-selector";
 import { GalleryUploader } from "@/components/gallery-uploader";
 
 export default function GalleryPage() {
+  const [location, navigate] = useLocation();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const { data: images, isLoading } = useQuery<Gallery[]>({
     queryKey: ["/api/gallery"],
   });
@@ -69,6 +72,17 @@ export default function GalleryPage() {
   
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  
+  // Check if user is logged in
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      setIsLoggedIn(true);
+    } else {
+      // Redirect to login if not authenticated
+      window.location.href = "/login";
+    }
+  }, []);
   
   const loadMoreImages = () => {
     setVisibleImages(prev => prev + 12);
