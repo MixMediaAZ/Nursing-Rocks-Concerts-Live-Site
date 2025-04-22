@@ -43,8 +43,7 @@ const CITIES: City[] = [
     state: "IL", 
     region: "Midwest", 
     venueCapacity: 5000,
-    coordinates: { lat: 41.8781, lng: -87.6298 },
-    upcomingEvent: { date: "2025-05-15", artist: "The Healing Harmonies" }
+    coordinates: { lat: 41.8781, lng: -87.6298 }
   },
   { 
     id: "washington-dc", 
@@ -60,8 +59,7 @@ const CITIES: City[] = [
     state: "CA", 
     region: "West", 
     venueCapacity: 4500,
-    coordinates: { lat: 37.7749, lng: -122.4194 },
-    upcomingEvent: { date: "2025-06-20", artist: "Medical Mayhem" }
+    coordinates: { lat: 37.7749, lng: -122.4194 }
   },
   { 
     id: "boston", 
@@ -77,8 +75,7 @@ const CITIES: City[] = [
     state: "NY", 
     region: "East", 
     venueCapacity: 8000,
-    coordinates: { lat: 40.7128, lng: -74.0060 },
-    upcomingEvent: { date: "2025-04-12", artist: "Surgical Symphony" }
+    coordinates: { lat: 40.7128, lng: -74.0060 }
   },
   { 
     id: "houston", 
@@ -94,8 +91,7 @@ const CITIES: City[] = [
     state: "CO", 
     region: "West", 
     venueCapacity: 4200,
-    coordinates: { lat: 39.7392, lng: -104.9903 },
-    upcomingEvent: { date: "2025-07-18", artist: "Cardiac Beats" }
+    coordinates: { lat: 39.7392, lng: -104.9903 }
   },
   { 
     id: "atlanta", 
@@ -111,8 +107,7 @@ const CITIES: City[] = [
     state: "CA", 
     region: "West", 
     venueCapacity: 7500,
-    coordinates: { lat: 34.0522, lng: -118.2437 },
-    upcomingEvent: { date: "2025-05-30", artist: "The IV League" }
+    coordinates: { lat: 34.0522, lng: -118.2437 }
   },
   { 
     id: "nashville", 
@@ -128,8 +123,7 @@ const CITIES: City[] = [
     state: "TX", 
     region: "South", 
     venueCapacity: 4800,
-    coordinates: { lat: 32.7767, lng: -96.7970 },
-    upcomingEvent: { date: "2025-06-10", artist: "Stethoscope Rock" }
+    coordinates: { lat: 32.7767, lng: -96.7970 }
   }
 ];
 
