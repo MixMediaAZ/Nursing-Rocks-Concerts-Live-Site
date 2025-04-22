@@ -36,11 +36,6 @@ export interface IStorage {
   getArtist(id: number): Promise<Artist | undefined>;
   createArtist(artist: InsertArtist): Promise<Artist>;
   
-  // Venues
-  getAllVenues(): Promise<Venue[]>;
-  getVenue(id: number): Promise<Venue | undefined>;
-  createVenue(venue: InsertVenue): Promise<Venue>;
-  
   // Gallery
   getAllGalleryImages(): Promise<Gallery[]>;
   getEventGalleryImages(eventId: number): Promise<Gallery[]>;
@@ -172,7 +167,7 @@ export interface IStorage {
 export class MemStorage implements IStorage {
   private events: Map<number, Event>;
   private artists: Map<number, Artist>;
-  private venues: Map<number, Venue>;
+  // venues removed
   private gallery: Map<number, Gallery>;
   private subscribers: Map<number, Subscriber>;
   private users: Map<number, User>;
@@ -209,7 +204,7 @@ export class MemStorage implements IStorage {
   constructor() {
     this.events = new Map();
     this.artists = new Map();
-    this.venues = new Map();
+    // venues removed
     this.gallery = new Map();
     this.subscribers = new Map();
     this.users = new Map();
