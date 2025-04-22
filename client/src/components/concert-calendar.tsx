@@ -16,7 +16,7 @@ const CalendarEvents = ({ events }: { events: Event[] }) => {
         <TableRow className="border-b border-[#333333]/10">
           <TableHead className="py-3 px-2 text-left font-heading">Date</TableHead>
           <TableHead className="py-3 px-2 text-left font-heading">Artist</TableHead>
-          <TableHead className="py-3 px-2 text-left font-heading">Venue</TableHead>
+          <TableHead className="py-3 px-2 text-left font-heading">Location</TableHead>
           <TableHead className="py-3 px-2 text-left font-heading">Time</TableHead>
           <TableHead className="py-3 px-2 text-left font-heading">Genre</TableHead>
           <TableHead className="py-3 px-2 text-right font-heading">Tickets</TableHead>
@@ -46,8 +46,7 @@ const CalendarEvents = ({ events }: { events: Event[] }) => {
                 <div className="text-[#333333]/70 text-sm">{event.subtitle}</div>
               </TableCell>
               <TableCell className="py-4 px-2">
-                <div>{getVenueName(event.venue_id)}</div>
-                <div className="text-[#333333]/70 text-sm">{getVenueLocation(event.venue_id)}</div>
+                <div>{event.location || "TBA"}</div>
               </TableCell>
               <TableCell className="py-4 px-2">{event.start_time}</TableCell>
               <TableCell className="py-4 px-2">
