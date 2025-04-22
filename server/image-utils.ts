@@ -1,7 +1,6 @@
-import fs from 'fs';
-import path from 'path';
 import sharp from 'sharp';
-import { v4 as uuidv4 } from 'uuid';
+import path from 'path';
+import fs from 'fs';
 
 /**
  * Supported image types for processing
@@ -11,8 +10,7 @@ export const SUPPORTED_IMAGE_TYPES = [
   'image/jpg', 
   'image/png', 
   'image/webp', 
-  'image/gif',
-  'image/svg+xml'
+  'image/gif'
 ];
 
 /**
@@ -30,11 +28,33 @@ interface ResizeConfig {
  * Standard image size presets
  */
 export const IMAGE_SIZES = {
-  thumbnail: { width: 200, height: 200, fit: 'cover', quality: 80, format: 'webp' } as ResizeConfig,
-  small: { width: 400, height: 400, fit: 'cover', quality: 80, format: 'webp' } as ResizeConfig,
-  medium: { width: 800, fit: 'inside', quality: 85, format: 'webp' } as ResizeConfig,
-  large: { width: 1200, fit: 'inside', quality: 85, format: 'webp' } as ResizeConfig,
-  gallery: { width: 1600, fit: 'inside', quality: 90, format: 'webp' } as ResizeConfig,
+  thumbnail: {
+    width: 150,
+    height: 150,
+    fit: 'cover' as const,
+    quality: 80,
+    format: 'webp' as const
+  },
+  small: {
+    width: 320,
+    quality: 80,
+    format: 'webp' as const
+  },
+  medium: {
+    width: 640,
+    quality: 80,
+    format: 'webp' as const
+  },
+  large: {
+    width: 1280,
+    quality: 85,
+    format: 'webp' as const
+  },
+  original: {
+    // Original will keep dimensions but optimize quality
+    quality: 90,
+    format: 'webp' as const
+  }
 };
 
 /**
@@ -49,88 +69,84 @@ export const IMAGE_SIZES = {
  * @returns Object with paths to processed images
  */
 export async function processImage(
-  sourceFile: string, 
+  sourceFile: string,
   destinationDir: string,
   filename?: string
-): Promise<{
-  original: string;
-  thumbnail: string;
-  small: string;
-  medium: string;
-  large: string;
-  gallery: string;
-}> {
+): Promise<Record<keyof typeof IMAGE_SIZES, string>> {
   // Ensure destination directory exists
   if (!fs.existsSync(destinationDir)) {
     fs.mkdirSync(destinationDir, { recursive: true });
   }
 
-  // Generate unique filename if not provided
-  const baseFilename = filename || `${Date.now()}-${uuidv4().substring(0, 8)}`;
+  // Use the original filename if not provided
+  const baseFilename = filename || path.parse(sourceFile).name;
   
-  try {
-    // Process image with sharp
-    const image = sharp(sourceFile);
-    const metadata = await image.metadata();
+  // Load the image once to get metadata
+  const image = sharp(sourceFile);
+  const metadata = await image.metadata();
+  
+  // Create a dictionary to store generated file paths
+  const result: Partial<Record<keyof typeof IMAGE_SIZES, string>> = {};
+  
+  // Process each size preset
+  for (const [size, config] of Object.entries(IMAGE_SIZES)) {
+    const sizeKey = size as keyof typeof IMAGE_SIZES;
     
-    // Skip processing for SVG files
-    if (metadata.format === 'svg') {
-      const destPath = path.join(destinationDir, `${baseFilename}.svg`);
-      fs.copyFileSync(sourceFile, destPath);
+    try {
+      // Start with a fresh instance to avoid pipeline conflicts
+      let pipeline = sharp(sourceFile);
       
-      // Return the same path for all variants since SVGs are scalable
-      const relativePath = path.relative(process.cwd(), destPath).replace(/^public/, '');
-      return {
-        original: relativePath,
-        thumbnail: relativePath,
-        small: relativePath,
-        medium: relativePath,
-        large: relativePath,
-        gallery: relativePath,
-      };
+      // Determine if we need to resize
+      if (size !== 'original' && config.width) {
+        const resizeOptions: sharp.ResizeOptions = {
+          width: config.width,
+          height: config.height,
+          fit: config.fit
+        };
+        
+        pipeline = pipeline.resize(resizeOptions);
+      }
+      
+      // Set output format and quality
+      if (config.format) {
+        // Apply format-specific options
+        switch (config.format) {
+          case 'jpeg':
+            pipeline = pipeline.jpeg({ quality: config.quality || 80 });
+            break;
+          case 'png':
+            pipeline = pipeline.png({ quality: config.quality || 80 });
+            break;
+          case 'webp':
+            pipeline = pipeline.webp({ quality: config.quality || 80 });
+            break;
+        }
+      }
+      
+      // Create output filename
+      const outputFilename = size === 'original' 
+        ? `${baseFilename}.${config.format || 'webp'}`
+        : `${baseFilename}-${size}.${config.format || 'webp'}`;
+      
+      // Generate relative path (suitable for storage in DB)
+      const relativePath = path.join('/uploads/gallery', path.relative(path.join(process.cwd(), 'uploads/gallery'), path.join(destinationDir, outputFilename)));
+      
+      // Create absolute path (for file operations)
+      const outputPath = path.join(destinationDir, outputFilename);
+      
+      // Save the processed image
+      await pipeline.toFile(outputPath);
+      
+      // Store the relative path in the result
+      result[sizeKey] = relativePath;
+    } catch (error) {
+      console.error(`Error processing ${size} version of ${sourceFile}:`, error);
+      // Continue processing other sizes
     }
-
-    // Process for regular images (JPEG, PNG, WebP, etc.)
-    const results: Partial<{
-      original: string;
-      thumbnail: string;
-      small: string;
-      medium: string;
-      large: string;
-      gallery: string;
-    }> = {};
-
-    // Save original with optimization
-    const originalExt = metadata.format === 'jpeg' ? 'jpg' : (metadata.format || 'jpg');
-    const originalPath = path.join(destinationDir, `${baseFilename}.${originalExt}`);
-    await image.toFile(originalPath);
-    results.original = path.relative(process.cwd(), originalPath).replace(/^public/, '');
-
-    // Create size variants
-    for (const [size, config] of Object.entries(IMAGE_SIZES)) {
-      const { width, height, fit, quality, format } = config;
-      const resized = sharp(sourceFile)
-        .resize(width, height, { fit })
-        .toFormat(format || 'webp', { quality: quality || 80 });
-      
-      const outputPath = path.join(destinationDir, `${baseFilename}-${size}.${format || 'webp'}`);
-      await resized.toFile(outputPath);
-      
-      results[size as keyof typeof results] = path.relative(process.cwd(), outputPath).replace(/^public/, '');
-    }
-
-    return results as {
-      original: string;
-      thumbnail: string;
-      small: string;
-      medium: string;
-      large: string;
-      gallery: string;
-    };
-  } catch (error) {
-    console.error('Error processing image:', error);
-    throw new Error(`Failed to process image: ${error}`);
   }
+  
+  // Return all the generated file paths
+  return result as Record<keyof typeof IMAGE_SIZES, string>;
 }
 
 /**
@@ -145,22 +161,25 @@ export function calculateDimensions(
   originalWidth: number,
   originalHeight: number,
   maxWidth: number,
-  maxHeight?: number
+  maxHeight: number
 ): { width: number; height: number } {
-  if (!maxHeight) {
-    const ratio = originalHeight / originalWidth;
-    return {
-      width: maxWidth,
-      height: Math.round(maxWidth * ratio)
-    };
+  // Calculate aspect ratio
+  const aspectRatio = originalWidth / originalHeight;
+  
+  // Initialize with maximum dimensions
+  let targetWidth = maxWidth;
+  let targetHeight = maxHeight;
+  
+  // Adjust to maintain aspect ratio
+  if (maxWidth / maxHeight > aspectRatio) {
+    // Height is the limiting factor
+    targetWidth = Math.round(maxHeight * aspectRatio);
+    targetHeight = maxHeight;
+  } else {
+    // Width is the limiting factor
+    targetWidth = maxWidth;
+    targetHeight = Math.round(maxWidth / aspectRatio);
   }
-
-  const widthRatio = maxWidth / originalWidth;
-  const heightRatio = maxHeight / originalHeight;
-  const ratio = Math.min(widthRatio, heightRatio);
-
-  return {
-    width: Math.round(originalWidth * ratio),
-    height: Math.round(originalHeight * ratio)
-  };
+  
+  return { width: targetWidth, height: targetHeight };
 }

@@ -6,7 +6,21 @@ import fs from "fs";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { storage } from "./storage";
-import { gallery } from "@shared/schema";
+import { gallery, mediaFolders } from "@shared/schema";
+import { 
+  galleryUpload, 
+  createMediaFolder, 
+  getMediaFolders, 
+  updateMediaFolder, 
+  deleteMediaFolder,
+  uploadGalleryImages, 
+  deleteGalleryImage, 
+  updateGalleryImage, 
+  getGalleryImagesByEvent,
+  getGalleryImagesByFolder,
+  getAllGalleryImages,
+  replaceGalleryImage
+} from "./gallery-media";
 
 // Initialize Stripe with the secret key if it exists
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -50,12 +64,6 @@ import {
   updateMedia,
   deleteMedia
 } from "./media";
-import {
-  galleryUpload,
-  uploadGalleryImages,
-  deleteGalleryImage,
-  updateGalleryImage
-} from "./gallery-media";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Events
@@ -131,34 +139,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Venues section removed
 
-  // Gallery
-  app.get("/api/gallery", async (_req: Request, res: Response) => {
-    try {
-      const images = await storage.getAllGalleryImages();
-      res.json(images);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch gallery images" });
-    }
-  });
-
-  app.get("/api/gallery/event/:eventId", async (req: Request, res: Response) => {
-    try {
-      const eventId = parseInt(req.params.eventId);
-      if (isNaN(eventId)) {
-        return res.status(400).json({ message: "Invalid event ID" });
-      }
-      
-      const images = await storage.getEventGalleryImages(eventId);
-      res.json(images);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch event gallery images" });
-    }
-  });
+  // Gallery and Media Folders
+  app.get("/api/gallery", getAllGalleryImages);
+  app.get("/api/gallery/event/:eventId", getGalleryImagesByEvent);
+  app.get("/api/gallery/folder/:folderId", getGalleryImagesByFolder);
   
   // Gallery media management endpoints
   app.post("/api/gallery/upload", galleryUpload.array('images', 20), uploadGalleryImages);
   app.delete("/api/gallery/:id", deleteGalleryImage);
   app.patch("/api/gallery/:id", updateGalleryImage);
+  app.post("/api/gallery/:id/replace", galleryUpload.single('image'), replaceGalleryImage);
+  
+  // Media Folders management 
+  app.get("/api/media-folders", getMediaFolders);
+  app.post("/api/media-folders", createMediaFolder);
+  app.patch("/api/media-folders/:id", updateMediaFolder);
+  app.delete("/api/media-folders/:id", deleteMediaFolder);
 
   // Newsletter subscription
   app.post("/api/subscribe", async (req: Request, res: Response) => {
