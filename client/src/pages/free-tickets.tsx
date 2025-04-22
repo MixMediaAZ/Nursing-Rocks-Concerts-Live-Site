@@ -57,6 +57,13 @@ export default function FreeTickets() {
       }
     } else {
       setIsAuthenticated(false);
+      
+      // If user is not authenticated, show toast and redirect to register page
+      toast({
+        title: "Authentication Required",
+        description: "Please register or login to access free tickets.",
+      });
+      setLocation("/register");
     }
   }, []);
 
