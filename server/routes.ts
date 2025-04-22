@@ -53,6 +53,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const events = await storage.getAllEvents();
       res.json(events);
     } catch (error) {
+      console.error("Error fetching events:", error);
       res.status(500).json({ message: "Failed to fetch events" });
     }
   });
@@ -66,6 +67,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(featuredEvent);
     } catch (error) {
+      console.error("Error fetching featured event:", error);
       res.status(500).json({ message: "Failed to fetch featured event" });
     }
   });
