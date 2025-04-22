@@ -8,17 +8,17 @@ import { Search } from "lucide-react";
 
 // City background colors and patterns
 const cityColors: Record<string, string> = {
-  "chicago": "bg-gradient-to-r from-blue-600 to-blue-800",
-  "washington-dc": "bg-gradient-to-r from-purple-600 to-blue-600",
-  "san-francisco": "bg-gradient-to-r from-cyan-500 to-blue-600",
-  "boston": "bg-gradient-to-r from-red-600 to-red-800",
-  "new-york": "bg-gradient-to-r from-gray-700 to-gray-900",
-  "houston": "bg-gradient-to-r from-red-600 to-orange-600",
-  "denver": "bg-gradient-to-r from-green-600 to-green-800",
-  "atlanta": "bg-gradient-to-r from-orange-500 to-red-600",
-  "los-angeles": "bg-gradient-to-r from-yellow-500 to-yellow-600",
-  "nashville": "bg-gradient-to-r from-indigo-600 to-purple-700",
-  "dallas": "bg-gradient-to-r from-teal-600 to-green-700"
+  "chicago": "bg-[#0088ff]", // Bright blue matching Nursing Rocks logo
+  "washington-dc": "bg-purple-600",
+  "san-francisco": "bg-cyan-600",
+  "boston": "bg-red-600",
+  "new-york": "bg-slate-700",
+  "houston": "bg-orange-600",
+  "denver": "bg-green-600",
+  "atlanta": "bg-amber-600",
+  "los-angeles": "bg-yellow-500",
+  "nashville": "bg-indigo-600",
+  "dallas": "bg-emerald-600"
 };
 
 // Defined city types with all required information
@@ -215,28 +215,14 @@ export default function CitySelector() {
                   onClick={() => handleCitySelect(city.id)}
                 >
                   <div 
-                    className={`h-48 flex items-center justify-center relative overflow-hidden ${city.id !== 'chicago' ? cityColors[city.id] || DEFAULT_BG : ''}`}
+                    className={`h-48 flex items-center justify-center relative overflow-hidden ${cityColors[city.id] || DEFAULT_BG}`}
                   >
-                    {/* Chicago gets the special Nursing Rocks backdrop */}
-                    {city.id === 'chicago' ? (
-                      <img 
-                        src="/chicago-backdrop.png"
-                        alt="Chicago - Nursing Rocks"
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                    ) : (
-                      /* Pattern overlay for visual interest for other cities */
-                      <div className="absolute inset-0 opacity-10">
-                        <div className="w-full h-full bg-repeat" 
-                             style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
-                        </div>
+                    {/* Pattern overlay for visual interest */}
+                    <div className="absolute inset-0 opacity-10">
+                      <div className="w-full h-full bg-repeat" 
+                           style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
                       </div>
-                    )}
-                    
-                    {/* Special background dim overlay for Chicago to ensure text readability */}
-                    {city.id === 'chicago' && (
-                      <div className="absolute inset-0 bg-black/20"></div>
-                    )}
+                    </div>
                     
                     {/* City name with text shadow for better visibility */}
                     <h3 className="text-3xl text-white font-extrabold drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] z-10">
