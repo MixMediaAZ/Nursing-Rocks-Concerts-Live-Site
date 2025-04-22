@@ -6,19 +6,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
-// City backdrop images - direct URLs to public folder
-const nursingRocksLogo = "/nursing-logo.png";
-const chicagoBg = "/chicago.jpg";
-const washingtonBg = "/washingtondc.jpg";
-const sanFranciscoBg = "/sanfrancisco.jpg";
-const bostonBg = "/boston.jpg";
-const newYorkBg = "/newyork.jpg";
-const houstonBg = "/houston.jpg";
-const denverBg = "/denver.jpg";
-const atlantaBg = "/atlanta.jpg";
-const losAngelesBg = "/losangeles.png";
-const nashvilleBg = "/nashville.png";
-const dallasBg = "/dallas.png";
+// City background colors and gradients
+const cityColors: Record<string, string> = {
+  "chicago": "bg-gradient-to-r from-purple-700 to-indigo-800",         // Chicago - Deep purple/indigo
+  "washington-dc": "bg-gradient-to-r from-blue-700 to-blue-900",       // Washington DC - Blue tones
+  "san-francisco": "bg-gradient-to-r from-cyan-500 to-blue-600",       // San Francisco - Ocean blues
+  "boston": "bg-gradient-to-r from-red-800 to-red-900",                // Boston - Historic red tones
+  "new-york": "bg-gradient-to-r from-slate-800 to-gray-900",           // New York - Urban grays
+  "houston": "bg-gradient-to-r from-red-600 to-orange-700",            // Houston - Warm tones
+  "denver": "bg-gradient-to-r from-green-700 to-emerald-900",          // Denver - Mountain greens
+  "atlanta": "bg-gradient-to-r from-orange-600 to-red-700",            // Atlanta - Peach-inspired
+  "los-angeles": "bg-gradient-to-r from-yellow-500 to-amber-600",      // Los Angeles - Sunny yellows
+  "nashville": "bg-gradient-to-r from-indigo-600 to-purple-800",       // Nashville - Music tones
+  "dallas": "bg-gradient-to-r from-emerald-600 to-teal-700"            // Dallas - Green/teal
+};
 
 // Defined city types with all required information
 interface City {
@@ -135,20 +136,8 @@ const CITIES: City[] = [
 // Regions for filtering
 const REGIONS = ["All", "East", "Midwest", "South", "West"];
 
-// City backdrop mapping - carefully selected images for each city
-const CITY_BACKDROPS: Record<string, string> = {
-  "new-york": newYorkBg,       // NYC cityscape
-  "chicago": chicagoBg,        // Chicago skyline
-  "los-angeles": losAngelesBg, // LA scenic view
-  "denver": denverBg,          // Denver mountains
-  "boston": bostonBg,          // Boston historical architecture
-  "atlanta": atlantaBg,        // Atlanta city view
-  "houston": houstonBg,        // Houston urban landscape
-  "nashville": nashvilleBg,    // Nashville music scene
-  "san-francisco": sanFranciscoBg, // SF bay area
-  "washington-dc": washingtonBg,   // DC monuments
-  "dallas": dallasBg           // Dallas modern skyline
-};
+// Default background for any cities not in the list
+const DEFAULT_BG = "bg-gradient-to-r from-purple-500 to-indigo-600";
 
 export default function CitySelector() {
   const [_, setLocation] = useLocation();
@@ -226,25 +215,31 @@ export default function CitySelector() {
                   onClick={() => handleCitySelect(city.id)}
                 >
                   <div 
-                    className="h-48 flex items-center justify-center relative overflow-hidden"
-                    style={{
-                      backgroundColor: 'rgba(0, 0, 0, 0.05)'
-                    }}
+                    className={`h-48 flex items-center justify-center relative ${cityColors[city.id] || DEFAULT_BG}`}
                   >
-                    {/* City background image */}
-                    <img 
-                      src={CITY_BACKDROPS[city.id] || nursingRocksLogo}
-                      alt={`${city.name} backdrop`}
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                    
-                    {/* Dark overlay for better text readability */}
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                      {/* City name with text shadow for better visibility */}
-                      <h3 className="text-3xl text-white font-extrabold drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] z-10">
-                        {city.name}
-                      </h3>
+                    {/* Nursing Rocks overlay pattern */}
+                    <div className="absolute inset-0 opacity-10">
+                      <div className="w-full h-full bg-repeat" 
+                           style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+                      </div>
                     </div>
+                    
+                    {/* City name with text shadow for better visibility */}
+                    <h3 className="text-3xl text-white font-extrabold drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] z-10">
+                      {city.name}
+                    </h3>
+                    
+                    {/* Show state abbreviation */}
+                    <div className="absolute bottom-3 right-3 bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded text-xs text-white font-medium">
+                      {city.state}
+                    </div>
+                    
+                    {/* Event indicator */}
+                    {city.upcomingEvent && (
+                      <div className="absolute top-3 left-3 bg-white text-xs font-semibold px-2 py-1 rounded-full text-black/80">
+                        Upcoming Event
+                      </div>
+                    )}
                   </div>
                 </Card>
               ))}
