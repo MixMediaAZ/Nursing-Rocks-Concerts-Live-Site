@@ -6,14 +6,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
-// Nursing Rocks logos URLs for city backgrounds
-const nursingRocksLogo = "/assets/logos/nursing-rocks-logo-1.jpg";
-const cityBgLogo2 = "/assets/logos/nursing-rocks-logo-2.jpg";
-const cityBgLogo3 = "/assets/logos/nursing-rocks-logo-3.png";
-const cityBgLogo4 = "/assets/logos/nursing-rocks-logo-4.png";
-const cityBgLogo5 = "/assets/logos/nursing-rocks-logo-5.png";
-const cityBgLogo6 = "/assets/logos/nursing-rocks-logo-6.png";
-const cityBgLogo7 = "/assets/logos/nursing-rocks-logo-7.png";
+// City backdrop images - specific for each city
+const nursingRocksLogo = "/assets/logos/NursingRocks_NewLogo.png";
+const chicagoBg = "/assets/city_backgrounds/IMG_7133.jpg";
+const washingtonBg = "/assets/city_backgrounds/IMG_7135.jpg";
+const sanFranciscoBg = "/assets/city_backgrounds/IMG_7136.jpg";
+const bostonBg = "/assets/city_backgrounds/IMG_7137.jpg";
+const newYorkBg = "/assets/city_backgrounds/IMG_7138.jpg";
+const houstonBg = "/assets/city_backgrounds/IMG_7139.jpg";
+const denverBg = "/assets/city_backgrounds/IMG_7140.jpg";
+const atlantaBg = "/assets/city_backgrounds/IMG_7141.jpg";
+const losAngelesBg = "/assets/city_backgrounds/2CA4A9EC-7F93-43A0-A9E2-1834A4BA1A84.PNG";
+const nashvilleBg = "/assets/city_backgrounds/3B39719F-9D81-4397-9EFB-74CA91F16E2C.PNG";
+const dallasBg = "/assets/city_backgrounds/6AEA04AA-A9A3-4F6E-9C15-CCAFE3BC50F8.PNG";
 
 // Defined city types with all required information
 interface City {
@@ -130,19 +135,19 @@ const CITIES: City[] = [
 // Regions for filtering
 const REGIONS = ["All", "East", "Midwest", "South", "West"];
 
-// City backdrop mapping
+// City backdrop mapping - carefully selected images for each city
 const CITY_BACKDROPS: Record<string, string> = {
-  "new-york": cityBgLogo6, // NYC skyline
-  "chicago": cityBgLogo4, // City skyline
-  "los-angeles": cityBgLogo5, // Yellow background
-  "denver": cityBgLogo3, // Blue background
-  "boston": nursingRocksLogo,
-  "atlanta": cityBgLogo2,
-  "houston": cityBgLogo4,
-  "nashville": cityBgLogo5,
-  "san-francisco": cityBgLogo3,
-  "washington-dc": cityBgLogo6,
-  "dallas": cityBgLogo7 // Tropical background
+  "new-york": newYorkBg,       // NYC cityscape
+  "chicago": chicagoBg,        // Chicago skyline
+  "los-angeles": losAngelesBg, // LA scenic view
+  "denver": denverBg,          // Denver mountains
+  "boston": bostonBg,          // Boston historical architecture
+  "atlanta": atlantaBg,        // Atlanta city view
+  "houston": houstonBg,        // Houston urban landscape
+  "nashville": nashvilleBg,    // Nashville music scene
+  "san-francisco": sanFranciscoBg, // SF bay area
+  "washington-dc": washingtonBg,   // DC monuments
+  "dallas": dallasBg           // Dallas modern skyline
 };
 
 export default function CitySelector() {
