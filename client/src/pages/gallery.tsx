@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Search, X } from "lucide-react";
 import { Helmet } from "react-helmet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// This component is similar to GallerySection but as a full page
+// This component is a dedicated gallery page
 const GalleryPage = () => {
   const { data: images, isLoading } = useQuery<Gallery[]>({
     queryKey: ["/api/gallery"],
@@ -22,41 +23,82 @@ const GalleryPage = () => {
   return (
     <>
       <Helmet>
-        <title>Gallery | Nursing Rocks Concert Series</title>
+        <title>Concert Gallery | Nursing Rocks Concert Series</title>
         <meta name="description" content="Explore photos from past Nursing Rocks concerts and events celebrating healthcare heroes" />
       </Helmet>
       
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
-          <h1 className="font-heading text-4xl font-bold mb-2 text-center">Concert Gallery</h1>
-          <p className="text-[#333333]/70 text-center mb-12">Relive the magic from our previous events</p>
+          <div className="mb-12 text-center">
+            <h1 className="font-heading text-4xl font-bold mb-2">Concert Gallery</h1>
+            <p className="text-[#333333]/70">Relive the magic from our previous events</p>
+          </div>
           
-          {isLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {Array.from({ length: 12 }).map((_, i) => (
-                <Skeleton key={i} className="h-72 w-full rounded-lg" />
-              ))}
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {images?.slice(0, visibleImages).map((image) => (
-                  <GalleryImage key={image.id} image={image} />
-                ))}
-              </div>
-              
-              {images && visibleImages < images.length && (
-                <div className="text-center mt-12">
-                  <Button 
-                    onClick={loadMoreImages}
-                    className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white font-accent font-semibold py-3 px-8 rounded-full"
-                  >
-                    <span>View More Photos</span>
-                  </Button>
+          <Tabs defaultValue="all" className="mb-8">
+            <TabsList className="mx-auto flex justify-center">
+              <TabsTrigger value="all">All Photos</TabsTrigger>
+              <TabsTrigger value="event1">Chicago Event</TabsTrigger>
+              <TabsTrigger value="event2">New York Event</TabsTrigger>
+            </TabsList>
+            <TabsContent value="all">
+              {isLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <Skeleton key={i} className="h-72 w-full rounded-lg" />
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {images?.slice(0, visibleImages).map((image) => (
+                      <GalleryImage key={image.id} image={image} />
+                    ))}
+                  </div>
+                  
+                  {images && visibleImages < images.length && (
+                    <div className="text-center mt-12">
+                      <Button 
+                        onClick={loadMoreImages}
+                        className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white font-accent font-semibold py-3 px-8 rounded-full"
+                      >
+                        <span>View More Photos</span>
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </TabsContent>
+            <TabsContent value="event1">
+              {isLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <Skeleton key={i} className="h-72 w-full rounded-lg" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {images?.filter(img => img.event_id === 1).map((image) => (
+                    <GalleryImage key={image.id} image={image} />
+                  ))}
                 </div>
               )}
-            </>
-          )}
+            </TabsContent>
+            <TabsContent value="event2">
+              {isLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <Skeleton key={i} className="h-72 w-full rounded-lg" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {images?.filter(img => img.event_id === 2).map((image) => (
+                    <GalleryImage key={image.id} image={image} />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
       </section>
     </>
