@@ -55,7 +55,10 @@ export function MediaFolderSelector({
       description?: string;
       parent_id?: number | null;
     }) => {
-      const res = await apiRequest("POST", "/api/media-folders", folderData);
+      const res = await apiRequest("POST", "/api/media-folders", { 
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(folderData)
+      });
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || "Failed to create folder");
