@@ -6,20 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
-// City background colors and gradients
-const cityColors: Record<string, string> = {
-  "chicago": "bg-gradient-to-r from-purple-700 to-indigo-800",         // Chicago - Deep purple/indigo
-  "washington-dc": "bg-gradient-to-r from-blue-700 to-blue-900",       // Washington DC - Blue tones
-  "san-francisco": "bg-gradient-to-r from-cyan-500 to-blue-600",       // San Francisco - Ocean blues
-  "boston": "bg-gradient-to-r from-red-800 to-red-900",                // Boston - Historic red tones
-  "new-york": "bg-gradient-to-r from-slate-800 to-gray-900",           // New York - Urban grays
-  "houston": "bg-gradient-to-r from-red-600 to-orange-700",            // Houston - Warm tones
-  "denver": "bg-gradient-to-r from-green-700 to-emerald-900",          // Denver - Mountain greens
-  "atlanta": "bg-gradient-to-r from-orange-600 to-red-700",            // Atlanta - Peach-inspired
-  "los-angeles": "bg-gradient-to-r from-yellow-500 to-amber-600",      // Los Angeles - Sunny yellows
-  "nashville": "bg-gradient-to-r from-indigo-600 to-purple-800",       // Nashville - Music tones
-  "dallas": "bg-gradient-to-r from-emerald-600 to-teal-700"            // Dallas - Green/teal
-};
+// Nursing Rocks logo for all city backgrounds
+const NURSING_ROCKS_LOGO = "/nursing-rocks-logo.jpg";
 
 // Defined city types with all required information
 interface City {
@@ -215,14 +203,17 @@ export default function CitySelector() {
                   onClick={() => handleCitySelect(city.id)}
                 >
                   <div 
-                    className={`h-48 flex items-center justify-center relative ${cityColors[city.id] || DEFAULT_BG}`}
+                    className="h-48 flex items-center justify-center relative overflow-hidden"
                   >
-                    {/* Nursing Rocks overlay pattern */}
-                    <div className="absolute inset-0 opacity-10">
-                      <div className="w-full h-full bg-repeat" 
-                           style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
-                      </div>
-                    </div>
+                    {/* Nursing Rocks logo background */}
+                    <img 
+                      src={NURSING_ROCKS_LOGO}
+                      alt="Nursing Rocks Logo"
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                    
+                    {/* Dark overlay for better text readability */}
+                    <div className="absolute inset-0 bg-black/30 backdrop-filter backdrop-blur-[1px]"></div>
                     
                     {/* City name with text shadow for better visibility */}
                     <h3 className="text-3xl text-white font-extrabold drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] z-10">
