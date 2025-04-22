@@ -8,7 +8,7 @@ export default function LicenseVerificationPage() {
   const [_, setLocation] = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   
-  // Check authentication status on mount
+  // Check authentication status on mount with improved cross-platform compatibility
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -18,7 +18,8 @@ export default function LicenseVerificationPage() {
         title: "Authentication Required",
         description: "Please login to verify your license and get free tickets.",
       });
-      setLocation("/register");
+      // Use direct navigation for better cross-platform consistency
+      window.location.href = "/register";
     } else {
       setIsAuthenticated(true);
     }
@@ -36,10 +37,17 @@ export default function LicenseVerificationPage() {
             title: "Already Verified",
             description: "Your nursing license is already verified. Redirecting to your tickets.",
           });
-          setLocation("/tickets");
+          // Use setTimeout to ensure toast is shown before redirect
+          setTimeout(() => {
+            window.location.href = "/tickets";
+          }, 200);
         }
       } catch (error) {
         console.error("Error parsing user data:", error);
+        // Clear corrupted data
+        localStorage.removeItem("user");
+        localStorage.removeItem("token");
+        window.location.href = "/login";
       }
     }
   }, []);

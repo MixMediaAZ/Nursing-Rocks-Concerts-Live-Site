@@ -64,17 +64,22 @@ export default function RegisterPage() {
   const [_, setLocation] = useLocation();
   const [step, setStep] = useState<'account' | 'license'>('account');
   
-  // Check if user is already logged in on mount
+  // Check if user is already logged in on mount - with improved error handling
   useEffect(() => {
     const token = localStorage.getItem("token");
     const user = localStorage.getItem("user");
     
     if (token && user) {
       try {
+        // Parse user data to validate it (catches corrupted data)
+        JSON.parse(user);
         // User is already logged in, redirect to profile
         window.location.href = "/profile";
       } catch (error) {
-        console.error("Error during auth check:", error);
+        console.error("Error parsing user data during auth check:", error);
+        // Clear invalid data
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
       }
     }
   }, []);

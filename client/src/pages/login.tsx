@@ -71,28 +71,32 @@ export default function LoginPage() {
     }
   });
   
-  // Redirect after successful login
+  // Redirect after successful login with a consistent approach across platforms
   function handleLoginSuccess() {
     // Check if user is verified
     const userData = localStorage.getItem("user");
     if (userData) {
       try {
         const user = JSON.parse(userData);
-        if (user.is_verified) {
-          // If already verified, direct them to tickets page
-          setLocation("/tickets");
-        } else {
-          // If not verified, direct to profile dashboard
-          setLocation("/profile");
-        }
+        
+        // Add a short timeout to ensure token is properly saved first
+        setTimeout(() => {
+          if (user.is_verified) {
+            // If already verified, direct them to tickets page
+            window.location.href = "/tickets";
+          } else {
+            // If not verified, direct to profile dashboard
+            window.location.href = "/profile";
+          }
+        }, 100);
       } catch (error) {
         console.error("Error parsing user data:", error);
         // Default to profile page if we can't determine verification status
-        setLocation("/profile");
+        window.location.href = "/profile";
       }
     } else {
       // Default to profile page
-      setLocation("/profile");
+      window.location.href = "/profile";
     }
   }
   
