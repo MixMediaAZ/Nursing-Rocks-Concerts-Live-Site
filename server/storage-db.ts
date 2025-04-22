@@ -71,23 +71,7 @@ export class DatabaseStorage implements IStorage {
     return artist;
   }
   
-  // Venues
-  async getAllVenues(): Promise<Venue[]> {
-    return await db.select().from(venues);
-  }
-  
-  async getVenue(id: number): Promise<Venue | undefined> {
-    const [venue] = await db.select().from(venues).where(eq(venues.id, id));
-    return venue;
-  }
-  
-  async createVenue(insertVenue: InsertVenue): Promise<Venue> {
-    const [venue] = await db
-      .insert(venues)
-      .values(insertVenue)
-      .returning();
-    return venue;
-  }
+  // Venue methods removed
   
   // Gallery
   async getAllGalleryImages(): Promise<Gallery[]> {

@@ -167,7 +167,6 @@ export interface IStorage {
 export class MemStorage implements IStorage {
   private events: Map<number, Event>;
   private artists: Map<number, Artist>;
-  // venues removed
   private gallery: Map<number, Gallery>;
   private subscribers: Map<number, Subscriber>;
   private users: Map<number, User>;
@@ -185,7 +184,6 @@ export class MemStorage implements IStorage {
   
   private eventId: number;
   private artistId: number;
-  private venueId: number;
   private galleryId: number;
   private subscriberId: number;
   private userId: number;
@@ -204,7 +202,6 @@ export class MemStorage implements IStorage {
   constructor() {
     this.events = new Map();
     this.artists = new Map();
-    // venues removed
     this.gallery = new Map();
     this.subscribers = new Map();
     this.users = new Map();
@@ -222,7 +219,7 @@ export class MemStorage implements IStorage {
     
     this.eventId = 1;
     this.artistId = 1;
-    this.venueId = 1;
+    // venueId no longer needed
     this.galleryId = 1;
     this.subscriberId = 1;
     this.userId = 1;
@@ -278,21 +275,7 @@ export class MemStorage implements IStorage {
     return artist;
   }
   
-  // Venues
-  async getAllVenues(): Promise<Venue[]> {
-    return Array.from(this.venues.values());
-  }
-  
-  async getVenue(id: number): Promise<Venue | undefined> {
-    return this.venues.get(id);
-  }
-  
-  async createVenue(insertVenue: InsertVenue): Promise<Venue> {
-    const id = this.venueId++;
-    const venue: Venue = { ...insertVenue, id };
-    this.venues.set(id, venue);
-    return venue;
-  }
+  // Venues section removed
   
   // Gallery
   async getAllGalleryImages(): Promise<Gallery[]> {
@@ -383,54 +366,13 @@ export class MemStorage implements IStorage {
       song_duration: "5:30"
     });
     
-    // Create Venues
-    const riversideArena = this.setupVenue({
-      name: "City Medical Center Auditorium",
-      location: "New York, NY",
-      capacity: 1800,
-      image_url: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
-      description: "This modern auditorium within NYC's largest hospital has been transformed into a concert venue to celebrate healthcare workers. Features exceptional acoustics and comfortable seating.",
-      rating: 5,
-      seating_chart_url: "#"
-    });
-    
-    const metroHall = this.setupVenue({
-      name: "Nurses Memorial Hall",
-      location: "Chicago, IL",
-      capacity: 1100,
-      image_url: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
-      description: "Historic venue dedicated to the nursing profession with amazing ambiance. Recently renovated to provide perfect sound engineering while maintaining its historic charm.",
-      rating: 4,
-      seating_chart_url: "#"
-    });
-    
-    const echoLounge = this.setupVenue({
-      name: "The Healing Center",
-      location: "Los Angeles, CA",
-      capacity: 750,
-      image_url: "https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
-      description: "An intimate venue created by healthcare professionals to showcase medical talent. The space doubles as a wellness center during the day and transforms into a concert venue at night.",
-      rating: 4,
-      seating_chart_url: "#"
-    });
-    
-    const blueNote = this.setupVenue({
-      name: "Grace Medical Theater",
-      location: "San Francisco, CA",
-      capacity: 500,
-      image_url: "https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
-      description: "Once a medical lecture hall, this intimate venue now hosts concerts by healthcare professionals with a portion of proceeds benefiting medical research and education.",
-      rating: 5,
-      seating_chart_url: "#"
-    });
-    
-    // Create Events
+    // Create Events with location instead of venue_id
     const oct21Event = this.setupEvent({
       title: "The Healing Harmonies",
       subtitle: "Heroes in Scrubs Tour",
       description: "Experience a powerful night of music performed by nurses who are using their musical talents to inspire hope and healing. Proceeds support the Healthcare Workers Foundation.",
       date: new Date("2023-10-21T20:00:00"),
-      venue_id: riversideArena.id,
+      location: "New York, NY",
       artist_id: astralWaves.id,
       image_url: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
       start_time: "8:00 PM",
@@ -446,7 +388,7 @@ export class MemStorage implements IStorage {
       subtitle: "Frontline Heroes Tribute",
       description: "Join this dynamic group of physicians and medical students for an energetic performance celebrating the resilience of healthcare workers everywhere.",
       date: new Date("2023-10-28T19:30:00"),
-      venue_id: metroHall.id,
+      location: "Chicago, IL",
       artist_id: neonDreams.id,
       image_url: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
       start_time: "7:30 PM",
@@ -462,7 +404,7 @@ export class MemStorage implements IStorage {
       subtitle: "After Hours Tour",
       description: "ER nurses by day, musicians by night - experience the soulful melodies inspired by their frontline experiences in healthcare during this intimate performance.",
       date: new Date("2023-11-04T21:00:00"),
-      venue_id: echoLounge.id,
+      location: "Los Angeles, CA",
       artist_id: violetEchoes.id,
       image_url: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
       start_time: "9:00 PM",
@@ -478,7 +420,7 @@ export class MemStorage implements IStorage {
       subtitle: "Healing Rhythms Benefit",
       description: "An evening of soulful jazz performed by healthcare professionals united by their passion for music and healing. Ticket sales benefit nursing scholarship programs.",
       date: new Date("2023-11-11T20:30:00"),
-      venue_id: blueNote.id,
+      location: "San Francisco, CA",
       artist_id: emberJazz.id,
       image_url: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
       start_time: "8:30 PM",
@@ -515,12 +457,7 @@ export class MemStorage implements IStorage {
     return newArtist;
   }
   
-  private setupVenue(venue: InsertVenue): Venue {
-    const id = this.venueId++;
-    const newVenue: Venue = { ...venue, id };
-    this.venues.set(id, newVenue);
-    return newVenue;
-  }
+  // setupVenue method removed
   
   private setupEvent(event: InsertEvent): Event {
     const id = this.eventId++;

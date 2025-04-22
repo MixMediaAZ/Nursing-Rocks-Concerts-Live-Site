@@ -8,7 +8,7 @@ const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 let stripe: Stripe | undefined;
 if (stripeSecretKey) {
   stripe = new Stripe(stripeSecretKey, {
-    apiVersion: "2022-11-15", // Use a supported API version
+    apiVersion: "2023-10-16", // Use the latest supported API version
   });
 } else {
   console.warn("Missing Stripe secret key. Payment functionality will be simulated.");
