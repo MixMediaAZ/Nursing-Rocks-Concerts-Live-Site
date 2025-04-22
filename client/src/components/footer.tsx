@@ -10,21 +10,19 @@ export function Footer() {
   return (
     <footer className="border-t bg-background">
       <div className="container px-4 py-12 md:py-16 mx-auto text-center">
-        {/* Logo Section */}
-        <div className="mb-10 flex justify-center">
-          <Link href="/">
+        {/* Logo and Tagline Section */}
+        <div className="mb-10 flex flex-col md:flex-row items-center justify-center gap-6">
+          <Link href="/" className="flex-shrink-0">
             <img
               src={logoPath}
               alt="Nursing Rocks!"
-              className="h-24 w-auto"
+              className="h-20 w-auto"
             />
           </Link>
+          <p className="text-base text-muted-foreground max-w-lg text-center md:text-left">
+            Nursing Rocks! Concert Series celebrates healthcare professionals with exclusive music experiences.
+          </p>
         </div>
-
-        {/* Tagline */}
-        <p className="text-sm text-muted-foreground mb-6 mx-auto max-w-lg">
-          Nursing Rocks! Concert Series celebrates healthcare professionals with exclusive music experiences.
-        </p>
 
         {/* Social Media */}
         <div className="flex justify-center gap-4 mb-8">
