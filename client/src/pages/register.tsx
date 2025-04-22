@@ -33,6 +33,8 @@ const registerSchema = z.object({
   state: z.string().min(1, { message: "Please select your state" }),
   expiration_date: z.date({
     required_error: "Please select an expiration date",
+  }).refine(date => date > new Date(), {
+    message: "Expiration date must be in the future"
   }),
   agree_to_terms: z.boolean().refine(val => val === true, {
     message: "You must agree to the terms to proceed",
@@ -73,7 +75,7 @@ export default function RegisterPage() {
       license_number: "",
       state: "",
       agree_to_terms: false,
-      expiration_date: undefined,
+      expiration_date: new Date(new Date().setFullYear(new Date().getFullYear() + 2)),
     }
   });
   
@@ -408,11 +410,18 @@ export default function RegisterPage() {
                           <PopoverContent className="w-auto p-0" align="start">
                             <Calendar
                               mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              disabled={(date) =>
-                                date < new Date()
-                              }
+                              selected={field.value instanceof Date && !isNaN(field.value.getTime()) ? field.value : undefined}
+                              onSelect={(date) => {
+                                if (date) {
+                                  field.onChange(date);
+                                }
+                              }}
+                              disabled={(date) => {
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                return date < today;
+                              }}
+                              fromDate={new Date()}
                               initialFocus
                             />
                           </PopoverContent>
