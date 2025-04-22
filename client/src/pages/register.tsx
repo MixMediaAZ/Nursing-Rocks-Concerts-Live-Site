@@ -137,20 +137,29 @@ export default function RegisterPage() {
         license: await licenseResponse.json()
       };
     },
-    onSuccess: (data) => {
-      toast({
-        title: "Registration Successful",
-        description: "Welcome to Nursing Rocks! Your nursing license verification is being processed.",
-      });
-      
-      // Store token and user data (redundant check since we already do this in the mutation, but just to be safe)
+    onSuccess: async (data) => {
+      // Store token and user data
       if (data.token && data.user) {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
+        
+        toast({
+          title: "Registration Successful",
+          description: "Welcome to Nursing Rocks! Your nursing license verification is being processed.",
+        });
+        
+        // Wait a bit for the token to be properly saved
+        setTimeout(() => {
+          // Force a full page navigation to ensure auth state is refreshed
+          window.location.href = '/profile';
+        }, 500);
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Registration Error",
+          description: "There was a problem with your registration. Please try again.",
+        });
       }
-      
-      // Redirect to profile/dashboard with window.location to ensure full page reload
-      window.location.href = "/profile";
     },
     onError: (error: Error) => {
       toast({

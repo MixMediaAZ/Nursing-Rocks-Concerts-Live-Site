@@ -19,26 +19,54 @@ export default function ProfilePage() {
   
   // Check authentication status on mount
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
-    
-    if (!token || !storedUser) {
-      setIsAuthenticated(false);
-      toast({
-        variant: "destructive",
-        title: "Authentication Required",
-        description: "Please login to view your profile.",
-      });
-      setLocation("/login");
-    } else {
-      setIsAuthenticated(true);
+    const checkAuth = async () => {
       try {
-        setUserData(JSON.parse(storedUser));
+        // Check auth status directly from API first
+        const response = await fetch('/api/auth/status');
+        const authData = await response.json();
+        
+        if (authData.isAuthenticated) {
+          setIsAuthenticated(true);
+          setUserData(authData.user);
+          return;
+        }
+        
+        // Fallback to local storage if API auth check fails
+        const token = localStorage.getItem("token");
+        const storedUser = localStorage.getItem("user");
+        
+        if (!token || !storedUser) {
+          setIsAuthenticated(false);
+          toast({
+            variant: "destructive",
+            title: "Authentication Required",
+            description: "Please login to view your profile.",
+          });
+          setLocation("/login");
+        } else {
+          setIsAuthenticated(true);
+          try {
+            setUserData(JSON.parse(storedUser));
+            
+            // Add Authorization header for future requests
+            const headers = new Headers();
+            headers.append('Authorization', `Bearer ${token}`);
+            
+            // Force refresh auth state
+            fetch('/api/auth/status', { headers });
+          } catch (error) {
+            console.error("Error parsing user data:", error);
+            setUserData(null);
+          }
+        }
       } catch (error) {
-        console.error("Error parsing user data:", error);
-        setUserData(null);
+        console.error("Error checking authentication:", error);
+        setIsAuthenticated(false);
+        setLocation("/login");
       }
-    }
+    };
+    
+    checkAuth();
   }, []);
   
   // Fetch licenses
