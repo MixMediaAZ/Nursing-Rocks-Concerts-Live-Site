@@ -132,8 +132,12 @@ export default function ProfilePage() {
                 <Button variant="outline" className="w-full" onClick={() => setLocation("/jobs")}>
                   Jobs Board
                 </Button>
-                <Button variant="outline" className="w-full" onClick={() => setLocation("/free-tickets")}>
-                  Get Free Tickets
+                <Button 
+                  variant="outline" 
+                  className="w-full bg-primary/10 hover:bg-primary/20 text-primary font-medium" 
+                  onClick={() => setLocation("/license-verification")}
+                >
+                  Get Your Free Tickets
                 </Button>
                 <Button 
                   variant="outline" 

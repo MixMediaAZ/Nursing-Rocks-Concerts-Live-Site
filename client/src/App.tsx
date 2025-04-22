@@ -10,6 +10,7 @@ import RegisterPage from "@/pages/register";
 import ProfilePage from "@/pages/profile";
 import TicketsPage from "@/pages/tickets";
 import FreeTicketsPage from "@/pages/free-tickets";
+import LicenseVerificationPage from "@/pages/license-verification";
 import CitiesPage from "@/pages/cities";
 import CityDetailsPage from "@/pages/city-details";
 import SponsorsPage from "@/pages/sponsors";
@@ -45,6 +46,7 @@ function Router() {
           <Route path="/profile" component={ProfilePage} />
           <Route path="/tickets" component={TicketsPage} />
           <Route path="/free-tickets" component={FreeTicketsPage} />
+          <Route path="/license-verification" component={LicenseVerificationPage} />
           <Route path="/cities" component={CitiesPage} />
           <Route path="/cities/:cityId" component={CityDetailsPage} />
           <Route path="/sponsors" component={SponsorsPage} />
