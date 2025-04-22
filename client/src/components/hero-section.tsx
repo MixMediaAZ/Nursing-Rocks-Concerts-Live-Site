@@ -119,7 +119,7 @@ const HeroSection = () => {
               size="lg"
               className="bg-gradient-to-r from-[#F61D7A] to-[#FF3366] hover:from-[#FF3366] hover:to-[#F61D7A] text-white font-accent font-bold text-xs sm:text-sm md:text-base py-4 px-4 sm:px-6 rounded-full shadow-lg transform transition-transform hover:scale-105 animate-pulse"
             >
-              <Link href="/register">
+              <Link href="/free-tickets">
                 <span className="uppercase">Nurses, Get Your Free Tickets Here!</span>
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 ml-1 sm:ml-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
