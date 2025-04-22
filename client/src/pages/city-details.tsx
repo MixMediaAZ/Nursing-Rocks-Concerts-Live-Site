@@ -13,13 +13,8 @@ interface City {
   name: string;
   state: string;
   description: string;
-  venueDetails: {
-    name: string;
-    address: string;
-    capacity: number;
-    description: string;
-    imageUrl: string;
-  };
+  imageUrl: string;
+  location: string;
   upcomingEvents: Array<{
     id: number;
     date: string;
@@ -27,6 +22,7 @@ interface City {
     artist: string;
     description: string;
     imageUrl: string;
+    location: string;
   }>;
   scholarships: Array<{
     id: number;
@@ -46,13 +42,8 @@ const CITIES_DATA: Record<string, City> = {
     name: "Chicago",
     state: "IL",
     description: "Join us in the Windy City for an unforgettable night celebrating nursing professionals. Our Chicago concert features top rock performers and special moments dedicated to the incredible work of local nurses.",
-    venueDetails: {
-      name: "United Center",
-      address: "1901 W Madison St, Chicago, IL 60612",
-      capacity: 5000,
-      description: "A premier event venue in downtown Chicago featuring state-of-the-art sound and lighting systems, comfortable seating, and excellent visibility from all angles.",
-      imageUrl: "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&q=80&w=1000"
-    },
+    imageUrl: "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&q=80&w=1000",
+    location: "United Center - 1901 W Madison St, Chicago, IL 60612",
     upcomingEvents: [
       {
         id: 1,
@@ -60,7 +51,8 @@ const CITIES_DATA: Record<string, City> = {
         time: "19:30",
         artist: "The Healing Harmonies",
         description: "Featuring special performances by local nursing choirs and recognition of nurse leaders from Chicago-area hospitals.",
-        imageUrl: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&q=80&w=1000"
+        imageUrl: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&q=80&w=1000",
+        location: "United Center - Grand Ballroom"
       },
       {
         id: 2,
@@ -68,7 +60,8 @@ const CITIES_DATA: Record<string, City> = {
         time: "20:00",
         artist: "Cardiac Beats",
         description: "An exclusive concert dedicated to cardiac care nurses, with special appearances by renowned healthcare speakers.",
-        imageUrl: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&q=80&w=1000"
+        imageUrl: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&q=80&w=1000",
+        location: "United Center - Main Arena"
       }
     ],
     scholarships: [
@@ -97,13 +90,8 @@ const CITIES_DATA: Record<string, City> = {
     name: "New York",
     state: "NY",
     description: "Experience the Nursing Rocks! Concert Series in the Big Apple. Our New York event brings together the city's vibrant energy with our mission to celebrate nursing professionals across America.",
-    venueDetails: {
-      name: "Madison Square Garden",
-      address: "4 Pennsylvania Plaza, New York, NY 10001",
-      capacity: 8000,
-      description: "The world-famous Madison Square Garden provides an iconic setting for this special celebration of nursing professionals in New York City.",
-      imageUrl: "https://images.unsplash.com/photo-1587162146766-e06b1189b907?auto=format&fit=crop&q=80&w=1000"
-    },
+    imageUrl: "https://images.unsplash.com/photo-1587162146766-e06b1189b907?auto=format&fit=crop&q=80&w=1000",
+    location: "Javits Center - 429 11th Avenue, New York, NY 10001",
     upcomingEvents: [
       {
         id: 3,
@@ -111,7 +99,8 @@ const CITIES_DATA: Record<string, City> = {
         time: "19:00",
         artist: "Surgical Symphony",
         description: "A special evening highlighting the contributions of surgical nurses, featuring multimedia presentations of nurse stories.",
-        imageUrl: "https://images.unsplash.com/photo-1468359601543-843bfaef291a?auto=format&fit=crop&q=80&w=1000"
+        imageUrl: "https://images.unsplash.com/photo-1468359601543-843bfaef291a?auto=format&fit=crop&q=80&w=1000",
+        location: "Javits Center - Crystal Palace Hall"
       }
     ],
     scholarships: [
@@ -166,8 +155,8 @@ export default function CityDetailsPage() {
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-gradient-to-r from-[#5D3FD3]/80 to-[#FF3366]/80 mix-blend-multiply"></div>
           <img
-            src={city.venueDetails.imageUrl}
-            alt={`${city.name} venue`}
+            src={city.imageUrl}
+            alt={`${city.name} concert`}
             className="w-full h-full object-cover"
           />
         </div>
@@ -187,11 +176,7 @@ export default function CityDetailsPage() {
             <div className="flex flex-wrap items-center gap-4 mb-8">
               <div className="flex items-center">
                 <MapPin className="w-5 h-5 mr-2" />
-                <span>{city.venueDetails.name}</span>
-              </div>
-              <div className="flex items-center">
-                <Users className="w-5 h-5 mr-2" />
-                <span>Capacity: {city.venueDetails.capacity.toLocaleString()} seats</span>
+                <span>{city.location}</span>
               </div>
             </div>
 
@@ -220,61 +205,11 @@ export default function CityDetailsPage() {
       
       {/* Main Content */}
       <div className="container py-12">
-        <Tabs defaultValue="venue" className="w-full">
+        <Tabs defaultValue="events" className="w-full">
           <TabsList className="w-full mb-8">
-            <TabsTrigger value="venue">Venue Information</TabsTrigger>
             <TabsTrigger value="events" id="upcoming-events">Upcoming Events</TabsTrigger>
             <TabsTrigger value="scholarships" id="scholarships">Scholarships</TabsTrigger>
           </TabsList>
-          
-          {/* Venue Information Tab */}
-          <TabsContent value="venue">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div>
-                <h2 className="text-2xl font-bold mb-4">{city.venueDetails.name}</h2>
-                <div className="flex items-start gap-2 mb-4">
-                  <MapPin className="w-5 h-5 mt-0.5 text-muted-foreground flex-shrink-0" />
-                  <p className="text-muted-foreground">{city.venueDetails.address}</p>
-                </div>
-                <p className="mb-6">{city.venueDetails.description}</p>
-                
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Venue Features</h3>
-                  <ul className="grid grid-cols-2 gap-2">
-                    <li className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-primary"></div>
-                      State-of-the-art sound system
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-primary"></div>
-                      Accessible seating
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-primary"></div>
-                      Food and beverage options
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-primary"></div>
-                      Convenient parking
-                    </li>
-                  </ul>
-                </div>
-                
-                <div className="mt-8">
-                  <Button variant="outline">
-                    View on Google Maps
-                  </Button>
-                </div>
-              </div>
-              <div>
-                <img 
-                  src={city.venueDetails.imageUrl}
-                  alt={city.venueDetails.name}
-                  className="rounded-lg w-full h-auto object-cover aspect-video"
-                />
-              </div>
-            </div>
-          </TabsContent>
           
           {/* Upcoming Events Tab */}
           <TabsContent value="events">
@@ -316,6 +251,12 @@ export default function CityDetailsPage() {
                           <Clock className="w-4 h-4" />
                           <span>
                             {event.time} 
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 mt-1">
+                          <MapPin className="w-4 h-4" />
+                          <span>
+                            {event.location}
                           </span>
                         </div>
                       </CardDescription>
