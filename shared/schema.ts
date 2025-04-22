@@ -10,7 +10,7 @@ export const events = pgTable("events", {
   subtitle: text("subtitle"),
   description: text("description"),
   date: timestamp("date").notNull(),
-  venue_id: integer("venue_id").notNull(),
+  venue_id: integer("venue_id"), // Made optional temporarily
   artist_id: integer("artist_id").notNull(),
   image_url: text("image_url"),
   start_time: text("start_time").notNull(),
@@ -19,6 +19,7 @@ export const events = pgTable("events", {
   is_featured: boolean("is_featured").default(false),
   genre: text("genre"),
   tickets_url: text("tickets_url"),
+  location: text("location"), // Added as replacement for venue reference
 });
 
 export const insertEventSchema = createInsertSchema(events).omit({
@@ -30,10 +31,7 @@ export const eventsRelations = relations(events, ({ one }) => ({
     fields: [events.artist_id],
     references: [artists.id],
   }),
-  venue: one(venues, {
-    fields: [events.venue_id],
-    references: [venues.id],
-  }),
+  // Venue relation temporarily removed
 }));
 
 // Artist model

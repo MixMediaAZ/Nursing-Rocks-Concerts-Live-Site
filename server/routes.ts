@@ -116,33 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Venues
-  app.get("/api/venues", async (_req: Request, res: Response) => {
-    try {
-      const venues = await storage.getAllVenues();
-      res.json(venues);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch venues" });
-    }
-  });
-
-  app.get("/api/venues/:id", async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid venue ID" });
-      }
-      
-      const venue = await storage.getVenue(id);
-      if (!venue) {
-        return res.status(404).json({ message: "Venue not found" });
-      }
-      
-      res.json(venue);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch venue" });
-    }
-  });
+  // Venues section removed
 
   // Gallery
   app.get("/api/gallery", async (_req: Request, res: Response) => {

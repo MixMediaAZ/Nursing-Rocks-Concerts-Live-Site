@@ -17,7 +17,6 @@ import {
   Music, 
   Map, 
   Users, 
-  Building2, 
   HeartPulse, 
   Briefcase, 
   ShoppingBag, 
