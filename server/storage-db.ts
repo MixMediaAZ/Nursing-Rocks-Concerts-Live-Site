@@ -3,7 +3,6 @@ import { db } from "./db";
 import { 
   Event, InsertEvent, 
   Artist, InsertArtist, 
-  Venue, InsertVenue, 
   Gallery, InsertGallery, 
   Subscriber, InsertSubscriber,
   User, InsertUser,
@@ -18,7 +17,7 @@ import {
   JobApplication, InsertJobApplication,
   SavedJob, InsertSavedJob,
   JobAlert, InsertJobAlert,
-  events, artists, venues, gallery, subscribers,
+  events, artists, gallery, subscribers,
   users, nurseLicenses, tickets,
   storeProducts, storeOrders, storeOrderItems,
   employers, jobListings, nurseProfiles,

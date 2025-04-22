@@ -1,7 +1,6 @@
 import { 
   Event, InsertEvent, 
   Artist, InsertArtist, 
-  Venue, InsertVenue, 
   Gallery, InsertGallery, 
   Subscriber, InsertSubscriber,
   User, InsertUser,
@@ -16,7 +15,7 @@ import {
   StoreProduct, InsertStoreProduct,
   StoreOrder, InsertStoreOrder,
   StoreOrderItem, InsertStoreOrderItem,
-  events, artists, venues, gallery, subscribers,
+  events, artists, gallery, subscribers,
   users, nurseLicenses, tickets,
   employers, jobListings, nurseProfiles, 
   jobApplications, savedJobs, jobAlerts,

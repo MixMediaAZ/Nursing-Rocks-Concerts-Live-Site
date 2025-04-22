@@ -10,7 +10,6 @@ export const events = pgTable("events", {
   subtitle: text("subtitle"),
   description: text("description"),
   date: timestamp("date").notNull(),
-  venue_id: integer("venue_id"), // Made optional temporarily
   artist_id: integer("artist_id").notNull(),
   image_url: text("image_url"),
   start_time: text("start_time").notNull(),
@@ -19,7 +18,7 @@ export const events = pgTable("events", {
   is_featured: boolean("is_featured").default(false),
   genre: text("genre"),
   tickets_url: text("tickets_url"),
-  location: text("location"), // Added as replacement for venue reference
+  location: text("location").notNull(), // Main location reference
 });
 
 export const insertEventSchema = createInsertSchema(events).omit({
@@ -31,7 +30,6 @@ export const eventsRelations = relations(events, ({ one }) => ({
     fields: [events.artist_id],
     references: [artists.id],
   }),
-  // Venue relation temporarily removed
 }));
 
 // Artist model
@@ -55,25 +53,7 @@ export const artistsRelations = relations(artists, ({ many }) => ({
   events: many(events),
 }));
 
-// Venue model
-export const venues = pgTable("venues", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  location: text("location").notNull(),
-  capacity: integer("capacity"),
-  image_url: text("image_url"),
-  description: text("description"),
-  rating: integer("rating"),
-  seating_chart_url: text("seating_chart_url"),
-});
-
-export const insertVenueSchema = createInsertSchema(venues).omit({
-  id: true,
-});
-
-export const venuesRelations = relations(venues, ({ many }) => ({
-  events: many(events),
-}));
+// Venue model has been removed
 
 // Gallery model
 export const gallery = pgTable("gallery", {
@@ -198,8 +178,7 @@ export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type Artist = typeof artists.$inferSelect;
 export type InsertArtist = z.infer<typeof insertArtistSchema>;
 
-export type Venue = typeof venues.$inferSelect;
-export type InsertVenue = z.infer<typeof insertVenueSchema>;
+// Venue types removed
 
 export type Gallery = typeof gallery.$inferSelect;
 export type InsertGallery = z.infer<typeof insertGallerySchema>;
