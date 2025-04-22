@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { Shirt, ShoppingBag } from "lucide-react";
+import nursingRocksLogo from "@assets/1000024136.jpg";
 
 const PromotionButtons = () => {
   const [_, setLocation] = useLocation();
@@ -8,6 +9,13 @@ const PromotionButtons = () => {
   return (
     <section className="bg-background py-10">
       <div className="container">
+        <div className="flex justify-center mb-8">
+          <img 
+            src={nursingRocksLogo} 
+            alt="Nursing Rocks! Concert Series" 
+            className="max-w-xs w-full rounded-lg shadow-md"
+          />
+        </div>
         <div className="flex flex-col sm:flex-row justify-center items-center gap-6">
           <Button 
             onClick={() => setLocation("/store/category/tshirts")}
