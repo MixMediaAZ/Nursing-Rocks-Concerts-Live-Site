@@ -79,44 +79,33 @@ export function Header() {
       {/* Medical-themed top strip */}
       <div className="w-full h-1.5 nurse-gradient"></div>
       
-      <div className="container flex h-20 items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Link href="/">
-            <div className="flex items-center gap-2 cursor-pointer">
-              <img
-                src={newLogoPath}
-                alt="Nursing Rocks!"
-                className="h-16 md:h-20 lg:h-24 w-auto drop-shadow-lg"
-                style={{ objectFit: "contain", maxWidth: "100%" }}
-              />
-              <div className="hidden md:block">
-                <span className="heartbeat-animation text-lg md:text-xl font-semibold text-slate-800 dark:text-slate-200 drop-shadow-sm">
-                  Concert Series
-                </span>
-              </div>
-            </div>
-          </Link>
-        </div>
-        
-        {!isMobile ? (
-          <nav className="flex items-center gap-8">
-            {navLinks.map((link) => 
-              link.href === "/license-verification" ? (
-                <div
-                  key={link.href}
-                  onClick={() => window.location.href = "/license-verification"}
-                  className={`text-base md:text-lg font-medium transition-colors hover:text-primary cursor-pointer flex items-center gap-2.5 ${
-                    isActive(link.href)
-                      ? "text-primary"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {link.icon}
-                  {link.label}
+      <div className="container flex h-20 items-center justify-center">
+        <div className="flex items-center justify-between w-full max-w-6xl">
+          <div className="flex items-center gap-2">
+            <Link href="/">
+              <div className="flex items-center gap-2 cursor-pointer">
+                <img
+                  src={newLogoPath}
+                  alt="Nursing Rocks!"
+                  className="h-16 md:h-20 lg:h-24 w-auto drop-shadow-lg"
+                  style={{ objectFit: "contain", maxWidth: "100%" }}
+                />
+                <div className="hidden md:block">
+                  <span className="heartbeat-animation text-lg md:text-xl font-semibold text-slate-800 dark:text-slate-200 drop-shadow-sm">
+                    Concert Series
+                  </span>
                 </div>
-              ) : (
-                <Link key={link.href} href={link.href}>
+              </div>
+            </Link>
+          </div>
+          
+          {!isMobile ? (
+            <nav className="flex items-center gap-8">
+              {navLinks.map((link) => 
+                link.href === "/license-verification" ? (
                   <div
+                    key={link.href}
+                    onClick={() => window.location.href = "/license-verification"}
                     className={`text-base md:text-lg font-medium transition-colors hover:text-primary cursor-pointer flex items-center gap-2.5 ${
                       isActive(link.href)
                         ? "text-primary"
@@ -126,87 +115,100 @@ export function Header() {
                     {link.icon}
                     {link.label}
                   </div>
-                </Link>
-              )
-            )}
-            
-            {/* Shopping Cart */}
-            <Link href="/cart">
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                <ShoppingCart className="h-5 w-5" />
-                {totalItems > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
-                    {totalItems > 99 ? '99+' : totalItems}
-                  </Badge>
-                )}
-              </Button>
-            </Link>
-            
-            {isLoggedIn ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <User className="h-5 w-5" />
+                ) : (
+                  <Link key={link.href} href={link.href}>
+                    <div
+                      className={`text-base md:text-lg font-medium transition-colors hover:text-primary cursor-pointer flex items-center gap-2.5 ${
+                        isActive(link.href)
+                          ? "text-primary"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {link.icon}
+                      {link.label}
+                    </div>
+                  </Link>
+                )
+              )}
+              
+              {/* Shopping Cart */}
+              <Link href="/cart">
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <ShoppingCart className="h-5 w-5" />
+                  {totalItems > 0 && (
+                    <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                      {totalItems > 99 ? '99+' : totalItems}
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
+              
+              {isLoggedIn ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                      <User className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile">
+                        <div className="w-full cursor-pointer">My Profile</div>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => window.location.href = "/license-verification"}>
+                      <div className="w-full cursor-pointer">License Verification</div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/jobs">
+                        <div className="w-full cursor-pointer">Jobs Board</div>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/nursing-jobs">
+                        <div className="w-full cursor-pointer">Nursing Jobs</div>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/tickets">
+                        <div className="w-full cursor-pointer">My Tickets</div>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin">
+                        <div className="w-full cursor-pointer">Admin Dashboard</div>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" asChild>
+                    <Link href="/login">
+                      <div className="cursor-pointer">Login</div>
+                    </Link>
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild>
-                    <Link href="/profile">
-                      <div className="w-full cursor-pointer">My Profile</div>
+                  <Button asChild>
+                    <Link href="/register">
+                      <div className="cursor-pointer">Register</div>
                     </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => window.location.href = "/license-verification"}>
-                    <div className="w-full cursor-pointer">License Verification</div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/jobs">
-                      <div className="w-full cursor-pointer">Jobs Board</div>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/nursing-jobs">
-                      <div className="w-full cursor-pointer">Nursing Jobs</div>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/tickets">
-                      <div className="w-full cursor-pointer">My Tickets</div>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/admin">
-                      <div className="w-full cursor-pointer">Admin Dashboard</div>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" asChild>
-                  <Link href="/login">
-                    <div className="cursor-pointer">Login</div>
-                  </Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/register">
-                    <div className="cursor-pointer">Register</div>
-                  </Link>
-                </Button>
-              </div>
-            )}
-          </nav>
-        ) : (
-          <Button
-            variant="ghost"
-            className="p-0 h-10 w-10 rounded-full"
-            onClick={toggleMenu}
-          >
-            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </Button>
-        )}
+                  </Button>
+                </div>
+              )}
+            </nav>
+          ) : (
+            <Button
+              variant="ghost"
+              className="p-0 h-10 w-10 rounded-full"
+              onClick={toggleMenu}
+            >
+              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </Button>
+          )}
+        </div>
       </div>
       
       {/* Mobile Menu */}
@@ -298,7 +300,7 @@ export function Header() {
                    >
                      <Stethoscope className="h-4 w-4" />
                      License Verification
-                   </div>
+                  </div>
                   <Link href="/jobs">
                     <div
                       className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md"
