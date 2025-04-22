@@ -79,11 +79,11 @@ export default function LoginPage() {
       try {
         const user = JSON.parse(userData);
         if (user.is_verified) {
-          // If already verified, direct them to profile
-          setLocation("/profile");
+          // If already verified, direct them to tickets page
+          setLocation("/tickets");
         } else {
-          // If not verified, direct to license verification
-          setLocation("/license-verification");
+          // If not verified, direct to profile dashboard
+          setLocation("/profile");
         }
       } catch (error) {
         console.error("Error parsing user data:", error);
