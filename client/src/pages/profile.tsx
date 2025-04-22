@@ -133,8 +133,8 @@ export default function ProfilePage() {
                   Jobs Board
                 </Button>
                 <Button 
-                  variant="outline" 
-                  className="w-full bg-primary/10 hover:bg-primary/20 text-primary font-medium" 
+                  variant="default" 
+                  className="w-full font-medium text-lg py-6 mt-2 mb-2"
                   onClick={() => setLocation("/license-verification")}
                 >
                   Get Your Free Tickets
