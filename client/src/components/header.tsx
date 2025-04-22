@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { useNavigation } from "@/hooks/use-navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,20 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Menu, 
-  X, 
-  User, 
-  Stethoscope, 
-  Music, 
-  Map, 
-  Users, 
-  HeartPulse, 
-  Briefcase, 
-  ShoppingBag, 
-  ShoppingCart 
-} from "lucide-react";
-import logoPath from "../assets/nursing-rocks-logo.png";
+import { Menu, X, User, HeartPulse, Map, ShoppingBag, ShoppingCart } from "lucide-react";
 import newLogoPath from "../assets/NursingRocks_NewLogo.png";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useCart } from "@/hooks/use-cart";
@@ -34,7 +20,6 @@ export function Header() {
   const isMobile = useIsMobile();
   const [location] = useLocation();
   const { totalItems } = useCart();
-  const { navigateTo } = useNavigation();
 
   useEffect(() => {
     // Check if user is logged in
@@ -59,15 +44,11 @@ export function Header() {
     window.location.href = "/";
   };
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
-
   const navLinks = [
-    { href: "/", label: "Home", icon: <HeartPulse className="h-5 w-5" /> },
-    { href: "/cities", label: "Concert Cities", icon: <Map className="h-5 w-5" /> },
-    { href: "/sponsors", label: "Sponsors", icon: <HeartPulse className="h-5 w-5" /> },
-    { href: "/store", label: "Store", icon: <ShoppingBag className="h-5 w-5" /> },
+    { href: "/", label: "Home", icon: <HeartPulse size={18} /> },
+    { href: "/cities", label: "Concert Cities", icon: <Map size={18} /> },
+    { href: "/sponsors", label: "Sponsors", icon: <HeartPulse size={18} /> },
+    { href: "/store", label: "Store", icon: <ShoppingBag size={18} /> },
   ];
 
   const isActive = (path: string) => {
@@ -75,68 +56,42 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-primary/20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      {/* Medical-themed top strip */}
+    <header className="sticky top-0 z-50 w-full border-b bg-background">
       <div className="w-full h-1.5 nurse-gradient"></div>
       
-      <div className="flex flex-col items-center justify-center w-full">
-        <div className="container flex items-center justify-center h-20">
-          <div className="flex items-center justify-center w-full">
-            <Link href="/">
-              <div className="flex items-center justify-center gap-2 cursor-pointer">
-                <img
-                  src={newLogoPath}
-                  alt="Nursing Rocks!"
-                  className="h-16 md:h-20 lg:h-24 w-auto drop-shadow-lg"
-                  style={{ objectFit: "contain", maxWidth: "100%" }}
-                />
-                <div className="hidden md:block">
-                  <span className="heartbeat-animation text-lg md:text-xl font-semibold text-slate-800 dark:text-slate-200 drop-shadow-sm">
-                    Concert Series
-                  </span>
-                </div>
-              </div>
-            </Link>
-          </div>
-        </div>
-        
-        <div className="container flex items-center justify-center w-full border-t border-primary/10 py-2">
+      <div className="container mx-auto">
+        <div className="flex items-center justify-between h-20">
+          <Link href="/">
+            <div className="flex items-center gap-2 cursor-pointer">
+              <img
+                src={newLogoPath}
+                alt="Nursing Rocks!"
+                className="h-14 md:h-16 w-auto"
+              />
+              <span className="heartbeat-animation text-lg font-semibold">
+                Concert Series
+              </span>
+            </div>
+          </Link>
+          
           {!isMobile ? (
-            <nav className="flex items-center gap-8 justify-center">
-              {navLinks.map((link) => 
-                link.href === "/license-verification" ? (
+            <nav className="flex items-center space-x-6">
+              {navLinks.map((link) => (
+                <Link key={link.href} href={link.href}>
                   <div
-                    key={link.href}
-                    onClick={() => window.location.href = "/license-verification"}
-                    className={`text-base md:text-lg font-medium transition-colors hover:text-primary cursor-pointer flex items-center gap-2.5 ${
-                      isActive(link.href)
-                        ? "text-primary"
-                        : "text-muted-foreground"
+                    className={`text-sm font-medium cursor-pointer flex items-center gap-2 ${
+                      isActive(link.href) ? "text-primary" : "text-muted-foreground"
                     }`}
                   >
                     {link.icon}
                     {link.label}
                   </div>
-                ) : (
-                  <Link key={link.href} href={link.href}>
-                    <div
-                      className={`text-base md:text-lg font-medium transition-colors hover:text-primary cursor-pointer flex items-center gap-2.5 ${
-                        isActive(link.href)
-                          ? "text-primary"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      {link.icon}
-                      {link.label}
-                    </div>
-                  </Link>
-                )
-              )}
+                </Link>
+              ))}
               
-              {/* Shopping Cart */}
               <Link href="/cart">
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                  <ShoppingCart className="h-5 w-5" />
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                  <ShoppingCart size={18} />
                   {totalItems > 0 && (
                     <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
                       {totalItems > 99 ? '99+' : totalItems}
@@ -148,55 +103,32 @@ export function Header() {
               {isLoggedIn ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                      <User className="h-5 w-5" />
+                    <Button variant="ghost" className="h-9 w-9 rounded-full">
+                      <User size={18} />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
-                      <Link href="/profile">
-                        <div className="w-full cursor-pointer">My Profile</div>
-                      </Link>
+                      <Link href="/profile">My Profile</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => window.location.href = "/license-verification"}>
-                      <div className="w-full cursor-pointer">License Verification</div>
+                      License Verification
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/jobs">
-                        <div className="w-full cursor-pointer">Jobs Board</div>
-                      </Link>
+                      <Link href="/tickets">My Tickets</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/nursing-jobs">
-                        <div className="w-full cursor-pointer">Nursing Jobs</div>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/tickets">
-                        <div className="w-full cursor-pointer">My Tickets</div>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/admin">
-                        <div className="w-full cursor-pointer">Admin Dashboard</div>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                    <DropdownMenuItem onClick={handleLogout}>
                       Logout
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" asChild>
-                    <Link href="/login">
-                      <div className="cursor-pointer">Login</div>
-                    </Link>
+                  <Button variant="ghost" asChild size="sm">
+                    <Link href="/login">Login</Link>
                   </Button>
-                  <Button asChild>
-                    <Link href="/register">
-                      <div className="cursor-pointer">Register</div>
-                    </Link>
+                  <Button asChild size="sm">
+                    <Link href="/register">Register</Link>
                   </Button>
                 </div>
               )}
@@ -204,10 +136,10 @@ export function Header() {
           ) : (
             <Button
               variant="ghost"
-              className="p-0 h-10 w-10 rounded-full"
-              onClick={toggleMenu}
+              size="icon"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
-              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </Button>
           )}
         </div>
@@ -215,173 +147,94 @@ export function Header() {
       
       {/* Mobile Menu */}
       {isMobile && isMenuOpen && (
-        <div className="container py-4 bg-background border-t border-primary/10">
-          <div className="flex justify-center mb-4">
-            <img
-              src={newLogoPath}
-              alt="Nursing Rocks!"
-              className="h-20 w-auto drop-shadow-lg"
-              style={{ objectFit: "contain" }}
-            />
-          </div>
-          <div className="bg-primary/5 rounded-md p-4">
-            <div className="flex items-center mb-3">
-              <span className="p-1.5 bg-primary text-white rounded-full mr-2">
-                <Stethoscope className="h-3.5 w-3.5" />
-              </span>
-              <span className="text-sm font-medium text-primary">Navigation</span>
-            </div>
-            <nav className="flex flex-col space-y-3">
-              {navLinks.map((link) => 
-                link.href === "/license-verification" ? (
-                  <div
-                    key={link.href}
-                    className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md ${
-                      isActive(link.href)
-                        ? "text-primary bg-primary/10"
-                        : "text-muted-foreground"
-                    }`}
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      window.location.href = "/license-verification";
-                    }}
-                  >
-                    {link.icon}
-                    {link.label}
-                  </div>
-                ) : (
-                  <Link key={link.href} href={link.href}>
-                    <div
-                      className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md ${
-                        isActive(link.href)
-                          ? "text-primary bg-primary/10"
-                          : "text-muted-foreground"
-                      }`}
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      {link.icon}
-                      {link.label}
-                    </div>
-                  </Link>
-                )
-              )}
-              
-              {/* Cart link in mobile menu */}
-              <Link href="/cart">
-                <div
-                  className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md"
+        <div className="container py-4 border-t">
+          <nav className="flex flex-col space-y-4">
+            {navLinks.map((link) => (
+              <Link key={link.href} href={link.href}>
+                <div 
+                  className={`flex items-center gap-2 p-2 rounded-md ${
+                    isActive(link.href) ? "bg-primary/10 text-primary" : "text-muted-foreground"
+                  }`}
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <ShoppingCart className="h-4 w-4" />
-                  Shopping Cart
-                  {totalItems > 0 && (
-                    <Badge variant="secondary" className="ml-1">
-                      {totalItems}
-                    </Badge>
-                  )}
+                  {link.icon}
+                  {link.label}
                 </div>
               </Link>
-              
-              {isLoggedIn ? (
-                <>
-                  <Link href="/profile">
-                    <div
-                      className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <User className="h-4 w-4" />
-                      My Profile
-                    </div>
-                  </Link>
+            ))}
+            
+            <Link href="/cart">
+              <div
+                className="flex items-center gap-2 p-2 rounded-md text-muted-foreground"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <ShoppingCart size={18} />
+                Shopping Cart
+                {totalItems > 0 && (
+                  <Badge variant="secondary" className="ml-1">
+                    {totalItems}
+                  </Badge>
+                )}
+              </div>
+            </Link>
+            
+            {isLoggedIn ? (
+              <>
+                <Link href="/profile">
                   <div
-                     className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md"
-                     onClick={() => {
-                       setIsMenuOpen(false);
-                       window.location.href = "/license-verification";
-                     }}
-                   >
-                     <Stethoscope className="h-4 w-4" />
-                     License Verification
-                  </div>
-                  <Link href="/jobs">
-                    <div
-                      className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <Briefcase className="h-4 w-4" />
-                      Jobs Board
-                    </div>
-                  </Link>
-                  <Link href="/nursing-jobs">
-                    <div
-                      className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <Stethoscope className="h-4 w-4" />
-                      Nursing Jobs
-                    </div>
-                  </Link>
-                  <Link href="/tickets">
-                    <div
-                      className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                      </svg>
-                      My Tickets
-                    </div>
-                  </Link>
-                  <Link href="/admin">
-                    <div
-                      className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                      </svg>
-                      Admin Dashboard
-                    </div>
-                  </Link>
-                  <div
-                    className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md"
-                    onClick={() => {
-                      handleLogout();
-                      setIsMenuOpen(false);
-                    }}
+                    className="flex items-center gap-2 p-2 rounded-md text-muted-foreground"
+                    onClick={() => setIsMenuOpen(false)}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    Logout
+                    <User size={18} />
+                    My Profile
                   </div>
-                </>
-              ) : (
-                <div className="pt-4 mt-4 border-t border-primary/10">
-                  <Button variant="outline" asChild className="w-full mb-2 rounded-full">
-                    <Link href="/login">
-                      <div className="cursor-pointer flex items-center justify-center gap-2" onClick={() => setIsMenuOpen(false)}>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                        </svg>
-                        Login
-                      </div>
-                    </Link>
-                  </Button>
-                  <Button asChild className="w-full rounded-full">
-                    <Link href="/register">
-                      <div className="cursor-pointer flex items-center justify-center gap-2" onClick={() => setIsMenuOpen(false)}>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                        </svg>
-                        Register
-                      </div>
-                    </Link>
-                  </Button>
+                </Link>
+                <div
+                  className="flex items-center gap-2 p-2 rounded-md text-muted-foreground cursor-pointer"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    window.location.href = "/license-verification";
+                  }}
+                >
+                  License Verification
                 </div>
-              )}
-            </nav>
-          </div>
+                <Link href="/tickets">
+                  <div
+                    className="flex items-center gap-2 p-2 rounded-md text-muted-foreground"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    My Tickets
+                  </div>
+                </Link>
+                <div
+                  className="flex items-center gap-2 p-2 rounded-md text-muted-foreground cursor-pointer"
+                  onClick={() => {
+                    handleLogout();
+                    setIsMenuOpen(false);
+                  }}
+                >
+                  Logout
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col gap-2 mt-2 p-2">
+                <Button variant="outline" asChild className="w-full">
+                  <Link href="/login">
+                    <div onClick={() => setIsMenuOpen(false)}>
+                      Login
+                    </div>
+                  </Link>
+                </Button>
+                <Button asChild className="w-full">
+                  <Link href="/register">
+                    <div onClick={() => setIsMenuOpen(false)}>
+                      Register
+                    </div>
+                  </Link>
+                </Button>
+              </div>
+            )}
+          </nav>
         </div>
       )}
     </header>
