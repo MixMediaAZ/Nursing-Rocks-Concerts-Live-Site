@@ -54,11 +54,7 @@ export function Footer() {
                 </Link>
               </li>
 
-              <li>
-                <Link href="/venues">
-                  <div className="inline-block text-muted-foreground hover:text-primary transition-colors cursor-pointer">Venues</div>
-                </Link>
-              </li>
+              {/* Venue link removed */}
 
               <li>
                 <a href="https://nursingrocks.org" target="_blank" rel="noopener noreferrer">
