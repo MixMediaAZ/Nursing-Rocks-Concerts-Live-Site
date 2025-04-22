@@ -6,19 +6,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
-// City backdrop images - specific for each city
-const nursingRocksLogo = "/assets/logos/NursingRocks_NewLogo.png";
-const chicagoBg = "/assets/city_backgrounds/IMG_7133.jpg";
-const washingtonBg = "/assets/city_backgrounds/IMG_7135.jpg";
-const sanFranciscoBg = "/assets/city_backgrounds/IMG_7136.jpg";
-const bostonBg = "/assets/city_backgrounds/IMG_7137.jpg";
-const newYorkBg = "/assets/city_backgrounds/IMG_7138.jpg";
-const houstonBg = "/assets/city_backgrounds/IMG_7139.jpg";
-const denverBg = "/assets/city_backgrounds/IMG_7140.jpg";
-const atlantaBg = "/assets/city_backgrounds/IMG_7141.jpg";
-const losAngelesBg = "/assets/city_backgrounds/2CA4A9EC-7F93-43A0-A9E2-1834A4BA1A84.PNG";
-const nashvilleBg = "/assets/city_backgrounds/3B39719F-9D81-4397-9EFB-74CA91F16E2C.PNG";
-const dallasBg = "/assets/city_backgrounds/6AEA04AA-A9A3-4F6E-9C15-CCAFE3BC50F8.PNG";
+// City backdrop images - direct URLs to public folder
+const nursingRocksLogo = "/nursing-logo.png";
+const chicagoBg = "/chicago.jpg";
+const washingtonBg = "/washingtondc.jpg";
+const sanFranciscoBg = "/sanfrancisco.jpg";
+const bostonBg = "/boston.jpg";
+const newYorkBg = "/newyork.jpg";
+const houstonBg = "/houston.jpg";
+const denverBg = "/denver.jpg";
+const atlantaBg = "/atlanta.jpg";
+const losAngelesBg = "/losangeles.png";
+const nashvilleBg = "/nashville.png";
+const dallasBg = "/dallas.png";
 
 // Defined city types with all required information
 interface City {
