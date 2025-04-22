@@ -65,10 +65,10 @@ export function Header() {
   };
 
   const navLinks = [
-    { href: "/", label: "Home", icon: <HeartPulse className="h-4 w-4" /> },
-    { href: "/cities", label: "Concert Cities", icon: <Map className="h-4 w-4" /> },
-    { href: "/sponsors", label: "Sponsors", icon: <HeartPulse className="h-4 w-4" /> },
-    { href: "/store", label: "Store", icon: <ShoppingBag className="h-4 w-4" /> },
+    { href: "/", label: "Home", icon: <HeartPulse className="h-5 w-5" /> },
+    { href: "/cities", label: "Concert Cities", icon: <Map className="h-5 w-5" /> },
+    { href: "/sponsors", label: "Sponsors", icon: <HeartPulse className="h-5 w-5" /> },
+    { href: "/store", label: "Store", icon: <ShoppingBag className="h-5 w-5" /> },
   ];
 
   const isActive = (path: string) => {
@@ -100,13 +100,13 @@ export function Header() {
         </div>
         
         {!isMobile ? (
-          <nav className="flex items-center gap-6">
+          <nav className="flex items-center gap-8">
             {navLinks.map((link) => 
               link.href === "/license-verification" ? (
                 <div
                   key={link.href}
                   onClick={() => window.location.href = "/license-verification"}
-                  className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer flex items-center gap-1.5 ${
+                  className={`text-base md:text-lg font-medium transition-colors hover:text-primary cursor-pointer flex items-center gap-2.5 ${
                     isActive(link.href)
                       ? "text-primary"
                       : "text-muted-foreground"
@@ -118,7 +118,7 @@ export function Header() {
               ) : (
                 <Link key={link.href} href={link.href}>
                   <div
-                    className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer flex items-center gap-1.5 ${
+                    className={`text-base md:text-lg font-medium transition-colors hover:text-primary cursor-pointer flex items-center gap-2.5 ${
                       isActive(link.href)
                         ? "text-primary"
                         : "text-muted-foreground"
