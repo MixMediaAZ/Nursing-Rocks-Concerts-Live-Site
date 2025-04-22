@@ -226,15 +226,22 @@ export default function CitySelector() {
                   onClick={() => handleCitySelect(city.id)}
                 >
                   <div 
-                    className="h-48 flex items-center justify-center relative"
+                    className="h-48 flex items-center justify-center relative overflow-hidden"
                     style={{
-                      backgroundImage: `url(${CITY_BACKDROPS[city.id] || nursingRocksLogo})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center'
+                      backgroundColor: 'rgba(0, 0, 0, 0.05)'
                     }}
                   >
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                      <h3 className="text-3xl text-white font-extrabold drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+                    {/* City background image */}
+                    <img 
+                      src={CITY_BACKDROPS[city.id] || nursingRocksLogo}
+                      alt={`${city.name} backdrop`}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                    
+                    {/* Dark overlay for better text readability */}
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      {/* City name with text shadow for better visibility */}
+                      <h3 className="text-3xl text-white font-extrabold drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] z-10">
                         {city.name}
                       </h3>
                     </div>
