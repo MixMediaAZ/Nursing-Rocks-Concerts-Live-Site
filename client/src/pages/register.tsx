@@ -143,7 +143,7 @@ export default function RegisterPage() {
         description: "Welcome to Nursing Rocks! Your nursing license verification is being processed.",
       });
       
-      setLocation("/profile"); // Redirect to dashboard after successful registration
+      setLocation("/license-verification"); // Redirect to license verification form after successful registration
     },
     onError: (error: Error) => {
       toast({

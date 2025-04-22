@@ -73,8 +73,27 @@ export default function LoginPage() {
   
   // Redirect after successful login
   function handleLoginSuccess() {
-    // Always redirect to the dashboard/profile after login
-    setLocation("/profile");
+    // Check if user is verified
+    const userData = localStorage.getItem("user");
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        if (user.is_verified) {
+          // If already verified, direct them to profile
+          setLocation("/profile");
+        } else {
+          // If not verified, direct to license verification
+          setLocation("/license-verification");
+        }
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+        // Default to profile page if we can't determine verification status
+        setLocation("/profile");
+      }
+    } else {
+      // Default to profile page
+      setLocation("/profile");
+    }
   }
   
   // Form submission handler
