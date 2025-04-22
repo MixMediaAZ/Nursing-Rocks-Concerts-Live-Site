@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Menu, X, User, HeartPulse, Map, ShoppingBag, ShoppingCart } from "lucide-react";
+import { Menu, X, User, HeartPulse, Map, ShoppingBag, ShoppingCart, Image } from "lucide-react";
 import newLogoPath from "../assets/NursingRocks_NewLogo.png";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useCart } from "@/hooks/use-cart";
@@ -47,6 +47,7 @@ export function Header() {
   const navLinks = [
     { href: "/", label: "Home", icon: <HeartPulse size={18} /> },
     { href: "/cities", label: "Concert Cities", icon: <Map size={18} /> },
+    { href: "/gallery", label: "Gallery", icon: <Image size={18} /> },
     { href: "/sponsors", label: "Sponsors", icon: <HeartPulse size={18} /> },
     { href: "/store", label: "Store", icon: <ShoppingBag size={18} /> },
   ];

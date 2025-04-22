@@ -55,22 +55,68 @@ export const artistsRelations = relations(artists, ({ many }) => ({
 
 // Venue model has been removed
 
-// Gallery model
+// Media Folders for organizing content
+export const mediaFolders = pgTable("media_folders", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  folder_type: text("folder_type").notNull().default("general"), // slideshow, video, image, music, general
+  parent_id: integer("parent_id"), // For nested folders
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+  thumbnail_url: text("thumbnail_url"), // Representative image
+  sort_order: integer("sort_order").default(0),
+  is_featured: boolean("is_featured").default(false),
+});
+
+export const insertMediaFolderSchema = createInsertSchema(mediaFolders).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+export const mediaFoldersRelations = relations(mediaFolders, ({ many, one }) => ({
+  parent: one(mediaFolders, {
+    fields: [mediaFolders.parent_id],
+    references: [mediaFolders.id],
+  }),
+  children: many(mediaFolders),
+  media: many(gallery),
+}));
+
+// Gallery model (enhanced for multiple media types)
 export const gallery = pgTable("gallery", {
   id: serial("id").primaryKey(),
   image_url: text("image_url").notNull(),
+  thumbnail_url: text("thumbnail_url"),
   alt_text: text("alt_text"),
   event_id: integer("event_id"),
+  folder_id: integer("folder_id"),
+  media_type: text("media_type").notNull().default("image"), // image, video, audio, document
+  file_size: integer("file_size"),
+  dimensions: text("dimensions"), // For images: "800x600"
+  duration: integer("duration"), // For videos/audio: duration in seconds
+  sort_order: integer("sort_order").default(0),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+  z_index: integer("z_index").default(0), // For layering/positioning
+  metadata: jsonb("metadata"), // Any additional metadata
 });
 
 export const insertGallerySchema = createInsertSchema(gallery).omit({
   id: true,
+  created_at: true, 
+  updated_at: true,
 });
 
 export const galleryRelations = relations(gallery, ({ one }) => ({
   event: one(events, {
     fields: [gallery.event_id],
     references: [events.id],
+  }),
+  folder: one(mediaFolders, {
+    fields: [gallery.folder_id],
+    references: [mediaFolders.id],
   }),
 }));
 
@@ -182,6 +228,9 @@ export type InsertArtist = z.infer<typeof insertArtistSchema>;
 
 export type Gallery = typeof gallery.$inferSelect;
 export type InsertGallery = z.infer<typeof insertGallerySchema>;
+
+export type MediaFolder = typeof mediaFolders.$inferSelect;
+export type InsertMediaFolder = z.infer<typeof insertMediaFolderSchema>;
 
 export type Subscriber = typeof subscribers.$inferSelect;
 export type InsertSubscriber = z.infer<typeof insertSubscriberSchema>;
