@@ -20,33 +20,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { AuthRedirect } from "@/lib/auth-redirect";
 
-// Combined registration schema for both account and license verification
+// Simple registration schema for account information only
 const registerSchema = z.object({
   // Account information
-  first_name: z.string().min(2, { message: "First name must be at least 2 characters" }),
-  last_name: z.string().min(2, { message: "Last name must be at least 2 characters" }),
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters" }),
-  confirm_password: z.string(),
-  
-  // License information
-  license_number: z.string().min(4, { message: "Please enter a valid license number" }),
-  state: z.string().min(1, { message: "Please select your state" }),
-  expiration_date: z.date({
-    required_error: "Please select an expiration date",
-  }).refine(date => date > new Date(), {
-    message: "Expiration date must be in the future"
-  }),
-  agree_to_terms: z.boolean().refine(val => val === true, {
-    message: "You must agree to the terms to proceed",
-  }),
-}).refine((data) => data.password === data.confirm_password, {
-  message: "Passwords do not match",
-  path: ["confirm_password"],
-});
-
-// Account-only schema for validating the first step
-const accountSchema = z.object({
   first_name: z.string().min(2, { message: "First name must be at least 2 characters" }),
   last_name: z.string().min(2, { message: "Last name must be at least 2 characters" }),
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -62,7 +38,6 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export default function RegisterPage() {
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
-  const [step, setStep] = useState<'account' | 'license'>('account');
   
   // Check if user is already logged in on mount - with improved error handling
   useEffect(() => {
@@ -88,7 +63,7 @@ export default function RegisterPage() {
     }
   }, []);
   
-  // Form definition with validation for the two-step form
+  // Form definition with validation
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -97,20 +72,16 @@ export default function RegisterPage() {
       email: "",
       password: "",
       confirm_password: "",
-      license_number: "",
-      state: "",
-      agree_to_terms: false,
-      expiration_date: new Date(new Date().setFullYear(new Date().getFullYear() + 2)),
     }
   });
   
-  // Complete registration with account and license details
+  // Complete registration with account details only
   const registerMutation = useMutation({
     mutationFn: async (values: RegisterFormValues) => {
       // Remove confirm_password as it's not needed in the API
       const { confirm_password, ...registerData } = values;
       
-      // First create the user account
+      // Create the user account
       const userResponse = await apiRequest("/api/auth/register", {
         method: "POST",
         headers: {
@@ -135,31 +106,9 @@ export default function RegisterPage() {
       localStorage.setItem("token", userData.token);
       localStorage.setItem("user", JSON.stringify(userData.user));
       
-      // Then submit the license data
-      const licenseResponse = await apiRequest("/api/licenses", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${userData.token}`
-        },
-        body: JSON.stringify({
-          license_number: registerData.license_number,
-          state: registerData.state,
-          expiration_date: registerData.expiration_date instanceof Date && !isNaN(registerData.expiration_date.getTime()) 
-            ? format(registerData.expiration_date, "yyyy-MM-dd") 
-            : null
-        })
-      });
-      
-      if (!licenseResponse.ok) {
-        const error = await licenseResponse.json();
-        throw new Error(error.message || "License verification failed. Please try again.");
-      }
-      
       return {
         user: userData.user,
-        token: userData.token,
-        license: await licenseResponse.json()
+        token: userData.token
       };
     },
     onSuccess: async (data) => {
@@ -170,7 +119,7 @@ export default function RegisterPage() {
         
         toast({
           title: "Registration Successful",
-          description: "Welcome to Nursing Rocks! Your nursing license verification is being processed.",
+          description: "Welcome to Nursing Rocks!",
         });
         
         // Wait a bit for the token to be properly saved
@@ -199,32 +148,8 @@ export default function RegisterPage() {
     }
   });
   
-  // Handle the account information step
-  function handleAccountStep() {
-    // Validate just the account fields
-    const accountData = form.getValues();
-    const accountResult = accountSchema.safeParse(accountData);
-    
-    if (accountResult.success) {
-      setStep('license');
-    } else {
-      // Trigger validation to show error messages
-      form.trigger(['first_name', 'last_name', 'email', 'password', 'confirm_password']);
-    }
-  }
-  
   // Handle the complete form submission
   function onSubmit(values: RegisterFormValues) {
-    // Validate the expiration date before submitting
-    if (!values.expiration_date || !(values.expiration_date instanceof Date) || isNaN(values.expiration_date.getTime())) {
-      toast({
-        variant: "destructive",
-        title: "Invalid Date",
-        description: "Please select a valid expiration date for your license"
-      });
-      return;
-    }
-    
     registerMutation.mutate(values);
   }
   
