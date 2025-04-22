@@ -33,8 +33,8 @@ export default function ProfilePage() {
             title: "Authentication Required",
             description: "Please login to view your profile.",
           });
-          // Use direct href navigation for more reliable page reload
-          window.location.href = "/login";
+          // Redirect to login page with redirect back to profile after login
+          window.location.href = "/login?redirect=/profile";
           return;
         }
         
@@ -48,12 +48,12 @@ export default function ProfilePage() {
           // Bad user data in localStorage, clear and redirect
           localStorage.removeItem("token");
           localStorage.removeItem("user");
-          window.location.href = "/login";
+          window.location.href = "/login?redirect=/profile";
         }
       } catch (error) {
         console.error("Error checking authentication:", error);
         setIsAuthenticated(false);
-        window.location.href = "/login";
+        window.location.href = "/login?redirect=/profile";
       }
     };
     
@@ -80,7 +80,7 @@ export default function ProfilePage() {
       title: "Logged Out",
       description: "You have been successfully logged out.",
     });
-    setLocation("/login");
+    window.location.href = "/login";
   };
   
   if (isAuthenticated === false || !userData) {
@@ -145,10 +145,10 @@ export default function ProfilePage() {
                     Verify Your License
                   </Button>
                 )}
-                <Button variant="outline" className="w-full" onClick={() => setLocation("/tickets")}>
+                <Button variant="outline" className="w-full" onClick={() => window.location.href = "/tickets"}>
                   Your Tickets
                 </Button>
-                <Button variant="outline" className="w-full" onClick={() => setLocation("/jobs")}>
+                <Button variant="outline" className="w-full" onClick={() => window.location.href = "/jobs"}>
                   Jobs Board
                 </Button>
                 <Button 
@@ -223,14 +223,14 @@ export default function ProfilePage() {
                           </div>
                         ))}
                       </div>
-                      <Button variant="outline" onClick={() => setLocation("/register")}>
+                      <Button variant="outline" onClick={() => window.location.href = "/license-verification"}>
                         Manage Licenses
                       </Button>
                     </div>
                   ) : (
                     <div className="py-8 text-center">
                       <p className="text-muted-foreground mb-4">You haven't submitted any nursing licenses yet.</p>
-                      <Button onClick={() => setLocation("/register")}>
+                      <Button onClick={() => window.location.href = "/license-verification"}>
                         Verify Your License
                       </Button>
                     </div>
@@ -267,14 +267,14 @@ export default function ProfilePage() {
                           </div>
                         ))}
                       </div>
-                      <Button variant="outline" onClick={() => setLocation("/tickets")}>
+                      <Button variant="outline" onClick={() => window.location.href = "/tickets"}>
                         View All Tickets
                       </Button>
                     </div>
                   ) : (
                     <div className="py-8 text-center">
                       <p className="text-muted-foreground mb-4">You haven't purchased any tickets yet.</p>
-                      <Button onClick={() => setLocation("/")}>
+                      <Button onClick={() => window.location.href = "/"}>
                         Browse Events
                       </Button>
                     </div>
