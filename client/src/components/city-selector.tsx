@@ -6,8 +6,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
-// Nursing Rocks logo for all city backgrounds
-const NURSING_ROCKS_LOGO = "/nursing-rocks-logo.jpg";
+// City background colors and patterns
+const cityColors: Record<string, string> = {
+  "chicago": "bg-gradient-to-r from-blue-600 to-blue-800",
+  "washington-dc": "bg-gradient-to-r from-purple-600 to-blue-600",
+  "san-francisco": "bg-gradient-to-r from-cyan-500 to-blue-600",
+  "boston": "bg-gradient-to-r from-red-600 to-red-800",
+  "new-york": "bg-gradient-to-r from-gray-700 to-gray-900",
+  "houston": "bg-gradient-to-r from-red-600 to-orange-600",
+  "denver": "bg-gradient-to-r from-green-600 to-green-800",
+  "atlanta": "bg-gradient-to-r from-orange-500 to-red-600",
+  "los-angeles": "bg-gradient-to-r from-yellow-500 to-yellow-600",
+  "nashville": "bg-gradient-to-r from-indigo-600 to-purple-700",
+  "dallas": "bg-gradient-to-r from-teal-600 to-green-700"
+};
 
 // Defined city types with all required information
 interface City {
@@ -203,17 +215,14 @@ export default function CitySelector() {
                   onClick={() => handleCitySelect(city.id)}
                 >
                   <div 
-                    className="h-48 flex items-center justify-center relative overflow-hidden"
+                    className={`h-48 flex items-center justify-center relative overflow-hidden ${cityColors[city.id] || DEFAULT_BG}`}
                   >
-                    {/* Nursing Rocks logo background */}
-                    <img 
-                      src={NURSING_ROCKS_LOGO}
-                      alt="Nursing Rocks Logo"
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                    
-                    {/* Dark overlay for better text readability */}
-                    <div className="absolute inset-0 bg-black/30 backdrop-filter backdrop-blur-[1px]"></div>
+                    {/* Pattern overlay for visual interest */}
+                    <div className="absolute inset-0 opacity-10">
+                      <div className="w-full h-full bg-repeat" 
+                           style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+                      </div>
+                    </div>
                     
                     {/* City name with text shadow for better visibility */}
                     <h3 className="text-3xl text-white font-extrabold drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] z-10">
