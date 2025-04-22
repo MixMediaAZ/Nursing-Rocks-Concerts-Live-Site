@@ -141,7 +141,7 @@ export default function ProfilePage() {
               
               <div className="mt-6 space-y-2">
                 {!userData.is_verified && (
-                  <Button variant="outline" className="w-full" onClick={() => setLocation("/register")}>
+                  <Button variant="outline" className="w-full" onClick={() => window.location.href = "/license-verification"}>
                     Verify Your License
                   </Button>
                 )}
@@ -154,7 +154,7 @@ export default function ProfilePage() {
                 <Button 
                   variant="default" 
                   className="w-full font-medium text-lg py-6 mt-2 mb-2"
-                  onClick={() => setLocation("/license-verification")}
+                  onClick={() => window.location.href = "/license-verification"}
                 >
                   Get Your Free Tickets
                 </Button>

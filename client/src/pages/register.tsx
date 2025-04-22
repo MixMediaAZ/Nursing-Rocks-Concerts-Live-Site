@@ -69,12 +69,16 @@ export default function RegisterPage() {
     const token = localStorage.getItem("token");
     const user = localStorage.getItem("user");
     
+    // Check for redirect parameter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectPath = urlParams.get('redirect');
+    
     if (token && user) {
       try {
         // Parse user data to validate it (catches corrupted data)
         JSON.parse(user);
-        // User is already logged in, redirect to profile
-        window.location.href = "/profile";
+        // User is already logged in, redirect to profile or specified redirect path
+        window.location.href = redirectPath || "/profile";
       } catch (error) {
         console.error("Error parsing user data during auth check:", error);
         // Clear invalid data
@@ -171,8 +175,12 @@ export default function RegisterPage() {
         
         // Wait a bit for the token to be properly saved
         setTimeout(() => {
+          // Check for redirect parameter in URL
+          const urlParams = new URLSearchParams(window.location.search);
+          const redirectPath = urlParams.get('redirect');
+          
           // Force a full page navigation to ensure auth state is refreshed
-          window.location.href = '/profile';
+          window.location.href = redirectPath || '/profile';
         }, 500);
       } else {
         toast({
@@ -522,7 +530,17 @@ export default function RegisterPage() {
             Already have an account?{" "}
             <Button 
               variant="link" 
-              onClick={() => setLocation("/login")} 
+              onClick={() => {
+                // Check if there's a redirect parameter to preserve
+                const urlParams = new URLSearchParams(window.location.search);
+                const redirectPath = urlParams.get('redirect');
+                
+                if (redirectPath) {
+                  window.location.href = `/login?redirect=${redirectPath}`;
+                } else {
+                  window.location.href = "/login";
+                }
+              }} 
               className="p-0"
             >
               Sign In
