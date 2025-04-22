@@ -1,10 +1,19 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+
+// Nursing Rocks logos URLs for city backgrounds
+const nursingRocksLogo = "/assets/logos/nursing-rocks-logo-1.jpg";
+const cityBgLogo2 = "/assets/logos/nursing-rocks-logo-2.jpg";
+const cityBgLogo3 = "/assets/logos/nursing-rocks-logo-3.png";
+const cityBgLogo4 = "/assets/logos/nursing-rocks-logo-4.png";
+const cityBgLogo5 = "/assets/logos/nursing-rocks-logo-5.png";
+const cityBgLogo6 = "/assets/logos/nursing-rocks-logo-6.png";
+const cityBgLogo7 = "/assets/logos/nursing-rocks-logo-7.png";
 
 // Defined city types with all required information
 interface City {
@@ -121,6 +130,21 @@ const CITIES: City[] = [
 // Regions for filtering
 const REGIONS = ["All", "East", "Midwest", "South", "West"];
 
+// City backdrop mapping
+const CITY_BACKDROPS: Record<string, string> = {
+  "new-york": cityBgLogo6, // NYC skyline
+  "chicago": cityBgLogo4, // City skyline
+  "los-angeles": cityBgLogo5, // Yellow background
+  "denver": cityBgLogo3, // Blue background
+  "boston": nursingRocksLogo,
+  "atlanta": cityBgLogo2,
+  "houston": cityBgLogo4,
+  "nashville": cityBgLogo5,
+  "san-francisco": cityBgLogo3,
+  "washington-dc": cityBgLogo6,
+  "dallas": cityBgLogo7 // Tropical background
+};
+
 export default function CitySelector() {
   const [_, setLocation] = useLocation();
   const [selectedRegion, setSelectedRegion] = useState("All");
@@ -196,35 +220,20 @@ export default function CitySelector() {
                   className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
                   onClick={() => handleCitySelect(city.id)}
                 >
-                  <div className="h-32 bg-gradient-to-r from-primary/80 to-primary/40 flex items-center justify-center">
-                    <h3 className="text-2xl text-white font-bold">{city.name}</h3>
-                  </div>
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-medium">{city.name}, {city.state}</div>
-                        <div className="text-sm text-muted-foreground">Capacity: {city.venueCapacity.toLocaleString()} seats</div>
-                      </div>
-                      {city.upcomingEvent && (
-                        <div className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
-                          Upcoming Event
-                        </div>
-                      )}
+                  <div 
+                    className="h-48 flex items-center justify-center relative"
+                    style={{
+                      backgroundImage: `url(${CITY_BACKDROPS[city.id] || nursingRocksLogo})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center'
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                      <h3 className="text-3xl text-white font-extrabold drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+                        {city.name}
+                      </h3>
                     </div>
-                    
-                    {city.upcomingEvent && (
-                      <div className="mt-3 pt-3 border-t">
-                        <div className="text-sm font-medium">
-                          {new Date(city.upcomingEvent.date).toLocaleDateString('en-US', { 
-                            month: 'long', 
-                            day: 'numeric', 
-                            year: 'numeric' 
-                          })}
-                        </div>
-                        <div className="text-sm text-muted-foreground">{city.upcomingEvent.artist}</div>
-                      </div>
-                    )}
-                  </CardContent>
+                  </div>
                 </Card>
               ))}
             </div>
