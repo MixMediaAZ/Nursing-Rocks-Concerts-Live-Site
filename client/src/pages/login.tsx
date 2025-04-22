@@ -73,6 +73,10 @@ export default function LoginPage() {
   
   // Redirect after successful login with a consistent approach across platforms
   function handleLoginSuccess() {
+    // Check for redirect parameter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectPath = urlParams.get('redirect');
+    
     // Check if user is verified
     const userData = localStorage.getItem("user");
     if (userData) {
@@ -81,7 +85,10 @@ export default function LoginPage() {
         
         // Add a short timeout to ensure token is properly saved first
         setTimeout(() => {
-          if (user.is_verified) {
+          if (redirectPath) {
+            // Honor the redirect parameter if present
+            window.location.href = redirectPath;
+          } else if (user.is_verified) {
             // If already verified, direct them to tickets page
             window.location.href = "/tickets";
           } else {
@@ -92,11 +99,11 @@ export default function LoginPage() {
       } catch (error) {
         console.error("Error parsing user data:", error);
         // Default to profile page if we can't determine verification status
-        window.location.href = "/profile";
+        window.location.href = redirectPath || "/profile";
       }
     } else {
-      // Default to profile page
-      window.location.href = "/profile";
+      // Default to redirect or profile page
+      window.location.href = redirectPath || "/profile";
     }
   }
   
@@ -160,7 +167,17 @@ export default function LoginPage() {
             Don't have an account yet?{" "}
             <Button 
               variant="link" 
-              onClick={() => setLocation("/register")} 
+              onClick={() => {
+                // Check if there's a redirect parameter to preserve
+                const urlParams = new URLSearchParams(window.location.search);
+                const redirectPath = urlParams.get('redirect');
+                
+                if (redirectPath) {
+                  window.location.href = `/register?redirect=${redirectPath}`;
+                } else {
+                  window.location.href = "/register";
+                }
+              }} 
               className="p-0"
             >
               Create Account

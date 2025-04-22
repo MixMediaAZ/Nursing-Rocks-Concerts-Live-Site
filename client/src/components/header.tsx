@@ -101,10 +101,10 @@ export function Header() {
         {!isMobile ? (
           <nav className="flex items-center gap-6">
             {navLinks.map((link) => 
-              link.href === "/license" ? (
+              link.href === "/license-verification" ? (
                 <div
                   key={link.href}
-                  onClick={() => navigateTo("/license")}
+                  onClick={() => window.location.href = "/license-verification"}
                   className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer flex items-center gap-1.5 ${
                     isActive(link.href)
                       ? "text-primary"

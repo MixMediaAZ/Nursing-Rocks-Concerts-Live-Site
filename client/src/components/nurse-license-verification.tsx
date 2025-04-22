@@ -582,14 +582,14 @@ export function NurseLicenseVerification() {
                   <Button 
                     variant="default" 
                     size="lg"
-                    onClick={() => setLocation("/login?redirect=/license")}
+                    onClick={() => window.location.href = "/login?redirect=/license-verification"}
                   >
                     Login
                   </Button>
                   <Button 
                     variant="outline" 
                     size="lg"
-                    onClick={() => setLocation("/register?redirect=/license")}
+                    onClick={() => window.location.href = "/register?redirect=/license-verification"}
                   >
                     Create Account
                   </Button>
