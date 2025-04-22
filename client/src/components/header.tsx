@@ -80,17 +80,18 @@ export function Header() {
       {/* Medical-themed top strip */}
       <div className="w-full h-1.5 nurse-gradient"></div>
       
-      <div className="container flex h-16 items-center justify-between">
+      <div className="container flex h-20 items-center justify-between">
         <div className="flex items-center gap-2">
           <Link href="/">
             <div className="flex items-center gap-2 cursor-pointer">
               <img
                 src={newLogoPath}
                 alt="Nursing Rocks!"
-                className="h-12 md:h-14 w-auto drop-shadow-sm"
+                className="h-14 md:h-16 lg:h-18 w-auto drop-shadow-md"
+                style={{ objectFit: "contain", maxWidth: "100%" }}
               />
               <div className="hidden md:block">
-                <span className="heartbeat-animation text-sm font-medium text-primary">
+                <span className="heartbeat-animation text-base md:text-lg font-medium text-primary">
                   Concert Series
                 </span>
               </div>
@@ -212,6 +213,14 @@ export function Header() {
       {/* Mobile Menu */}
       {isMobile && isMenuOpen && (
         <div className="container py-4 bg-background border-t border-primary/10">
+          <div className="flex justify-center mb-4">
+            <img
+              src={newLogoPath}
+              alt="Nursing Rocks!"
+              className="h-16 w-auto drop-shadow-md"
+              style={{ objectFit: "contain" }}
+            />
+          </div>
           <div className="bg-primary/5 rounded-md p-4">
             <div className="flex items-center mb-3">
               <span className="p-1.5 bg-primary text-white rounded-full mr-2">
