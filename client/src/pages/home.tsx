@@ -2,7 +2,6 @@ import HeroSection from "@/components/hero-section";
 import UpcomingEvents from "@/components/upcoming-events";
 import FeaturedArtist from "@/components/featured-artist";
 import ConcertCalendar from "@/components/concert-calendar";
-import Venues from "@/components/venues";
 import GallerySection from "@/components/gallery";
 import Newsletter from "@/components/newsletter";
 import PromotionButtons from "@/components/promotion-buttons";
@@ -21,7 +20,6 @@ const Home = () => {
       <UpcomingEvents />
       <FeaturedArtist />
       <ConcertCalendar />
-      <Venues />
       <GallerySection />
       <Newsletter />
     </>

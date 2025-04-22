@@ -1,12 +1,12 @@
 import { useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Event, Artist, Venue } from "@shared/schema";
+import { Event, Artist } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import AudioPlayer from "@/components/audio-player";
 import { SocialShare } from "@/components/social-share";
 import { formatDate } from "@/lib/utils";
-import { Calendar, Clock, MapPin, Ticket, Music, Users, Share2 } from "lucide-react";
+import { Calendar, Clock, MapPin, Ticket, Music, Share2 } from "lucide-react";
 
 const EventDetails = () => {
   const { id } = useParams();
@@ -24,11 +24,6 @@ const EventDetails = () => {
     enabled: !!event?.artist_id,
   });
   
-  const { data: venue, isLoading: isLoadingVenue } = useQuery<Venue>({
-    queryKey: [`/api/venues/${event?.venue_id}`],
-    enabled: !!event?.venue_id,
-  });
-  
   const { data: galleryImages } = useQuery<{
     id: number;
     image_url: string;
@@ -38,7 +33,7 @@ const EventDetails = () => {
     enabled: !!eventId,
   });
   
-  const isLoading = isLoadingEvent || isLoadingArtist || isLoadingVenue;
+  const isLoading = isLoadingEvent || isLoadingArtist;
   
   if (isLoading) {
     return (
@@ -67,7 +62,7 @@ const EventDetails = () => {
     );
   }
   
-  if (!event || !venue || !artist) {
+  if (!event || !artist) {
     return null;
   }
   
@@ -86,7 +81,7 @@ const EventDetails = () => {
             <div className="mt-4 md:mt-0">
               <SocialShare
                 title={`${event.title} - Nursing Rocks Concert Series`}
-                description={`Join us at ${venue.name} for ${event.title}. ${event.description?.substring(0, 80)}...`}
+                description={`Join us for ${event.title}. ${event.description?.substring(0, 80)}...`}
                 hashtags={['NursingRocks', 'Concert', event.genre ? event.genre.replace(/\s+/g, '') : 'Music'].filter(Boolean) as string[]}
                 compact={true}
               />
@@ -113,7 +108,7 @@ const EventDetails = () => {
               <div className="mb-6">
                 <SocialShare
                   title={`${event.title} - Nursing Rocks Concert Series`}
-                  description={`Join us at ${venue.name} for ${event.title}. ${event.description?.substring(0, 80)}...`}
+                  description={`Join us for ${event.title}. ${event.description?.substring(0, 80)}...`}
                   hashtags={['NursingRocks', 'Concert', event.genre ? event.genre.replace(/\s+/g, '') : 'Music'].filter(Boolean) as string[]}
                   className="mb-2"
                 />
@@ -161,36 +156,22 @@ const EventDetails = () => {
             </div>
             
             <div>
+              {/* Location section */}
               <div className="bg-white rounded-xl overflow-hidden shadow-lg mb-8">
                 <div className="h-48 relative">
-                  <img src={venue.image_url || ''} alt={venue.name} className="w-full h-full object-cover" />
+                  <img src={event.image_url || ''} alt={event.title} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#333333]/60 to-transparent"></div>
                   <div className="absolute bottom-4 left-4 text-white">
-                    <div className="font-heading font-bold text-xl">{venue.name}</div>
+                    <div className="font-heading font-bold text-xl">Event Location</div>
                     <div className="flex items-center">
                       <MapPin size={14} className="mr-1" />
-                      <span>{venue.location}</span>
+                      <span>{event.location || "Location to be announced"}</span>
                     </div>
                   </div>
                 </div>
-                <div className="p-4">
-                  <div className="flex items-center mb-3">
-                    <Users size={16} className="text-[#5D3FD3] mr-2" />
-                    <span>Capacity: {venue.capacity}</span>
-                  </div>
-                  <p className="text-[#333333]/80 text-sm mb-3">
-                    {venue.description}
-                  </p>
-                  <a 
-                    href={venue.seating_chart_url || "#"} 
-                    className="text-[#5D3FD3] hover:text-[#FF3366] font-accent font-semibold text-sm transition-colors inline-flex items-center"
-                  >
-                    View Seating Chart
-                    <i className="fas fa-angle-right ml-1"></i>
-                  </a>
-                </div>
               </div>
               
+              {/* Artist section */}
               <div className="bg-white rounded-xl overflow-hidden shadow-lg mb-8">
                 <div className="p-6">
                   <h3 className="font-heading text-xl font-bold mb-4 flex items-center">
