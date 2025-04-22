@@ -118,7 +118,9 @@ export default function RegisterPage() {
         body: JSON.stringify({
           license_number: registerData.license_number,
           state: registerData.state,
-          expiration_date: format(registerData.expiration_date, "yyyy-MM-dd")
+          expiration_date: registerData.expiration_date instanceof Date && !isNaN(registerData.expiration_date.getTime()) 
+            ? format(registerData.expiration_date, "yyyy-MM-dd") 
+            : null
         })
       });
       
@@ -166,6 +168,16 @@ export default function RegisterPage() {
   
   // Handle the complete form submission
   function onSubmit(values: RegisterFormValues) {
+    // Validate the expiration date before submitting
+    if (!values.expiration_date || !(values.expiration_date instanceof Date) || isNaN(values.expiration_date.getTime())) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Date",
+        description: "Please select a valid expiration date for your license"
+      });
+      return;
+    }
+    
     registerMutation.mutate(values);
   }
   
@@ -385,7 +397,7 @@ export default function RegisterPage() {
                                   !field.value && "text-muted-foreground"
                                 )}
                               >
-                                {field.value ? (
+                                {field.value && field.value instanceof Date && !isNaN(field.value.getTime()) ? (
                                   format(field.value, "PPP")
                                 ) : (
                                   <span>Pick a date</span>
