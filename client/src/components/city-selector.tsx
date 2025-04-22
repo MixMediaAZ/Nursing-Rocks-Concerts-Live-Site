@@ -215,14 +215,28 @@ export default function CitySelector() {
                   onClick={() => handleCitySelect(city.id)}
                 >
                   <div 
-                    className={`h-48 flex items-center justify-center relative overflow-hidden ${cityColors[city.id] || DEFAULT_BG}`}
+                    className={`h-48 flex items-center justify-center relative overflow-hidden ${city.id !== 'chicago' ? cityColors[city.id] || DEFAULT_BG : ''}`}
                   >
-                    {/* Pattern overlay for visual interest */}
-                    <div className="absolute inset-0 opacity-10">
-                      <div className="w-full h-full bg-repeat" 
-                           style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+                    {/* Chicago gets the special Nursing Rocks backdrop */}
+                    {city.id === 'chicago' ? (
+                      <img 
+                        src="/chicago-backdrop.png"
+                        alt="Chicago - Nursing Rocks"
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    ) : (
+                      /* Pattern overlay for visual interest for other cities */
+                      <div className="absolute inset-0 opacity-10">
+                        <div className="w-full h-full bg-repeat" 
+                             style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+                        </div>
                       </div>
-                    </div>
+                    )}
+                    
+                    {/* Special background dim overlay for Chicago to ensure text readability */}
+                    {city.id === 'chicago' && (
+                      <div className="absolute inset-0 bg-black/20"></div>
+                    )}
                     
                     {/* City name with text shadow for better visibility */}
                     <h3 className="text-3xl text-white font-extrabold drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] z-10">
