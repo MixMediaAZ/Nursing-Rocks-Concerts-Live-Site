@@ -155,7 +155,7 @@ export function Header() {
                       <div className="w-full cursor-pointer">My Profile</div>
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigateTo("/license")}>
+                  <DropdownMenuItem onClick={() => window.location.href = "/license-verification"}>
                     <div className="w-full cursor-pointer">License Verification</div>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -231,7 +231,7 @@ export function Header() {
                     }`}
                     onClick={() => {
                       setIsMenuOpen(false);
-                      navigateTo("/license");
+                      window.location.href = "/license-verification";
                     }}
                   >
                     {link.icon}
@@ -285,7 +285,7 @@ export function Header() {
                      className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-md"
                      onClick={() => {
                        setIsMenuOpen(false);
-                       navigateTo("/license");
+                       window.location.href = "/license-verification";
                      }}
                    >
                      <Stethoscope className="h-4 w-4" />
