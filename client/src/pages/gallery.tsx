@@ -9,7 +9,8 @@ import {
   ArrowUpDown, CheckSquare, Copy, Trash2, Download, Edit, 
   Filter, Folder, FolderUp, Layers, Tag, Workflow,
   Plus, ImageIcon, CheckCircle2, ChevronsUpDown, Save,
-  X, ChevronLeft, ChevronRight, Maximize
+  X, ChevronLeft, ChevronRight, Maximize, RefreshCw as Replace,
+  MoreVertical
 } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -607,17 +608,84 @@ export default function GalleryPage() {
                               </div>
                             )}
                           </div>
-                          <CardFooter className="flex justify-between p-3">
+                          <CardFooter className="flex justify-between items-center p-3">
                             <p className="text-sm truncate">Image #{image.id}</p>
                             {isEditMode && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="p-0 h-8 w-8"
-                                onClick={() => handleDeleteImage(image)}
-                              >
-                                <Trash2 className="h-4 w-4 text-red-500" />
-                              </Button>
+                              <div className="flex items-center gap-1">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="p-0 h-8 w-8">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem 
+                                      onClick={() => {
+                                        // Set as clipboard image for copy/paste
+                                        const copiedImage = {...image};
+                                        localStorage.setItem('clipboardImage', JSON.stringify(copiedImage));
+                                        toast({
+                                          title: "Image Copied",
+                                          description: "Image copied to clipboard",
+                                          variant: "default"
+                                        });
+                                      }}
+                                    >
+                                      <Copy className="h-4 w-4 mr-2" />
+                                      Copy
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        // Open replace dialog
+                                        setSelectedImage(image);
+                                        // TODO: Implement replace functionality
+                                        toast({
+                                          title: "Replace Image",
+                                          description: "Replace image functionality will be added",
+                                          variant: "default"
+                                        });
+                                      }}
+                                    >
+                                      <Replace className="h-4 w-4 mr-2" />
+                                      Replace
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        // Edit metadata
+                                        setSelectedImage(image);
+                                        // TODO: Open edit metadata dialog
+                                        toast({
+                                          title: "Edit Metadata",
+                                          description: "Edit image metadata",
+                                          variant: "default"
+                                        });
+                                      }}
+                                    >
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit Info
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => handleDeleteImage(image)}
+                                      className="text-red-500 focus:text-red-500"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="p-0 h-8 w-8"
+                                  onClick={() => {
+                                    // Select or deselect the image
+                                    toggleImageSelection(image);
+                                  }}
+                                >
+                                  <CheckSquare className={`h-4 w-4 ${selectedImages.some(img => img.id === image.id) ? 'text-primary' : 'text-muted-foreground'}`} />
+                                </Button>
+                              </div>
                             )}
                           </CardFooter>
                         </Card>
@@ -657,8 +725,43 @@ export default function GalleryPage() {
                               }}
                             />
                           </div>
-                          <CardFooter className="p-3">
+                          <CardFooter className="flex justify-between items-center p-3">
                             <p className="text-sm truncate">Chicago Image #{image.id}</p>
+                            {isEditMode && (
+                              <div className="flex items-center gap-1">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="p-0 h-8 w-8">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem 
+                                      onClick={() => {
+                                        const copiedImage = {...image};
+                                        localStorage.setItem('clipboardImage', JSON.stringify(copiedImage));
+                                        toast({
+                                          title: "Image Copied",
+                                          description: "Image copied to clipboard",
+                                          variant: "default"
+                                        });
+                                      }}
+                                    >
+                                      <Copy className="h-4 w-4 mr-2" />
+                                      Copy
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => handleDeleteImage(image)}
+                                      className="text-red-500 focus:text-red-500"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            )}
                           </CardFooter>
                         </Card>
                       ))
@@ -686,8 +789,43 @@ export default function GalleryPage() {
                               }}
                             />
                           </div>
-                          <CardFooter className="p-3">
+                          <CardFooter className="flex justify-between items-center p-3">
                             <p className="text-sm truncate">New York Image #{image.id}</p>
+                            {isEditMode && (
+                              <div className="flex items-center gap-1">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="p-0 h-8 w-8">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem 
+                                      onClick={() => {
+                                        const copiedImage = {...image};
+                                        localStorage.setItem('clipboardImage', JSON.stringify(copiedImage));
+                                        toast({
+                                          title: "Image Copied",
+                                          description: "Image copied to clipboard",
+                                          variant: "default"
+                                        });
+                                      }}
+                                    >
+                                      <Copy className="h-4 w-4 mr-2" />
+                                      Copy
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => handleDeleteImage(image)}
+                                      className="text-red-500 focus:text-red-500"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            )}
                           </CardFooter>
                         </Card>
                       ))
