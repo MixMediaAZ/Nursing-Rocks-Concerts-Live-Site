@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, CheckCircle, XCircle, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import type { HeadersInit } from "node-fetch";
 
 export const CustomCatApiSettings = () => {
   const [apiKey, setApiKey] = useState("");
@@ -35,7 +36,7 @@ export const CustomCatApiSettings = () => {
   };
 
   // Helper function to get JWT token auth header
-  const getAuthHeader = () => {
+  const getAuthHeader = (): HeadersInit => {
     const token = localStorage.getItem("adminToken");
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
@@ -187,17 +188,32 @@ export const CustomCatApiSettings = () => {
     if (confirmClear) {
       setIsSaving(true);
       try {
-        await apiRequest("DELETE", "/api/settings/CUSTOMCAT_API_KEY");
-        
-        setApiKey("");
-        toast({
-          title: "API Key Cleared",
-          description: "CustomCat API key has been removed",
-          variant: "default",
+        const response = await fetch("/api/settings/CUSTOMCAT_API_KEY", {
+          method: "DELETE",
+          headers: {
+            ...getAuthHeader()
+          }
         });
         
-        // Check connection status after clearing
-        await checkConnectionStatus();
+        if (response.ok) {
+          setApiKey("");
+          toast({
+            title: "API Key Cleared",
+            description: "CustomCat API key has been removed",
+            variant: "default",
+          });
+          
+          // Check connection status after clearing
+          await checkConnectionStatus();
+        } else if (response.status === 401 || response.status === 403) {
+          toast({
+            title: "Authentication Error",
+            description: "You don't have permission to delete API settings. Please try logging in again.",
+            variant: "destructive",
+          });
+        } else {
+          throw new Error("Failed to clear API key");
+        }
       } catch (error) {
         console.error("Error clearing API key:", error);
         toast({

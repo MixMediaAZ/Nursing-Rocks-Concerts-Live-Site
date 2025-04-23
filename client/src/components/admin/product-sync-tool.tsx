@@ -13,6 +13,7 @@ import { Loader2, RefreshCw, Download, AlertCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import type { HeadersInit } from "node-fetch";
 
 interface SyncResult {
   success: boolean;
@@ -31,6 +32,12 @@ export const ProductSyncTool = () => {
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
   const { toast } = useToast();
 
+  // Helper function to get JWT token auth header
+  const getAuthHeader = (): HeadersInit => {
+    const token = localStorage.getItem("adminToken");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   const syncProducts = async () => {
     if (!confirm("This will sync products from CustomCat to your store. Continue?")) {
       return;
@@ -40,20 +47,41 @@ export const ProductSyncTool = () => {
     setSyncResult(null);
     
     try {
-      const response = await apiRequest("POST", "/api/store/customcat/sync-products");
+      const response = await fetch("/api/store/customcat/sync-products", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader()
+        }
+      });
       
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorMessage = "Failed to sync products";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          // If JSON parsing fails, use default error message
+        }
+        
         setSyncResult({
           success: false,
-          message: errorData.message || "Failed to sync products"
+          message: errorMessage
         });
         
-        toast({
-          title: "Sync Failed",
-          description: errorData.message || "Failed to sync products from CustomCat",
-          variant: "destructive",
-        });
+        if (response.status === 401 || response.status === 403) {
+          toast({
+            title: "Authentication Error",
+            description: "You don't have permission to sync products. Please try logging in again.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Sync Failed",
+            description: errorMessage,
+            variant: "destructive",
+          });
+        }
         return;
       }
       
