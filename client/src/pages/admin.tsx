@@ -3,7 +3,9 @@ import { Helmet } from "react-helmet";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { Label } from "@/components/ui/label";
 import { 
   Key, 
   KeyRound, 
@@ -16,7 +18,8 @@ import {
   Users, 
   Store, 
   FileEdit, 
-  Lock
+  Lock,
+  Edit
 } from "lucide-react";
 
 // Admin PIN setup - in production, this should be stored securely
@@ -189,12 +192,27 @@ export default function AdminPage() {
       window.location.href = "/gallery";
     };
     
+    // Check if element editing mode is active
+    const [isEditModeActive, setIsEditModeActive] = useState(
+      localStorage.getItem("editMode") === "true"
+    );
+    
     // Open live site in admin mode for editing
-    const openLiveSiteInAdminMode = () => {
+    const openLiveSiteInAdminMode = (editMode = true) => {
       localStorage.setItem("isAdmin", "true");
       localStorage.setItem("adminPinVerified", "true");
-      localStorage.setItem("editMode", "true");
-      window.location.href = "/";
+      localStorage.setItem("editMode", editMode ? "true" : "false");
+      setIsEditModeActive(editMode);
+      
+      if (editMode) {
+        window.location.href = "/";
+      } else {
+        toast({
+          title: "Element Edit Mode Disabled",
+          description: "Element editing has been turned off",
+          variant: "default",
+        });
+      }
     };
 
     return (
@@ -203,7 +221,26 @@ export default function AdminPage() {
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <LayoutDashboard className="h-7 w-7" /> Admin Dashboard
           </h1>
-          <div className="flex gap-3">
+          <div className="flex items-center gap-4">
+            {/* Element Editing Mode Toggle */}
+            <div className="flex items-center space-x-2 mr-2">
+              <Switch
+                id="edit-mode"
+                checked={isEditModeActive}
+                onCheckedChange={(checked) => {
+                  openLiveSiteInAdminMode(checked);
+                  toast({
+                    title: checked ? "Element Edit Mode Enabled" : "Element Edit Mode Disabled",
+                    description: checked ? "You can now edit elements on the site" : "Element editing has been turned off",
+                    variant: "default",
+                  });
+                }}
+              />
+              <Label htmlFor="edit-mode" className="flex items-center gap-1 text-sm font-medium">
+                <Edit className="h-4 w-4" /> Edit Mode
+              </Label>
+            </div>
+            
             <Button 
               variant="outline"
               onClick={handleLogout}
@@ -215,8 +252,13 @@ export default function AdminPage() {
         </div>
 
         <Tabs defaultValue="overview" className="w-full" onValueChange={setActiveTab}>
-          <TabsList className="w-full grid grid-cols-2 md:grid-cols-6 mb-8">
+          <TabsList className="w-full grid grid-cols-2 md:grid-cols-7 mb-8">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="editor">
+              <div className="flex items-center gap-1">
+                <Edit className="h-4 w-4" /> Editor
+              </div>
+            </TabsTrigger>
             <TabsTrigger value="events">Events</TabsTrigger>
             <TabsTrigger value="gallery">Gallery</TabsTrigger>
             <TabsTrigger value="content">Content</TabsTrigger>
@@ -225,7 +267,44 @@ export default function AdminPage() {
           </TabsList>
           
           <TabsContent value="overview">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Element Editing Card */}
+              <Card className={isEditModeActive ? "bg-primary/5 border-primary/50" : ""}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Edit className="h-5 w-5" /> Element Editor
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-lg font-bold">{isEditModeActive ? "Enabled" : "Disabled"}</p>
+                      <p className="text-sm text-muted-foreground">Visual element editor</p>
+                    </div>
+                    <Switch
+                      checked={isEditModeActive}
+                      onCheckedChange={(checked) => {
+                        openLiveSiteInAdminMode(checked);
+                      }}
+                    />
+                  </div>
+                  <Button 
+                    variant="link" 
+                    className="p-0 h-auto mt-2" 
+                    onClick={() => {
+                      openLiveSiteInAdminMode(true);
+                      toast({
+                        title: "Opening Live Site",
+                        description: "Opening site with editing enabled...",
+                        variant: "default",
+                      });
+                    }}
+                  >
+                    Open Editor
+                  </Button>
+                </CardContent>
+              </Card>
+              
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
