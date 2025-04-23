@@ -375,6 +375,7 @@ export default function AdminPage() {
                             toast({
                               title: `Opening ${folder}`,
                               description: "Displaying folder contents...",
+                              variant: "default",
                             });
                           }}
                         >
