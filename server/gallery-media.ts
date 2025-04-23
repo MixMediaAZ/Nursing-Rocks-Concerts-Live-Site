@@ -264,11 +264,15 @@ export async function deleteGalleryImage(req: Request, res: Response) {
     // Delete the files (could be made optional)
     // This would need to be adjusted based on your path format
     const basePath = path.join(process.cwd(), image.image_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
-    const thumbnailPath = path.join(process.cwd(), image.thumbnail_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
     
     try {
       if (fs.existsSync(basePath)) fs.unlinkSync(basePath);
-      if (fs.existsSync(thumbnailPath)) fs.unlinkSync(thumbnailPath);
+      
+      // Only try to delete thumbnail if it exists
+      if (image.thumbnail_url) {
+        const thumbnailPath = path.join(process.cwd(), image.thumbnail_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
+        if (fs.existsSync(thumbnailPath)) fs.unlinkSync(thumbnailPath);
+      }
       
       // Could also delete other sizes if they are stored
     } catch (fsError) {

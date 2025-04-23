@@ -149,6 +149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/gallery/:id", deleteGalleryImage);
   app.patch("/api/gallery/:id", updateGalleryImage);
   app.post("/api/gallery/:id/replace", galleryUpload.single('image'), replaceGalleryImage);
+  app.post("/api/gallery/replace/:id", replaceGalleryImage);
   
   // Media Folders management 
   app.get("/api/media-folders", getMediaFolders);
