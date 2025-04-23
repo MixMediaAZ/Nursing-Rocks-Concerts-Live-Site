@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import AudioPlayer from "./audio-player";
 import { formatDate } from "@/lib/utils";
+import { EditableImage } from "@/components/editable-image";
 
 const FeaturedArtist = () => {
   const { data: artists, isLoading: isLoadingArtists } = useQuery<Artist[]>({
@@ -103,10 +104,11 @@ const FeaturedArtist = () => {
 
           <div className="lg:col-span-3 order-1 lg:order-2">
             <div className="relative rounded-xl overflow-hidden shadow-xl">
-              <img 
+              <EditableImage 
                 src={featuredArtist.image_url} 
                 alt={featuredArtist.name} 
                 className="w-full"
+                triggerPosition="bottom-right"
               />
               
               {artistEvent && (
