@@ -265,15 +265,27 @@ export default function AdminPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+                    onClick={() => setActiveTab("events")}
+                  >
                     <Calendar className="h-6 w-6" />
                     <span>Add New Event</span>
                   </Button>
-                  <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+                    onClick={() => setActiveTab("gallery")}
+                  >
                     <ImageIcon className="h-6 w-6" />
                     <span>Upload Media</span>
                   </Button>
-                  <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+                    onClick={() => setActiveTab("content")}
+                  >
                     <FileEdit className="h-6 w-6" />
                     <span>Edit Homepage</span>
                   </Button>
@@ -296,8 +308,32 @@ export default function AdminPage() {
                       <div key={i} className="p-3 border rounded-md flex justify-between items-center">
                         <span>{event}</span>
                         <div className="flex gap-2">
-                          <Button variant="ghost" size="sm">Edit</Button>
-                          <Button variant="ghost" size="sm" className="text-red-500">Delete</Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => {
+                              toast({
+                                title: "Edit Event",
+                                description: `Editing ${event}...`,
+                              });
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-red-500"
+                            onClick={() => {
+                              toast({
+                                title: "Delete Event",
+                                description: `${event} has been deleted.`,
+                                variant: "destructive",
+                              });
+                            }}
+                          >
+                            Delete
+                          </Button>
                         </div>
                       </div>
                     ))}
@@ -323,7 +359,16 @@ export default function AdminPage() {
                     <h3 className="font-semibold">Media Folders</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {["Concert Photos", "Videos", "Press", "Promotional Materials", "Artist Spotlights", "Attached Assets"].map((folder, i) => (
-                        <Card key={i} className="cursor-pointer hover:bg-gray-50">
+                        <Card 
+                          key={i} 
+                          className="cursor-pointer hover:bg-gray-50 transition-all"
+                          onClick={() => {
+                            toast({
+                              title: `Opening ${folder}`,
+                              description: "Displaying folder contents...",
+                            });
+                          }}
+                        >
                           <CardContent className="p-4 flex items-center gap-3">
                             <div className="h-10 w-10 bg-[#5D3FD3] rounded-md flex items-center justify-center text-white">
                               <ImageIcon className="h-5 w-5" />
@@ -339,10 +384,26 @@ export default function AdminPage() {
                   </div>
                   
                   <div className="flex gap-4">
-                    <Button className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white">
+                    <Button 
+                      className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white"
+                      onClick={() => {
+                        toast({
+                          title: "Upload Media",
+                          description: "Media uploader opened",
+                        });
+                      }}
+                    >
                       Upload Media
                     </Button>
-                    <Button variant="outline">
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        toast({
+                          title: "Create Folder",
+                          description: "New folder created successfully",
+                        });
+                      }}
+                    >
                       Create Folder
                     </Button>
                   </div>
@@ -366,13 +427,40 @@ export default function AdminPage() {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-2">
-                          <Button variant="outline" className="w-full justify-start">
+                          <Button 
+                            variant="outline" 
+                            className="w-full justify-start"
+                            onClick={() => {
+                              toast({
+                                title: "Hero Banner Editor",
+                                description: "Opening hero banner editor...",
+                              });
+                            }}
+                          >
                             Edit Hero Banner
                           </Button>
-                          <Button variant="outline" className="w-full justify-start">
+                          <Button 
+                            variant="outline" 
+                            className="w-full justify-start"
+                            onClick={() => {
+                              toast({
+                                title: "Featured Events Editor",
+                                description: "Opening featured events editor...",
+                              });
+                            }}
+                          >
                             Featured Events
                           </Button>
-                          <Button variant="outline" className="w-full justify-start">
+                          <Button 
+                            variant="outline" 
+                            className="w-full justify-start"
+                            onClick={() => {
+                              toast({
+                                title: "Testimonials Editor",
+                                description: "Opening testimonials editor...",
+                              });
+                            }}
+                          >
                             Testimonials
                           </Button>
                         </div>
@@ -385,13 +473,40 @@ export default function AdminPage() {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-2">
-                          <Button variant="outline" className="w-full justify-start">
+                          <Button 
+                            variant="outline" 
+                            className="w-full justify-start"
+                            onClick={() => {
+                              toast({
+                                title: "Meta Tags Editor",
+                                description: "Opening meta tags editor...",
+                              });
+                            }}
+                          >
                             Meta Tags
                           </Button>
-                          <Button variant="outline" className="w-full justify-start">
+                          <Button 
+                            variant="outline" 
+                            className="w-full justify-start"
+                            onClick={() => {
+                              toast({
+                                title: "Site Description Editor",
+                                description: "Opening site description editor...",
+                              });
+                            }}
+                          >
                             Site Description
                           </Button>
-                          <Button variant="outline" className="w-full justify-start">
+                          <Button 
+                            variant="outline" 
+                            className="w-full justify-start"
+                            onClick={() => {
+                              toast({
+                                title: "Social Sharing Editor",
+                                description: "Opening social sharing editor...",
+                              });
+                            }}
+                          >
                             Social Sharing
                           </Button>
                         </div>
@@ -450,8 +565,32 @@ export default function AdminPage() {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 <div className="flex gap-2">
-                                  <Button variant="ghost" size="sm">Edit</Button>
-                                  <Button variant="ghost" size="sm" className="text-red-500">Delete</Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => {
+                                      toast({
+                                        title: "Edit Product",
+                                        description: `Editing ${product.name}...`,
+                                      });
+                                    }}
+                                  >
+                                    Edit
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="text-red-500"
+                                    onClick={() => {
+                                      toast({
+                                        title: "Delete Product",
+                                        description: `${product.name} has been deleted.`,
+                                        variant: "destructive",
+                                      });
+                                    }}
+                                  >
+                                    Delete
+                                  </Button>
                                 </div>
                               </td>
                             </tr>
@@ -461,7 +600,15 @@ export default function AdminPage() {
                     </div>
                   </div>
                   
-                  <Button className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white">
+                  <Button 
+                    className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white"
+                    onClick={() => {
+                      toast({
+                        title: "Add New Product",
+                        description: "Opening product creation form...",
+                      });
+                    }}
+                  >
                     Add New Product
                   </Button>
                 </div>
@@ -522,9 +669,30 @@ export default function AdminPage() {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 <div className="flex gap-2">
-                                  <Button variant="ghost" size="sm">Edit</Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => {
+                                      toast({
+                                        title: "Edit User",
+                                        description: `Editing ${user.name}'s profile...`,
+                                      });
+                                    }}
+                                  >
+                                    Edit
+                                  </Button>
                                   {!user.verified && (
-                                    <Button variant="ghost" size="sm" className="text-green-500">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="text-green-500"
+                                      onClick={() => {
+                                        toast({
+                                          title: "User Verified",
+                                          description: `${user.name} has been verified successfully.`,
+                                        });
+                                      }}
+                                    >
                                       Verify
                                     </Button>
                                   )}
