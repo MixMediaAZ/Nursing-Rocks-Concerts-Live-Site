@@ -180,34 +180,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/gallery/:id/replace-with/:replacementId", async (req: Request, res: Response) => {
     try {
       const { id, replacementId } = req.params;
+      const originalUrl = req.body.originalUrl; // Capture original URL if provided
       
-      if (!id || isNaN(parseInt(id, 10)) || !replacementId || isNaN(parseInt(replacementId, 10))) {
-        return res.status(400).json({ error: 'Invalid image IDs' });
+      // Validate the replacement ID
+      if (!replacementId || isNaN(parseInt(replacementId, 10))) {
+        return res.status(400).json({ error: 'Invalid replacement image ID' });
       }
       
-      const originalImageId = parseInt(id, 10);
       const newImageId = parseInt(replacementId, 10);
+      let originalImage: any = null;
       
-      // Get both images using direct db queries
-      // Since we're avoiding the tags column, we'll select specific columns
-      const [originalImage] = await db.select({
-        id: gallery.id,
-        image_url: gallery.image_url,
-        thumbnail_url: gallery.thumbnail_url,
-        alt_text: gallery.alt_text,
-        event_id: gallery.event_id,
-        folder_id: gallery.folder_id,
-        media_type: gallery.media_type,
-        file_size: gallery.file_size,
-        dimensions: gallery.dimensions,
-        duration: gallery.duration,
-        sort_order: gallery.sort_order,
-        created_at: gallery.created_at,
-        updated_at: gallery.updated_at,
-        z_index: gallery.z_index,
-        metadata: gallery.metadata
-      }).from(gallery).where(eq(gallery.id, originalImageId));
+      // Check if we're dealing with a placeholder image
+      if (id === '-1' && originalUrl) {
+        // Handle placeholder image with provided URL
+        originalImage = {
+          id: -1,
+          image_url: originalUrl,
+          alt_text: req.body.alt_text || 'Image',
+          // Set minimal required properties
+          media_type: 'image',
+          created_at: new Date(),
+          updated_at: new Date()
+        };
+      } else if (!id || isNaN(parseInt(id, 10))) {
+        return res.status(400).json({ error: 'Invalid original image ID' });
+      } else {
+        // Get original image from database
+        const originalImageId = parseInt(id, 10);
+        [originalImage] = await db.select({
+          id: gallery.id,
+          image_url: gallery.image_url,
+          thumbnail_url: gallery.thumbnail_url,
+          alt_text: gallery.alt_text,
+          event_id: gallery.event_id,
+          folder_id: gallery.folder_id,
+          media_type: gallery.media_type,
+          file_size: gallery.file_size,
+          dimensions: gallery.dimensions,
+          duration: gallery.duration,
+          sort_order: gallery.sort_order,
+          created_at: gallery.created_at,
+          updated_at: gallery.updated_at,
+          z_index: gallery.z_index,
+          metadata: gallery.metadata
+        }).from(gallery).where(eq(gallery.id, originalImageId));
+        
+        if (!originalImage) {
+          return res.status(404).json({ error: 'Original image not found' });
+        }
+      }
       
+      // Get replacement image
       const [replacementImage] = await db.select({
         id: gallery.id,
         image_url: gallery.image_url,
@@ -226,51 +249,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: gallery.metadata
       }).from(gallery).where(eq(gallery.id, newImageId));
       
-      if (!originalImage || !replacementImage) {
-        return res.status(404).json({ error: 'One or both images not found' });
+      if (!replacementImage) {
+        return res.status(404).json({ error: 'Replacement image not found' });
       }
       
       // Process the replacement - this reuses the image replacement endpoint logic
       // but sources the new image from the gallery rather than an upload
       
       try {
-        // Get image dimensions from original
-        const originalPath = path.join(process.cwd(), originalImage.image_url);
-        const originalImage2 = await sharp(originalPath);
-        const originalMetadata = await originalImage2.metadata();
+        let dimensions: { width?: number; height?: number } = {};
+        let targetPath = '';
+        
+        // If dealing with a placeholder image or external URL
+        if (originalImage.id === -1) {
+          // For placeholder images, we'll use dimensions from the replacement image
+          // or default dimensions if not available
+          targetPath = path.join(process.cwd(), 'uploads', 'replaced-' + Date.now());
+          
+          // Ensure target directory exists
+          if (!fs.existsSync(path.dirname(targetPath))) {
+            fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+          }
+          
+          // Use original dimensions if we can determine them from the URL
+          try {
+            // For URLs that are already local files
+            if (fs.existsSync(path.join(process.cwd(), originalImage.image_url))) {
+              const originalPath = path.join(process.cwd(), originalImage.image_url);
+              const originalImage2 = await sharp(originalPath);
+              const originalMetadata = await originalImage2.metadata();
+              dimensions = {
+                width: originalMetadata.width,
+                height: originalMetadata.height
+              };
+            }
+          } catch (err) {
+            console.warn('Could not determine dimensions from placeholder image, using default');
+            // Continue without dimensions to use the original replacement size
+          }
+        } else {
+          // Regular case - get dimensions from original image
+          const originalPath = path.join(process.cwd(), originalImage.image_url);
+          targetPath = originalPath;
+          
+          try {
+            const originalImage2 = await sharp(originalPath);
+            const originalMetadata = await originalImage2.metadata();
+            dimensions = {
+              width: originalMetadata.width,
+              height: originalMetadata.height
+            };
+          } catch (err) {
+            console.warn('Could not determine dimensions from original image, using default');
+            // Continue without dimensions to use the original replacement size
+          }
+        }
         
         // Get replacement image
         const replacementPath = path.join(process.cwd(), replacementImage.image_url);
         
-        // Process the replacement image to match the original dimensions
-        const dimensions = {
-          width: originalMetadata.width,
-          height: originalMetadata.height
-        };
-        
         // Generate resized images from the replacement
         const processedImage = await processImage(
           replacementPath,
-          path.dirname(originalPath),
-          path.basename(originalPath, path.extname(originalPath)),
+          path.dirname(targetPath),
+          path.basename(targetPath, path.extname(targetPath)),
           dimensions
         );
         
-        // Update the database entry with the new processed image paths
-        // using specific column updates to avoid tags column
-        await db.update(gallery)
-          .set({
-            image_url: processedImage.original,
-            thumbnail_url: processedImage.thumbnail,
-            alt_text: replacementImage.alt_text || originalImage.alt_text,
-            updated_at: new Date(),
-            metadata: replacementImage.metadata || originalImage.metadata
-          })
-          .where(eq(gallery.id, originalImageId));
+        // For regular database images, update the database entry
+        if (originalImage.id !== -1) {
+          await db.update(gallery)
+            .set({
+              image_url: processedImage.original,
+              thumbnail_url: processedImage.thumbnail,
+              alt_text: replacementImage.alt_text || originalImage.alt_text,
+              updated_at: new Date(),
+              metadata: replacementImage.metadata || originalImage.metadata
+            })
+            .where(eq(gallery.id, originalImage.id));
+        }
         
+        // Return the processed image info
         res.status(200).json({
           message: 'Image replaced successfully',
-          id: originalImageId,
+          id: originalImage.id,
+          originalUrl: originalImage.image_url,
           image_url: processedImage.original,
           thumbnail_url: processedImage.thumbnail
         });
