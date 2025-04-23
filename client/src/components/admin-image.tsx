@@ -32,6 +32,10 @@ export function AdminImage({
 }: AdminImageProps) {
   const [isReplaceDialogOpen, setIsReplaceDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  // Add a refresh counter to force re-renders after image updates
+  const [refreshKey, setRefreshKey] = useState(0);
+  // Track the current image URL separately from the imageData object
+  const [currentImageUrl, setCurrentImageUrl] = useState(imageData.image_url);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
@@ -53,13 +57,36 @@ export function AdminImage({
   // Replace image mutation
   const replaceImageMutation = useMutation({
     mutationFn: async (replacementImageId: number) => {
+      // Include original URL in the request body for placeholder images (-1 ID)
       const response = await apiRequest(
         'POST', 
-        `/api/gallery/${imageData.id}/replace-with/${replacementImageId}`
+        `/api/gallery/${imageData.id}/replace-with/${replacementImageId}`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            originalUrl: imageData.image_url,
+            alt_text: imageData.alt_text || alt
+          })
+        }
       );
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Update local image URL
+      if (data && data.image_url) {
+        // Update the original image data
+        imageData.image_url = data.image_url;
+        if (data.thumbnail_url) {
+          imageData.thumbnail_url = data.thumbnail_url;
+        }
+        
+        // Update state variables to force a re-render
+        setCurrentImageUrl(data.image_url);
+        setRefreshKey(prevKey => prevKey + 1);
+      }
+      
       // Invalidate any queries that might include this image
       queryClient.invalidateQueries({ queryKey: ['/api/gallery'] });
       
@@ -99,7 +126,8 @@ export function AdminImage({
   return (
     <div className={`relative group ${showAdminControls ? 'admin-editable' : ''}`}>
       <SafeImage 
-        src={imageData.image_url}
+        key={refreshKey}
+        src={currentImageUrl}
         alt={alt || imageData.alt_text || "Image"}
         className={className} 
       />
