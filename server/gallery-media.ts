@@ -489,11 +489,15 @@ export async function replaceGalleryImage(req: Request, res: Response) {
       
       // Clean up old files (optional)
       const oldBasePath = path.join(process.cwd(), originalImage.image_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
-      const oldThumbnailPath = path.join(process.cwd(), originalImage.thumbnail_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
       
       try {
         if (fs.existsSync(oldBasePath)) fs.unlinkSync(oldBasePath);
-        if (fs.existsSync(oldThumbnailPath)) fs.unlinkSync(oldThumbnailPath);
+        
+        // Only attempt to delete thumbnail if it exists
+        if (originalImage.thumbnail_url) {
+          const oldThumbnailPath = path.join(process.cwd(), originalImage.thumbnail_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
+          if (fs.existsSync(oldThumbnailPath)) fs.unlinkSync(oldThumbnailPath);
+        }
       } catch (fsError) {
         console.error('Error deleting old image files:', fsError);
         // Continue even if file deletion fails
@@ -524,11 +528,29 @@ export async function replaceGalleryImage(req: Request, res: Response) {
       
       // Create a copy of the source image optimized to match the target image dimensions
       // Extract dimensions from both images if available
-      let targetDimensions = targetImage.dimensions;
+      let targetWidth = 800;
+      let targetHeight = 600;
       
-      // If dimensions aren't stored, use default dimensions or a reasonable placeholder
-      if (!targetDimensions) {
-        targetDimensions = { width: 800, height: 600 };
+      // If dimensions are stored as a JSON string or object, parse them
+      if (targetImage.dimensions) {
+        try {
+          // Handle case where dimensions might be stored as a string
+          const dimensionsObj = typeof targetImage.dimensions === 'string' 
+            ? JSON.parse(targetImage.dimensions)
+            : targetImage.dimensions;
+            
+          if (dimensionsObj && typeof dimensionsObj === 'object') {
+            if (dimensionsObj.width && typeof dimensionsObj.width === 'number') {
+              targetWidth = dimensionsObj.width;
+            }
+            if (dimensionsObj.height && typeof dimensionsObj.height === 'number') {
+              targetHeight = dimensionsObj.height;
+            }
+          }
+        } catch (error) {
+          console.error('Error parsing image dimensions:', error);
+          // Continue with default dimensions if parsing fails
+        }
       }
       
       // Get paths for the source and target images
@@ -544,8 +566,8 @@ export async function replaceGalleryImage(req: Request, res: Response) {
         uploadDir,
         destFilename,
         {
-          width: targetDimensions.width, 
-          height: targetDimensions.height,
+          width: targetWidth, 
+          height: targetHeight,
           fit: 'cover'  // Maintain aspect ratio while covering the target dimensions
         }
       );
@@ -564,11 +586,15 @@ export async function replaceGalleryImage(req: Request, res: Response) {
       
       // Clean up old files (optional)
       const oldBasePath = path.join(process.cwd(), targetImage.image_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
-      const oldThumbnailPath = path.join(process.cwd(), targetImage.thumbnail_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
       
       try {
         if (fs.existsSync(oldBasePath)) fs.unlinkSync(oldBasePath);
-        if (fs.existsSync(oldThumbnailPath)) fs.unlinkSync(oldThumbnailPath);
+        
+        // Only attempt to delete thumbnail if it exists
+        if (targetImage.thumbnail_url) {
+          const oldThumbnailPath = path.join(process.cwd(), targetImage.thumbnail_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
+          if (fs.existsSync(oldThumbnailPath)) fs.unlinkSync(oldThumbnailPath);
+        }
       } catch (fsError) {
         console.error('Error deleting old image files:', fsError);
         // Continue even if file deletion fails

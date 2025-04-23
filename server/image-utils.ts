@@ -73,12 +73,14 @@ export const IMAGE_SIZES: Record<string, ImageSizePreset> = {
  * @param sourceFile The uploaded file path
  * @param destinationDir The directory to save processed images
  * @param filename Optional custom filename (without extension)
+ * @param customDimensions Optional custom dimensions for the original image
  * @returns Object with paths to processed images
  */
 export async function processImage(
   sourceFile: string,
   destinationDir: string,
-  filename?: string
+  filename?: string,
+  customDimensions?: ResizeConfig
 ): Promise<Record<keyof typeof IMAGE_SIZES, string>> {
   // Ensure destination directory exists
   if (!fs.existsSync(destinationDir)) {
@@ -104,7 +106,16 @@ export async function processImage(
       let pipeline = sharp(sourceFile);
       
       // Determine if we need to resize
-      if (size !== 'original' && config.width) {
+      if (size === 'original' && customDimensions) {
+        // Use custom dimensions for original if provided
+        const resizeOptions: sharp.ResizeOptions = {
+          width: customDimensions.width,
+          height: customDimensions.height,
+          fit: customDimensions.fit || 'cover'
+        };
+        
+        pipeline = pipeline.resize(resizeOptions);
+      } else if (size !== 'original' && config.width) {
         const resizeOptions: sharp.ResizeOptions = {
           width: config.width,
           height: config.height,
@@ -116,7 +127,9 @@ export async function processImage(
       
       // Set output format and quality
       // Always use webp format with specified quality
-      pipeline = pipeline.webp({ quality: config.quality || 80 });
+      pipeline = pipeline.webp({ 
+        quality: customDimensions?.quality || config.quality || 80 
+      });
       
       // Create output filename
       const outputFilename = size === 'original' 

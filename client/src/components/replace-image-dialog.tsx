@@ -23,6 +23,10 @@ interface ReplaceImageDialogProps {
   onReplaceComplete?: () => void;
 }
 
+interface GalleryResponse {
+  rows?: Gallery[];
+}
+
 export function ReplaceImageDialog({
   isOpen,
   onClose,
@@ -48,7 +52,7 @@ export function ReplaceImageDialog({
   }, [isOpen]);
 
   // Fetch gallery images
-  const { data: galleryImages, isLoading: isLoadingGallery } = useQuery({
+  const { data: galleryImages, isLoading: isLoadingGallery } = useQuery<Gallery[] | GalleryResponse>({
     queryKey: ["/api/gallery"],
     enabled: isOpen && activeTab === "existing",
   });
@@ -64,7 +68,7 @@ export function ReplaceImageDialog({
       return await apiRequest(
         "POST",
         `/api/gallery/replace/${data.targetId}`,
-        { newImageId: data.newImageId }
+        { body: JSON.stringify({ newImageId: data.newImageId }) }
       );
     },
     onSuccess: () => {
@@ -160,7 +164,7 @@ export function ReplaceImageDialog({
               ) : (
                 <>
                   <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3 max-h-96 overflow-y-auto p-2">
-                    {images.map((image) => (
+                    {images.map((image: Gallery) => (
                       <div
                         key={image.id}
                         className={`relative border rounded-md overflow-hidden cursor-pointer transition-all ${
@@ -199,7 +203,7 @@ export function ReplaceImageDialog({
             <TabsContent value="upload">
               {!uploadComplete ? (
                 <GalleryUploader
-                  onUploadComplete={(imageData) => {
+                  onUploadComplete={(imageData: any) => {
                     if (imageData) {
                       handleUploadComplete(imageData as Gallery);
                     }
