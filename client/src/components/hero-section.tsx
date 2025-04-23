@@ -75,37 +75,37 @@ const HeroSection = () => {
         />
       </div>
 
-      <div className="page-container content-wrapper py-16 pb-12 xs:pb-16 md:py-28 relative z-10">
-        <div className="flex flex-col items-center md:items-start text-center md:text-left w-full max-w-4xl">
+      <div className="container mx-auto px-4 py-16 md:py-28 relative z-10">
+        <div className="max-w-2xl">
           <div className="inline-block bg-[#FF3366] text-white px-6 py-3 rounded-full mb-6 font-accent text-2xl md:text-3xl font-bold">
             NURSING ROCKS! CONCERT SERIES
           </div>
           
-          <h2 className="text-base md:text-lg font-semibold mb-4 text-left w-full">
+          <h2 className="font-heading text-base md:text-lg font-semibold mb-4 text-left">
             Mission
           </h2>
           
-          <p className="text-lg mb-8 text-left max-w-3xl">
+          <p className="text-lg mb-8 text-left">
             Empowering and honoring nurses through the uplifting power of live music, our mission is to foster a positive impact within the nursing community at nationwide events. We strive to elevate awareness of the nursing profession and support its advancement through scholarship opportunities for further education.
           </p>
 
-          <div className="border-t border-white/20 my-8 pt-6 w-full max-w-3xl"></div>
+          <div className="border-t border-white/20 my-8 pt-6"></div>
           
           {/* Location information if needed */}
           {featuredEvent.location && (
-            <div className="flex items-center justify-center mb-8 w-full">
+            <div className="flex items-center mb-8">
               <i className="fas fa-map-marker-alt mr-2"></i>
               <span>{featuredEvent.location}</span>
             </div>
           )}
           
-          {/* Buttons Column - centered on all screens */}
-          <div className="flex flex-col gap-4 w-full max-w-sm mx-auto">
+          {/* Buttons Column */}
+          <div className="flex flex-col gap-4 max-w-sm">
             {/* Free Ticket Button */}
             <Button
               asChild
               size="lg"
-              className="bg-gradient-to-r from-[#F61D7A] to-[#FF3366] hover:from-[#FF3366] hover:to-[#F61D7A] text-white font-accent font-bold text-xs sm:text-sm md:text-base py-4 px-4 sm:px-6 rounded-full shadow-lg transform transition-transform hover:scale-105 animate-pulse w-full"
+              className="bg-gradient-to-r from-[#F61D7A] to-[#FF3366] hover:from-[#FF3366] hover:to-[#F61D7A] text-white font-accent font-bold text-xs sm:text-sm md:text-base py-4 px-4 sm:px-6 rounded-full shadow-lg transform transition-transform hover:scale-105 animate-pulse"
             >
               <Link href="/register">
                 <span className="uppercase">Nurses, Get Your Free Tickets Here!</span>
@@ -118,7 +118,7 @@ const HeroSection = () => {
             {/* Store Button */}
             <Button
               asChild
-              className="bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full w-full"
+              className="bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full"
             >
               <Link href="/store">
                 Visit Our Store
