@@ -97,7 +97,11 @@ export default function FixedGalleryGrid({
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {images && images.length > 0 ? (
             images.map((image) => (
-              <Card key={image.id} className="overflow-hidden">
+              <Card 
+                key={image.id} 
+                className="overflow-hidden gallery-image-card" 
+                data-image-id={image.id}
+              >
                 <div 
                   className="cursor-pointer relative" 
                   onClick={() => handleImageClick(image)}

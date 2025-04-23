@@ -46,13 +46,27 @@ export default function StableGallery() {
           <p className="text-gray-600">Relive the magic from our previous events</p>
         </div>
         
-        {/* Use our stable gallery grid component */}
-        <FixedGalleryGrid
-          title=""
-          subtitle=""
-          images={visibleImages}
-          isLoading={isLoading}
-        />
+        {/* Use our stable gallery grid component with click handler */}
+        <div onClick={(e) => {
+          // Find the closest image element to the click target
+          const target = e.target as HTMLElement;
+          const card = target.closest('.gallery-image-card');
+          if (card) {
+            const imageId = parseInt(card.getAttribute('data-image-id') || '0', 10);
+            const clickedImage = images.find(img => img.id === imageId);
+            if (clickedImage) {
+              setSelectedImage(clickedImage);
+              setShowImageViewer(true);
+            }
+          }
+        }}>
+          <FixedGalleryGrid
+            title=""
+            subtitle=""
+            images={visibleImages}
+            isLoading={isLoading}
+          />
+        </div>
         
         {images && images.length > 0 && (
           <div className="mt-8 flex justify-center gap-4">
