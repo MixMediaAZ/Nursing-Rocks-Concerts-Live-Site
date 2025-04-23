@@ -34,16 +34,35 @@ export const CustomCatApiSettings = () => {
     setShowApiKey(!showApiKey);
   };
 
+  // Helper function to get JWT token auth header
+  const getAuthHeader = () => {
+    const token = localStorage.getItem("adminToken");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   // Fetch API key on component mount
   useEffect(() => {
     const fetchApiKey = async () => {
       setIsLoading(true);
       try {
-        const response = await apiRequest("GET", `/api/settings/CUSTOMCAT_API_KEY`);
-        const data = await response.json();
+        const response = await apiRequest("GET", `/api/settings/CUSTOMCAT_API_KEY`, {
+          headers: {
+            ...getAuthHeader()
+          }
+        });
         
-        if (data && data.value) {
-          setApiKey(data.value);
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data && data.value) {
+            setApiKey(data.value);
+          }
+        } else if (response.status === 401 || response.status === 403) {
+          toast({
+            title: "Authentication Error",
+            description: "You don't have permission to access this resource. Please try logging in again.",
+            variant: "destructive",
+          });
         }
         
         // Check connection status
@@ -61,14 +80,39 @@ export const CustomCatApiSettings = () => {
   // Check CustomCat API connection status
   const checkConnectionStatus = async () => {
     try {
-      const response = await apiRequest("GET", "/api/settings/store/customcat-status");
-      const data = await response.json();
-      
-      setConnectionStatus({
-        checked: true,
-        configured: data.configured,
-        message: data.message
+      const response = await apiRequest("GET", "/api/settings/store/customcat-status", {
+        headers: {
+          ...getAuthHeader()
+        }
       });
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        setConnectionStatus({
+          checked: true,
+          configured: data.configured,
+          message: data.message
+        });
+      } else if (response.status === 401 || response.status === 403) {
+        setConnectionStatus({
+          checked: true,
+          configured: false,
+          message: "Authentication error. Please log in again."
+        });
+        
+        toast({
+          title: "Authentication Error",
+          description: "You don't have permission to check API status. Please try logging in again.",
+          variant: "destructive",
+        });
+      } else {
+        setConnectionStatus({
+          checked: true,
+          configured: false,
+          message: "Error checking connection status"
+        });
+      }
     } catch (error) {
       console.error("Error checking connection status:", error);
       setConnectionStatus({
@@ -92,21 +136,38 @@ export const CustomCatApiSettings = () => {
 
     setIsSaving(true);
     try {
-      await apiRequest("POST", "/api/settings", {
-        key: "CUSTOMCAT_API_KEY",
-        value: apiKey,
-        description: "CustomCat API Key for store integration",
-        is_sensitive: true
+      const response = await fetch("/api/settings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader()
+        },
+        body: JSON.stringify({
+          key: "CUSTOMCAT_API_KEY",
+          value: apiKey,
+          description: "CustomCat API Key for store integration",
+          is_sensitive: true
+        })
       });
-
-      toast({
-        title: "API Key Saved",
-        description: "CustomCat API key has been saved successfully",
-        variant: "default",
-      });
-
-      // Check connection status after saving
-      await checkConnectionStatus();
+      
+      if (response.ok) {
+        toast({
+          title: "API Key Saved",
+          description: "CustomCat API key has been saved successfully",
+          variant: "default",
+        });
+        
+        // Check connection status after saving
+        await checkConnectionStatus();
+      } else if (response.status === 401 || response.status === 403) {
+        toast({
+          title: "Authentication Error",
+          description: "You don't have permission to save API settings. Please try logging in again.",
+          variant: "destructive",
+        });
+      } else {
+        throw new Error("Failed to save API key");
+      }
     } catch (error) {
       console.error("Error saving API key:", error);
       toast({

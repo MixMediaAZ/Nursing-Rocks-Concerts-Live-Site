@@ -62,21 +62,39 @@ export default function AdminPage() {
     setPin("");
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setLoading(true);
     
-    // Simulate API call delay
-    setTimeout(() => {
+    try {
       if (pin === ADMIN_PIN) {
-        setAuthenticated(true);
-        localStorage.setItem("isAdmin", "true");
-        // Also set the flag for admin PIN verification for gallery access
-        localStorage.setItem("adminPinVerified", "true");
-        toast({
-          title: "Authentication Successful",
-          description: "Welcome to the admin dashboard",
-          variant: "default",
+        // Request a JWT token from the server
+        const response = await fetch('/api/admin/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ pin }),
         });
+        
+        if (response.ok) {
+          const { token } = await response.json();
+          
+          // Store the token in localStorage for API requests
+          localStorage.setItem("adminToken", token);
+          localStorage.setItem("isAdmin", "true");
+          // Also set the flag for admin PIN verification for gallery access
+          localStorage.setItem("adminPinVerified", "true");
+          
+          setAuthenticated(true);
+          toast({
+            title: "Authentication Successful",
+            description: "Welcome to the admin dashboard",
+            variant: "default",
+          });
+        } else {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to authenticate');
+        }
       } else {
         toast({
           title: "Authentication Failed",
@@ -85,8 +103,17 @@ export default function AdminPage() {
         });
         setPin("");
       }
+    } catch (error) {
+      console.error('Admin authentication error:', error);
+      toast({
+        title: "Authentication Failed",
+        description: error.message || "An error occurred during authentication.",
+        variant: "destructive",
+      });
+      setPin("");
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   const handleLogout = () => {
@@ -94,6 +121,7 @@ export default function AdminPage() {
     setAuthenticated(false);
     localStorage.removeItem("isAdmin");
     localStorage.removeItem("adminPinVerified");
+    localStorage.removeItem("adminToken");
     
     // Also clear editing mode state
     localStorage.removeItem("editMode");
