@@ -121,6 +121,11 @@ export function Footer() {
                   FAQ
                 </div>
               </Link>
+              <Link href="/admin">
+                <div className="text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                  Admin
+                </div>
+              </Link>
               <div className="flex items-center gap-1">
                 <span className="text-xs text-muted-foreground">Made with</span>
                 <Heart className="h-3 w-3 text-primary" />

@@ -50,6 +50,7 @@ export function Header() {
     { href: "/cities", label: "Concert Cities", icon: <Map size={18} /> },
     { href: "/sponsors", label: "Sponsors", icon: <HeartPulse size={18} /> },
     { href: "/store", label: "Store", icon: <ShoppingBag size={18} /> },
+    { href: "/admin", label: "Admin", icon: <User size={18} /> },
   ];
   
   const authenticatedNavLinks = [
