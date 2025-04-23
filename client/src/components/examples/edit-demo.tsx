@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { EditableElement, EditableText } from '@/components/admin';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,8 +12,13 @@ export function EditableContentDemo() {
   const { isAdminMode, setAdminMode } = useAdminEditMode();
   const [heading, setHeading] = useState('Editable Heading');
   const [paragraph, setParagraph] = useState('This is an editable paragraph. Click the edit button when in admin mode to change this text.');
-  // Use a placeholder image from the public folder instead of requiring an actual image in uploads
+  // Use a placeholder image URL that will work even when no images are in the gallery
   const [imageSrc, setImageSrc] = useState('https://via.placeholder.com/600x400/4F46E5/FFFFFF?text=Nursing+Rocks+Demo+Image');
+  
+  // Log whenever image changes to help debug
+  useEffect(() => {
+    console.log('Demo image source updated:', imageSrc);
+  }, [imageSrc]);
 
   return (
     <div className="container mx-auto py-8">

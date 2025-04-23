@@ -30,14 +30,22 @@ export function ImageReplacementDialog({
 
   const { data: galleryImages, isLoading, error } = useQuery({
     queryKey: ["/api/gallery"],
-    enabled: isOpen,
-    onSuccess: (data) => {
-      console.log('Gallery API response:', data);
-    },
-    onError: (err) => {
-      console.error('Gallery API error:', err);
-    }
+    enabled: isOpen
   });
+  
+  // Add separate logging for debugging
+  useEffect(() => {
+    if (galleryImages) {
+      console.log('Gallery API response:', galleryImages);
+    }
+  }, [galleryImages]);
+  
+  // Log errors if any occur
+  useEffect(() => {
+    if (error) {
+      console.error('Gallery API error:', error);
+    }
+  }, [error]);
 
   // Reset selection when dialog opens/closes
   useEffect(() => {
@@ -59,6 +67,47 @@ export function ImageReplacementDialog({
 
     setIsReplacing(true);
     try {
+      // Special case for the placeholder image
+      if (selectedImageId === -999) {
+        console.log('Using placeholder image');
+        
+        // Create a simple placeholder result
+        const placeholderUrl = "https://via.placeholder.com/600x400/4F46E5/FFFFFF?text=Placeholder";
+        
+        // Invalidate any relevant query cache to force refetch
+        queryClient.invalidateQueries({queryKey: ["/api/gallery"]});
+        
+        toast({
+          title: 'Placeholder image selected',
+          description: 'The image has been updated to use a placeholder'
+        });
+        
+        onSelectImage(selectedImageId);
+        
+        // Trigger a custom event to refresh images using the placeholder
+        const replaceEvent = new CustomEvent('image-replaced', { 
+          detail: { 
+            originalUrl, 
+            newImageId: selectedImageId,
+            elementId,
+            timestamp: Date.now(),
+            newImageUrl: placeholderUrl
+          } 
+        });
+        
+        // Dispatch event after a short delay to ensure all components are ready
+        setTimeout(() => {
+          console.log('Dispatching image-replaced event for placeholder:', replaceEvent.detail);
+          window.dispatchEvent(replaceEvent);
+          
+          // Close dialog after event is dispatched
+          onClose();
+        }, 200);
+        
+        return;
+      }
+      
+      // Normal API-based replacement flow for real gallery images
       const payload: any = { 
         originalUrl,
         timestamp: Date.now() // Add timestamp to help prevent caching issues
@@ -192,8 +241,25 @@ export function ImageReplacementDialog({
                     </div>
                   ))
                 : (
-                  <div className="col-span-full py-8 text-center text-muted-foreground">
-                    No images found in gallery. Please upload some images first.
+                  <div className="col-span-full py-4 text-center">
+                    <div className="mb-4 text-muted-foreground">
+                      No images found in gallery. You can use the placeholder image below:
+                    </div>
+                    <div 
+                      onClick={() => setSelectedImageId(-999)}
+                      className={`border rounded-md p-2 cursor-pointer mx-auto max-w-[200px] transition-all hover:border-primary ${
+                        selectedImageId === -999 ? 'ring-2 ring-primary border-primary bg-primary/5' : ''
+                      }`}
+                    >
+                      <img 
+                        src="https://via.placeholder.com/600x400/4F46E5/FFFFFF?text=Placeholder" 
+                        alt="Placeholder image" 
+                        className="w-full h-32 object-cover"
+                      />
+                      <div className="mt-1 text-xs truncate text-center">
+                        Placeholder Image
+                      </div>
+                    </div>
                   </div>
                 )
               }
