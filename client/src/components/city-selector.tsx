@@ -230,8 +230,35 @@ export default function CitySelector() {
             </div>
             
             {filteredCities.length === 0 && (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">No cities found matching your search.</p>
+              <div className="text-center py-12 bg-muted/20 rounded-lg">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="mx-auto h-12 w-12 text-muted-foreground mb-4"
+                >
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <h3 className="text-xl font-medium mb-2">No Cities Found</h3>
+                <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                  We couldn't find any cities matching your search criteria. Try adjusting your search or filter.
+                </p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSelectedRegion("All");
+                  }}
+                >
+                  Reset Filters
+                </Button>
               </div>
             )}
           </div>
@@ -241,8 +268,26 @@ export default function CitySelector() {
         <TabsContent value="map">
           <div className="flex flex-col space-y-8">
             <div className="relative h-[500px] bg-slate-100 rounded-xl overflow-hidden">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <p className="text-muted-foreground text-lg">Interactive map will be implemented using Google Maps API</p>
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-gradient-to-r from-slate-200 to-slate-100">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="mx-auto h-12 w-12 text-primary/60 mb-4"
+                >
+                  <circle cx="12" cy="10" r="3"></circle>
+                  <path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"></path>
+                </svg>
+                <h3 className="text-xl font-medium mb-2">Interactive Map</h3>
+                <p className="text-muted-foreground max-w-md">
+                  An interactive map will be implemented here using Google Maps API, allowing users to explore concert locations geographically.
+                </p>
               </div>
               
               {/* City Markers - These would be positioned using actual coordinates in production */}

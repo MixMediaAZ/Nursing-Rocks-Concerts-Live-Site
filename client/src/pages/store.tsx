@@ -98,10 +98,10 @@ export default function StorePage() {
       <PromotionsSection />
       
       <div className="container py-12">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-          <div>
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+          <div className="text-center md:text-left">
             <h2 className="text-3xl font-bold mb-2">All Products</h2>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground max-w-md">
               Browse our complete collection of Nursing Rocks merchandise
             </p>
           </div>
@@ -183,12 +183,12 @@ export default function StorePage() {
               </div>
             </div>
             
-            <div className="hidden md:block space-y-4 p-4 bg-muted rounded-lg">
-              <h3 className="font-medium">Need Help?</h3>
+            <div className="hidden md:block space-y-4 p-6 bg-muted rounded-lg text-center">
+              <h3 className="font-medium text-lg">Need Help?</h3>
               <p className="text-sm text-muted-foreground">
                 Have questions about our merchandise or need assistance with your order?
               </p>
-              <Button asChild variant="outline" size="sm" className="w-full">
+              <Button asChild variant="outline" size="sm" className="w-full mt-2">
                 <Link href="/contact">Contact Support</Link>
               </Button>
             </div>
@@ -197,21 +197,35 @@ export default function StorePage() {
           {/* Product grid */}
           <div className="flex-1">
             {isLoading ? (
-              <div className="flex justify-center items-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="flex flex-col justify-center items-center py-16 bg-muted/10 rounded-lg">
+                <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+                <p className="text-muted-foreground">Loading products...</p>
               </div>
             ) : error ? (
-              <div className="py-12 text-center">
-                <p className="text-red-500">Error loading products. Please try again later.</p>
+              <div className="py-16 text-center bg-muted/20 rounded-lg">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 text-red-500 mb-4">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-medium mb-3">Error Loading Products</h3>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                  We couldn't load the product list at this time. Please try again later.
+                </p>
+                <Button variant="outline" className="px-8" onClick={() => window.location.reload()}>
+                  Try Again
+                </Button>
               </div>
             ) : sortedProducts.length === 0 ? (
-              <div className="py-12 text-center">
-                <ShoppingBag className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-xl font-medium mb-2">No products found</h3>
-                <p className="text-muted-foreground mb-6">
-                  We couldn't find any products matching your criteria.
+              <div className="py-16 text-center bg-muted/20 rounded-lg">
+                <ShoppingBag className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-2xl font-medium mb-3">No products found</h3>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                  We couldn't find any products matching your criteria. Try adjusting your filters for better results.
                 </p>
-                <Button onClick={handleReset}>
+                <Button onClick={handleReset} size="lg" className="px-8">
                   Reset Filters
                 </Button>
               </div>
