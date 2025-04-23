@@ -9,7 +9,10 @@ import {
   Image as ImageIcon, 
   Video, 
   Component,
-  PenSquare
+  PenSquare,
+  Fingerprint,
+  MousePointer,
+  ZoomIn
 } from 'lucide-react';
 import { useAdminEditMode } from '@/hooks/use-admin-edit-mode';
 
@@ -37,8 +40,12 @@ export function ElementSelectionOverlay({
   const adminState = useAdminEditMode();
   const [isHovered, setIsHovered] = useState(false);
   const [isSelected, setIsSelected] = useState(false);
+  const [showTip, setShowTip] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [pressHoldActive, setPressHoldActive] = useState(false);
   const elementRef = useRef<HTMLDivElement>(null);
   const controlsRef = useRef<HTMLDivElement>(null);
+  const longPressTimerRef = useRef<number | null>(null);
 
   // Handle click outside to deselect element
   const handleClickOutside = useCallback((e: MouseEvent | TouchEvent) => {
@@ -52,6 +59,27 @@ export function ElementSelectionOverlay({
     }
   }, [isSelected]);
 
+  // Detect mobile device
+  useEffect(() => {
+    const detectMobile = () => {
+      const isMobileDevice = window.innerWidth < 768 || 
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      setIsMobile(isMobileDevice);
+      
+      // Show tip on first hover for mobile users
+      if (isMobileDevice && !isSelected && !showTip && isHovered) {
+        setShowTip(true);
+        // Auto-hide tip after 4 seconds
+        const tipTimer = setTimeout(() => setShowTip(false), 4000);
+        return () => clearTimeout(tipTimer);
+      }
+    };
+    
+    detectMobile();
+    window.addEventListener('resize', detectMobile);
+    return () => window.removeEventListener('resize', detectMobile);
+  }, [isHovered, isSelected, showTip]);
+  
   // Add and remove click outside listener
   useEffect(() => {
     if (isSelected) {
@@ -63,6 +91,12 @@ export function ElementSelectionOverlay({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('touchstart', handleClickOutside);
+      
+      // Clear any pending long press timers
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
     };
   }, [isSelected, handleClickOutside]);
 
@@ -74,6 +108,49 @@ export function ElementSelectionOverlay({
   const handleElementClick = (e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation();
     setIsSelected(!isSelected);
+    // Hide the helper tip if it's showing
+    if (showTip) setShowTip(false);
+  };
+  
+  // Improved touch handling for mobile devices
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // Prevent default only for mobile devices to avoid unwanted scrolling
+    if (isMobile) e.preventDefault();
+    
+    // Only show hover effect on touch, don't trigger selection yet
+    if (!isHovered) {
+      setIsHovered(true);
+      setPressHoldActive(true);
+      
+      // Touch press and hold functionality (for mobile use 700ms, desktop 500ms)
+      longPressTimerRef.current = window.setTimeout(() => {
+        handleElementClick(e);
+        setPressHoldActive(false);
+      }, isMobile ? 700 : 500) as unknown as number;
+      
+      // For mobile, show the helper tip
+      if (isMobile && !isSelected && !showTip) {
+        setShowTip(true);
+        // Auto-hide tip after 4 seconds
+        setTimeout(() => setShowTip(false), 4000);
+      }
+    }
+  };
+  
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    // Cancel the press and hold timer
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    
+    setPressHoldActive(false);
+    
+    // On mobile, require long press to select
+    // On desktop, allow tap to select
+    if (!isMobile && !isSelected) {
+      handleElementClick(e);
+    }
   };
 
   return (
@@ -82,31 +159,15 @@ export function ElementSelectionOverlay({
       className={`relative group ${isSelected ? 'ring-2 ring-blue-500' : ''} touch-manipulation`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={handleElementClick}
-      onTouchStart={(e) => {
-        // Only show hover effect on touch, don't trigger selection yet
-        if (!isHovered) {
-          setIsHovered(true);
-          
-          // Touch press and hold functionality (for 500ms)
-          const timer = setTimeout(() => {
-            handleElementClick(e);
-          }, 500);
-          
-          // Clear timer if touch ends before 500ms
-          const clearTimer = () => {
-            clearTimeout(timer);
-            document.removeEventListener('touchend', clearTimer);
-          };
-          
-          document.addEventListener('touchend', clearTimer, { once: true });
+      onClick={!isMobile ? handleElementClick : undefined}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={() => {
+        if (longPressTimerRef.current) {
+          clearTimeout(longPressTimerRef.current);
+          longPressTimerRef.current = null;
         }
-      }}
-      onTouchEnd={(e) => {
-        // If it's already selected, don't toggle on touch end (let press and hold handle it)
-        if (!isSelected) {
-          handleElementClick(e);
-        }
+        setPressHoldActive(false);
       }}
     >
       {/* The actual content */}
@@ -228,6 +289,33 @@ export function ElementSelectionOverlay({
              elementType === 'video' ? 'Video' : 'Component'}
             {elementId && ` #${elementId}`}
           </span>
+        </div>
+      )}
+      
+      {/* Touch helper tooltip for mobile */}
+      {showTip && isMobile && !isSelected && (
+        <div className="selection-controls absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 text-white text-xs rounded-lg p-3 z-30 shadow-lg max-w-[85%] text-center">
+          <div className="flex flex-col items-center gap-2">
+            <Fingerprint className="h-6 w-6" />
+            <span className="font-medium">Touch and hold to edit this {elementType}</span>
+            <div className="text-[10px] text-blue-100 mt-1">
+              Press longer to select • Tap elsewhere to cancel
+            </div>
+            {pressHoldActive && (
+              <div className="h-1 bg-blue-300 rounded-full mt-1 w-full overflow-hidden">
+                <div className="h-full bg-white animate-progress-bar"></div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {/* Touch feedback during press-and-hold */}
+      {pressHoldActive && !showTip && !isSelected && (
+        <div className="absolute inset-0 bg-blue-500/5 pointer-events-none z-10 flex items-center justify-center">
+          <div className="bg-blue-500/20 rounded-full p-4 animate-pulse">
+            <Fingerprint className="h-6 w-6 text-blue-600" />
+          </div>
         </div>
       )}
     </div>
