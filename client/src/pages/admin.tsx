@@ -240,7 +240,20 @@ export default function AdminPage() {
                 <CardContent>
                   <p className="text-2xl font-bold">87</p>
                   <p className="text-sm text-muted-foreground">Media items</p>
-                  <Button variant="link" className="p-0 h-auto mt-2" onClick={() => setActiveTab("gallery")}>
+                  <Button 
+                    variant="link" 
+                    className="p-0 h-auto mt-2" 
+                    onClick={() => {
+                      // First switch to the gallery tab
+                      setActiveTab("gallery");
+                      // Then notify the user
+                      toast({
+                        title: "Gallery Management",
+                        description: "Loading gallery management interface...",
+                        variant: "default",
+                      });
+                    }}
+                  >
                     Manage Gallery
                   </Button>
                 </CardContent>
@@ -271,7 +284,14 @@ export default function AdminPage() {
                   <Button 
                     variant="outline" 
                     className="h-auto py-4 flex flex-col items-center justify-center gap-2"
-                    onClick={() => setActiveTab("events")}
+                    onClick={() => {
+                      setActiveTab("events");
+                      toast({
+                        title: "Event Management",
+                        description: "Opening event management interface...",
+                        variant: "default",
+                      });
+                    }}
                   >
                     <Calendar className="h-6 w-6" />
                     <span>Add New Event</span>
@@ -279,7 +299,15 @@ export default function AdminPage() {
                   <Button 
                     variant="outline" 
                     className="h-auto py-4 flex flex-col items-center justify-center gap-2"
-                    onClick={() => setActiveTab("gallery")}
+                    onClick={() => {
+                      setActiveTab("gallery");
+                      // Add toast notification
+                      toast({
+                        title: "Media Management",
+                        description: "Opening gallery management interface...",
+                        variant: "default",
+                      });
+                    }}
                   >
                     <ImageIcon className="h-6 w-6" />
                     <span>Upload Media</span>
@@ -287,7 +315,14 @@ export default function AdminPage() {
                   <Button 
                     variant="outline" 
                     className="h-auto py-4 flex flex-col items-center justify-center gap-2"
-                    onClick={() => setActiveTab("content")}
+                    onClick={() => {
+                      setActiveTab("content");
+                      toast({
+                        title: "Content Management",
+                        description: "Opening content management interface...",
+                        variant: "default",
+                      });
+                    }}
                   >
                     <FileEdit className="h-6 w-6" />
                     <span>Edit Homepage</span>
@@ -421,6 +456,20 @@ export default function AdminPage() {
                       }}
                     >
                       Create Folder
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        toast({
+                          title: "Go to Gallery Page",
+                          description: "Opening the gallery page...",
+                          variant: "default",
+                        });
+                        // Use direct navigation to gallery page
+                        window.location.href = "/gallery";
+                      }}
+                    >
+                      Open Gallery Page
                     </Button>
                   </div>
                 </div>
