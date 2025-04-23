@@ -453,53 +453,129 @@ export async function replaceGalleryImage(req: Request, res: Response) {
       return res.status(400).json({ error: 'Invalid image ID' });
     }
     
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+    const targetImageId = parseInt(id, 10);
+    
+    // Handle both file uploads and API-based replacements
+    if (req.file) {
+      // File upload case (unchanged from original)
+      const file = req.file;
+      
+      // Find the original image
+      const [originalImage] = await db.select().from(gallery).where(eq(gallery.id, targetImageId));
+      
+      if (!originalImage) {
+        return res.status(404).json({ error: 'Target image not found' });
+      }
+      
+      // Process the new image
+      const uploadDir = path.join(process.cwd(), 'uploads', 'gallery');
+      const sizes = await processImage(
+        file.path,
+        uploadDir,
+        path.parse(file.filename).name
+      );
+      
+      // Update the image record
+      const updatedImage = await db.update(gallery)
+        .set({
+          image_url: sizes.original,
+          thumbnail_url: sizes.thumbnail,
+          file_size: file.size,
+          dimensions: null, // Could extract from metadata if needed
+          updated_at: new Date(),
+        })
+        .where(eq(gallery.id, targetImageId))
+        .returning();
+      
+      // Clean up old files (optional)
+      const oldBasePath = path.join(process.cwd(), originalImage.image_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
+      const oldThumbnailPath = path.join(process.cwd(), originalImage.thumbnail_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
+      
+      try {
+        if (fs.existsSync(oldBasePath)) fs.unlinkSync(oldBasePath);
+        if (fs.existsSync(oldThumbnailPath)) fs.unlinkSync(oldThumbnailPath);
+      } catch (fsError) {
+        console.error('Error deleting old image files:', fsError);
+        // Continue even if file deletion fails
+      }
+      
+      res.json(updatedImage[0]);
+    } else {
+      // API-based replacement case (using an existing image to replace another)
+      const { newImageId } = req.body;
+      
+      if (!newImageId || isNaN(parseInt(String(newImageId), 10))) {
+        return res.status(400).json({ error: 'Invalid new image ID in request body' });
+      }
+      
+      const sourceImageId = parseInt(String(newImageId), 10);
+      
+      // Find both original and new images
+      const [targetImage] = await db.select().from(gallery).where(eq(gallery.id, targetImageId));
+      const [sourceImage] = await db.select().from(gallery).where(eq(gallery.id, sourceImageId));
+      
+      if (!targetImage) {
+        return res.status(404).json({ error: 'Target image not found' });
+      }
+      
+      if (!sourceImage) {
+        return res.status(404).json({ error: 'Source replacement image not found' });
+      }
+      
+      // Create a copy of the source image optimized to match the target image dimensions
+      // Extract dimensions from both images if available
+      let targetDimensions = targetImage.dimensions;
+      
+      // If dimensions aren't stored, use default dimensions or a reasonable placeholder
+      if (!targetDimensions) {
+        targetDimensions = { width: 800, height: 600 };
+      }
+      
+      // Get paths for the source and target images
+      const sourceImagePath = path.join(process.cwd(), sourceImage.image_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
+      
+      // Generate a unique filename for the resized copy
+      const destFilename = `resized-${Date.now()}-${uuidv4()}`;
+      const uploadDir = path.join(process.cwd(), 'uploads', 'gallery');
+      
+      // Process the image with the target dimensions
+      const sizes = await processImage(
+        sourceImagePath,
+        uploadDir,
+        destFilename,
+        {
+          width: targetDimensions.width, 
+          height: targetDimensions.height,
+          fit: 'cover'  // Maintain aspect ratio while covering the target dimensions
+        }
+      );
+      
+      // Update the target image record with the new image data
+      const updatedImage = await db.update(gallery)
+        .set({
+          image_url: sizes.original,
+          thumbnail_url: sizes.thumbnail,
+          file_size: fs.statSync(path.join(process.cwd(), sizes.original.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'))).size,
+          updated_at: new Date(),
+          // Preserve other metadata from the target image (alt_text, event_id, folder_id, etc.)
+        })
+        .where(eq(gallery.id, targetImageId))
+        .returning();
+      
+      // Clean up old files (optional)
+      const oldBasePath = path.join(process.cwd(), targetImage.image_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
+      const oldThumbnailPath = path.join(process.cwd(), targetImage.thumbnail_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
+      
+      try {
+        if (fs.existsSync(oldBasePath)) fs.unlinkSync(oldBasePath);
+        if (fs.existsSync(oldThumbnailPath)) fs.unlinkSync(oldThumbnailPath);
+      } catch (fsError) {
+        console.error('Error deleting old image files:', fsError);
+        // Continue even if file deletion fails
+      }
+      
+      res.json(updatedImage[0]);
     }
-    
-    const imageId = parseInt(id, 10);
-    const file = req.file;
-    
-    // Find the original image
-    const [originalImage] = await db.select().from(gallery).where(eq(gallery.id, imageId));
-    
-    if (!originalImage) {
-      return res.status(404).json({ error: 'Image not found' });
-    }
-    
-    // Process the new image
-    const uploadDir = path.join(process.cwd(), 'uploads', 'gallery');
-    const sizes = await processImage(
-      file.path,
-      uploadDir,
-      path.parse(file.filename).name
-    );
-    
-    // Update the image record
-    const updatedImage = await db.update(gallery)
-      .set({
-        image_url: sizes.original,
-        thumbnail_url: sizes.thumbnail,
-        file_size: file.size,
-        dimensions: null, // Could extract from metadata if needed
-        updated_at: new Date(),
-      })
-      .where(eq(gallery.id, imageId))
-      .returning();
-    
-    // Clean up old files (optional)
-    const oldBasePath = path.join(process.cwd(), originalImage.image_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
-    const oldThumbnailPath = path.join(process.cwd(), originalImage.thumbnail_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
-    
-    try {
-      if (fs.existsSync(oldBasePath)) fs.unlinkSync(oldBasePath);
-      if (fs.existsSync(oldThumbnailPath)) fs.unlinkSync(oldThumbnailPath);
-    } catch (fsError) {
-      console.error('Error deleting old image files:', fsError);
-      // Continue even if file deletion fails
-    }
-    
-    res.json(updatedImage[0]);
   } catch (error) {
     console.error('Error replacing gallery image:', error);
     res.status(500).json({ error: 'Failed to replace gallery image' });
