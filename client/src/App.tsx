@@ -39,37 +39,39 @@ function Router() {
   return (
     <>
       {!isAdminPage && <Header />}
-      <main>
-        <Switch>
-          <Route path="/" component={Home} />
-          <Route path="/admin" component={AdminPage} />
-          <Route path="/events/:id" component={EventDetails} />
-          <Route path="/login" component={LoginPage} />
-          <Route path="/register" component={RegisterPage} />
-          {/* Redirect from old license page to new integrated registration flow */}
-          <Route path="/license">
-            {() => <Redirect to="/register" />}
-          </Route>
-          <Route path="/profile" component={ProfilePage} />
-          <Route path="/tickets" component={TicketsPage} />
-          <Route path="/free-tickets" component={FreeTicketsPage} />
-          <Route path="/license-verification" component={LicenseVerificationPage} />
-          <Route path="/cities" component={CitiesPage} />
-          <Route path="/cities/:cityId" component={CityDetailsPage} />
-          <Route path="/sponsors" component={SponsorsPage} />
-          <Route path="/sponsorships" component={SponsorshipsPage} />
-          <Route path="/jobs" component={JobsPage} />
-          <Route path="/jobs/:id" component={JobDetailsPage} />
-          <Route path="/gallery" component={GalleryPage} />
-          <Route path="/store" component={StorePage} />
-          <Route path="/store/products/:id" component={ProductDetailsPage} />
-          <Route path="/store/category/:category" component={StoreCategoryPage} />
-          <Route path="/cart" component={CartPage} />
-          <Route path="/checkout" component={CheckoutPage} />
-          <Route path="/store/order-confirmation" component={OrderConfirmationPage} />
-          <Route path="/demo-replace" component={DemoReplacePage} />
-          <Route component={NotFound} />
-        </Switch>
+      <main className="page-container content-wrapper">
+        <div className="w-full max-w-6xl mx-auto">
+          <Switch>
+            <Route path="/" component={Home} />
+            <Route path="/admin" component={AdminPage} />
+            <Route path="/events/:id" component={EventDetails} />
+            <Route path="/login" component={LoginPage} />
+            <Route path="/register" component={RegisterPage} />
+            {/* Redirect from old license page to new integrated registration flow */}
+            <Route path="/license">
+              {() => <Redirect to="/register" />}
+            </Route>
+            <Route path="/profile" component={ProfilePage} />
+            <Route path="/tickets" component={TicketsPage} />
+            <Route path="/free-tickets" component={FreeTicketsPage} />
+            <Route path="/license-verification" component={LicenseVerificationPage} />
+            <Route path="/cities" component={CitiesPage} />
+            <Route path="/cities/:cityId" component={CityDetailsPage} />
+            <Route path="/sponsors" component={SponsorsPage} />
+            <Route path="/sponsorships" component={SponsorshipsPage} />
+            <Route path="/jobs" component={JobsPage} />
+            <Route path="/jobs/:id" component={JobDetailsPage} />
+            <Route path="/gallery" component={GalleryPage} />
+            <Route path="/store" component={StorePage} />
+            <Route path="/store/products/:id" component={ProductDetailsPage} />
+            <Route path="/store/category/:category" component={StoreCategoryPage} />
+            <Route path="/cart" component={CartPage} />
+            <Route path="/checkout" component={CheckoutPage} />
+            <Route path="/store/order-confirmation" component={OrderConfirmationPage} />
+            <Route path="/demo-replace" component={DemoReplacePage} />
+            <Route component={NotFound} />
+          </Switch>
+        </div>
       </main>
       {!isAdminPage && <Footer />}
     </>

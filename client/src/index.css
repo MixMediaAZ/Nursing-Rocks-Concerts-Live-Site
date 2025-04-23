@@ -24,7 +24,19 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply tracking-tight font-bold;
+    @apply tracking-tight font-bold text-center mx-auto;
+  }
+  
+  p {
+    @apply text-center mx-auto max-w-3xl;
+  }
+  
+  main {
+    @apply mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8;
+  }
+  
+  section {
+    @apply py-8 sm:py-12 flex flex-col items-center justify-center;
   }
 
   /* Medical-themed accent elements */
@@ -68,5 +80,66 @@
   .btn-medical {
     @apply rounded-full bg-primary text-white hover:bg-primary/90 active:scale-95 transition-all;
     border-bottom: 3px solid hsl(var(--nurse-teal));
+  }
+  
+  /* Center layout components */
+  .page-container {
+    @apply container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl;
+  }
+  
+  .content-section {
+    @apply py-8 sm:py-12 md:py-16 px-4 sm:px-6 flex flex-col items-center;
+  }
+  
+  .content-wrapper {
+    @apply w-full max-w-6xl mx-auto flex flex-col items-center;
+  }
+  
+  .text-container {
+    @apply max-w-3xl mx-auto text-center;
+  }
+  
+  /* Responsive layouts */
+  .responsive-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mx-auto justify-center;
+  }
+  
+  .responsive-flex {
+    @apply flex flex-col sm:flex-row flex-wrap items-center justify-center gap-6 mx-auto;
+  }
+  
+  /* Card styles */
+  .centered-card {
+    @apply bg-white rounded-lg shadow-md overflow-hidden mx-auto max-w-md w-full;
+  }
+  
+  /* Additional utility classes for alignment and centering */
+  .center-absolute {
+    @apply absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2;
+  }
+  
+  .center-flex {
+    @apply flex items-center justify-center;
+  }
+  
+  .center-grid {
+    @apply grid place-items-center;
+  }
+  
+  .center-self {
+    @apply self-center mx-auto;
+  }
+  
+  .center-text {
+    @apply text-center mx-auto;
+  }
+  
+  .center-content {
+    @apply flex flex-col items-center;
+  }
+  
+  /* Mobile-first responsive class for containers */
+  .responsive-container {
+    @apply w-full mx-auto px-4 max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl 2xl:max-w-4xl;
   }
 }
