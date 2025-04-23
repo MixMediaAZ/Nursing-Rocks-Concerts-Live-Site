@@ -188,9 +188,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const originalImageId = parseInt(id, 10);
       const newImageId = parseInt(replacementId, 10);
       
-      // Get both images
-      const [originalImage] = await db.select().from(gallery).where(eq(gallery.id, originalImageId));
-      const [replacementImage] = await db.select().from(gallery).where(eq(gallery.id, newImageId));
+      // Get both images using direct db queries
+      // Since we're avoiding the tags column, we'll select specific columns
+      const [originalImage] = await db.select({
+        id: gallery.id,
+        image_url: gallery.image_url,
+        thumbnail_url: gallery.thumbnail_url,
+        alt_text: gallery.alt_text,
+        event_id: gallery.event_id,
+        folder_id: gallery.folder_id,
+        media_type: gallery.media_type,
+        file_size: gallery.file_size,
+        dimensions: gallery.dimensions,
+        duration: gallery.duration,
+        sort_order: gallery.sort_order,
+        created_at: gallery.created_at,
+        updated_at: gallery.updated_at,
+        z_index: gallery.z_index,
+        metadata: gallery.metadata
+      }).from(gallery).where(eq(gallery.id, originalImageId));
+      
+      const [replacementImage] = await db.select({
+        id: gallery.id,
+        image_url: gallery.image_url,
+        thumbnail_url: gallery.thumbnail_url,
+        alt_text: gallery.alt_text,
+        event_id: gallery.event_id,
+        folder_id: gallery.folder_id,
+        media_type: gallery.media_type,
+        file_size: gallery.file_size,
+        dimensions: gallery.dimensions,
+        duration: gallery.duration,
+        sort_order: gallery.sort_order,
+        created_at: gallery.created_at,
+        updated_at: gallery.updated_at,
+        z_index: gallery.z_index,
+        metadata: gallery.metadata
+      }).from(gallery).where(eq(gallery.id, newImageId));
       
       if (!originalImage || !replacementImage) {
         return res.status(404).json({ error: 'One or both images not found' });
@@ -223,7 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         
         // Update the database entry with the new processed image paths
-        // Don't include tags to avoid errors if the column doesn't exist
+        // using specific column updates to avoid tags column
         await db.update(gallery)
           .set({
             image_url: processedImage.original,
