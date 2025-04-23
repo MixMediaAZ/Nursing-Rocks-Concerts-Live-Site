@@ -281,7 +281,17 @@ export default function AdminPage() {
           <TabsContent value="overview">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* Element Editing Card */}
-              <Card className={isEditModeActive ? "bg-primary/5 border-primary/50" : ""}>
+              <Card 
+                className={`cursor-pointer transition-all duration-200 hover:shadow-md ${isEditModeActive ? "bg-primary/5 border-primary/50" : "hover:border-primary"}`}
+                onClick={() => {
+                  openLiveSiteInAdminMode(true);
+                  toast({
+                    title: "Opening Live Site",
+                    description: "Opening site with editing enabled...",
+                    variant: "default",
+                  });
+                }}
+              >
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Edit className="h-5 w-5" /> Element Editor
@@ -303,21 +313,16 @@ export default function AdminPage() {
                   <Button 
                     variant="link" 
                     className="p-0 h-auto mt-2" 
-                    onClick={() => {
-                      openLiveSiteInAdminMode(true);
-                      toast({
-                        title: "Opening Live Site",
-                        description: "Opening site with editing enabled...",
-                        variant: "default",
-                      });
-                    }}
                   >
                     Open Editor
                   </Button>
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card 
+                className="cursor-pointer hover:border-primary transition-all duration-200 hover:shadow-md"
+                onClick={() => setActiveTab("events")}
+              >
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Calendar className="h-5 w-5" /> Events
@@ -326,13 +331,16 @@ export default function AdminPage() {
                 <CardContent>
                   <p className="text-2xl font-bold">4</p>
                   <p className="text-sm text-muted-foreground">Upcoming events</p>
-                  <Button variant="link" className="p-0 h-auto mt-2" onClick={() => setActiveTab("events")}>
+                  <Button variant="link" className="p-0 h-auto mt-2">
                     Manage Events
                   </Button>
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card 
+                className="cursor-pointer hover:border-primary transition-all duration-200 hover:shadow-md"
+                onClick={() => setActiveTab("store")}
+              >
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Store className="h-5 w-5" /> Store
@@ -341,13 +349,16 @@ export default function AdminPage() {
                 <CardContent>
                   <p className="text-2xl font-bold">23</p>
                   <p className="text-sm text-muted-foreground">Products</p>
-                  <Button variant="link" className="p-0 h-auto mt-2" onClick={() => setActiveTab("store")}>
+                  <Button variant="link" className="p-0 h-auto mt-2">
                     Manage Store
                   </Button>
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card 
+                className="cursor-pointer hover:border-primary transition-all duration-200 hover:shadow-md"
+                onClick={() => setActiveTab("users")}
+              >
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Users className="h-5 w-5" /> Users
@@ -356,22 +367,34 @@ export default function AdminPage() {
                 <CardContent>
                   <p className="text-2xl font-bold">152</p>
                   <p className="text-sm text-muted-foreground">Registered users</p>
-                  <Button variant="link" className="p-0 h-auto mt-2" onClick={() => setActiveTab("users")}>
+                  <Button variant="link" className="p-0 h-auto mt-2">
                     Manage Users
                   </Button>
                 </CardContent>
               </Card>
             </div>
             
-            <Card className="mt-6">
+            <Card 
+              className="mt-6 cursor-pointer hover:border-primary hover:shadow-md transition-all duration-200"
+              onClick={() => {
+                toast({
+                  title: "Quick Actions",
+                  description: "Use these shortcuts to navigate through admin features",
+                  variant: "default",
+                });
+              }}
+            >
               <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="M11 4h10"/><path d="M11 12h10"/><path d="M11 20h10"/></svg>
+                  Quick Actions
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Highlighted button for editing live site in admin mode */}
-                  <Button 
-                    className="h-auto py-6 flex flex-col items-center justify-center gap-2 bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white"
+                  <div 
+                    className="h-auto py-6 flex flex-col items-center justify-center gap-2 bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white rounded-md cursor-pointer shadow hover:shadow-md transition-all"
                     onClick={() => {
                       openLiveSiteInAdminMode();
                       toast({
@@ -383,11 +406,10 @@ export default function AdminPage() {
                   >
                     <FileEdit className="h-8 w-8" />
                     <span className="text-lg font-bold">Open Live Site in Admin Mode</span>
-                  </Button>
+                  </div>
                   
-                  <Button 
-                    variant="outline" 
-                    className="h-auto py-6 flex flex-col items-center justify-center gap-2"
+                  <div 
+                    className="h-auto py-6 flex flex-col items-center justify-center gap-2 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground cursor-pointer shadow-sm hover:shadow transition-all"
                     onClick={() => {
                       openGalleryWithAdminAccess();
                       toast({
@@ -399,13 +421,12 @@ export default function AdminPage() {
                   >
                     <ImageIcon className="h-8 w-8" />
                     <span className="text-lg font-semibold">Manage Gallery</span>
-                  </Button>
+                  </div>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
-                  <Button 
-                    variant="outline" 
-                    className="h-auto py-4 flex flex-col items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 hover:border-gray-300"
+                  <div 
+                    className="h-auto py-4 flex flex-col items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 hover:border-gray-300 rounded-md border border-input cursor-pointer shadow-sm hover:shadow transition-all"
                     onClick={() => {
                       window.location.href = "/edit-demo";
                       toast({
@@ -417,11 +438,10 @@ export default function AdminPage() {
                   >
                     <Edit className="h-6 w-6" />
                     <span className="text-sm font-semibold">Edit Demo</span>
-                  </Button>
+                  </div>
 
-                  <Button 
-                    variant="outline" 
-                    className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+                  <div 
+                    className="h-auto py-4 flex flex-col items-center justify-center gap-2 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground cursor-pointer shadow-sm hover:shadow transition-all"
                     onClick={() => {
                       setActiveTab("events");
                       toast({
@@ -433,11 +453,10 @@ export default function AdminPage() {
                   >
                     <Calendar className="h-6 w-6" />
                     <span>Add New Event</span>
-                  </Button>
+                  </div>
                   
-                  <Button 
-                    variant="outline" 
-                    className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+                  <div 
+                    className="h-auto py-4 flex flex-col items-center justify-center gap-2 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground cursor-pointer shadow-sm hover:shadow transition-all"
                     onClick={() => {
                       setActiveTab("store");
                       toast({
@@ -449,11 +468,10 @@ export default function AdminPage() {
                   >
                     <Store className="h-6 w-6" />
                     <span>Manage Store</span>
-                  </Button>
+                  </div>
                   
-                  <Button 
-                    variant="outline" 
-                    className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+                  <div 
+                    className="h-auto py-4 flex flex-col items-center justify-center gap-2 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground cursor-pointer shadow-sm hover:shadow transition-all"
                     onClick={() => {
                       setActiveTab("content");
                       toast({
@@ -465,7 +483,7 @@ export default function AdminPage() {
                   >
                     <Settings className="h-6 w-6" />
                     <span>Site Settings</span>
-                  </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
