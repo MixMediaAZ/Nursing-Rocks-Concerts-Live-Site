@@ -16,8 +16,13 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
   const { 
     selectedElement, 
     isImageReplacementDialogOpen,
+    isTextEditorDialogOpen,
+    textContent,
     openImageReplacementDialog,
     closeImageReplacementDialog,
+    openTextEditorDialog,
+    closeTextEditorDialog,
+    updateTextContent,
     clearSelectedElement
   } = useElementSelection();
 
@@ -67,6 +72,30 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
         onSelectImage={handleImageSelected}
         elementId={selectedElement?.id}
         originalUrl={selectedElement?.originalUrl}
+      />
+      
+      {/* Global text editor dialog for text elements */}
+      <TextEditorDialog
+        isOpen={isTextEditorDialogOpen}
+        onClose={closeTextEditorDialog}
+        onSave={(newContent) => {
+          updateTextContent(newContent);
+          closeTextEditorDialog();
+          
+          if (selectedElement) {
+            toast({
+              title: 'Text Updated',
+              description: 'The selected text has been updated',
+            });
+          }
+          
+          clearSelectedElement();
+        }}
+        elementId={selectedElement?.id}
+        initialContent={textContent}
+        title="Edit Text Content"
+        description="Update the text for this element"
+        multiline={true}
       />
       
       {/* Admin mode toolbar - only shown when admin mode is active */}

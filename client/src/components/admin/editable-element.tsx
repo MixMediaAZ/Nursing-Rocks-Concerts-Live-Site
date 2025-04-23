@@ -83,6 +83,13 @@ export function EditableElement({
     };
   }, [id, src, onUpdate]);
 
+  // Update text content if children changes
+  useEffect(() => {
+    if (type === 'text' && typeof children === 'string') {
+      setTextContent(children);
+    }
+  }, [children, type]);
+
   const [isTextEditorOpen, setTextEditorOpen] = useState(false);
   const [textContent, setTextContent] = useState<string | undefined>(
     type === 'text' && typeof children === 'string' ? children : undefined
