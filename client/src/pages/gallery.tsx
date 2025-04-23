@@ -32,6 +32,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import FixedGalleryGrid from "@/components/fixed-gallery-grid";
 import { ImageViewer } from "@/components/image-viewer";
+import { GalleryUploader } from "@/components/gallery-uploader";
 
 export default function GalleryPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -591,6 +592,20 @@ export default function GalleryPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* Media Uploader Dialog */}
+      <Dialog open={showUploaderDialog} onOpenChange={setShowUploaderDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogTitle>Upload Media</DialogTitle>
+          <GalleryUploader 
+            folderId={selectedFolderId}
+            onUploadComplete={() => {
+              setShowUploaderDialog(false);
+              queryClient.invalidateQueries({ queryKey: ["/api/gallery"] });
+            }} 
+          />
+        </DialogContent>
+      </Dialog>
       
       {/* Image Viewer */}
       <ImageViewer

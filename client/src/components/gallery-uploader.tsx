@@ -29,18 +29,7 @@ export function GalleryUploader({
         const response = await apiRequest(
           "POST", 
           `/api/gallery/upload${folderId ? `?folderId=${folderId}` : ''}`,
-          formData,
-          {
-            headers: {
-              // Don't set Content-Type here, let the browser set it with the boundary parameter
-            },
-            onUploadProgress: (progressEvent) => {
-              const percentCompleted = Math.round(
-                (progressEvent.loaded * 100) / (progressEvent.total || 1)
-              );
-              setProgress(percentCompleted);
-            },
-          }
+          formData
         );
         
         return await response.json();
