@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Gallery } from '@shared/schema';
 import { SafeImage } from './safe-image';
-import { ImageReplacementDialog } from './image-replacement-dialog';
+import { ImageReplacementDialog } from '@/components/image-replacement-dialog';
 import { Button } from '@/components/ui/button';
 import { Pencil } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
