@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, MoreVertical, Trash2 } from "lucide-react";
+import { SafeImage } from "@/components/safe-image";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -102,16 +103,11 @@ export default function FixedGalleryGrid({
                   onClick={() => handleImageClick(image)}
                 >
                   <CardContent className="p-0 aspect-square">
-                    <img 
+                    <SafeImage 
                       src={image.image_url} 
                       alt={image.alt_text || `Gallery image ${image.id}`}
                       className="w-full h-full object-cover"
                       loading="lazy"
-                      onError={(e) => {
-                        // Handle broken images
-                        const target = e.target as HTMLImageElement;
-                        target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsSGVsdmV0aWNhLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZpbGw9IiM5OTkiPkltYWdlIG5vdCBhdmFpbGFibGU8L3RleHQ+PC9zdmc+';
-                      }}
                     />
                   </CardContent>
                 </div>

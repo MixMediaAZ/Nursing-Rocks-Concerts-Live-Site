@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Download, Maximize, X } from 'lucide-react';
 import { Gallery } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
+import { SafeImage } from '@/components/safe-image';
 
 interface ImageViewerProps {
   image: Gallery | null;
@@ -114,7 +115,7 @@ export function ImageViewer({
 
         {/* Main image container */}
         <div className="relative w-full max-h-[70vh] overflow-hidden flex items-center justify-center bg-gray-50 rounded-lg p-2 border border-gray-100">
-          <img 
+          <SafeImage 
             src={image.image_url} 
             alt={image.alt_text || "Gallery image"} 
             className="max-w-full max-h-[65vh] object-contain shadow-sm"

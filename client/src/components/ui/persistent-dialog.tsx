@@ -1,19 +1,21 @@
-import * as React from "react"
-import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { X } from "lucide-react"
+import * as React from "react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { X } from "lucide-react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
-// This is a customized version of the Dialog component that prevents automatic closing
-// It only closes when explicitly told to do so through the Close button or programmatically
+/**
+ * A set of dialog components that won't close automatically on outside clicks or escape key.
+ * This is useful for modals that contain forms or other interactive elements that need to persist.
+ */
 
-const PersistentDialog = DialogPrimitive.Root
+const PersistentDialog = DialogPrimitive.Root;
 
-const PersistentDialogTrigger = DialogPrimitive.Trigger
+const PersistentDialogTrigger = DialogPrimitive.Trigger;
 
-const PersistentDialogPortal = DialogPrimitive.Portal
+const PersistentDialogPortal = DialogPrimitive.Portal;
 
-const PersistentDialogClose = DialogPrimitive.Close
+const PersistentDialogClose = DialogPrimitive.Close;
 
 const PersistentDialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
@@ -27,30 +29,27 @@ const PersistentDialogOverlay = React.forwardRef<
     )}
     {...props}
   />
-))
-PersistentDialogOverlay.displayName = "PersistentDialogOverlay"
+));
+PersistentDialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
+// The main difference with regular Dialog is that we don't automatically close
+// and don't allow outside clicks to close
 const PersistentDialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
     showCloseButton?: boolean;
-    onCloseButtonClick?: () => void;
   }
->(({ className, children, showCloseButton = true, onCloseButtonClick, ...props }, ref) => (
+>(({ className, children, showCloseButton = true, ...props }, ref) => (
   <PersistentDialogPortal>
     <PersistentDialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
       onEscapeKeyDown={(e) => {
-        // Prevent closing with ESC key
+        // Prevent auto-closing with escape key
         e.preventDefault();
       }}
       onPointerDownOutside={(e) => {
-        // Prevent closing when clicking outside
-        e.preventDefault();
-      }}
-      onInteractOutside={(e) => {
-        // Prevent closing when interacting outside
+        // Prevent auto-closing with outside clicks
         e.preventDefault();
       }}
       className={cn(
@@ -61,18 +60,15 @@ const PersistentDialogContent = React.forwardRef<
     >
       {children}
       {showCloseButton && (
-        <DialogPrimitive.Close 
-          className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
-          onClick={onCloseButtonClick}
-        >
+        <PersistentDialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
-        </DialogPrimitive.Close>
+        </PersistentDialogClose>
       )}
     </DialogPrimitive.Content>
   </PersistentDialogPortal>
-))
-PersistentDialogContent.displayName = "PersistentDialogContent"
+));
+PersistentDialogContent.displayName = "PersistentDialogContent";
 
 const PersistentDialogHeader = ({
   className,
@@ -85,8 +81,8 @@ const PersistentDialogHeader = ({
     )}
     {...props}
   />
-)
-PersistentDialogHeader.displayName = "PersistentDialogHeader"
+);
+PersistentDialogHeader.displayName = "PersistentDialogHeader";
 
 const PersistentDialogFooter = ({
   className,
@@ -99,8 +95,8 @@ const PersistentDialogFooter = ({
     )}
     {...props}
   />
-)
-PersistentDialogFooter.displayName = "PersistentDialogFooter"
+);
+PersistentDialogFooter.displayName = "PersistentDialogFooter";
 
 const PersistentDialogTitle = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,
@@ -114,8 +110,8 @@ const PersistentDialogTitle = React.forwardRef<
     )}
     {...props}
   />
-))
-PersistentDialogTitle.displayName = "PersistentDialogTitle"
+));
+PersistentDialogTitle.displayName = DialogPrimitive.Title.displayName;
 
 const PersistentDialogDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
@@ -126,8 +122,8 @@ const PersistentDialogDescription = React.forwardRef<
     className={cn("text-sm text-muted-foreground", className)}
     {...props}
   />
-))
-PersistentDialogDescription.displayName = "PersistentDialogDescription"
+));
+PersistentDialogDescription.displayName = DialogPrimitive.Description.displayName;
 
 export {
   PersistentDialog,
@@ -140,4 +136,4 @@ export {
   PersistentDialogFooter,
   PersistentDialogTitle,
   PersistentDialogDescription,
-}
+};

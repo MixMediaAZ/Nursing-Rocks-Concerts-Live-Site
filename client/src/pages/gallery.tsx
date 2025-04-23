@@ -5,14 +5,7 @@ import { Gallery, MediaFolder } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog";
-import { 
-  PersistentDialog,
-  PersistentDialogContent,
-  PersistentDialogTitle,
-  PersistentDialogDescription,
-  PersistentDialogHeader,
-  PersistentDialogFooter
-} from "@/components/ui/persistent-dialog";
+import { ImageViewer } from "@/components/image-viewer";
 import { 
   ArrowUpDown, CheckSquare, Copy, Trash2, Download, Edit, 
   Filter, Folder, FolderUp, Layers, Tag, Workflow,
@@ -898,135 +891,15 @@ export default function GalleryPage() {
         </Dialog>
       )}
 
-      {/* Image Viewer Dialog using the persistent version */}
-      <PersistentDialog 
-        open={showImageViewer} 
-        onOpenChange={(open) => {
-          if (open) {
-            setShowImageViewer(true);
-          }
-          // We'll only close it through the close button
-        }}
-      >
-        <PersistentDialogContent 
-          className="sm:max-w-4xl max-h-[90vh] overflow-y-auto !p-4"
-          showCloseButton={false}
-        >
-          {selectedImage && (
-            <>
-              <div className="flex items-center justify-between mb-4">
-                <PersistentDialogTitle>
-                  <span className="text-xl">Image #{selectedImage.id}</span>
-                  {selectedImage.alt_text && (
-                    <PersistentDialogDescription className="mt-1">{selectedImage.alt_text}</PersistentDialogDescription>
-                  )}
-                </PersistentDialogTitle>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => setShowImageViewer(false)} 
-                  className="h-8 w-8 rounded-full"
-                >
-                  <X className="h-5 w-5" />
-                </Button>
-              </div>
-              
-              <div className="flex flex-col items-center justify-center">
-                <div className="relative w-full max-h-[70vh] overflow-hidden flex items-center justify-center bg-gray-50 rounded-lg p-2 border border-gray-100">
-                  <img 
-                    src={selectedImage.image_url} 
-                    alt={selectedImage.alt_text || "Gallery image"} 
-                    className="max-w-full max-h-[65vh] object-contain shadow-sm"
-                  />
-                </div>
-                
-                <div className="mt-4 flex flex-wrap gap-2 justify-center w-full">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => {
-                      // Go to previous image logic
-                      if (images && images.length > 0) {
-                        const currentIndex = images.findIndex(img => img.id === selectedImage.id);
-                        if (currentIndex > 0) {
-                          setSelectedImage(images[currentIndex - 1]);
-                        }
-                      }
-                    }}
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-2" />
-                    Previous
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => {
-                      // Go to next image logic
-                      if (images && images.length > 0) {
-                        const currentIndex = images.findIndex(img => img.id === selectedImage.id);
-                        if (currentIndex < images.length - 1) {
-                          setSelectedImage(images[currentIndex + 1]);
-                        }
-                      }
-                    }}
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4 ml-2" />
-                  </Button>
-                  
-                  {/* Additional actions */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      window.open(selectedImage.image_url, '_blank');
-                    }}
-                    className="ml-2"
-                  >
-                    <Maximize className="h-4 w-4 mr-2" />
-                    Full Size
-                  </Button>
-
-                  {isLoggedIn && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        // Handle download
-                        // Create a link and trigger download
-                        const link = document.createElement('a');
-                        link.href = selectedImage.image_url;
-                        link.download = `gallery-image-${selectedImage.id}.jpg`;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        
-                        toast({
-                          title: "Download Started",
-                          description: "Your image download has started",
-                        });
-                      }}
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download
-                    </Button>
-                  )}
-                </div>
-                
-                {/* Image metadata */}
-                <div className="mt-4 text-sm text-gray-500 text-center">
-                  <p>
-                    Image ID: {selectedImage.id} 
-                    {selectedImage.folder_id && <span> • Folder ID: {selectedImage.folder_id}</span>}
-                    {selectedImage.event_id && <span> • Event ID: {selectedImage.event_id}</span>}
-                  </p>
-                </div>
-              </div>
-            </>
-          )}
-        </PersistentDialogContent>
-      </PersistentDialog>
+      {/* Using our new stable ImageViewer component */}
+      <ImageViewer
+        image={selectedImage}
+        isVisible={showImageViewer}
+        onClose={() => setShowImageViewer(false)}
+        imageList={images || []}
+        onNavigate={setSelectedImage}
+        allowDownload={isLoggedIn}
+      />
     </>
   );
 }
