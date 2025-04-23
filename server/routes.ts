@@ -1411,6 +1411,156 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Check if the CustomCat API connection is valid by making a test request
+  app.get("/api/store/customcat/verify-connection", async (_req: Request, res: Response) => {
+    try {
+      const apiKeySetting = await storage.getAppSettingByKey("CUSTOMCAT_API_KEY");
+      
+      if (!apiKeySetting || !apiKeySetting.value) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "CustomCat API key not configured" 
+        });
+      }
+      
+      // Make a simple request to CustomCat API to check if the key is valid
+      // We're just checking their /products endpoint to see if we get an authorized response
+      const response = await fetch("https://api.customcat.com/api/v1/products", {
+        method: "GET",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKeySetting.value}`
+        }
+      });
+      
+      if (response.ok) {
+        return res.json({ 
+          success: true, 
+          message: "CustomCat API connection successful" 
+        });
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        return res.status(response.status).json({ 
+          success: false, 
+          message: errorData.message || "Invalid API key or connection error",
+          statusCode: response.status
+        });
+      }
+    } catch (error) {
+      console.error("Error verifying CustomCat API connection:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Error connecting to CustomCat API" 
+      });
+    }
+  });
+  
+  // Sync products from CustomCat to our store database
+  app.post("/api/store/customcat/sync-products", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      // Check if user is admin
+      if (!req.user.isAdmin) {
+        return res.status(403).json({ message: "Not authorized to sync products" });
+      }
+      
+      const apiKeySetting = await storage.getAppSettingByKey("CUSTOMCAT_API_KEY");
+      
+      if (!apiKeySetting || !apiKeySetting.value) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "CustomCat API key not configured" 
+        });
+      }
+      
+      // Fetch products from CustomCat API
+      const response = await fetch("https://api.customcat.com/api/v1/products", {
+        method: "GET",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKeySetting.value}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        return res.status(response.status).json({ 
+          success: false, 
+          message: errorData.message || "Failed to fetch products from CustomCat",
+          statusCode: response.status
+        });
+      }
+      
+      const productsData = await response.json();
+      
+      if (!Array.isArray(productsData)) {
+        return res.status(500).json({ 
+          success: false, 
+          message: "Invalid response format from CustomCat API" 
+        });
+      }
+      
+      // Process and insert/update products in our database
+      const syncResults = {
+        total: productsData.length,
+        added: 0,
+        updated: 0,
+        skipped: 0,
+        errors: 0
+      };
+      
+      for (const product of productsData) {
+        try {
+          // Check if product already exists in our database by external_id
+          const existingProduct = await storage.getStoreProductByExternalId("customcat", product.id.toString());
+          
+          const productData = {
+            name: product.title || product.name,
+            description: product.description || "",
+            price: product.retail_price ? product.retail_price.toString() : "0.00",
+            image_url: product.image_url || product.featured_image || null,
+            category: product.product_type || "CustomCat",
+            is_featured: false,
+            is_available: true,
+            stock_quantity: 999, // CustomCat handles inventory, so we set a high value
+            external_id: product.id.toString(),
+            external_source: "customcat",
+            metadata: {
+              customcat_data: product,
+              variants: product.variants || []
+            }
+          };
+          
+          if (existingProduct) {
+            // Update existing product
+            await storage.updateStoreProduct(existingProduct.id, productData);
+            syncResults.updated++;
+          } else {
+            // Create new product
+            await storage.createStoreProduct(productData);
+            syncResults.added++;
+          }
+        } catch (err) {
+          console.error("Error processing product:", err);
+          syncResults.errors++;
+        }
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "Product synchronization complete",
+        results: syncResults
+      });
+    } catch (error) {
+      console.error("Error syncing CustomCat products:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Error syncing products from CustomCat" 
+      });
+    }
+  });
+  
   // Create HTTP server
   const httpServer = createServer(app);
   return httpServer;

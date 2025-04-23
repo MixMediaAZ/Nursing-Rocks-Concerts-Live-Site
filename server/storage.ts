@@ -148,6 +148,7 @@ export interface IStorage {
   // Store Products
   getAllStoreProducts(): Promise<StoreProduct[]>;
   getStoreProductById(id: number): Promise<StoreProduct | undefined>;
+  getStoreProductByExternalId(source: string, externalId: string): Promise<StoreProduct | undefined>;
   getFeaturedStoreProducts(limit?: number): Promise<StoreProduct[]>;
   getStoreProductsByCategory(category: string): Promise<StoreProduct[]>;
   createStoreProduct(product: InsertStoreProduct): Promise<StoreProduct>;

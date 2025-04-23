@@ -559,6 +559,9 @@ export const storeProducts = pgTable("store_products", {
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
   stock_quantity: integer("stock_quantity").default(0),
+  external_id: text("external_id"),
+  external_source: text("external_source"),
+  metadata: jsonb("metadata"),
 });
 
 export const insertStoreProductSchema = createInsertSchema(storeProducts).omit({
