@@ -399,18 +399,43 @@ export async function getAllGalleryImages(req: Request, res: Response) {
   try {
     const mediaType = req.query.media_type as string | undefined;
     
-    let query = db.select().from(gallery);
-    
-    // Filter by media type if specified
-    if (mediaType) {
-      query = query.where(eq(gallery.media_type, mediaType));
+    // First, check if we need to auto-migrate the schema
+    // This is a temporary solution to handle the case where the schema has been updated
+    // but the database hasn't been migrated yet
+    try {
+      let query = db.select().from(gallery);
+      
+      // Filter by media type if specified
+      if (mediaType) {
+        query = query.where(eq(gallery.media_type, mediaType));
+      }
+      
+      // Apply ordering
+      query = query.orderBy(asc(gallery.sort_order), desc(gallery.id));
+      
+      const images = await query;
+      res.json(images);
+    } catch (err: any) {
+      // If the error is related to the missing tags column, let's return the gallery data without it
+      if (err.code === '42703' && err.message && err.message.includes('column "tags" does not exist')) {
+        console.warn('Tags column not found, using fallback query');
+        
+        // Use a raw SQL query that doesn't include the tags column
+        const rawQuery = `
+          SELECT id, image_url, thumbnail_url, alt_text, event_id, folder_id, media_type, 
+                file_size, dimensions, duration, sort_order, created_at, updated_at, z_index, metadata
+          FROM gallery
+          ${mediaType ? `WHERE media_type = '${mediaType}'` : ''}
+          ORDER BY sort_order ASC, id DESC
+        `;
+        
+        const images = await db.execute(rawQuery);
+        res.json(images);
+      } else {
+        // For other errors, throw to be caught by the outer catch block
+        throw err;
+      }
     }
-    
-    // Apply ordering
-    query = query.orderBy(asc(gallery.sort_order), desc(gallery.id));
-    
-    const images = await query;
-    res.json(images);
   } catch (error) {
     console.error('Error getting all gallery images:', error);
     res.status(500).json({ error: 'Failed to get gallery images' });

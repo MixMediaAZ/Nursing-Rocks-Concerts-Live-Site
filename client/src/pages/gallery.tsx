@@ -6,7 +6,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog";
 import { 
-  Copy, Trash2, Download, Edit, Layers, Folder,
+  ArrowUpDown, CheckSquare, Copy, Trash2, Download, Edit, 
+  Filter, Folder, FolderUp, Layers, Tag, Workflow,
   Plus, ImageIcon, CheckCircle2, ChevronsUpDown, Save,
   X, ChevronLeft, ChevronRight, Maximize
 } from "lucide-react";
@@ -47,6 +48,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { MediaFolderSelector } from "@/components/media-folder-selector";
 import { GalleryUploader } from "@/components/gallery-uploader";
 
@@ -169,7 +171,10 @@ export default function GalleryPage() {
     // Apply tag filtering
     if (filterTag) {
       filteredImages = filteredImages.filter(img => 
-        img.tags?.includes(filterTag) || 
+        // Check if tags exist (after DB migration) or fallback to alt_text
+        (img.metadata && typeof img.metadata === 'object' && 
+          'tags' in img.metadata && Array.isArray(img.metadata.tags) && 
+          img.metadata.tags.some(tag => tag.toLowerCase().includes(filterTag.toLowerCase()))) ||
         img.alt_text?.toLowerCase().includes(filterTag.toLowerCase())
       );
     }
@@ -443,7 +448,8 @@ export default function GalleryPage() {
                       className="mb-2"
                     />
                     {filterTag && (
-                      <Badge className="mr-1">
+                      <Badge variant="outline" className="bg-[#5D3FD3]/10">
+                        <Filter className="h-3 w-3 mr-1" />
                         {filterTag}
                         <X 
                           className="h-3 w-3 ml-1 cursor-pointer" 
@@ -570,7 +576,7 @@ export default function GalleryPage() {
                   ) : (
                     // Render normal gallery
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                      {images?.slice(0, visibleImages).map((image) => (
+                      {Array.isArray(images) && getSortedAndFilteredImages(images).slice(0, visibleImages).map((image) => (
                         <Card key={image.id} className="overflow-hidden">
                           <div className="relative">
                             <img 
@@ -630,7 +636,7 @@ export default function GalleryPage() {
                         <Skeleton key={i} className="h-72 w-full rounded-lg" />
                       ))
                     ) : (
-                      images?.filter(img => img.event_id === 1).map((image) => (
+                      Array.isArray(images) && getSortedAndFilteredImages(images).filter(img => img.event_id === 1).map((image) => (
                         <Card key={image.id} className="overflow-hidden">
                           <div className="relative">
                             <img 
@@ -659,7 +665,7 @@ export default function GalleryPage() {
                         <Skeleton key={i} className="h-72 w-full rounded-lg" />
                       ))
                     ) : (
-                      images?.filter(img => img.event_id === 2).map((image) => (
+                      Array.isArray(images) && getSortedAndFilteredImages(images).filter(img => img.event_id === 2).map((image) => (
                         <Card key={image.id} className="overflow-hidden">
                           <div className="relative">
                             <img 
