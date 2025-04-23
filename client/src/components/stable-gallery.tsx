@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Search, Image as ImageIcon } from 'lucide-react';
+import { EditableImage } from '@/components/editable-image';
 
 interface StableGalleryProps {
   selectable?: boolean;
@@ -97,11 +98,12 @@ export function StableGallery({
                 onClick={selectable ? () => handleSelect(image) : undefined}
               >
                 <div className="aspect-square overflow-hidden">
-                  <SafeImage
+                  <EditableImage
                     src={image.image_url || ''}
                     alt={image.alt_text || 'Gallery image'}
                     className="h-full w-full object-cover transition-all group-hover:scale-105"
-                    fallbackClassName="h-full w-full flex items-center justify-center bg-muted"
+                    id={image.id}
+                    triggerPosition="bottom-right"
                   />
                 </div>
                 

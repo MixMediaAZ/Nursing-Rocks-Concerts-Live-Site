@@ -6,6 +6,7 @@ import { ShoppingCart, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/use-cart";
 import { StoreProduct } from "@shared/schema";
+import { EditableImage } from "@/components/editable-image";
 
 interface ProductCardProps {
   product: StoreProduct;
@@ -60,10 +61,11 @@ export function StoreProductCard({ product, featured = false }: ProductCardProps
             </Badge>
           )}
           
-          <img 
+          <EditableImage 
             src={product.image_url || ''} 
             alt={product.name} 
             className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
+            triggerPosition="bottom-right"
           />
         </div>
         
