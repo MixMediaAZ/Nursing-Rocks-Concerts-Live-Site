@@ -232,7 +232,7 @@ export async function getUserTickets(req: Request, res: Response) {
 }
 
 // Authentication middleware
-export function authenticateToken(req: Request, res: Response, next: Function) {
+export async function authenticateToken(req: Request, res: Response, next: Function) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
@@ -246,11 +246,18 @@ export function authenticateToken(req: Request, res: Response, next: Function) {
       return res.status(403).json({ message: 'Invalid or expired token' });
     }
     
+    // Fetch the complete user to get isAdmin value
+    const user = await storage.getUser(decoded.userId);
+    if (!user) {
+      return res.status(403).json({ message: 'User not found' });
+    }
+    
     (req as any).user = {
       id: decoded.userId,
       userId: decoded.userId, // Add userId for consistency
       email: decoded.email,
-      is_verified: decoded.isVerified
+      is_verified: decoded.isVerified,
+      isAdmin: user.is_admin // Add isAdmin flag
     };
     next();
   } catch (error) {
