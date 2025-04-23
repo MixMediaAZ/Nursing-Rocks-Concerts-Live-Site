@@ -75,7 +75,7 @@ const HeroSection = () => {
         />
       </div>
 
-      <div className="container mx-auto px-4 py-16 md:py-28 relative z-10">
+      <div className="container mx-auto py-16 md:py-28 relative z-10">
         <div className="max-w-2xl">
           <div className="inline-block bg-[#FF3366] text-white px-6 py-3 rounded-full mb-6 font-accent text-2xl md:text-3xl font-bold">
             NURSING ROCKS! CONCERT SERIES

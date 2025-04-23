@@ -75,7 +75,7 @@ const UpcomingEvents = () => {
 
   return (
     <section id="events" className="py-16 bg-white">
-      <div className="container mx-auto px-6 md:px-8">
+      <div className="container mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center md:items-end mb-10">
           <div className="text-center md:text-left mb-4 md:mb-0">
             <h2 className="font-heading text-3xl font-bold mb-2">Upcoming Events</h2>
@@ -93,7 +93,7 @@ const UpcomingEvents = () => {
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
             {[1, 2, 3].map((i) => (
               <Card key={i} className="overflow-hidden">
                 <Skeleton className="h-48 w-full" />
@@ -113,7 +113,7 @@ const UpcomingEvents = () => {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
             {sortedEvents.map((event) => (
               <EventCard key={event.id} event={event} />
             ))}
