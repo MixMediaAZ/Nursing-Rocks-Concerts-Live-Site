@@ -1,32 +1,51 @@
-import { useState, useEffect } from 'react';
+import { create } from 'zustand';
+
+interface AdminEditModeState {
+  isAdminMode: boolean;
+  setAdminMode: (mode: boolean) => void;
+  toggleAdminMode: () => void;
+}
+
+// Create a Zustand store for admin edit mode
+const useAdminEditModeStore = create<AdminEditModeState>((set) => {
+  // Initialize from localStorage if available
+  const initialAdminStatus = typeof window !== 'undefined' && window.localStorage.getItem("isAdmin") === "true";
+  const initialEditMode = typeof window !== 'undefined' && window.localStorage.getItem("editMode") === "true";
+  const initialState = initialAdminStatus && initialEditMode;
+  
+  return {
+    isAdminMode: initialState,
+    
+    setAdminMode: (mode) => {
+      // Update localStorage
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem("editMode", mode ? "true" : "false");
+        
+        // Broadcast the change for other components
+        window.dispatchEvent(new Event('admin-mode-changed'));
+      }
+      
+      set({ isAdminMode: mode });
+    },
+    
+    toggleAdminMode: () => set((state) => {
+      // Update localStorage
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem("editMode", state.isAdminMode ? "false" : "true");
+        
+        // Broadcast the change for other components
+        window.dispatchEvent(new Event('admin-mode-changed'));
+      }
+      
+      return { isAdminMode: !state.isAdminMode };
+    }),
+  };
+});
 
 /**
- * Hook to detect if the site is in admin edit mode
- * Returns a boolean indicating if admin edit mode is active
+ * Hook to detect and control admin edit mode
+ * Returns state and functions to control admin mode
  */
 export function useAdminEditMode() {
-  const [isEditMode, setIsEditMode] = useState(false);
-  
-  useEffect(() => {
-    // Check localStorage for edit mode flags
-    const adminStatus = localStorage.getItem("isAdmin") === "true";
-    const editModeActive = localStorage.getItem("editMode") === "true";
-    
-    setIsEditMode(adminStatus && editModeActive);
-    
-    // Listen for changes in localStorage
-    const handleStorageChange = () => {
-      const adminStatus = localStorage.getItem("isAdmin") === "true";
-      const editModeActive = localStorage.getItem("editMode") === "true";
-      setIsEditMode(adminStatus && editModeActive);
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
-  
-  return isEditMode;
+  return useAdminEditModeStore();
 }
