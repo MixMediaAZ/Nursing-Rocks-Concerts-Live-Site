@@ -418,7 +418,16 @@ export async function getAllGalleryImages(req: Request, res: Response) {
       query = query.orderBy(asc(gallery.sort_order), desc(gallery.id));
       
       const images = await query;
-      res.json(images);
+      
+      // If database is empty or no images found, let's add some placeholder images
+      if (!images || images.length === 0) {
+        // Return empty array in the proper format
+        return res.json([]);
+      }
+      
+      // Return results in a standard format
+      return res.json(images);
+      
     } catch (err: any) {
       // If the error is related to the missing tags column, let's return the gallery data without it
       if (err.code === '42703' && err.message && err.message.includes('column "tags" does not exist')) {
@@ -434,7 +443,7 @@ export async function getAllGalleryImages(req: Request, res: Response) {
         `;
         
         const images = await db.execute(rawQuery);
-        res.json(images);
+        return res.json(images);
       } else {
         // For other errors, throw to be caught by the outer catch block
         throw err;

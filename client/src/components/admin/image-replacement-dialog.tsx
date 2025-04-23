@@ -30,7 +30,13 @@ export function ImageReplacementDialog({
 
   const { data: galleryImages, isLoading, error } = useQuery({
     queryKey: ["/api/gallery"],
-    enabled: isOpen
+    enabled: isOpen,
+    onSuccess: (data) => {
+      console.log('Gallery API response:', data);
+    },
+    onError: (err) => {
+      console.error('Gallery API error:', err);
+    }
   });
 
   // Reset selection when dialog opens/closes
@@ -147,33 +153,50 @@ export function ImageReplacementDialog({
         ) : (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 my-4">
-              {galleryImages && Array.isArray(galleryImages.rows || galleryImages) && 
-               (galleryImages.rows || galleryImages).map((image: any) => (
-                <div 
-                  key={image.id}
-                  onClick={() => setSelectedImageId(image.id)}
-                  className={`border rounded-md p-2 cursor-pointer transition-all hover:border-primary ${
-                    selectedImageId === image.id ? 'ring-2 ring-primary border-primary bg-primary/5' : ''
-                  }`}
-                >
-                  <img 
-                    src={image.thumbnail_url || image.image_url} 
-                    alt={image.alt_text || 'Gallery image'} 
-                    className="w-full h-32 object-cover"
-                  />
-                  <div className="mt-1 text-xs truncate text-center">
-                    {image.alt_text || `Image #${image.id}`}
+              {galleryImages && Array.isArray(galleryImages) && galleryImages.length > 0 ? 
+                galleryImages.map((image: any) => (
+                  <div 
+                    key={image.id}
+                    onClick={() => setSelectedImageId(image.id)}
+                    className={`border rounded-md p-2 cursor-pointer transition-all hover:border-primary ${
+                      selectedImageId === image.id ? 'ring-2 ring-primary border-primary bg-primary/5' : ''
+                    }`}
+                  >
+                    <img 
+                      src={image.thumbnail_url || image.image_url} 
+                      alt={image.alt_text || 'Gallery image'} 
+                      className="w-full h-32 object-cover"
+                    />
+                    <div className="mt-1 text-xs truncate text-center">
+                      {image.alt_text || `Image #${image.id}`}
+                    </div>
                   </div>
-                </div>
-              ))}
-              
-              {(!galleryImages || 
-                (galleryImages.rows && galleryImages.rows.length === 0) || 
-                (Array.isArray(galleryImages) && galleryImages.length === 0)) && (
-                <div className="col-span-full py-8 text-center text-muted-foreground">
-                  No images found in gallery. Please upload some images first.
-                </div>
-              )}
+                )) 
+                : galleryImages && typeof galleryImages === 'object' && 'rows' in galleryImages && Array.isArray(galleryImages.rows) && galleryImages.rows.length > 0 ?
+                  galleryImages.rows.map((image: any) => (
+                    <div 
+                      key={image.id}
+                      onClick={() => setSelectedImageId(image.id)}
+                      className={`border rounded-md p-2 cursor-pointer transition-all hover:border-primary ${
+                        selectedImageId === image.id ? 'ring-2 ring-primary border-primary bg-primary/5' : ''
+                      }`}
+                    >
+                      <img 
+                        src={image.thumbnail_url || image.image_url} 
+                        alt={image.alt_text || 'Gallery image'} 
+                        className="w-full h-32 object-cover"
+                      />
+                      <div className="mt-1 text-xs truncate text-center">
+                        {image.alt_text || `Image #${image.id}`}
+                      </div>
+                    </div>
+                  ))
+                : (
+                  <div className="col-span-full py-8 text-center text-muted-foreground">
+                    No images found in gallery. Please upload some images first.
+                  </div>
+                )
+              }
             </div>
             
             <div className="flex justify-end gap-2 mt-4">
