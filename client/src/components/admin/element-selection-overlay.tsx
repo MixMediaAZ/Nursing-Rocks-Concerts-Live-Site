@@ -66,9 +66,14 @@ export function ElementSelectionOverlay({
           className={`absolute inset-0 ${
             isSelected 
               ? 'border-2 border-blue-500 bg-blue-500/10' 
-              : 'border border-dashed border-blue-400 bg-blue-300/5'
+              : 'border border-dashed border-blue-400 bg-blue-300/10 transition-all duration-200'
           } pointer-events-none z-10`}
         />
+      )}
+      
+      {/* Always-visible thin outline in admin mode to show editable elements */}
+      {!isHovered && !isSelected && (
+        <div className="absolute inset-0 border border-blue-200/30 border-dashed pointer-events-none z-10" />
       )}
 
       {/* Control buttons that appear when selected */}

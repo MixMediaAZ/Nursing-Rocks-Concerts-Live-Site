@@ -19,8 +19,19 @@ export function EditableText({
   children,
   onUpdate
 }: EditableTextProps) {
-  // Only apply editable functionality to string content
-  const content = typeof children === 'string' ? children : '';
+  // Handle various types of content - convert to string when possible
+  let content = '';
+  if (typeof children === 'string') {
+    content = children;
+  } else if (typeof children === 'number' || typeof children === 'boolean') {
+    content = children.toString();
+  } else if (React.isValidElement(children)) {
+    // For React elements, try to extract text content
+    const childText = React.Children.toArray(children.props.children)
+      .filter(child => typeof child === 'string')
+      .join(' ');
+    content = childText || '[Complex Element]';
+  }
   
   return (
     <EditableElement
