@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useState, useEffect, useRef } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Search, X, Image as ImageIcon, Replace } from 'lucide-react';
 
 interface ImageReplacementDialogProps {
   isOpen: boolean;
@@ -27,6 +27,9 @@ export function ImageReplacementDialog({
 }: ImageReplacementDialogProps) {
   const [selectedImageId, setSelectedImageId] = useState<number | null>(null);
   const [isReplacing, setIsReplacing] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const dialogContentRef = useRef<HTMLDivElement>(null);
 
   const { data: galleryImages, isLoading, error } = useQuery({
     queryKey: ["/api/gallery"],
@@ -52,8 +55,27 @@ export function ImageReplacementDialog({
     if (!isOpen) {
       setSelectedImageId(null);
       setIsReplacing(false);
+      setSearchQuery('');
+    } else {
+      // Check if we're on a mobile device
+      setIsMobile(window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+      
+      // Scroll to top when opening dialog
+      if (dialogContentRef.current) {
+        dialogContentRef.current.scrollTop = 0;
+      }
     }
   }, [isOpen]);
+  
+  // Handle window resize for responsive layout
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleImageSelect = async () => {
     if (!selectedImageId) {
