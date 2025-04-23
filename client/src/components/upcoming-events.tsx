@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, genreColorMap } from "@/lib/utils";
+import { EditableImage } from "@/components/editable-image";
 
 const EventCard = ({ event }: { event: Event }) => {
   const eventDate = new Date(event.date);
@@ -16,10 +17,11 @@ const EventCard = ({ event }: { event: Event }) => {
   return (
     <Card className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
       <div className="relative h-48">
-        <img
+        <EditableImage
           src={event.image_url || ''}
           alt={event.title}
           className="w-full h-full object-cover"
+          triggerPosition="bottom-right"
         />
         <div className={`absolute top-4 left-4 ${genreStyle.bg} ${genreStyle.text} text-sm font-accent px-3 py-1 rounded-full`}>
           {event.genre}

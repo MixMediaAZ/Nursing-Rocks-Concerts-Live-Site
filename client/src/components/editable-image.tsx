@@ -1,7 +1,7 @@
 import { useAdminEditMode } from '@/hooks/use-admin-edit-mode';
 import { SafeImage } from './safe-image';
 import { AdminImage } from './admin-image';
-import { Gallery } from '@shared/schema';
+import { gallery, type Gallery } from '@shared/schema';
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
@@ -72,15 +72,19 @@ export function EditableImage({
         setImageData({
           id: id || -1, // Use provided ID or placeholder
           image_url: src,
+          thumbnail_url: null,
           alt_text: alt,
+          event_id: null,
+          folder_id: null,
+          media_type: 'image',
+          file_size: 0,
+          dimensions: '0x0',
+          duration: null,
+          sort_order: 0,
           created_at: new Date(),
           updated_at: new Date(),
-          folder_id: null,
-          width: 0,
-          height: 0,
-          file_size: 0,
-          file_type: '',
-          is_featured: false,
+          z_index: 0,
+          tags: [],
           metadata: {}
         });
       }

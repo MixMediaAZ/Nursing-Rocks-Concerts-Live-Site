@@ -105,7 +105,7 @@ const FeaturedArtist = () => {
           <div className="lg:col-span-3 order-1 lg:order-2">
             <div className="relative rounded-xl overflow-hidden shadow-xl">
               <EditableImage 
-                src={featuredArtist.image_url} 
+                src={featuredArtist.image_url || ''} 
                 alt={featuredArtist.name} 
                 className="w-full"
                 triggerPosition="bottom-right"
