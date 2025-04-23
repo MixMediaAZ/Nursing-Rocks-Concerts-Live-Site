@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,10 +28,18 @@ export function TextEditorDialog({
   multiline = true
 }: TextEditorDialogProps) {
   const [content, setContent] = useState(initialContent);
+  
+  // Reset content when dialog opens with new initial content
+  useEffect(() => {
+    if (isOpen) {
+      setContent(initialContent);
+    }
+  }, [isOpen, initialContent]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(content);
+    onClose(); // Close dialog immediately after saving
   };
 
   return (

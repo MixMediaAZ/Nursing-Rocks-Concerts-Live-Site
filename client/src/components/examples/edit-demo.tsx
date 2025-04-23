@@ -19,6 +19,15 @@ export function EditableContentDemo() {
   useEffect(() => {
     console.log('Demo image source updated:', imageSrc);
   }, [imageSrc]);
+  
+  // Log whenever text is updated to help debug
+  useEffect(() => {
+    console.log('Demo heading updated:', heading);
+  }, [heading]);
+  
+  useEffect(() => {
+    console.log('Demo paragraph updated:', paragraph);
+  }, [paragraph]);
 
   return (
     <div className="container mx-auto py-8">
