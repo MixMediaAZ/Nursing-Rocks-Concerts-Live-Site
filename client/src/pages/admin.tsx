@@ -400,6 +400,7 @@ export default function AdminPage() {
                         toast({
                           title: "Upload Media",
                           description: "Media uploader opened",
+                          variant: "default",
                         });
                       }}
                     >
@@ -411,6 +412,7 @@ export default function AdminPage() {
                         toast({
                           title: "Create Folder",
                           description: "New folder created successfully",
+                          variant: "default",
                         });
                       }}
                     >
@@ -444,6 +446,7 @@ export default function AdminPage() {
                               toast({
                                 title: "Hero Banner Editor",
                                 description: "Opening hero banner editor...",
+                                variant: "default",
                               });
                             }}
                           >
@@ -456,6 +459,7 @@ export default function AdminPage() {
                               toast({
                                 title: "Featured Events Editor",
                                 description: "Opening featured events editor...",
+                                variant: "default",
                               });
                             }}
                           >
@@ -468,6 +472,7 @@ export default function AdminPage() {
                               toast({
                                 title: "Testimonials Editor",
                                 description: "Opening testimonials editor...",
+                                variant: "default",
                               });
                             }}
                           >
@@ -490,6 +495,7 @@ export default function AdminPage() {
                               toast({
                                 title: "Meta Tags Editor",
                                 description: "Opening meta tags editor...",
+                                variant: "default",
                               });
                             }}
                           >
@@ -502,6 +508,7 @@ export default function AdminPage() {
                               toast({
                                 title: "Site Description Editor",
                                 description: "Opening site description editor...",
+                                variant: "default",
                               });
                             }}
                           >
