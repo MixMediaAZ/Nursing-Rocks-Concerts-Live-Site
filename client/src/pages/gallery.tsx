@@ -35,9 +35,23 @@ import { ImageViewer } from "@/components/image-viewer";
 
 export default function GalleryPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const { data: images, isLoading } = useQuery<Gallery[]>({
+  const { data, isLoading } = useQuery({
     queryKey: ["/api/gallery"],
   });
+  
+  // Handle different API response formats
+  const [images, setImages] = useState<Gallery[]>([]);
+  
+  useEffect(() => {
+    if (data) {
+      if (Array.isArray(data)) {
+        setImages(data);
+      } else if (typeof data === 'object' && 'rows' in data) {
+        // Handle API response that returns { rows: [] }
+        setImages(data.rows as Gallery[]);
+      }
+    }
+  }, [data]);
   
   const [visibleImages, setVisibleImages] = useState(24);
   const [isEditMode, setIsEditMode] = useState(true); // Default to edit mode
