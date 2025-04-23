@@ -339,7 +339,15 @@ export default function AdminPage() {
                     ))}
                   </div>
                   
-                  <Button className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white">
+                  <Button 
+                    className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white"
+                    onClick={() => {
+                      toast({
+                        title: "Add New Event",
+                        description: "Opening event creation form...",
+                      });
+                    }}
+                  >
                     Add New Event
                   </Button>
                 </div>
