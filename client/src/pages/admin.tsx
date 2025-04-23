@@ -492,7 +492,21 @@ export default function AdminPage() {
           <TabsContent value="editor">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Editor Status Card */}
-              <Card className={isEditModeActive ? "bg-primary/5 border-primary/50" : ""}>
+              <Card 
+                className={`cursor-pointer transition-all duration-200 hover:shadow-md ${isEditModeActive ? "bg-primary/5 border-primary/50" : "hover:border-primary"}`}
+                onClick={() => {
+                  const newState = !isEditModeActive;
+                  localStorage.setItem("editMode", newState ? "true" : "false");
+                  setIsEditModeActive(newState);
+                  toast({
+                    title: newState ? "Editor Enabled" : "Editor Disabled",
+                    description: newState 
+                      ? "Element editor is now active. Click the button below to visit a page with editing." 
+                      : "Element editor has been deactivated.",
+                    variant: "default",
+                  });
+                }}
+              >
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Edit className="h-5 w-5" /> Element Editor Status
@@ -529,7 +543,8 @@ export default function AdminPage() {
                   <div className="space-y-4">
                     <Button 
                       className="w-full bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent card click from firing
                         openLiveSiteInAdminMode(true);
                         toast({
                           title: "Opening Live Site in Edit Mode",
@@ -564,14 +579,33 @@ export default function AdminPage() {
               </Card>
               
               {/* Editor Settings Card */}
-              <Card>
+              <Card
+                className="cursor-pointer hover:border-primary transition-all duration-200 hover:shadow-md"
+                onClick={() => {
+                  toast({
+                    title: "Editor Settings",
+                    description: "Configure your editing experience",
+                    variant: "default",
+                  });
+                }}
+              >
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Settings className="h-5 w-5" /> Editor Settings
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-md mb-4">
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-md mb-4 cursor-pointer hover:bg-blue-100 transition-colors duration-200"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.location.href = "/edit-demo";
+                      toast({
+                        title: "Opening Edit Demo",
+                        description: "Redirecting to the element editing demo page...",
+                        variant: "default",
+                      });
+                    }}
+                  >
                     <h3 className="font-medium text-blue-800 mb-2 flex items-center gap-1">
                       <Edit className="h-4 w-4" /> Try the Edit Demo
                     </h3>
@@ -580,7 +614,8 @@ export default function AdminPage() {
                     </p>
                     <Button 
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         window.location.href = "/edit-demo";
                         toast({
                           title: "Opening Edit Demo",
@@ -641,20 +676,32 @@ export default function AdminPage() {
             </div>
             
             <div className="grid grid-cols-1 gap-6 mt-6">
-              <Card>
+              <Card
+                className="cursor-pointer hover:border-primary transition-all duration-200 hover:shadow-md"
+                onClick={() => {
+                  toast({
+                    title: "Edit History",
+                    description: "View and manage your recent element edits",
+                    variant: "default",
+                  });
+                }}
+              >
                 <CardHeader>
-                  <CardTitle>Recently Edited Elements</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12h10"/><path d="M9 6H1v12h8"/><path d="M14 6v12"/><path d="M18 6v12"/><path d="M22 6v12"/></svg>
+                    Recently Edited Elements
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-sm text-muted-foreground py-4 text-center">
+                  <div className="text-sm text-muted-foreground py-4 text-center border border-dashed rounded-md bg-gray-50">
                     No recently edited elements found.
                   </div>
                   
-                  <div className="flex flex-col gap-2">
-                    <Button 
-                      variant="outline" 
-                      className="w-full"
-                      onClick={() => {
+                  <div className="flex flex-col gap-2 mt-4">
+                    <div 
+                      className="w-full py-2 px-4 flex items-center justify-center rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground cursor-pointer shadow-sm hover:shadow transition-all"
+                      onClick={(e) => {
+                        e.stopPropagation();
                         toast({
                           title: "View Edit History",
                           description: "This feature will be available in a future update",
@@ -662,16 +709,18 @@ export default function AdminPage() {
                         });
                       }}
                     >
-                      View Edit History
-                    </Button>
+                      <span className="font-medium">View Edit History</span>
+                    </div>
                     
-                    <Button 
-                      variant="outline"
-                      className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 mt-4"
-                      onClick={handleLogout}
+                    <div 
+                      className="w-full py-2 px-4 flex items-center justify-center rounded-md border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 mt-4 cursor-pointer shadow-sm hover:shadow transition-all"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleLogout();
+                      }}
                     >
-                      Logout from Admin Dashboard
-                    </Button>
+                      <span className="font-medium">Logout from Admin Dashboard</span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, ReactNode } from 'react';
+import { useState, useEffect, useRef, ReactNode, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   Edit, 
@@ -38,13 +38,40 @@ export function ElementSelectionOverlay({
   const [isHovered, setIsHovered] = useState(false);
   const [isSelected, setIsSelected] = useState(false);
   const elementRef = useRef<HTMLDivElement>(null);
+  const controlsRef = useRef<HTMLDivElement>(null);
+
+  // Handle click outside to deselect element
+  const handleClickOutside = useCallback((e: MouseEvent | TouchEvent) => {
+    if (!elementRef.current || !isSelected) return;
+    
+    // Check if the click/touch was on the element or its controls
+    const target = e.target as Node;
+    if (!elementRef.current.contains(target) && 
+        !document.querySelector('.selection-controls')?.contains(target)) {
+      setIsSelected(false);
+    }
+  }, [isSelected]);
+
+  // Add and remove click outside listener
+  useEffect(() => {
+    if (isSelected) {
+      // Add both mouse and touch event listeners for cross-platform support
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isSelected, handleClickOutside]);
 
   // If not in admin mode, just render the children
   if (!adminState.isAdminMode) {
     return <>{children}</>;
   }
 
-  const handleElementClick = (e: React.MouseEvent) => {
+  const handleElementClick = (e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation();
     setIsSelected(!isSelected);
   };
@@ -52,10 +79,35 @@ export function ElementSelectionOverlay({
   return (
     <div
       ref={elementRef}
-      className={`relative group ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
+      className={`relative group ${isSelected ? 'ring-2 ring-blue-500' : ''} touch-manipulation`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleElementClick}
+      onTouchStart={(e) => {
+        // Only show hover effect on touch, don't trigger selection yet
+        if (!isHovered) {
+          setIsHovered(true);
+          
+          // Touch press and hold functionality (for 500ms)
+          const timer = setTimeout(() => {
+            handleElementClick(e);
+          }, 500);
+          
+          // Clear timer if touch ends before 500ms
+          const clearTimer = () => {
+            clearTimeout(timer);
+            document.removeEventListener('touchend', clearTimer);
+          };
+          
+          document.addEventListener('touchend', clearTimer, { once: true });
+        }
+      }}
+      onTouchEnd={(e) => {
+        // If it's already selected, don't toggle on touch end (let press and hold handle it)
+        if (!isSelected) {
+          handleElementClick(e);
+        }
+      }}
     >
       {/* The actual content */}
       {children}
@@ -78,15 +130,23 @@ export function ElementSelectionOverlay({
 
       {/* Control buttons that appear when selected */}
       {isSelected && (
-        <div className="absolute top-2 right-2 flex space-x-1 z-20">
+        <div 
+          ref={controlsRef}
+          className="selection-controls absolute top-2 right-2 flex space-x-1 z-20"
+          onClick={(e) => e.stopPropagation()} 
+          onTouchStart={(e) => e.stopPropagation()}
+        >
           {onEdit && (
             <Button 
               variant="default" 
               size="sm" 
-              className="bg-blue-500 hover:bg-blue-600 p-1 h-8 w-8"
+              className="bg-blue-500 hover:bg-blue-600 p-1 h-8 w-8 touch-manipulation"
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit();
+              }}
+              onTouchStart={(e) => {
+                e.stopPropagation();
               }}
               title={`Edit ${elementType}`}
             >
@@ -101,11 +161,15 @@ export function ElementSelectionOverlay({
             <Button 
               variant="default" 
               size="sm" 
-              className="bg-purple-500 hover:bg-purple-600 p-1 h-8 w-8"
+              className="bg-purple-500 hover:bg-purple-600 p-1 h-8 w-8 touch-manipulation"
               onClick={(e) => {
                 e.stopPropagation();
                 onReplace();
               }}
+              onTouchStart={(e) => {
+                e.stopPropagation();
+              }}
+              title="Replace element"
             >
               <Replace className="h-4 w-4" />
             </Button>
@@ -115,11 +179,15 @@ export function ElementSelectionOverlay({
             <Button 
               variant="default" 
               size="sm" 
-              className="bg-amber-500 hover:bg-amber-600 p-1 h-8 w-8"
+              className="bg-amber-500 hover:bg-amber-600 p-1 h-8 w-8 touch-manipulation"
               onClick={(e) => {
                 e.stopPropagation();
                 onMove();
               }}
+              onTouchStart={(e) => {
+                e.stopPropagation();
+              }}
+              title="Move element"
             >
               <Move className="h-4 w-4" />
             </Button>
@@ -128,11 +196,15 @@ export function ElementSelectionOverlay({
           <Button 
             variant="destructive" 
             size="sm" 
-            className="p-1 h-8 w-8"
+            className="p-1 h-8 w-8 touch-manipulation"
             onClick={(e) => {
               e.stopPropagation();
               setIsSelected(false);
             }}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+            }}
+            title="Close selection"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -141,12 +213,16 @@ export function ElementSelectionOverlay({
 
       {/* Type and ID label when selected */}
       {isSelected && (
-        <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded z-20 flex items-center gap-1">
-          {elementType === 'image' ? <ImageIcon className="h-3 w-3" /> : 
-           elementType === 'text' ? <Type className="h-3 w-3" /> : 
-           elementType === 'video' ? <Video className="h-3 w-3" /> : 
-           <Component className="h-3 w-3" />}
-          <span>
+        <div 
+          className="selection-controls absolute top-2 left-2 bg-blue-500 text-white text-xs sm:text-sm px-2 py-1 rounded z-20 flex items-center gap-1 shadow-sm"
+          onClick={(e) => e.stopPropagation()} 
+          onTouchStart={(e) => e.stopPropagation()}
+        >
+          {elementType === 'image' ? <ImageIcon className="h-3 w-3 sm:h-4 sm:w-4" /> : 
+           elementType === 'text' ? <Type className="h-3 w-3 sm:h-4 sm:w-4" /> : 
+           elementType === 'video' ? <Video className="h-3 w-3 sm:h-4 sm:w-4" /> : 
+           <Component className="h-3 w-3 sm:h-4 sm:w-4" />}
+          <span className="whitespace-nowrap">
             {elementType === 'image' ? 'Image' : 
              elementType === 'text' ? 'Text' : 
              elementType === 'video' ? 'Video' : 'Component'}
