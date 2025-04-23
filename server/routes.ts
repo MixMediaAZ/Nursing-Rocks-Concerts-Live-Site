@@ -1369,8 +1369,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete a setting (admin only)
   app.delete("/api/settings/:key", authenticateToken, async (req: Request, res: Response) => {
     try {
-      // @ts-ignore
-      if (!req.user?.is_admin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Only admins can delete settings" });
       }
       
