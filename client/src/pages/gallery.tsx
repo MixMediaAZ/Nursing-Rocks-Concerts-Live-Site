@@ -69,6 +69,8 @@ export default function GalleryPage() {
   const [showFolderManager, setShowFolderManager] = useState(false);
   const [showUploaderDialog, setShowUploaderDialog] = useState(false);
   const [viewingAttachedAssets, setViewingAttachedAssets] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<Gallery | null>(null);
+  const [showImageViewer, setShowImageViewer] = useState(false);
   
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -370,7 +372,12 @@ export default function GalleryPage() {
                             <img 
                               src={image.image_url} 
                               alt={image.alt_text || "Gallery image"} 
-                              className="w-full h-48 object-cover" 
+                              className="w-full h-48 object-cover cursor-pointer" 
+                              onClick={() => {
+                                // Open the image in the viewer
+                                setSelectedImage(image);
+                                setShowImageViewer(true);
+                              }}
                             />
                             {isEditMode && (
                               <div className="absolute top-2 left-2">
@@ -425,7 +432,12 @@ export default function GalleryPage() {
                             <img 
                               src={image.image_url} 
                               alt={image.alt_text || "Gallery image"} 
-                              className="w-full h-48 object-cover" 
+                              className="w-full h-48 object-cover cursor-pointer" 
+                              onClick={() => {
+                                // Open the image in the viewer
+                                setSelectedImage(image);
+                                setShowImageViewer(true);
+                              }}
                             />
                           </div>
                           <CardFooter className="p-3">
