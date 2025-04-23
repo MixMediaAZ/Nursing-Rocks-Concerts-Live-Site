@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Gallery } from '@shared/schema';
 import { SafeImage } from './safe-image';
 import { ImageReplacementDialog } from '@/components/image-replacement-dialog';
@@ -31,8 +31,16 @@ export function AdminImage({
   onReplaceComplete
 }: AdminImageProps) {
   const [isReplaceDialogOpen, setIsReplaceDialogOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  
+  // Check if we're in admin edit mode
+  useEffect(() => {
+    const adminStatus = localStorage.getItem("isAdmin") === "true";
+    const editModeActive = localStorage.getItem("editMode") === "true";
+    setIsEditMode(adminStatus && editModeActive);
+  }, []);
   
   // Positioning classes for the trigger button
   const positionClasses = {
@@ -85,20 +93,25 @@ export function AdminImage({
     replaceImageMutation.mutate(replacementImageId);
   };
   
+  // Determine if we should show admin controls (either passed in as prop or detected from edit mode)
+  const showAdminControls = isAdmin || isEditMode;
+  
   return (
-    <div className="relative">
+    <div className={`relative group ${showAdminControls ? 'admin-editable' : ''}`}>
       <SafeImage 
         src={imageData.image_url}
         alt={alt || imageData.alt_text || "Image"}
         className={className} 
       />
       
-      {isAdmin && (
+      {showAdminControls && (
         <>
+          <div className={`absolute inset-0 border-2 border-dashed border-primary/0 group-hover:border-primary/50 pointer-events-none transition-all duration-200 z-5 ${isEditMode ? 'border-primary/30' : ''}`}></div>
+          
           <Button
             variant="secondary"
             size="icon"
-            className={`absolute ${positionClasses[triggerPosition]} opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity z-10`}
+            className={`absolute ${positionClasses[triggerPosition]} ${isEditMode ? 'opacity-70' : 'opacity-0'} group-hover:opacity-100 hover:opacity-100 transition-opacity z-10 bg-primary/80 text-white hover:bg-primary hover:text-white shadow-md`}
             onClick={handleReplaceClick}
           >
             <Pencil className="h-4 w-4" />

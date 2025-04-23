@@ -188,6 +188,14 @@ export default function AdminPage() {
       localStorage.setItem("adminPinVerified", "true");
       window.location.href = "/gallery";
     };
+    
+    // Open live site in admin mode for editing
+    const openLiveSiteInAdminMode = () => {
+      localStorage.setItem("isAdmin", "true");
+      localStorage.setItem("adminPinVerified", "true");
+      localStorage.setItem("editMode", "true");
+      window.location.href = "/";
+    };
 
     return (
       <div className="flex flex-col">
@@ -269,7 +277,41 @@ export default function AdminPage() {
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Highlighted button for editing live site in admin mode */}
+                  <Button 
+                    className="h-auto py-6 flex flex-col items-center justify-center gap-2 bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white"
+                    onClick={() => {
+                      openLiveSiteInAdminMode();
+                      toast({
+                        title: "Admin Edit Mode Activated",
+                        description: "Opening live site in admin edit mode...",
+                        variant: "default",
+                      });
+                    }}
+                  >
+                    <FileEdit className="h-8 w-8" />
+                    <span className="text-lg font-bold">Open Live Site in Admin Mode</span>
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="h-auto py-6 flex flex-col items-center justify-center gap-2"
+                    onClick={() => {
+                      openGalleryWithAdminAccess();
+                      toast({
+                        title: "Gallery Access",
+                        description: "Opening gallery with admin access...",
+                        variant: "default",
+                      });
+                    }}
+                  >
+                    <ImageIcon className="h-8 w-8" />
+                    <span className="text-lg font-semibold">Manage Gallery</span>
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                   <Button 
                     variant="outline" 
                     className="h-auto py-4 flex flex-col items-center justify-center gap-2"
@@ -290,16 +332,16 @@ export default function AdminPage() {
                     variant="outline" 
                     className="h-auto py-4 flex flex-col items-center justify-center gap-2"
                     onClick={() => {
-                      openGalleryWithAdminAccess();
+                      setActiveTab("store");
                       toast({
-                        title: "Gallery Access",
-                        description: "Opening gallery with admin access...",
+                        title: "Store Management",
+                        description: "Opening store management interface...",
                         variant: "default",
                       });
                     }}
                   >
-                    <ImageIcon className="h-6 w-6" />
-                    <span>Manage Gallery</span>
+                    <Store className="h-6 w-6" />
+                    <span>Manage Store</span>
                   </Button>
                   
                   <Button 
@@ -314,8 +356,8 @@ export default function AdminPage() {
                       });
                     }}
                   >
-                    <FileEdit className="h-6 w-6" />
-                    <span>Edit Homepage</span>
+                    <Settings className="h-6 w-6" />
+                    <span>Site Settings</span>
                   </Button>
                 </div>
               </CardContent>
