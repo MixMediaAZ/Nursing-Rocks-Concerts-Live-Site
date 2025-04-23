@@ -2,9 +2,10 @@ import { ReactNode, useEffect } from 'react';
 import { useAdminEditMode } from '@/hooks/use-admin-edit-mode';
 import { useElementSelection } from '@/hooks/use-element-selection';
 import { ImageReplacementDialog } from './image-replacement-dialog';
+import { TextEditorDialog } from './text-editor-dialog';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { X, Edit, Wand, Save } from 'lucide-react';
+import { X, Edit, Wand, Save, Type } from 'lucide-react';
 
 interface AdminEditingProviderProps {
   children: ReactNode;

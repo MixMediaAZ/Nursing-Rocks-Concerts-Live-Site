@@ -152,7 +152,7 @@ export function EditableElement({
         onReplace={type === 'image' ? handleReplace : undefined}
         originalUrl={type === 'image' ? src : undefined}
       >
-        {renderContent()}
+        {type === 'text' && textContent !== undefined ? textContent : renderContent()}
       </ElementSelectionOverlay>
       
       {/* Image replacement dialog */}
@@ -163,6 +163,20 @@ export function EditableElement({
           onSelectImage={handleImageSelected}
           elementId={uniqueId}
           originalUrl={src}
+        />
+      )}
+      
+      {/* Text editor dialog */}
+      {type === 'text' && (
+        <TextEditorDialog
+          isOpen={isTextEditorOpen}
+          onClose={() => setTextEditorOpen(false)}
+          onSave={handleTextSaved}
+          elementId={uniqueId}
+          initialContent={typeof children === 'string' ? children : ''}
+          title="Edit Text Content"
+          description="Update the text for this element"
+          multiline={true}
         />
       )}
     </>

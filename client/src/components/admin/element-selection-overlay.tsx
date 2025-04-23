@@ -1,6 +1,16 @@
 import { useState, useEffect, useRef, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
-import { Edit, Replace, Move, X } from 'lucide-react';
+import { 
+  Edit, 
+  Replace, 
+  Move, 
+  X, 
+  Type, 
+  Image as ImageIcon, 
+  Video, 
+  Component,
+  PenSquare
+} from 'lucide-react';
 import { useAdminEditMode } from '@/hooks/use-admin-edit-mode';
 
 interface ElementSelectionOverlayProps {
@@ -73,8 +83,12 @@ export function ElementSelectionOverlay({
                 e.stopPropagation();
                 onEdit();
               }}
+              title={`Edit ${elementType}`}
             >
-              <Edit className="h-4 w-4" />
+              {elementType === 'image' ? <ImageIcon className="h-4 w-4" /> :
+               elementType === 'text' ? <PenSquare className="h-4 w-4" /> :
+               elementType === 'video' ? <Video className="h-4 w-4" /> :
+               <Edit className="h-4 w-4" />}
             </Button>
           )}
           
@@ -122,11 +136,17 @@ export function ElementSelectionOverlay({
 
       {/* Type and ID label when selected */}
       {isSelected && (
-        <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded z-20">
-          {elementType === 'image' ? 'Image' : 
-           elementType === 'text' ? 'Text' : 
-           elementType === 'video' ? 'Video' : 'Component'}
-          {elementId && ` #${elementId}`}
+        <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded z-20 flex items-center gap-1">
+          {elementType === 'image' ? <ImageIcon className="h-3 w-3" /> : 
+           elementType === 'text' ? <Type className="h-3 w-3" /> : 
+           elementType === 'video' ? <Video className="h-3 w-3" /> : 
+           <Component className="h-3 w-3" />}
+          <span>
+            {elementType === 'image' ? 'Image' : 
+             elementType === 'text' ? 'Text' : 
+             elementType === 'video' ? 'Video' : 'Component'}
+            {elementId && ` #${elementId}`}
+          </span>
         </div>
       )}
     </div>
