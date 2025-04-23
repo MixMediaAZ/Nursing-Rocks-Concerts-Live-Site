@@ -25,6 +25,7 @@ import CartPage from "@/pages/cart";
 import CheckoutPage from "@/pages/checkout";
 import OrderConfirmationPage from "@/pages/order-confirmation";
 import DemoReplacePage from "@/pages/demo-replace";
+import SponsorshipsPage from "@/pages/sponsorships";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 
@@ -56,6 +57,7 @@ function Router() {
           <Route path="/cities" component={CitiesPage} />
           <Route path="/cities/:cityId" component={CityDetailsPage} />
           <Route path="/sponsors" component={SponsorsPage} />
+          <Route path="/sponsorships" component={SponsorshipsPage} />
           <Route path="/jobs" component={JobsPage} />
           <Route path="/jobs/:id" component={JobDetailsPage} />
           <Route path="/gallery" component={GalleryPage} />
