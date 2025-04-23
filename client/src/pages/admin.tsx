@@ -443,6 +443,153 @@ export default function AdminPage() {
             </Card>
           </TabsContent>
           
+          <TabsContent value="editor">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Editor Status Card */}
+              <Card className={isEditModeActive ? "bg-primary/5 border-primary/50" : ""}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Edit className="h-5 w-5" /> Element Editor Status
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <p className="text-xl font-bold">{isEditModeActive ? "Active" : "Inactive"}</p>
+                      <p className="text-sm text-muted-foreground">Visual element editor state</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="editor-toggle"
+                        checked={isEditModeActive}
+                        onCheckedChange={(checked) => {
+                          localStorage.setItem("editMode", checked ? "true" : "false");
+                          setIsEditModeActive(checked);
+                          toast({
+                            title: checked ? "Editor Enabled" : "Editor Disabled",
+                            description: checked 
+                              ? "Element editor is now active. Visit any page to edit elements." 
+                              : "Element editor has been deactivated.",
+                            variant: "default",
+                          });
+                        }}
+                      />
+                      <Label htmlFor="editor-toggle">
+                        {isEditModeActive ? "Enabled" : "Disabled"}
+                      </Label>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <Button 
+                      className="w-full bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white"
+                      onClick={() => {
+                        openLiveSiteInAdminMode(true);
+                        toast({
+                          title: "Opening Live Site in Edit Mode",
+                          description: "The site will open with element editing enabled",
+                          variant: "default",
+                        });
+                      }}
+                      disabled={!isEditModeActive}
+                    >
+                      <FileEdit className="mr-2 h-4 w-4" /> Open Site in Edit Mode
+                    </Button>
+                    
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-md">
+                      <h3 className="font-medium text-amber-800 mb-2 flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <line x1="12" y1="8" x2="12" y2="12"></line>
+                          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        How to Use Element Editor
+                      </h3>
+                      <ul className="text-sm text-amber-700 space-y-1 list-disc pl-5">
+                        <li>Enable the editor using the toggle above</li>
+                        <li>Navigate to any page on the site</li>
+                        <li>Hover over elements to see edit options</li>
+                        <li>Click on elements to select them for editing</li>
+                        <li>Use the toolbar to replace images, edit text, and more</li>
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Editor Settings Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5" /> Editor Settings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Highlight Elements on Hover</Label>
+                        <p className="text-sm text-muted-foreground">Show highlight box around elements when hovering</p>
+                      </div>
+                      <Switch defaultChecked />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Show Control Panel</Label>
+                        <p className="text-sm text-muted-foreground">Display editing controls when element is selected</p>
+                      </div>
+                      <Switch defaultChecked />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Direct Image Replacement</Label>
+                        <p className="text-sm text-muted-foreground">Allow replacing images with gallery selection</p>
+                      </div>
+                      <Switch defaultChecked />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Confirm Before Saving</Label>
+                        <p className="text-sm text-muted-foreground">Show confirmation dialog before saving changes</p>
+                      </div>
+                      <Switch defaultChecked />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+            
+            <div className="grid grid-cols-1 gap-6 mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recently Edited Elements</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-sm text-muted-foreground py-4 text-center">
+                    No recently edited elements found.
+                  </div>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full mt-2"
+                    onClick={() => {
+                      toast({
+                        title: "View Edit History",
+                        description: "This feature will be available in a future update",
+                        variant: "default",
+                      });
+                    }}
+                  >
+                    View Edit History
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+          
           <TabsContent value="events">
             <Card>
               <CardHeader>
