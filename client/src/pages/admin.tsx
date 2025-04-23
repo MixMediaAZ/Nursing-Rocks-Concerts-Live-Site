@@ -185,6 +185,7 @@ export default function AdminPage() {
   // Admin Dashboard Component
   const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState("overview");
+    const { toast } = useToast();
 
     return (
       <div className="flex flex-col">
