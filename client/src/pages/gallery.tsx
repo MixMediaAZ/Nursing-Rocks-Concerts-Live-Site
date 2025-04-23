@@ -895,13 +895,20 @@ export default function GalleryPage() {
         open={showImageViewer} 
         onOpenChange={(open) => {
           if (!open) {
-            setShowImageViewer(false);
+            // Don't close automatically, only through close button
+            // We'll handle closing via the close button
+          } else {
+            setShowImageViewer(true);
           }
         }}
-        modal={false}
+        modal={true}
       >
         <DialogContent 
           className="sm:max-w-4xl max-h-[90vh] overflow-y-auto !p-4"
+          onPointerDownOutside={(e) => {
+            // Prevent closing when clicking outside
+            e.preventDefault();
+          }}
           onInteractOutside={(e) => {
             // Prevent closing when clicking outside
             e.preventDefault();
