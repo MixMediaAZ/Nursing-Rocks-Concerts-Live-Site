@@ -38,7 +38,7 @@ export function EditableElement({
   placeholder,
 }: EditableElementProps) {
   const [isReplacementDialogOpen, setIsReplacementDialogOpen] = useState(false);
-  const { isAdminMode } = useAdminEditMode();
+  const adminState = useAdminEditMode();
   const uniqueId = id || `${type}-${Math.random().toString(36).substring(2, 9)}`;
   
   // Set up event listener for image replacement
@@ -94,12 +94,8 @@ export function EditableElement({
             src={src || ''}
             alt={alt}
             className={className}
-            style={style}
-            width={width}
-            height={height}
-            loadingClassName={loadingClassName}
-            errorClassName={errorClassName}
-            placeholder={placeholder}
+            showLoadingIndicator={true}
+            fallbackClassName={errorClassName}
           />
         );
       

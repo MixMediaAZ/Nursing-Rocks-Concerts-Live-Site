@@ -11,7 +11,7 @@ interface AdminEditingProviderProps {
 }
 
 export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
-  const { isAdminMode, setAdminMode } = useAdminEditMode();
+  const adminState = useAdminEditMode();
   const { 
     selectedElement, 
     isImageReplacementDialogOpen,
@@ -22,12 +22,12 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
 
   // Listen for keyboard shortcuts
   useEffect(() => {
-    if (!isAdminMode) return;
+    if (!adminState.isAdminMode) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // Escape key exits admin mode
       if (e.key === 'Escape') {
-        setAdminMode(false);
+        adminState.setAdminMode(false);
         toast({
           title: 'Admin Mode Disabled',
           description: 'Exited element editing mode',
@@ -40,7 +40,7 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isAdminMode, setAdminMode]);
+  }, [adminState]);
 
   const handleImageSelected = (imageId: number) => {
     if (!selectedElement) return;
@@ -69,7 +69,7 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
       />
       
       {/* Admin mode toolbar - only shown when admin mode is active */}
-      {isAdminMode && (
+      {adminState.isAdminMode && (
         <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white rounded-full shadow-lg border border-gray-200 p-2 z-50 flex items-center gap-2">
           <div className="bg-blue-500 text-white text-xs px-3 py-1 rounded-full">
             Element Edit Mode
@@ -95,7 +95,7 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
             size="sm"
             className="h-9 px-3"
             onClick={() => {
-              setAdminMode(false);
+              adminState.setAdminMode(false);
               clearSelectedElement();
               toast({
                 title: 'Admin Mode Disabled',

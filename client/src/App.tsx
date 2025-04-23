@@ -28,6 +28,7 @@ import DemoReplacePage from "@/pages/demo-replace";
 import SponsorshipsPage from "@/pages/sponsorships";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import { AdminEditingProvider } from "@/components/admin/admin-editing-provider";
 
 // We use Zustand for cart management, no provider needed
 import { AuthProvider } from "@/hooks/use-auth";
@@ -82,8 +83,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router />
-        <Toaster />
+        <AdminEditingProvider>
+          <Router />
+          <Toaster />
+        </AdminEditingProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

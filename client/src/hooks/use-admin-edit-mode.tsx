@@ -6,8 +6,11 @@ interface AdminEditModeState {
   toggleAdminMode: () => void;
 }
 
-// Create a Zustand store for admin edit mode
-const useAdminEditModeStore = create<AdminEditModeState>((set) => {
+/**
+ * Hook to detect and control admin edit mode
+ * Returns state and functions to control admin mode
+ */
+export const useAdminEditMode = create<AdminEditModeState>((set) => {
   // Initialize from localStorage if available
   const initialAdminStatus = typeof window !== 'undefined' && window.localStorage.getItem("isAdmin") === "true";
   const initialEditMode = typeof window !== 'undefined' && window.localStorage.getItem("editMode") === "true";
@@ -41,11 +44,3 @@ const useAdminEditModeStore = create<AdminEditModeState>((set) => {
     }),
   };
 });
-
-/**
- * Hook to detect and control admin edit mode
- * Returns state and functions to control admin mode
- */
-export function useAdminEditMode() {
-  return useAdminEditModeStore();
-}

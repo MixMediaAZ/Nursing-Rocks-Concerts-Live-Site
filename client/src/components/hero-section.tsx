@@ -6,9 +6,12 @@ import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
 import { useNavigation } from "@/hooks/use-navigation";
 import YouTube from 'react-youtube';
+import { EditableElement } from "@/components/admin/editable-element";
+import { useState } from "react";
 
 const HeroSection = () => {
   const { navigateTo } = useNavigation();
+  const [refreshKey, setRefreshKey] = useState(Date.now());
   
   const { data: featuredEvent, isLoading: isLoadingEvent } = useQuery<Event>({
     queryKey: ["/api/events/featured"],
@@ -22,6 +25,11 @@ const HeroSection = () => {
   // Venue queries removed
 
   const isLoading = isLoadingEvent || isLoadingArtist;
+
+  const handleContentUpdate = (data: any) => {
+    // Refresh the component when content is updated
+    setRefreshKey(Date.now());
+  };
 
   if (isLoading) {
     return (
@@ -67,27 +75,45 @@ const HeroSection = () => {
   return (
     <section className="relative overflow-hidden bg-[#333333] text-white min-h-[600px]">
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-r from-[#5D3FD3]/80 to-[#FF3366]/80 mix-blend-multiply"></div>
-        <img
+        {/* Editable background image - layer 1 */}
+        <EditableElement
+          type="image"
+          id="hero-background"
           src="https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&h=800&q=80"
           alt="Concert crowd"
           className="w-full h-full object-cover"
+          onUpdate={handleContentUpdate}
         />
+        
+        {/* Gradient overlay - layer 2 */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#5D3FD3]/80 to-[#FF3366]/80 mix-blend-multiply"></div>
       </div>
 
       <div className="container mx-auto py-16 md:py-28 relative z-10">
         <div className="max-w-2xl">
-          <div className="inline-block bg-[#FF3366] text-white px-6 py-3 rounded-full mb-6 font-accent text-2xl md:text-3xl font-bold">
-            NURSING ROCKS! CONCERT SERIES
-          </div>
+          {/* Editable title */}
+          <EditableElement
+            type="text"
+            id="hero-title"
+          >
+            <div className="inline-block bg-[#FF3366] text-white px-6 py-3 rounded-full mb-6 font-accent text-2xl md:text-3xl font-bold">
+              NURSING ROCKS! CONCERT SERIES
+            </div>
+          </EditableElement>
           
           <h2 className="font-heading text-base md:text-lg font-semibold mb-4 text-left">
             Mission
           </h2>
           
-          <p className="text-lg mb-8 text-left">
-            Empowering and honoring nurses through the uplifting power of live music, our mission is to foster a positive impact within the nursing community at nationwide events. We strive to elevate awareness of the nursing profession and support its advancement through scholarship opportunities for further education.
-          </p>
+          {/* Editable mission statement */}
+          <EditableElement
+            type="text"
+            id="hero-mission"
+          >
+            <p className="text-lg mb-8 text-left">
+              Empowering and honoring nurses through the uplifting power of live music, our mission is to foster a positive impact within the nursing community at nationwide events. We strive to elevate awareness of the nursing profession and support its advancement through scholarship opportunities for further education.
+            </p>
+          </EditableElement>
 
           <div className="border-t border-white/20 my-8 pt-6"></div>
           

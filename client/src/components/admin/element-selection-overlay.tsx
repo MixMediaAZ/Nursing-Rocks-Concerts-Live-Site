@@ -24,13 +24,13 @@ export function ElementSelectionOverlay({
   onMove,
   originalUrl,
 }: ElementSelectionOverlayProps) {
-  const { isAdminMode } = useAdminEditMode();
+  const adminState = useAdminEditMode();
   const [isHovered, setIsHovered] = useState(false);
   const [isSelected, setIsSelected] = useState(false);
   const elementRef = useRef<HTMLDivElement>(null);
 
   // If not in admin mode, just render the children
-  if (!isAdminMode) {
+  if (!adminState.isAdminMode) {
     return <>{children}</>;
   }
 
