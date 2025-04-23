@@ -67,10 +67,10 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background">
+    <header className="sticky top-0 z-50 w-full border-b bg-background shadow-sm">
       <div className="w-full h-1.5 nurse-gradient"></div>
       
-      <div className="container mx-auto">
+      <div className="page-container">
         <div className="flex items-center justify-between h-20">
           {/* Logo on left */}
           <div className="flex-shrink-0">
@@ -81,108 +81,127 @@ export function Header() {
                   alt="Nursing Rocks!"
                   className="h-14 md:h-16 w-auto"
                 />
-                <span className="heartbeat-animation text-lg font-semibold">
+                <span className="heartbeat-animation text-lg font-semibold hidden md:inline-block">
                   Concert Series
                 </span>
               </div>
             </Link>
           </div>
           
-          {/* Navigation in center */}
+          {/* Navigation in center - centered and justified content */}
           {!isMobile ? (
-            <nav className="flex items-center justify-center space-x-8 flex-grow mx-4">
+            <nav className="flex items-center justify-center space-x-4 md:space-x-8 flex-grow mx-auto">
+              <div className="flex items-center justify-center space-x-4 md:space-x-8">
+                {navLinks.map((link) => (
+                  <Link key={link.href} href={link.href}>
+                    <div
+                      className={`text-sm font-medium cursor-pointer flex items-center gap-2 transition-colors hover:text-primary ${
+                        isActive(link.href) ? "text-primary" : "text-muted-foreground"
+                      }`}
+                    >
+                      {link.icon}
+                      {link.label}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </nav>
+          ) : (
+            <div className="flex-grow"></div>
+          )}
+          
+          {/* Right side controls - always visible */}
+          <div className="flex items-center space-x-3">
+            <Link href="/cart">
+              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                <ShoppingCart size={18} />
+                {totalItems > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                    {totalItems > 99 ? '99+' : totalItems}
+                  </Badge>
+                )}
+              </Button>
+            </Link>
+            
+            {isLoggedIn ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-9 w-9 rounded-full">
+                    <User size={18} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile">My Profile</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.location.href = "/license-verification"}>
+                    License Verification
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/tickets">My Tickets</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout}>
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="hidden sm:flex items-center gap-2">
+                <Button variant="ghost" asChild size="sm">
+                  <Link href="/login">Login</Link>
+                </Button>
+                <Button asChild size="sm">
+                  <Link href="/register">Register</Link>
+                </Button>
+              </div>
+            )}
+            
+            {isMobile && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="sm:ml-2"
+              >
+                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      {/* Mobile Menu */}
+      {isMobile && isMenuOpen && (
+        <div className="page-container py-4 border-t bg-background shadow-md">
+          <nav className="flex flex-col max-w-sm mx-auto space-y-3">
+            {/* Header in mobile menu */}
+            <div className="text-center mb-2 pb-2 border-b">
+              <h3 className="font-medium text-lg">Menu</h3>
+            </div>
+            
+            {/* Navigation links */}
+            <div className="grid grid-cols-2 gap-2">
               {navLinks.map((link) => (
                 <Link key={link.href} href={link.href}>
-                  <div
-                    className={`text-sm font-medium cursor-pointer flex items-center gap-2 ${
-                      isActive(link.href) ? "text-primary" : "text-muted-foreground"
+                  <div 
+                    className={`flex items-center justify-center gap-2 p-3 rounded-md transition-colors ${
+                      isActive(link.href) 
+                        ? "bg-primary/10 text-primary font-medium" 
+                        : "text-muted-foreground hover:bg-muted"
                     }`}
+                    onClick={() => setIsMenuOpen(false)}
                   >
                     {link.icon}
                     {link.label}
                   </div>
                 </Link>
               ))}
-              
-              <Link href="/cart">
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                  <ShoppingCart size={18} />
-                  {totalItems > 0 && (
-                    <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
-                      {totalItems > 99 ? '99+' : totalItems}
-                    </Badge>
-                  )}
-                </Button>
-              </Link>
-              
-              {isLoggedIn ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-9 w-9 rounded-full">
-                      <User size={18} />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <Link href="/profile">My Profile</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => window.location.href = "/license-verification"}>
-                      License Verification
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/tickets">My Tickets</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleLogout}>
-                      Logout
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" asChild size="sm">
-                    <Link href="/login">Login</Link>
-                  </Button>
-                  <Button asChild size="sm">
-                    <Link href="/register">Register</Link>
-                  </Button>
-                </div>
-              )}
-            </nav>
-          ) : (
-            <div className="flex-shrink-0">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-              >
-                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-              </Button>
             </div>
-          )}
-        </div>
-      </div>
-      
-      {/* Mobile Menu */}
-      {isMobile && isMenuOpen && (
-        <div className="container py-4 border-t">
-          <nav className="flex flex-col space-y-4">
-            {navLinks.map((link) => (
-              <Link key={link.href} href={link.href}>
-                <div 
-                  className={`flex items-center gap-2 p-2 rounded-md ${
-                    isActive(link.href) ? "bg-primary/10 text-primary" : "text-muted-foreground"
-                  }`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {link.icon}
-                  {link.label}
-                </div>
-              </Link>
-            ))}
             
+            {/* Cart link */}
             <Link href="/cart">
               <div
-                className="flex items-center gap-2 p-2 rounded-md text-muted-foreground"
+                className="flex items-center justify-center gap-2 p-3 rounded-md text-muted-foreground hover:bg-muted transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
                 <ShoppingCart size={18} />
@@ -195,62 +214,73 @@ export function Header() {
               </div>
             </Link>
             
-            {isLoggedIn ? (
-              <>
-                <Link href="/profile">
-                  <div
-                    className="flex items-center gap-2 p-2 rounded-md text-muted-foreground"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <User size={18} />
-                    My Profile
-                  </div>
-                </Link>
-                <div
-                  className="flex items-center gap-2 p-2 rounded-md text-muted-foreground cursor-pointer"
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    window.location.href = "/license-verification";
-                  }}
-                >
-                  License Verification
-                </div>
-                <Link href="/tickets">
-                  <div
-                    className="flex items-center gap-2 p-2 rounded-md text-muted-foreground"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    My Tickets
-                  </div>
-                </Link>
-                <div
-                  className="flex items-center gap-2 p-2 rounded-md text-muted-foreground cursor-pointer"
-                  onClick={() => {
-                    handleLogout();
-                    setIsMenuOpen(false);
-                  }}
-                >
-                  Logout
-                </div>
-              </>
-            ) : (
-              <div className="flex flex-col gap-2 mt-2 p-2">
-                <Button variant="outline" asChild className="w-full">
-                  <Link href="/login">
-                    <div onClick={() => setIsMenuOpen(false)}>
-                      Login
+            {/* Account related links */}
+            <div className="border-t pt-3 mt-2">
+              {isLoggedIn ? (
+                <div className="space-y-2">
+                  <Link href="/profile">
+                    <div
+                      className="flex items-center justify-center gap-2 p-3 rounded-md text-muted-foreground hover:bg-muted transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <User size={18} />
+                      My Profile
                     </div>
                   </Link>
-                </Button>
-                <Button asChild className="w-full">
-                  <Link href="/register">
-                    <div onClick={() => setIsMenuOpen(false)}>
-                      Register
+                  <div
+                    className="flex items-center justify-center gap-2 p-3 rounded-md text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      window.location.href = "/license-verification";
+                    }}
+                  >
+                    <HeartPulse size={18} />
+                    License Verification
+                  </div>
+                  <Link href="/tickets">
+                    <div
+                      className="flex items-center justify-center gap-2 p-3 rounded-md text-muted-foreground hover:bg-muted transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <User size={18} />
+                      My Tickets
                     </div>
                   </Link>
-                </Button>
-              </div>
-            )}
+                  <div
+                    className="flex items-center justify-center gap-2 p-3 rounded-md text-primary/80 hover:bg-primary/10 transition-colors cursor-pointer"
+                    onClick={() => {
+                      handleLogout();
+                      setIsMenuOpen(false);
+                    }}
+                  >
+                    Logout
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3 p-2">
+                  <Button variant="outline" asChild className="w-full">
+                    <Link href="/login">
+                      <div 
+                        className="flex items-center justify-center"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Login
+                      </div>
+                    </Link>
+                  </Button>
+                  <Button asChild className="w-full">
+                    <Link href="/register">
+                      <div 
+                        className="flex items-center justify-center"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Register
+                      </div>
+                    </Link>
+                  </Button>
+                </div>
+              )}
+            </div>
           </nav>
         </div>
       )}

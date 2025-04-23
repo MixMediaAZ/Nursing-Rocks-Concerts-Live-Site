@@ -15,8 +15,13 @@
     @apply border-border;
   }
 
+  html {
+    height: 100%;
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased bg-background text-foreground flex flex-col min-h-screen;
     background-image: 
       linear-gradient(to right, rgba(var(--light-blue), 0.1) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(var(--light-blue), 0.1) 1px, transparent 1px);
@@ -24,19 +29,31 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply tracking-tight font-bold text-center mx-auto;
+    @apply tracking-tight font-bold text-center mx-auto max-w-4xl;
+  }
+  
+  h1 {
+    @apply text-3xl md:text-4xl lg:text-5xl leading-tight;
+  }
+  
+  h2 {
+    @apply text-2xl md:text-3xl lg:text-4xl leading-tight;
+  }
+  
+  h3 {
+    @apply text-xl md:text-2xl lg:text-3xl leading-tight;
   }
   
   p {
-    @apply text-center mx-auto max-w-3xl;
+    @apply text-center mx-auto max-w-3xl leading-relaxed;
   }
   
   main {
-    @apply mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8;
+    @apply flex-grow flex flex-col;
   }
   
   section {
-    @apply py-8 sm:py-12 flex flex-col items-center justify-center;
+    @apply py-10 md:py-16 w-full flex flex-col items-center justify-center;
   }
 
   /* Medical-themed accent elements */
@@ -84,19 +101,33 @@
   
   /* Center layout components */
   .page-container {
-    @apply container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl;
+    @apply container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl w-full;
   }
   
   .content-section {
-    @apply py-8 sm:py-12 md:py-16 px-4 sm:px-6 flex flex-col items-center;
+    @apply py-10 sm:py-14 md:py-20 px-4 sm:px-6 flex flex-col items-center w-full;
   }
   
   .content-wrapper {
-    @apply w-full max-w-6xl mx-auto flex flex-col items-center;
+    @apply w-full max-w-6xl mx-auto flex flex-col items-center justify-center;
   }
   
   .text-container {
-    @apply max-w-3xl mx-auto text-center;
+    @apply max-w-3xl mx-auto text-center w-full;
+  }
+  
+  /* Consistent padding spacers */
+  .section-spacer {
+    @apply py-8 sm:py-12 md:py-16;
+  }
+  
+  .content-spacer {
+    @apply py-4 sm:py-6 md:py-8;
+  }
+  
+  /* Content box with background */
+  .content-box {
+    @apply bg-white rounded-lg shadow-sm p-6 md:p-8 w-full max-w-4xl mx-auto flex flex-col items-center;
   }
   
   /* Responsive layouts */
