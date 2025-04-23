@@ -79,9 +79,10 @@ export default function GalleryPage() {
   // Check if user is logged in or has admin PIN access
   useEffect(() => {
     const token = localStorage.getItem("token");
+    const isAdmin = localStorage.getItem("isAdmin");
     const adminPinVerified = localStorage.getItem("adminPinVerified");
     
-    if (token || adminPinVerified === "true") {
+    if (token || isAdmin === "true" || adminPinVerified === "true") {
       setIsLoggedIn(true);
       setIsEditMode(true);
     } else {

@@ -30,10 +30,16 @@ export default function AdminPage() {
 
   // Check existing authentication
   useEffect(() => {
-    // Clear any existing authentication on each visit to force PIN entry
-    localStorage.removeItem("isAdmin");
-    setAuthenticated(false);
-    setPin("");
+    // Check if user has already been authenticated
+    const isAdmin = localStorage.getItem("isAdmin") === "true";
+    const adminPinVerified = localStorage.getItem("adminPinVerified") === "true";
+    
+    if (isAdmin || adminPinVerified) {
+      setAuthenticated(true);
+    } else {
+      setAuthenticated(false);
+      setPin("");
+    }
   }, []);
 
   const handlePinInput = (digit: string) => {
