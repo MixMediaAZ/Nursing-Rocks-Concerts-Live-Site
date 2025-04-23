@@ -47,7 +47,7 @@ export function EditableElement({
   useEffect(() => {
     const handleImageReplaced = (event: Event) => {
       if ((event as CustomEvent).detail) {
-        const { elementId, originalUrl, newImageId } = (event as CustomEvent).detail;
+        const { elementId, originalUrl, newImageId, newImageUrl } = (event as CustomEvent).detail;
         
         // Only refresh if this is the element being replaced
         const isTargetElement = 
@@ -69,7 +69,8 @@ export function EditableElement({
               onUpdate({ 
                 refreshTimestamp: Date.now(),
                 newImageId,
-                originalUrl 
+                originalUrl,
+                newImageUrl 
               });
             }
           }, 300);

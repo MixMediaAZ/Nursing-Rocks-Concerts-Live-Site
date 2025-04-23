@@ -72,11 +72,17 @@ export function EditableContentDemo() {
               alt="Demo image"
               className="w-full h-48 object-cover rounded-md"
               onUpdate={(data) => {
+                console.log('EditableElement image update event:', data);
                 if (data.newImageId) {
-                  // In a real application, we would fetch the new image URL
-                  console.log(`Image updated to ID: ${data.newImageId}`);
-                  // For demo purposes, we'll just pretend it was updated
-                  setImageSrc(`/uploads/demo-image-${Date.now()}.jpg?id=${data.newImageId}`);
+                  if (data.newImageUrl) {
+                    // Use the new image URL that was provided in the event
+                    console.log(`Image updated to: ${data.newImageUrl}`);
+                    setImageSrc(data.newImageUrl);
+                  } else {
+                    // Fallback if no URL is provided
+                    console.log(`Image updated to ID: ${data.newImageId}`);
+                    setImageSrc(`/uploads/demo-image-${Date.now()}.jpg?id=${data.newImageId}`);
+                  }
                 }
               }}
             />
