@@ -331,13 +331,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get replacement image
         const replacementPath = path.join(process.cwd(), replacementImage.image_url);
         
-        // Generate resized images from the replacement
-        const processedImage = await processImage(
-          replacementPath,
-          path.dirname(targetPath),
-          path.basename(targetPath, path.extname(targetPath)),
-          dimensions
-        );
+        // Skip processing if the original is an external URL and we can't determine dimensions
+        let processedImage;
+        
+        // Check if original is a web URL
+        const isOriginalWebUrl = originalImage.id === -1 && 
+          (originalImage.image_url.startsWith('http://') || originalImage.image_url.startsWith('https://'));
+        
+        if (isOriginalWebUrl && Object.keys(dimensions).length === 0) {
+          // For external URLs without dimensions, just use the replacement image directly
+          console.log('Using replacement image directly for external URL without dimensions');
+          processedImage = {
+            original: replacementImage.image_url,
+            thumbnail: replacementImage.thumbnail_url || replacementImage.image_url,
+            small: replacementImage.image_url,
+            medium: replacementImage.image_url,
+            large: replacementImage.image_url
+          };
+        } else {
+          // Generate resized images from the replacement
+          processedImage = await processImage(
+            replacementPath,
+            path.dirname(targetPath),
+            path.basename(targetPath, path.extname(targetPath)),
+            dimensions
+          );
+        }
         
         // For regular database images, update the database entry
         if (originalImage.id !== -1) {

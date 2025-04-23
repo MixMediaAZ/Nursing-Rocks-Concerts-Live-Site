@@ -59,11 +59,44 @@ export function EditableImage({
         }
       }
       
-      // Then try to find by image URL
-      const foundByUrl = images.find(img => img.image_url === src);
-      if (foundByUrl) {
-        setImageData(foundByUrl);
+      // Then try to find by image URL - handle relative paths and URLencoded paths
+      const normalizedSrc = src.replace(/^\//, ''); // Remove leading slash for comparison
+      
+      // Check for exact match
+      const foundByExactUrl = images.find(img => img.image_url === src || img.image_url === normalizedSrc);
+      if (foundByExactUrl) {
+        setImageData(foundByExactUrl);
         return;
+      }
+      
+      // Check by basename match (handles path differences)
+      const srcBasename = src.split('/').pop();
+      if (srcBasename) {
+        const foundByBasename = images.find(img => {
+          const imgBasename = img.image_url.split('/').pop();
+          return imgBasename === srcBasename;
+        });
+        
+        if (foundByBasename) {
+          setImageData(foundByBasename);
+          return;
+        }
+      }
+      
+      // Check for decoded/encoded URL matches
+      try {
+        const decodedSrc = decodeURIComponent(src);
+        const foundByDecodedUrl = images.find(img => 
+          img.image_url === decodedSrc || 
+          decodeURIComponent(img.image_url) === decodedSrc
+        );
+        
+        if (foundByDecodedUrl) {
+          setImageData(foundByDecodedUrl);
+          return;
+        }
+      } catch (e) {
+        console.warn('Error decoding URL:', e);
       }
       
       // If we couldn't find the image but still want admin functionality,
