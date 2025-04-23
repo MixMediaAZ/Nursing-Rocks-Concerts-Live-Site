@@ -402,7 +402,23 @@ export default function AdminPage() {
                   </Button>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+                  <Button 
+                    variant="outline" 
+                    className="h-auto py-4 flex flex-col items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 hover:border-gray-300"
+                    onClick={() => {
+                      window.location.href = "/edit-demo";
+                      toast({
+                        title: "Edit Demo",
+                        description: "Opening element editing demo page...",
+                        variant: "default",
+                      });
+                    }}
+                  >
+                    <Edit className="h-6 w-6" />
+                    <span className="text-sm font-semibold">Edit Demo</span>
+                  </Button>
+
                   <Button 
                     variant="outline" 
                     className="h-auto py-4 flex flex-col items-center justify-center gap-2"

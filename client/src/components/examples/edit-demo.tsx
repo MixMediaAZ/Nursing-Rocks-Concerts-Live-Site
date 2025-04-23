@@ -12,7 +12,8 @@ export function EditableContentDemo() {
   const { isAdminMode, setAdminMode } = useAdminEditMode();
   const [heading, setHeading] = useState('Editable Heading');
   const [paragraph, setParagraph] = useState('This is an editable paragraph. Click the edit button when in admin mode to change this text.');
-  const [imageSrc, setImageSrc] = useState('/uploads/demo-image.jpg');
+  // Use a placeholder image from the public folder instead of requiring an actual image in uploads
+  const [imageSrc, setImageSrc] = useState('https://via.placeholder.com/600x400/4F46E5/FFFFFF?text=Nursing+Rocks+Demo+Image');
 
   return (
     <div className="container mx-auto py-8">

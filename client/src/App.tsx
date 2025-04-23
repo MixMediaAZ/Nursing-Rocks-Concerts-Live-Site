@@ -26,6 +26,7 @@ import CheckoutPage from "@/pages/checkout";
 import OrderConfirmationPage from "@/pages/order-confirmation";
 import DemoReplacePage from "@/pages/demo-replace";
 import SponsorshipsPage from "@/pages/sponsorships";
+import EditDemoPage from "@/pages/edit-demo-page";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { AdminEditingProvider } from "@/components/admin/admin-editing-provider";
@@ -70,6 +71,7 @@ function Router() {
             <Route path="/checkout" component={CheckoutPage} />
             <Route path="/store/order-confirmation" component={OrderConfirmationPage} />
             <Route path="/demo-replace" component={DemoReplacePage} />
+            <Route path="/edit-demo" component={EditDemoPage} />
             <Route component={NotFound} />
           </Switch>
         </div>
