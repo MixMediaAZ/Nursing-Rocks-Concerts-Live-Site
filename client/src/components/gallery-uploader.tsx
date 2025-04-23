@@ -26,10 +26,13 @@ export function GalleryUploader({
       setProgress(0);
       
       try {
-        const response = await apiRequest(
-          "POST", 
-          `/api/gallery/upload${folderId ? `?folderId=${folderId}` : ''}`,
-          formData
+        // Use fetch directly for file uploads
+        const response = await fetch(
+          `/api/gallery/upload${folderId ? `?folderId=${folderId}` : ''}`, 
+          {
+            method: 'POST',
+            body: formData
+          }
         );
         
         return await response.json();

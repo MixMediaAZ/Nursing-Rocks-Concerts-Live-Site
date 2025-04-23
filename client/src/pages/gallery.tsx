@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import FixedGalleryGrid from "@/components/fixed-gallery-grid";
 import { ImageViewer } from "@/components/image-viewer";
 import { GalleryUploader } from "@/components/gallery-uploader";
+import { SafeImage } from "@/components/safe-image";
 
 export default function GalleryPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -377,15 +378,20 @@ export default function GalleryPage() {
               .map((image) => (
                 <div key={image.id} className="group relative border rounded-md overflow-hidden">
                   <div className="aspect-square relative">
-                    <img
-                      src={image.image_url}
-                      alt={image.alt_text || `Image ${image.id}`}
-                      className="w-full h-full object-cover cursor-pointer"
+                    <div 
+                      className="w-full h-full cursor-pointer"
                       onClick={() => {
                         setSelectedImage(image);
                         setShowImageViewer(true);
                       }}
-                    />
+                    >
+                      <SafeImage
+                        src={image.image_url}
+                        alt={image.alt_text || `Image ${image.id}`}
+                        className="w-full h-full object-cover"
+                        showLoadingIndicator
+                      />
+                    </div>
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                       <div className="flex gap-1">
                         <Button 
@@ -489,10 +495,11 @@ export default function GalleryPage() {
                             setShowImageViewer(true);
                           }}
                         >
-                          <img
+                          <SafeImage
                             src={image.image_url}
                             alt={image.alt_text || `Image ${image.id}`}
                             className="h-full w-full object-cover"
+                            showLoadingIndicator
                           />
                         </div>
                       </td>

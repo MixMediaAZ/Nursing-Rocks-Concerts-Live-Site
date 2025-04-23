@@ -111,7 +111,7 @@ export default function FixedGalleryGrid({
                       src={image.image_url} 
                       alt={image.alt_text || `Gallery image ${image.id}`}
                       className="w-full h-full object-cover"
-                      loading="lazy"
+                      showLoadingIndicator
                     />
                   </CardContent>
                 </div>

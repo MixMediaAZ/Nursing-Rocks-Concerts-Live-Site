@@ -1,65 +1,63 @@
 import { useState } from 'react';
-import { ImageOff } from 'lucide-react';
+import { Loader2, ImageOff } from 'lucide-react';
 
-interface SafeImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
-  fallbackComponent?: React.ReactNode;
+interface SafeImageProps {
+  src: string;
+  alt: string;
+  className?: string;
   showLoadingIndicator?: boolean;
+  fallbackClassName?: string;
 }
 
-/**
- * A component that safely renders an image with fallback handling.
- * This prevents errors when an image fails to load.
- */
 export function SafeImage({
   src,
   alt,
-  className,
-  fallbackComponent,
+  className = '',
   showLoadingIndicator = false,
-  ...props
+  fallbackClassName = '',
 }: SafeImageProps) {
-  const [isLoading, setIsLoading] = useState(!!src);
+  const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
+  // Handle image load
   const handleLoad = () => {
     setIsLoading(false);
   };
 
+  // Handle image error
   const handleError = () => {
     setIsLoading(false);
     setHasError(true);
   };
 
-  if (!src || hasError) {
-    if (fallbackComponent) {
-      return <>{fallbackComponent}</>;
-    }
-
-    return (
-      <div className={`flex items-center justify-center bg-gray-100 ${className}`}>
-        <div className="flex flex-col items-center justify-center p-4 text-gray-400">
-          <ImageOff className="h-10 w-10 mb-2" />
-          <span className="text-sm text-center">{alt || 'Image not available'}</span>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <>
+    <div className={`relative ${className}`}>
+      {!hasError && (
+        <img
+          src={src}
+          alt={alt}
+          className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
+          onLoad={handleLoad}
+          onError={handleError}
+        />
+      )}
+
+      {/* Loading indicator */}
       {isLoading && showLoadingIndicator && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100/50">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
         </div>
       )}
-      <img
-        src={src}
-        alt={alt}
-        className={className}
-        onLoad={handleLoad}
-        onError={handleError}
-        {...props}
-      />
-    </>
+
+      {/* Error fallback */}
+      {hasError && (
+        <div className={`flex items-center justify-center bg-gray-100 ${fallbackClassName || className}`}>
+          <div className="flex flex-col items-center p-4 text-gray-500">
+            <ImageOff className="h-8 w-8 mb-2" />
+            <span className="text-xs text-center">{alt || 'Image not found'}</span>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
