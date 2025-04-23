@@ -87,26 +87,15 @@ const HeroSection = () => {
             Empowering and honoring nurses through the uplifting power of live music, our mission is to foster a positive impact within the nursing community at nationwide events. We strive to elevate awareness of the nursing profession and support its advancement through scholarship opportunities for further education.
           </p>
 
-          <div className="border-t border-white/20 my-8 pt-6">
-            <h3 className="font-heading text-xl font-semibold mb-4">Upcoming Featured Event</h3>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-4 mb-8">
-            <div className="flex items-center">
-              <i className="far fa-calendar-alt mr-2"></i>
-              <span>
-                {featuredEvent.date
-                  ? `${formatDate(featuredEvent.date)} • ${featuredEvent.start_time}`
-                  : "Date to be announced"}
-              </span>
+          <div className="border-t border-white/20 my-8 pt-6"></div>
+          
+          {/* Location information if needed */}
+          {featuredEvent.location && (
+            <div className="flex items-center mb-8">
+              <i className="fas fa-map-marker-alt mr-2"></i>
+              <span>{featuredEvent.location}</span>
             </div>
-            {featuredEvent.location && (
-              <div className="flex items-center">
-                <i className="fas fa-map-marker-alt mr-2"></i>
-                <span>{featuredEvent.location}</span>
-              </div>
-            )}
-          </div>
+          )}
           
           {/* Buttons Column */}
           <div className="flex flex-col gap-4 w-full max-w-sm">
