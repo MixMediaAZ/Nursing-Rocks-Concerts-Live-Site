@@ -1411,6 +1411,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Admin token generation for admin interface operations
+  app.post("/api/admin/token", async (req: Request, res: Response) => {
+    try {
+      const { pin } = req.body;
+      
+      // Hard-coded admin PIN - in production, this should be stored securely
+      const ADMIN_PIN = "1234567";
+      
+      if (!pin || pin !== ADMIN_PIN) {
+        return res.status(401).json({ message: "Invalid admin PIN" });
+      }
+      
+      // Create a fake admin user object for token generation
+      const adminUser = {
+        id: 999999, // Use a reserved ID for admin
+        email: "admin@nursingrocks.com",
+        is_verified: true,
+        is_admin: true // Admin-specific flag
+      };
+      
+      // Generate a token with admin privileges
+      // Import the JWT utility functions
+      const { generateToken } = require('./jwt');
+      const token = generateToken(adminUser as any);
+      
+      res.status(200).json({ token });
+    } catch (error) {
+      console.error("Error generating admin token:", error);
+      res.status(500).json({ message: "Failed to generate admin token" });
+    }
+  });
+
   // Check if the CustomCat API connection is valid by making a test request
   app.get("/api/store/customcat/verify-connection", async (_req: Request, res: Response) => {
     try {
@@ -1459,8 +1491,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Sync products from CustomCat to our store database
   app.post("/api/store/customcat/sync-products", authenticateToken, async (req: Request, res: Response) => {
     try {
-      // Check if user is admin
-      if (!req.user.isAdmin) {
+      // Check if user is admin - support both our custom property and the JWT payload's property
+      const isAdmin = (req as any).user?.is_admin === true || (req as any).user?.isAdmin === true;
+      
+      if (!isAdmin) {
         return res.status(403).json({ message: "Not authorized to sync products" });
       }
       
