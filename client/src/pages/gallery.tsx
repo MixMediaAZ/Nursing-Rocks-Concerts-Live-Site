@@ -82,11 +82,18 @@ export default function GalleryPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
-  // Check if user is logged in - but don't redirect for public gallery
+  // Check if user is logged in or has admin PIN access
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (token) {
+    const adminPinVerified = localStorage.getItem("adminPinVerified");
+    
+    if (token || adminPinVerified === "true") {
       setIsLoggedIn(true);
+      
+      // If accessing from admin, auto-enable edit mode
+      if (adminPinVerified === "true") {
+        setIsEditMode(true);
+      }
     } else {
       setIsLoggedIn(false);
       // Make sure edit mode is disabled for non-logged in users

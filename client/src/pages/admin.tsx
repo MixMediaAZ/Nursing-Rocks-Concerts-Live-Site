@@ -72,6 +72,8 @@ export default function AdminPage() {
         console.log("Authentication successful");
         setAuthenticated(true);
         localStorage.setItem("isAdmin", "true");
+        // Also set the flag for admin PIN verification for gallery access
+        localStorage.setItem("adminPinVerified", "true");
         toast({
           title: "Authentication Successful",
           description: "Welcome to the admin dashboard",
@@ -93,6 +95,7 @@ export default function AdminPage() {
   const handleLogout = () => {
     setAuthenticated(false);
     localStorage.removeItem("isAdmin");
+    localStorage.removeItem("adminPinVerified");
     setPin("");
     toast({
       title: "Logged Out",
@@ -188,6 +191,12 @@ export default function AdminPage() {
   const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState("overview");
     const { toast } = useToast();
+    
+    // Function to navigate directly to gallery with admin access
+    const openGalleryWithAdminAccess = () => {
+      localStorage.setItem("adminPinVerified", "true");
+      window.location.href = "/gallery";
+    };
 
     return (
       <div className="flex flex-col">
@@ -195,13 +204,22 @@ export default function AdminPage() {
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <LayoutDashboard className="h-7 w-7" /> Admin Dashboard
           </h1>
-          <Button 
-            variant="destructive" 
-            onClick={handleLogout}
-            className="bg-red-600 hover:bg-red-700"
-          >
-            Logout
-          </Button>
+          <div className="flex gap-3">
+            <Button 
+              variant="outline"
+              onClick={openGalleryWithAdminAccess}
+              className="bg-[#5D3FD3] text-white hover:bg-[#5D3FD3]/90"
+            >
+              <ImageIcon className="h-4 w-4 mr-2" /> Open Gallery
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleLogout}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Logout
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="overview" className="w-full" onValueChange={setActiveTab}>
@@ -404,16 +422,33 @@ export default function AdminPage() {
                 <p>Manage photos, videos, and media folders.</p>
                 <div className="mt-4 space-y-4">
                   <div className="flex flex-col gap-2">
-                    <h3 className="font-semibold">Media Folders</h3>
+                    <Button
+                      className="w-full h-14 mt-4 text-lg font-bold bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white shadow-md hover:shadow-lg transition-all"
+                      onClick={() => {
+                        // Ensure the admin access is set for gallery
+                        localStorage.setItem("adminPinVerified", "true");
+                        // Navigate to the gallery page
+                        window.location.href = "/gallery";
+                      }}
+                    >
+                      <ImageIcon className="mr-2 h-5 w-5" />
+                      Open Gallery Manager
+                    </Button>
+                    
+                    <h3 className="font-semibold mt-6">Media Folders</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {["Concert Photos", "Videos", "Press", "Promotional Materials", "Artist Spotlights", "Attached Assets"].map((folder, i) => (
                         <Card 
                           key={i} 
                           className="cursor-pointer hover:bg-gray-50 transition-all"
                           onClick={() => {
+                            // Ensure the admin access is set for gallery
+                            localStorage.setItem("adminPinVerified", "true");
+                            // Navigate to the gallery page
+                            window.location.href = "/gallery";
                             toast({
                               title: `Opening ${folder}`,
-                              description: "Displaying folder contents...",
+                              description: "Navigating to gallery manager...",
                               variant: "default",
                             });
                           }}
@@ -462,10 +497,11 @@ export default function AdminPage() {
                       onClick={() => {
                         toast({
                           title: "Go to Gallery Page",
-                          description: "Opening the gallery page...",
+                          description: "Opening the gallery page with admin access...",
                           variant: "default",
                         });
-                        // Use direct navigation to gallery page
+                        // Set admin access flag and navigate to gallery
+                        localStorage.setItem("adminPinVerified", "true");
                         window.location.href = "/gallery";
                       }}
                     >
