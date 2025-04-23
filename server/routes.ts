@@ -57,6 +57,7 @@ import {
   getUserTickets,
   authenticateToken
 } from "./auth";
+import { generateToken } from './jwt';
 import {
   upload,
   uploadMediaFiles,
@@ -1430,8 +1431,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       // Generate a token with admin privileges
-      // Import the JWT utility functions
-      const { generateToken } = require('./jwt');
       const token = generateToken(adminUser as any);
       
       res.status(200).json({ token });
