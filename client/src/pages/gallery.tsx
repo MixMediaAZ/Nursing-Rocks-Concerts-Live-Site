@@ -73,14 +73,15 @@ export default function GalleryPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
-  // Check if user is logged in
+  // Check if user is logged in - but don't redirect for public gallery
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
       setIsLoggedIn(true);
     } else {
-      // Redirect to login if not authenticated
-      window.location.href = "/login";
+      setIsLoggedIn(false);
+      // Make sure edit mode is disabled for non-logged in users
+      setIsEditMode(false);
     }
   }, []);
   
@@ -163,62 +164,86 @@ export default function GalleryPage() {
             </div>
             
             <div className="flex items-center gap-4">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsEditMode(!isEditMode)}
-                      className={isEditMode ? "bg-[#5D3FD3] text-white" : ""}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      {isEditMode ? "Exit Edit Mode" : "Edit Mode"}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Toggle edit mode to manage gallery images</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              {isLoggedIn ? (
+                <>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsEditMode(!isEditMode)}
+                          className={isEditMode ? "bg-[#5D3FD3] text-white" : ""}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          {isEditMode ? "Exit Edit Mode" : "Edit Mode"}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Toggle edit mode to manage gallery images</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
 
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowFolderManager(!showFolderManager)}
-                      className={showFolderManager ? "bg-[#5D3FD3] text-white" : ""}
-                    >
-                      <Folder className="h-4 w-4 mr-2" />
-                      {showFolderManager ? "Hide Folders" : "Manage Folders"}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Organize media into folders</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowFolderManager(!showFolderManager)}
+                          className={showFolderManager ? "bg-[#5D3FD3] text-white" : ""}
+                        >
+                          <Folder className="h-4 w-4 mr-2" />
+                          {showFolderManager ? "Hide Folders" : "Manage Folders"}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Organize media into folders</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
 
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="bg-[#5D3FD3] text-white hover:bg-[#5D3FD3]/90"
+                          onClick={() => setShowUploaderDialog(true)}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Upload Media
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Upload new media to gallery</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  {isEditMode && selectedImages.length > 0 && (
                     <Button
-                      variant="default"
+                      variant="destructive"
                       size="sm"
-                      className="bg-[#5D3FD3] text-white hover:bg-[#5D3FD3]/90"
-                      onClick={() => setShowUploaderDialog(true)}
+                      onClick={handleBulkDelete}
                     >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Upload Media
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Selected ({selectedImages.length})
                     </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Upload new media to gallery</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+                  )}
+                </>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.location.href = "/login"}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Login to Edit
+                </Button>
+              )}
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -256,24 +281,13 @@ export default function GalleryPage() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              
-              {isEditMode && selectedImages.length > 0 && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleBulkDelete}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Selected ({selectedImages.length})
-                </Button>
-              )}
             </div>
           </div>
           
           {/* Layout with folder panel */}
           <div className="flex flex-col md:flex-row gap-6">
-            {/* Folder sidebar - only shown when showFolderManager is true */}
-            {showFolderManager && (
+            {/* Folder sidebar - only shown when showFolderManager is true and user is logged in */}
+            {showFolderManager && isLoggedIn && (
               <div className="md:w-64 flex-shrink-0">
                 <div className="sticky top-20">
                   <MediaFolderSelector
@@ -452,53 +466,57 @@ export default function GalleryPage() {
         </div>
       </section>
       
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete {imagesToDelete.length} image(s) from the gallery. 
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDelete} 
-              className="bg-red-600 hover:bg-red-700"
-            >
-              {deleteMutation.isPending ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Deleting...
-                </span>
-              ) : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Delete Confirmation Dialog - only for logged in users */}
+      {isLoggedIn && (
+        <AlertDialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete {imagesToDelete.length} image(s) from the gallery. 
+                This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={confirmDelete} 
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {deleteMutation.isPending ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Deleting...
+                  </span>
+                ) : "Delete"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
       
-      {/* Upload Dialog */}
-      <Dialog open={showUploaderDialog} onOpenChange={setShowUploaderDialog}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogTitle>Upload Media</DialogTitle>
-          <DialogDescription>
-            Upload images to the gallery. You can select multiple files at once.
-          </DialogDescription>
-          
-          <GalleryUploader 
-            folderId={selectedFolderId}
-            onUploadComplete={() => {
-              setShowUploaderDialog(false);
-              queryClient.invalidateQueries({ queryKey: ["/api/gallery"] });
-            }} 
-          />
-        </DialogContent>
-      </Dialog>
+      {/* Upload Dialog - only for logged in users */}
+      {isLoggedIn && (
+        <Dialog open={showUploaderDialog} onOpenChange={setShowUploaderDialog}>
+          <DialogContent className="sm:max-w-xl">
+            <DialogTitle>Upload Media</DialogTitle>
+            <DialogDescription>
+              Upload images to the gallery. You can select multiple files at once.
+            </DialogDescription>
+            
+            <GalleryUploader 
+              folderId={selectedFolderId}
+              onUploadComplete={() => {
+                setShowUploaderDialog(false);
+                queryClient.invalidateQueries({ queryKey: ["/api/gallery"] });
+              }} 
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 }
