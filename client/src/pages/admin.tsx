@@ -21,6 +21,7 @@ import {
   Lock,
   Edit
 } from "lucide-react";
+import CustomCatApiSettings from "@/components/admin/custom-cat-api-settings";
 
 // Admin PIN setup - in production, this should be stored securely
 const ADMIN_PIN = "1234567";
@@ -938,103 +939,118 @@ export default function AdminPage() {
           </TabsContent>
           
           <TabsContent value="store">
-            <Card>
-              <CardHeader>
-                <CardTitle>Store Management</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Manage products, orders, and promotions.</p>
-                <div className="mt-4 space-y-4">
-                  <div className="flex flex-col gap-2">
-                    <h3 className="font-semibold">Products</h3>
-                    <div className="border rounded-md overflow-hidden">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Product
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Price
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Stock
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Actions
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {[
-                            { name: "Nursing Rocks T-Shirt", price: "$24.99", stock: 45 },
-                            { name: "Concert Mug", price: "$12.99", stock: 78 },
-                            { name: "Support a Nurse Bundle", price: "$49.99", stock: 23 },
-                            { name: "Exclusive Hoodie", price: "$39.99", stock: 12 },
-                          ].map((product, i) => (
-                            <tr key={i}>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm text-gray-500">{product.price}</div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm text-gray-500">{product.stock}</div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                <div className="flex gap-2">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm"
-                                    onClick={() => {
-                                      toast({
-                                        title: "Edit Product",
-                                        description: `Editing ${product.name}...`,
-                                        variant: "default",
-                                      });
-                                    }}
-                                  >
-                                    Edit
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="text-red-500"
-                                    onClick={() => {
-                                      toast({
-                                        title: "Delete Product",
-                                        description: `${product.name} has been deleted.`,
-                                        variant: "destructive",
-                                      });
-                                    }}
-                                  >
-                                    Delete
-                                  </Button>
-                                </div>
-                              </td>
+            <div className="grid grid-cols-1 gap-6">
+              {/* Store Integration Settings */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5" /> Store Integration Settings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomCatApiSettings />
+                </CardContent>
+              </Card>
+
+              {/* Store Products Management */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Store Products</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p>Manage products, orders, and promotions.</p>
+                  <div className="mt-4 space-y-4">
+                    <div className="flex flex-col gap-2">
+                      <h3 className="font-semibold">Products</h3>
+                      <div className="border rounded-md overflow-hidden">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Product
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Price
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Stock
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                              </th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {[
+                              { name: "Nursing Rocks T-Shirt", price: "$24.99", stock: 45 },
+                              { name: "Concert Mug", price: "$12.99", stock: 78 },
+                              { name: "Support a Nurse Bundle", price: "$49.99", stock: 23 },
+                              { name: "Exclusive Hoodie", price: "$39.99", stock: 12 },
+                            ].map((product, i) => (
+                              <tr key={i}>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm text-gray-500">{product.price}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm text-gray-500">{product.stock}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  <div className="flex gap-2">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      onClick={() => {
+                                        toast({
+                                          title: "Edit Product",
+                                          description: `Editing ${product.name}...`,
+                                          variant: "default",
+                                        });
+                                      }}
+                                    >
+                                      Edit
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="text-red-500"
+                                      onClick={() => {
+                                        toast({
+                                          title: "Delete Product",
+                                          description: `${product.name} has been deleted.`,
+                                          variant: "destructive",
+                                        });
+                                      }}
+                                    >
+                                      Delete
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
+                    
+                    <Button 
+                      className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white"
+                      onClick={() => {
+                        toast({
+                          title: "Add New Product",
+                          description: "Opening product creation form...",
+                          variant: "default",
+                        });
+                      }}
+                    >
+                      Add New Product
+                    </Button>
                   </div>
-                  
-                  <Button 
-                    className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white"
-                    onClick={() => {
-                      toast({
-                        title: "Add New Product",
-                        description: "Opening product creation form...",
-                        variant: "default",
-                      });
-                    }}
-                  >
-                    Add New Product
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
           
           <TabsContent value="users">

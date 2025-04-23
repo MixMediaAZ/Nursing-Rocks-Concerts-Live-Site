@@ -528,4 +528,67 @@ export class DatabaseStorage implements IStorage {
   async getSimilarJobs(jobId: number, limit?: number): Promise<JobListing[]> {
     throw new Error("Method not implemented.");
   }
+  
+  // ========== APP SETTINGS ==========
+  
+  async getAppSettingByKey(key: string): Promise<AppSetting | undefined> {
+    const [setting] = await db
+      .select()
+      .from(appSettings)
+      .where(eq(appSettings.key, key));
+    return setting;
+  }
+  
+  async getAllAppSettings(): Promise<AppSetting[]> {
+    return await db.select().from(appSettings);
+  }
+  
+  async createOrUpdateAppSetting(
+    key: string, 
+    value: string, 
+    description?: string, 
+    isSensitive: boolean = false
+  ): Promise<AppSetting> {
+    const now = new Date();
+    
+    // Check if setting already exists
+    const existingSetting = await this.getAppSettingByKey(key);
+    
+    if (existingSetting) {
+      // Update existing setting
+      const [updatedSetting] = await db
+        .update(appSettings)
+        .set({
+          value,
+          description: description || existingSetting.description,
+          is_sensitive: isSensitive !== undefined ? isSensitive : existingSetting.is_sensitive,
+          updated_at: now
+        })
+        .where(eq(appSettings.key, key))
+        .returning();
+      
+      return updatedSetting;
+    } else {
+      // Create new setting
+      const [newSetting] = await db
+        .insert(appSettings)
+        .values({
+          key,
+          value,
+          description: description || null,
+          is_sensitive: isSensitive,
+          created_at: now,
+          updated_at: now
+        })
+        .returning();
+      
+      return newSetting;
+    }
+  }
+  
+  async deleteAppSetting(key: string): Promise<void> {
+    await db
+      .delete(appSettings)
+      .where(eq(appSettings.key, key));
+  }
 }
