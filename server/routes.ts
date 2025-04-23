@@ -1287,6 +1287,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ========== APP SETTINGS ENDPOINTS ==========
+  
+  // Get all app settings (non-sensitive ones for public, all for admin)
+  app.get("/api/settings", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const allSettings = await storage.getAllAppSettings();
+      
+      // Only return non-sensitive settings for regular users
+      // @ts-ignore
+      const isAdmin = req.user?.is_admin === true;
+      
+      const filteredSettings = isAdmin 
+        ? allSettings 
+        : allSettings.filter(setting => !setting.is_sensitive);
+      
+      res.json(filteredSettings);
+    } catch (error) {
+      console.error("Error fetching app settings:", error);
+      res.status(500).json({ message: "Failed to fetch app settings" });
+    }
+  });
+  
+  // Get a specific setting by key
+  app.get("/api/settings/:key", async (req: Request, res: Response) => {
+    try {
+      const { key } = req.params;
+      const setting = await storage.getAppSettingByKey(key);
+      
+      if (!setting) {
+        return res.status(404).json({ message: `Setting with key '${key}' not found` });
+      }
+      
+      // Only return sensitive settings to admins
+      // @ts-ignore
+      if (setting.is_sensitive && (!req.isAuthenticated() || req.user?.is_admin !== true)) {
+        return res.status(403).json({ message: "You don't have permission to access this setting" });
+      }
+      
+      res.json(setting);
+    } catch (error) {
+      console.error(`Error fetching setting with key ${req.params.key}:`, error);
+      res.status(500).json({ message: "Failed to fetch setting" });
+    }
+  });
+  
+  // Create or update a setting (admin only)
+  app.post("/api/settings", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      // @ts-ignore
+      if (!req.user?.is_admin) {
+        return res.status(403).json({ message: "Only admins can manage settings" });
+      }
+      
+      const settingSchema = z.object({
+        key: z.string().min(1).max(100),
+        value: z.string(),
+        description: z.string().nullable().optional(),
+        is_sensitive: z.boolean().default(false).optional()
+      });
+      
+      const validatedData = settingSchema.parse(req.body);
+      
+      const setting = await storage.createOrUpdateAppSetting(
+        validatedData.key,
+        validatedData.value,
+        validatedData.description || null,
+        validatedData.is_sensitive
+      );
+      
+      res.status(200).json(setting);
+    } catch (error) {
+      console.error("Error creating/updating setting:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid setting data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create/update setting" });
+    }
+  });
+  
+  // Delete a setting (admin only)
+  app.delete("/api/settings/:key", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      // @ts-ignore
+      if (!req.user?.is_admin) {
+        return res.status(403).json({ message: "Only admins can delete settings" });
+      }
+      
+      const { key } = req.params;
+      
+      const setting = await storage.getAppSettingByKey(key);
+      if (!setting) {
+        return res.status(404).json({ message: `Setting with key '${key}' not found` });
+      }
+      
+      await storage.deleteAppSetting(key);
+      
+      res.status(200).json({ message: `Setting '${key}' deleted successfully` });
+    } catch (error) {
+      console.error(`Error deleting setting with key ${req.params.key}:`, error);
+      res.status(500).json({ message: "Failed to delete setting" });
+    }
+  });
+  
+  // Endpoint to get CustomCat API key status (used by client to check if store integration is configured)
+  app.get("/api/settings/store/customcat-status", async (_req: Request, res: Response) => {
+    try {
+      const apiKeySetting = await storage.getAppSettingByKey("CUSTOMCAT_API_KEY");
+      const isConfigured = !!apiKeySetting && !!apiKeySetting.value;
+      
+      res.json({ 
+        configured: isConfigured,
+        message: isConfigured 
+          ? "CustomCat API is configured" 
+          : "CustomCat API key not configured"
+      });
+    } catch (error) {
+      console.error("Error checking CustomCat API status:", error);
+      res.status(500).json({ 
+        configured: false,
+        message: "Error checking CustomCat API configuration"
+      });
+    }
+  });
+  
   // Create HTTP server
   const httpServer = createServer(app);
   return httpServer;

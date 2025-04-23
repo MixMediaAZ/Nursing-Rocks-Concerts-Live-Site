@@ -621,6 +621,58 @@ export class MemStorage implements IStorage {
     return Array.from(this.storeOrderItems.values())
       .filter(item => item.order_id === orderId);
   }
+  
+  // ========== APP SETTINGS ==========
+  
+  async getAppSettingByKey(key: string): Promise<AppSetting | undefined> {
+    return this.appSettings.get(key);
+  }
+  
+  async getAllAppSettings(): Promise<AppSetting[]> {
+    return Array.from(this.appSettings.values());
+  }
+  
+  async createOrUpdateAppSetting(
+    key: string, 
+    value: string, 
+    description?: string, 
+    isSensitive: boolean = false
+  ): Promise<AppSetting> {
+    const now = new Date();
+    
+    if (this.appSettings.has(key)) {
+      // Update existing setting
+      const existingSetting = this.appSettings.get(key)!;
+      const updatedSetting: AppSetting = {
+        ...existingSetting,
+        value,
+        description: description || existingSetting.description,
+        is_sensitive: isSensitive !== undefined ? isSensitive : existingSetting.is_sensitive,
+        updated_at: now
+      };
+      
+      this.appSettings.set(key, updatedSetting);
+      return updatedSetting;
+    } else {
+      // Create new setting
+      const newSetting: AppSetting = {
+        id: Math.floor(Math.random() * 1000000) + 1, // Generate random ID
+        key,
+        value,
+        description: description || null,
+        is_sensitive: isSensitive,
+        created_at: now,
+        updated_at: now
+      };
+      
+      this.appSettings.set(key, newSetting);
+      return newSetting;
+    }
+  }
+  
+  async deleteAppSetting(key: string): Promise<void> {
+    this.appSettings.delete(key);
+  }
 
   // Initialize the store with sample data
   private initializeStoreData() {
