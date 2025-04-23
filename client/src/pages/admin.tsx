@@ -553,6 +553,28 @@ export default function AdminPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-md mb-4">
+                    <h3 className="font-medium text-blue-800 mb-2 flex items-center gap-1">
+                      <Edit className="h-4 w-4" /> Try the Edit Demo
+                    </h3>
+                    <p className="text-sm text-blue-700 mb-3">
+                      Visit our interactive demo page to test how the element editing works. You can edit text and replace images in a controlled environment.
+                    </p>
+                    <Button 
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                      onClick={() => {
+                        window.location.href = "/edit-demo";
+                        toast({
+                          title: "Opening Edit Demo",
+                          description: "Redirecting to the element editing demo page...",
+                          variant: "default",
+                        });
+                      }}
+                    >
+                      <Edit className="mr-2 h-4 w-4" /> Open Edit Demo
+                    </Button>
+                  </div>
+                  
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
