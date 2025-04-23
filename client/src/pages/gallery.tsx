@@ -6,6 +6,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog";
 import { 
+  PersistentDialog,
+  PersistentDialogContent,
+  PersistentDialogTitle,
+  PersistentDialogDescription,
+  PersistentDialogHeader,
+  PersistentDialogFooter
+} from "@/components/ui/persistent-dialog";
+import { 
   ArrowUpDown, CheckSquare, Copy, Trash2, Download, Edit, 
   Filter, Folder, FolderUp, Layers, Tag, Workflow,
   Plus, ImageIcon, CheckCircle2, ChevronsUpDown, Save,
@@ -890,43 +898,29 @@ export default function GalleryPage() {
         </Dialog>
       )}
 
-      {/* Image Viewer Dialog */}
-      <Dialog 
+      {/* Image Viewer Dialog using the persistent version */}
+      <PersistentDialog 
         open={showImageViewer} 
         onOpenChange={(open) => {
-          if (!open) {
-            // Don't close automatically, only through close button
-            // We'll handle closing via the close button
-          } else {
+          if (open) {
             setShowImageViewer(true);
           }
+          // We'll only close it through the close button
         }}
-        modal={true}
       >
-        <DialogContent 
+        <PersistentDialogContent 
           className="sm:max-w-4xl max-h-[90vh] overflow-y-auto !p-4"
-          onPointerDownOutside={(e) => {
-            // Prevent closing when clicking outside
-            e.preventDefault();
-          }}
-          onInteractOutside={(e) => {
-            // Prevent closing when clicking outside
-            e.preventDefault();
-          }}
-          onEscapeKeyDown={(e) => {
-            // Prevent closing when pressing ESC key
-            e.preventDefault();
-          }}
+          showCloseButton={false}
         >
           {selectedImage && (
             <>
               <div className="flex items-center justify-between mb-4">
-                <DialogTitle>
+                <PersistentDialogTitle>
                   <span className="text-xl">Image #{selectedImage.id}</span>
                   {selectedImage.alt_text && (
-                    <DialogDescription className="mt-1">{selectedImage.alt_text}</DialogDescription>
+                    <PersistentDialogDescription className="mt-1">{selectedImage.alt_text}</PersistentDialogDescription>
                   )}
-                </DialogTitle>
+                </PersistentDialogTitle>
                 <Button 
                   variant="ghost" 
                   size="icon" 
@@ -1031,8 +1025,8 @@ export default function GalleryPage() {
               </div>
             </>
           )}
-        </DialogContent>
-      </Dialog>
+        </PersistentDialogContent>
+      </PersistentDialog>
     </>
   );
 }
