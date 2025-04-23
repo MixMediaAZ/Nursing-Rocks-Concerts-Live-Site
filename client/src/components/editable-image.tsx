@@ -100,6 +100,13 @@ export function EditableImage({
         className={className}
         alt={alt}
         triggerPosition={triggerPosition}
+        onReplaceComplete={() => {
+          // Refresh the component after replacing an image
+          // This is especially important for placeholder images
+          setTimeout(() => {
+            setImageData(null); // Clear image data to trigger a re-fetch
+          }, 100);
+        }}
       />
     );
   }

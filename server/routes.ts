@@ -273,18 +273,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Use original dimensions if we can determine them from the URL
           try {
-            // For URLs that are already local files
-            if (fs.existsSync(path.join(process.cwd(), originalImage.image_url))) {
-              const originalPath = path.join(process.cwd(), originalImage.image_url);
-              const originalImage2 = await sharp(originalPath);
-              const originalMetadata = await originalImage2.metadata();
-              dimensions = {
-                width: originalMetadata.width,
-                height: originalMetadata.height
-              };
+            // Handle the case where the URL is a local file
+            const originalPath = path.join(process.cwd(), originalImage.image_url);
+            
+            if (fs.existsSync(originalPath)) {
+              try {
+                const originalImage2 = await sharp(originalPath);
+                const originalMetadata = await originalImage2.metadata();
+                dimensions = {
+                  width: originalMetadata.width,
+                  height: originalMetadata.height
+                };
+                console.log('Found dimensions for placeholder image:', dimensions);
+              } catch (innerErr) {
+                console.warn('Error processing original image with sharp:', innerErr);
+              }
+            } else {
+              console.log('Original image not found locally, using replacement dimensions');
             }
           } catch (err) {
-            console.warn('Could not determine dimensions from placeholder image, using default');
+            console.warn('Could not determine dimensions from placeholder image, using default:', err);
             // Continue without dimensions to use the original replacement size
           }
         } else {
