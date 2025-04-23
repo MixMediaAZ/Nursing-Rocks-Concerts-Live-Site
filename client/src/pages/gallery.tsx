@@ -753,8 +753,26 @@ export default function GalleryPage() {
       )}
 
       {/* Image Viewer Dialog */}
-      <Dialog open={showImageViewer} onOpenChange={setShowImageViewer}>
-        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto !p-4">
+      <Dialog 
+        open={showImageViewer} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowImageViewer(false);
+          }
+        }}
+        modal={false}
+      >
+        <DialogContent 
+          className="sm:max-w-4xl max-h-[90vh] overflow-y-auto !p-4"
+          onInteractOutside={(e) => {
+            // Prevent closing when clicking outside
+            e.preventDefault();
+          }}
+          onEscapeKeyDown={(e) => {
+            // Prevent closing when pressing ESC key
+            e.preventDefault();
+          }}
+        >
           {selectedImage && (
             <>
               <div className="flex items-center justify-between mb-4">
