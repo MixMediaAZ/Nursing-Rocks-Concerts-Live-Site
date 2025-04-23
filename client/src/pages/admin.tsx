@@ -22,6 +22,7 @@ import {
   Edit
 } from "lucide-react";
 import CustomCatApiSettings from "@/components/admin/custom-cat-api-settings";
+import ProductSyncTool from "@/components/admin/product-sync-tool";
 
 // Admin PIN setup - in production, this should be stored securely
 const ADMIN_PIN = "1234567";
@@ -951,6 +952,9 @@ export default function AdminPage() {
                   <CustomCatApiSettings />
                 </CardContent>
               </Card>
+              
+              {/* Product Synchronization Tool */}
+              <ProductSyncTool />
 
               {/* Store Products Management */}
               <Card>
