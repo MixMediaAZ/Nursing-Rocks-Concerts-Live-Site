@@ -4,10 +4,11 @@ import { useLocation } from "wouter";
 import { Gallery, MediaFolder } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog";
 import { 
   Copy, Trash2, Download, Edit, Layers, Folder,
-  Plus, ImageIcon, CheckCircle2, ChevronsUpDown, Save
+  Plus, ImageIcon, CheckCircle2, ChevronsUpDown, Save,
+  X, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -461,7 +462,12 @@ export default function GalleryPage() {
                             <img 
                               src={image.image_url} 
                               alt={image.alt_text || "Gallery image"} 
-                              className="w-full h-48 object-cover" 
+                              className="w-full h-48 object-cover cursor-pointer" 
+                              onClick={() => {
+                                // Open the image in the viewer
+                                setSelectedImage(image);
+                                setShowImageViewer(true);
+                              }}
                             />
                           </div>
                           <CardFooter className="p-3">
@@ -529,6 +535,80 @@ export default function GalleryPage() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Image Viewer Dialog */}
+      <Dialog open={showImageViewer} onOpenChange={setShowImageViewer}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+          {selectedImage && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center justify-between">
+                  <span>Image #{selectedImage.id}</span>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => setShowImageViewer(false)} 
+                    className="h-6 w-6 rounded-full"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </DialogTitle>
+                {selectedImage.alt_text && (
+                  <DialogDescription>{selectedImage.alt_text}</DialogDescription>
+                )}
+              </DialogHeader>
+              
+              <div className="flex flex-col items-center justify-center">
+                <div className="relative w-full max-h-[70vh] overflow-hidden flex items-center justify-center">
+                  <img 
+                    src={selectedImage.image_url} 
+                    alt={selectedImage.alt_text || "Gallery image"} 
+                    className="max-w-full max-h-[70vh] object-contain"
+                  />
+                </div>
+                
+                {isLoggedIn && (
+                  <div className="mt-4 flex gap-2 justify-center w-full">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => {
+                        // Go to previous image logic
+                        if (images && images.length > 0) {
+                          const currentIndex = images.findIndex(img => img.id === selectedImage.id);
+                          if (currentIndex > 0) {
+                            setSelectedImage(images[currentIndex - 1]);
+                          }
+                        }
+                      }}
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-2" />
+                      Previous
+                    </Button>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => {
+                        // Go to next image logic
+                        if (images && images.length > 0) {
+                          const currentIndex = images.findIndex(img => img.id === selectedImage.id);
+                          if (currentIndex < images.length - 1) {
+                            setSelectedImage(images[currentIndex + 1]);
+                          }
+                        }
+                      }}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
