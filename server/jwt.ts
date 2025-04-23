@@ -13,6 +13,7 @@ export interface JwtPayload {
   userId: number;
   email: string;
   isVerified: boolean;
+  isAdmin: boolean;
 }
 
 /**
@@ -22,7 +23,8 @@ export function generateToken(user: User): string {
   const payload: JwtPayload = {
     userId: user.id,
     email: user.email,
-    isVerified: user.is_verified || false
+    isVerified: user.is_verified || false,
+    isAdmin: user.is_admin || false
   };
   
   return jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_EXPIRATION });

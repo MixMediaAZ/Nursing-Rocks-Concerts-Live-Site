@@ -247,7 +247,7 @@ export async function authenticateToken(req: Request, res: Response, next: Funct
     }
     
     // Fetch the complete user to get isAdmin value
-    const user = await storage.getUser(decoded.userId);
+    const user = await storage.getUserById(decoded.userId);
     if (!user) {
       return res.status(403).json({ message: 'User not found' });
     }

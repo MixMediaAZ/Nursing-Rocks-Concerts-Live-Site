@@ -142,6 +142,7 @@ export const users = pgTable("users", {
   last_name: text("last_name").notNull(),
   created_at: timestamp("created_at").defaultNow(),
   is_verified: boolean("is_verified").default(false),
+  is_admin: boolean("is_admin").default(false),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
