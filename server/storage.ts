@@ -13,7 +13,6 @@ import {
   SavedJob, InsertSavedJob,
   JobAlert, InsertJobAlert,
   StoreProduct, InsertStoreProduct,
-  AppSetting, InsertAppSetting,
   StoreOrder, InsertStoreOrder,
   StoreOrderItem, InsertStoreOrderItem,
   AppSetting, InsertAppSetting,
@@ -1908,6 +1907,42 @@ export class MemStorage implements IStorage {
       .map(item => item.job);
     
     return limit ? sortedJobs.slice(0, limit) : sortedJobs;
+  }
+
+  // ========== APP SETTINGS ==========
+  
+  async getAppSettingByKey(key: string): Promise<AppSetting | undefined> {
+    return this.appSettings.get(key);
+  }
+  
+  async getAllAppSettings(): Promise<AppSetting[]> {
+    return Array.from(this.appSettings.values());
+  }
+  
+  async createOrUpdateAppSetting(
+    key: string, 
+    value: string, 
+    description?: string, 
+    isSensitive?: boolean
+  ): Promise<AppSetting> {
+    const now = new Date();
+    const existingSetting = this.appSettings.get(key);
+    
+    const setting: AppSetting = {
+      key,
+      value,
+      description: description || (existingSetting?.description || ''),
+      is_sensitive: isSensitive !== undefined ? isSensitive : (existingSetting?.is_sensitive || false),
+      created_at: existingSetting?.created_at || now,
+      updated_at: now
+    };
+    
+    this.appSettings.set(key, setting);
+    return setting;
+  }
+  
+  async deleteAppSetting(key: string): Promise<void> {
+    this.appSettings.delete(key);
   }
 }
 
