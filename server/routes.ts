@@ -1335,8 +1335,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create or update a setting (admin only)
   app.post("/api/settings", authenticateToken, async (req: Request, res: Response) => {
     try {
-      // @ts-ignore
-      if (!req.user?.is_admin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Only admins can manage settings" });
       }
       
@@ -1490,11 +1489,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Sync products from CustomCat to our store database
   app.post("/api/store/customcat/sync-products", authenticateToken, async (req: Request, res: Response) => {
     try {
-      // Check if user is admin - support both our custom property and the JWT payload's property
-      const isAdmin = (req as any).user?.is_admin === true || (req as any).user?.isAdmin === true;
-      
-      if (!isAdmin) {
-        return res.status(403).json({ message: "Not authorized to sync products" });
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ message: "Not authorized to sync products. Admin privileges required" });
       }
       
       const apiKeySetting = await storage.getAppSettingByKey("CUSTOMCAT_API_KEY");
