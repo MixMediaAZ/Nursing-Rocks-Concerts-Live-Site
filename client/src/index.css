@@ -18,12 +18,12 @@
   html {
     height: 100%;
     scroll-behavior: smooth;
+    overflow-x: hidden;
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground flex flex-col min-h-screen;
+    @apply font-sans antialiased bg-background text-foreground flex flex-col min-h-screen overflow-x-hidden;
     background-image: 
-      linear-gradient(to right, rgba(var(--light-blue), 0.1) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(var(--light-blue), 0.1) 1px, transparent 1px);
     background-size: 30px 30px;
   }
@@ -101,15 +101,15 @@
   
   /* Center layout components */
   .page-container {
-    @apply container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl w-full;
+    @apply container mx-auto w-full max-w-none;
   }
   
   .content-section {
-    @apply py-10 sm:py-14 md:py-20 px-4 sm:px-6 flex flex-col items-center w-full;
+    @apply py-10 sm:py-14 md:py-20 flex flex-col items-center w-full;
   }
   
   .content-wrapper {
-    @apply w-full max-w-6xl mx-auto flex flex-col items-center justify-center;
+    @apply w-full mx-auto flex flex-col items-center justify-center;
   }
   
   .text-container {
