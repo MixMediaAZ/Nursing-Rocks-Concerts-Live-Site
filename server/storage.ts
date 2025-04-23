@@ -494,6 +494,12 @@ export class MemStorage implements IStorage {
     return this.storeProducts.get(id);
   }
   
+  async getStoreProductByExternalId(source: string, externalId: string): Promise<StoreProduct | undefined> {
+    return Array.from(this.storeProducts.values()).find(
+      product => product.external_source === source && product.external_id === externalId
+    );
+  }
+  
   async getFeaturedStoreProducts(limit?: number): Promise<StoreProduct[]> {
     const featured = Array.from(this.storeProducts.values())
       .filter(product => product.is_featured);

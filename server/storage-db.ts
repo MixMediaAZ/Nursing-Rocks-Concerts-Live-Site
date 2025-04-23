@@ -261,6 +261,19 @@ export class DatabaseStorage implements IStorage {
     return product;
   }
   
+  async getStoreProductByExternalId(source: string, externalId: string): Promise<StoreProduct | undefined> {
+    const [product] = await db
+      .select()
+      .from(storeProducts)
+      .where(
+        and(
+          eq(storeProducts.external_source, source),
+          eq(storeProducts.external_id, externalId)
+        )
+      );
+    return product;
+  }
+  
   async getFeaturedStoreProducts(limit?: number): Promise<StoreProduct[]> {
     const products = await db
       .select()
