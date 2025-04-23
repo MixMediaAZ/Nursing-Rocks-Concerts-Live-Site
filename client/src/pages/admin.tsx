@@ -75,6 +75,7 @@ export default function AdminPage() {
         toast({
           title: "Authentication Successful",
           description: "Welcome to the admin dashboard",
+          variant: "default",
         });
       } else {
         console.log("Authentication failed, PIN mismatch");
@@ -96,6 +97,7 @@ export default function AdminPage() {
     toast({
       title: "Logged Out",
       description: "You have been logged out of the admin dashboard",
+      variant: "default",
     });
   };
 
@@ -316,6 +318,7 @@ export default function AdminPage() {
                               toast({
                                 title: "Edit Event",
                                 description: `Editing ${event}...`,
+                                variant: "default",
                               });
                             }}
                           >
@@ -346,6 +349,7 @@ export default function AdminPage() {
                       toast({
                         title: "Add New Event",
                         description: "Opening event creation form...",
+                        variant: "default",
                       });
                     }}
                   >
@@ -521,6 +525,7 @@ export default function AdminPage() {
                               toast({
                                 title: "Social Sharing Editor",
                                 description: "Opening social sharing editor...",
+                                variant: "default",
                               });
                             }}
                           >
@@ -589,6 +594,7 @@ export default function AdminPage() {
                                       toast({
                                         title: "Edit Product",
                                         description: `Editing ${product.name}...`,
+                                        variant: "default",
                                       });
                                     }}
                                   >
@@ -623,6 +629,7 @@ export default function AdminPage() {
                       toast({
                         title: "Add New Product",
                         description: "Opening product creation form...",
+                        variant: "default",
                       });
                     }}
                   >
@@ -693,6 +700,7 @@ export default function AdminPage() {
                                       toast({
                                         title: "Edit User",
                                         description: `Editing ${user.name}'s profile...`,
+                                        variant: "default",
                                       });
                                     }}
                                   >
@@ -707,6 +715,7 @@ export default function AdminPage() {
                                         toast({
                                           title: "User Verified",
                                           description: `${user.name} has been verified successfully.`,
+                                          variant: "default", // Using default as success variant
                                         });
                                       }}
                                     >
