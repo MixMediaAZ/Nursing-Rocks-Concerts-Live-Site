@@ -1,63 +1,58 @@
-import { useState } from 'react';
-import { Loader2, ImageOff } from 'lucide-react';
+import React, { useState } from 'react';
+import { ImageOff } from 'lucide-react';
 
 interface SafeImageProps {
-  src: string;
+  src: string | null;
   alt: string;
   className?: string;
-  showLoadingIndicator?: boolean;
   fallbackClassName?: string;
+  showLoadingIndicator?: boolean;
 }
 
-export function SafeImage({
-  src,
-  alt,
-  className = '',
-  showLoadingIndicator = false,
-  fallbackClassName = '',
+export function SafeImage({ 
+  src, 
+  alt, 
+  className = '', 
+  fallbackClassName = '', 
+  showLoadingIndicator = false 
 }: SafeImageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-
-  // Handle image load
-  const handleLoad = () => {
-    setIsLoading(false);
-  };
-
-  // Handle image error
-  const handleError = () => {
-    setIsLoading(false);
-    setHasError(true);
-  };
-
+  
+  // If no source is provided, show the fallback
+  if (!src) {
+    return (
+      <div className={`flex items-center justify-center bg-slate-100 ${className} ${fallbackClassName}`}>
+        <ImageOff className="h-8 w-8 text-slate-400" />
+      </div>
+    );
+  }
+  
   return (
-    <div className={`relative ${className}`}>
-      {!hasError && (
+    <>
+      {isLoading && showLoadingIndicator && (
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-100 z-10">
+          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      )}
+      
+      {hasError ? (
+        <div className={`flex items-center justify-center bg-slate-100 ${className} ${fallbackClassName}`}>
+          <ImageOff className="h-8 w-8 text-slate-400" />
+          <span className="sr-only">Image failed to load</span>
+        </div>
+      ) : (
         <img
           src={src}
           alt={alt}
-          className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
-          onLoad={handleLoad}
-          onError={handleError}
+          className={className}
+          onLoad={() => setIsLoading(false)}
+          onError={() => {
+            setIsLoading(false);
+            setHasError(true);
+          }}
         />
       )}
-
-      {/* Loading indicator */}
-      {isLoading && showLoadingIndicator && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100/50">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-        </div>
-      )}
-
-      {/* Error fallback */}
-      {hasError && (
-        <div className={`flex items-center justify-center bg-gray-100 ${fallbackClassName || className}`}>
-          <div className="flex flex-col items-center p-4 text-gray-500">
-            <ImageOff className="h-8 w-8 mb-2" />
-            <span className="text-xs text-center">{alt || 'Image not found'}</span>
-          </div>
-        </div>
-      )}
-    </div>
+    </>
   );
 }

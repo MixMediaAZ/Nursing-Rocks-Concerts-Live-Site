@@ -24,6 +24,7 @@ import StoreCategoryPage from "@/pages/store-category";
 import CartPage from "@/pages/cart";
 import CheckoutPage from "@/pages/checkout";
 import OrderConfirmationPage from "@/pages/order-confirmation";
+import DemoReplacePage from "@/pages/demo-replace";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 
@@ -64,6 +65,7 @@ function Router() {
           <Route path="/cart" component={CartPage} />
           <Route path="/checkout" component={CheckoutPage} />
           <Route path="/store/order-confirmation" component={OrderConfirmationPage} />
+          <Route path="/demo-replace" component={DemoReplacePage} />
           <Route component={NotFound} />
         </Switch>
       </main>

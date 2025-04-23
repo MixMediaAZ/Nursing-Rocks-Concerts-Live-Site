@@ -1,102 +1,128 @@
-import { useState, useEffect } from "react";
-import { Gallery } from "@shared/schema";
-import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { ImageViewer } from "@/components/image-viewer";
-import FixedGalleryGrid from "@/components/fixed-gallery-grid";
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Gallery } from '@shared/schema';
+import { SafeImage } from './safe-image';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, Search, Image as ImageIcon } from 'lucide-react';
 
-export default function StableGallery() {
-  const { data: galleryImages, isLoading } = useQuery<Gallery[]>({
-    queryKey: ["/api/gallery"],
+interface StableGalleryProps {
+  selectable?: boolean;
+  onSelect?: (image: Gallery) => void;
+  isLoading?: boolean;
+  initialFilter?: string;
+}
+
+export function StableGallery({ 
+  selectable = false,
+  onSelect,
+  isLoading: externalLoading = false,
+  initialFilter = '',
+}: StableGalleryProps) {
+  const [filter, setFilter] = useState(initialFilter);
+  
+  // Fetch all gallery images
+  const { data: galleryData, isLoading: isLoadingGallery } = useQuery<Gallery[] | {rows: Gallery[]}>({
+    queryKey: ['/api/gallery'],
   });
   
-  const [visibleCount, setVisibleCount] = useState(6);
-  const [images, setImages] = useState<Gallery[]>([]);
-  const [selectedImage, setSelectedImage] = useState<Gallery | null>(null);
-  const [showImageViewer, setShowImageViewer] = useState(false);
+  const isLoading = isLoadingGallery || externalLoading;
   
-  // When images load, update our local state
-  useEffect(() => {
-    if (galleryImages && Array.isArray(galleryImages)) {
-      setImages(galleryImages);
-    } else if (galleryImages && 'rows' in galleryImages) {
-      // Handle alternate API response format
-      // @ts-ignore - We know this has rows because we checked
-      setImages(galleryImages.rows);
+  // Handle different possible data structures from API
+  let filteredImages: Gallery[] = [];
+  if (galleryData) {
+    if (Array.isArray(galleryData)) {
+      filteredImages = galleryData;
+    } else if (typeof galleryData === 'object' && 'rows' in galleryData && Array.isArray(galleryData.rows)) {
+      filteredImages = galleryData.rows;
     }
-  }, [galleryImages]);
+  }
   
-  const handleViewMore = () => {
-    // Navigate to full gallery page
-    window.location.href = "/gallery";
+  // Extract images with filters if needed
+  const images = filter
+    ? filteredImages.filter(img => 
+        img.alt_text?.toLowerCase().includes(filter.toLowerCase()) || 
+        img.image_url?.toLowerCase().includes(filter.toLowerCase()))
+    : filteredImages;
+  
+  const handleSelect = (image: Gallery) => {
+    if (selectable && onSelect) {
+      onSelect(image);
+    }
   };
-  
-  const handleShowMore = () => {
-    setVisibleCount(prev => Math.min(prev + 6, images.length));
-  };
-  
-  // Create a visibility-safe slice of images
-  const visibleImages = images && images.slice ? images.slice(0, visibleCount) : [];
   
   return (
-    <section className="py-16 bg-white">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold mb-2">Photo Gallery</h2>
-          <p className="text-gray-600">Relive the magic from our previous events</p>
+    <div className="w-full">
+      {/* Gallery search and filtering */}
+      <div className="mb-6 flex flex-col space-y-4">
+        <div className="flex items-center space-x-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search images..."
+              className="pl-8"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            />
+          </div>
         </div>
-        
-        {/* Use our stable gallery grid component with click handler */}
-        <div onClick={(e) => {
-          // Find the closest image element to the click target
-          const target = e.target as HTMLElement;
-          const card = target.closest('.gallery-image-card');
-          if (card) {
-            const imageId = parseInt(card.getAttribute('data-image-id') || '0', 10);
-            const clickedImage = images.find(img => img.id === imageId);
-            if (clickedImage) {
-              setSelectedImage(clickedImage);
-              setShowImageViewer(true);
-            }
-          }
-        }}>
-          <FixedGalleryGrid
-            title=""
-            subtitle=""
-            images={visibleImages}
-            isLoading={isLoading}
-          />
-        </div>
-        
-        {images && images.length > 0 && (
-          <div className="mt-8 flex justify-center gap-4">
-            {visibleCount < images.length && (
-              <Button
-                variant="outline"
-                onClick={handleShowMore}
+      </div>
+      
+      {/* Gallery grid */}
+      <div className="relative">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : images.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <ImageIcon className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium">No images found</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              {filter 
+                ? "Try a different search term" 
+                : "Upload some images to get started"}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {images.map((image) => (
+              <div 
+                key={image.id} 
+                className={`group relative overflow-hidden rounded-md border bg-background ${
+                  selectable ? 'cursor-pointer' : ''
+                }`}
+                onClick={selectable ? () => handleSelect(image) : undefined}
               >
-                Show More
-              </Button>
-            )}
-            
-            <Button
-              onClick={handleViewMore}
-              className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90"
-            >
-              View Gallery
-            </Button>
+                <div className="aspect-square overflow-hidden">
+                  <SafeImage
+                    src={image.image_url || ''}
+                    alt={image.alt_text || 'Gallery image'}
+                    className="h-full w-full object-cover transition-all group-hover:scale-105"
+                    fallbackClassName="h-full w-full flex items-center justify-center bg-muted"
+                  />
+                </div>
+                
+                {selectable && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
+                    <Button variant="secondary" size="sm">
+                      Select
+                    </Button>
+                  </div>
+                )}
+                
+                <div className="p-2">
+                  <p className="truncate text-xs text-muted-foreground">
+                    {image.alt_text || "No description"}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
-      
-      {/* Image viewer that's guaranteed not to disappear */}
-      <ImageViewer
-        image={selectedImage}
-        isVisible={showImageViewer}
-        onClose={() => setShowImageViewer(false)}
-        imageList={images}
-        onNavigate={setSelectedImage}
-      />
-    </section>
+    </div>
   );
 }

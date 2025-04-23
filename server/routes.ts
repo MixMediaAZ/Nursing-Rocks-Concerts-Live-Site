@@ -7,6 +7,8 @@ import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { storage } from "./storage";
 import { gallery, mediaFolders } from "@shared/schema";
+import sharp from "sharp";
+import { processImage } from "./image-utils";
 import { 
   galleryUpload, 
   createMediaFolder, 
@@ -144,12 +146,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/gallery/event/:eventId", getGalleryImagesByEvent);
   app.get("/api/gallery/folder/:folderId", getGalleryImagesByFolder);
   
+  // Get a single gallery image by ID
+  app.get("/api/gallery/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      
+      if (!id || isNaN(parseInt(id, 10))) {
+        return res.status(400).json({ error: 'Invalid image ID' });
+      }
+      
+      const imageId = parseInt(id, 10);
+      const [image] = await db.select().from(gallery).where(eq(gallery.id, imageId));
+      
+      if (!image) {
+        return res.status(404).json({ error: 'Image not found' });
+      }
+      
+      res.json(image);
+    } catch (error) {
+      console.error('Error getting gallery image:', error);
+      res.status(500).json({ error: 'Failed to get gallery image' });
+    }
+  });
+  
   // Gallery media management endpoints
   app.post("/api/gallery/upload", galleryUpload.array('images', 20), uploadGalleryImages);
   app.delete("/api/gallery/:id", deleteGalleryImage);
   app.patch("/api/gallery/:id", updateGalleryImage);
   app.post("/api/gallery/:id/replace", galleryUpload.single('image'), replaceGalleryImage);
   app.post("/api/gallery/replace/:id", replaceGalleryImage);
+  
+  // Replace one gallery image with another
+  app.post("/api/gallery/:id/replace-with/:replacementId", async (req: Request, res: Response) => {
+    try {
+      const { id, replacementId } = req.params;
+      
+      if (!id || isNaN(parseInt(id, 10)) || !replacementId || isNaN(parseInt(replacementId, 10))) {
+        return res.status(400).json({ error: 'Invalid image IDs' });
+      }
+      
+      const originalImageId = parseInt(id, 10);
+      const newImageId = parseInt(replacementId, 10);
+      
+      // Get both images
+      const [originalImage] = await db.select().from(gallery).where(eq(gallery.id, originalImageId));
+      const [replacementImage] = await db.select().from(gallery).where(eq(gallery.id, newImageId));
+      
+      if (!originalImage || !replacementImage) {
+        return res.status(404).json({ error: 'One or both images not found' });
+      }
+      
+      // Process the replacement - this reuses the image replacement endpoint logic
+      // but sources the new image from the gallery rather than an upload
+      
+      try {
+        // Get image dimensions from original
+        const originalPath = path.join(process.cwd(), originalImage.image_url);
+        const originalImage2 = await sharp(originalPath);
+        const originalMetadata = await originalImage2.metadata();
+        
+        // Get replacement image
+        const replacementPath = path.join(process.cwd(), replacementImage.image_url);
+        
+        // Process the replacement image to match the original dimensions
+        const dimensions = {
+          width: originalMetadata.width,
+          height: originalMetadata.height
+        };
+        
+        // Generate resized images from the replacement
+        const processedImage = await processImage(
+          replacementPath,
+          path.dirname(originalPath),
+          path.basename(originalPath, path.extname(originalPath)),
+          dimensions
+        );
+        
+        // Update the database entry with the new processed image paths
+        await db.update(gallery)
+          .set({
+            image_url: processedImage.original,
+            thumbnail_url: processedImage.thumbnail,
+            updated_at: new Date()
+          })
+          .where(eq(gallery.id, originalImageId));
+        
+        res.status(200).json({
+          message: 'Image replaced successfully',
+          id: originalImageId,
+          image_url: processedImage.original,
+          thumbnail_url: processedImage.thumbnail
+        });
+      } catch (error) {
+        console.error('Error processing replacement image:', error);
+        return res.status(500).json({ error: 'Failed to process replacement image' });
+      }
+      
+    } catch (error) {
+      console.error('Error replacing image:', error);
+      res.status(500).json({ error: 'Failed to replace image' });
+    }
+  });
   
   // Media Folders management 
   app.get("/api/media-folders", getMediaFolders);

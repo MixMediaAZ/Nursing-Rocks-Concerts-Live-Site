@@ -1,101 +1,117 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Gallery } from '@shared/schema';
 import { SafeImage } from './safe-image';
-import { ImageReplacementTrigger } from './image-replacement-trigger';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ImageReplacementDialog } from './image-replacement-dialog';
+import { Button } from '@/components/ui/button';
+import { Pencil } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
 
 interface AdminImageProps {
-  src: string;
-  alt: string;
-  className?: string;
-  showLoadingIndicator?: boolean;
-  fallbackClassName?: string;
+  imageData: Gallery;
   isAdmin?: boolean;
-  imageId?: number; // Optional ID to fetch from gallery if known
+  className?: string;
+  alt?: string;
   triggerPosition?: "top-right" | "bottom-right" | "bottom-left" | "top-left";
-  refreshInterval?: number; // Optional refresh interval in ms
+  onReplaceComplete?: () => void;
 }
 
+/**
+ * AdminImage component
+ * Wraps an image with admin functionality when appropriate
+ * If isAdmin is true, shows the image replacement trigger
+ */
 export function AdminImage({
-  src,
-  alt,
-  className = '',
-  showLoadingIndicator = false,
-  fallbackClassName = '',
+  imageData,
   isAdmin = false,
-  imageId,
+  className = '',
+  alt,
   triggerPosition = "top-right",
-  refreshInterval
+  onReplaceComplete
 }: AdminImageProps) {
-  const [imageData, setImageData] = useState<Gallery | null>(null);
+  const [isReplaceDialogOpen, setIsReplaceDialogOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   
-  // If we have an imageId, fetch the data for it
-  const { data: galleryImage, isSuccess } = useQuery<Gallery>({
-    queryKey: [`/api/gallery/${imageId}`],
-    enabled: !!imageId && isAdmin,
-    refetchInterval: refreshInterval
-  });
-  
-  // Set image data directly if we have it from the gallery
-  useEffect(() => {
-    if (isSuccess && galleryImage) {
-      setImageData(galleryImage);
-    }
-  }, [isSuccess, galleryImage]);
-  
-  // If we don't have image data yet, but we have the URL, construct a minimal Gallery object
-  useEffect(() => {
-    if (!imageData && src) {
-      setImageData({
-        id: imageId || -1, // Use -1 as placeholder if no real ID
-        image_url: src,
-        thumbnail_url: null,
-        alt_text: alt,
-        created_at: new Date(),
-        updated_at: new Date()
-      } as Gallery);
-    }
-  }, [imageData, src, alt, imageId]);
-  
-  const handleReplaceComplete = () => {
-    // If we have an imageId, invalidate the query to refresh the data
-    if (imageId) {
-      queryClient.invalidateQueries({ queryKey: [`/api/gallery/${imageId}`] });
-    }
-    
-    // Also invalidate the general gallery query to ensure listings are updated
-    queryClient.invalidateQueries({ queryKey: ['/api/gallery'] });
+  // Positioning classes for the trigger button
+  const positionClasses = {
+    "top-right": "top-2 right-2",
+    "bottom-right": "bottom-2 right-2",
+    "bottom-left": "bottom-2 left-2", 
+    "top-left": "top-2 left-2"
   };
   
-  // If we're not in admin mode or don't have image data, just show the regular SafeImage
-  if (!isAdmin || !imageData) {
-    return (
-      <SafeImage
-        src={src}
-        alt={alt}
-        className={className}
-        showLoadingIndicator={showLoadingIndicator}
-        fallbackClassName={fallbackClassName}
-      />
-    );
-  }
+  // Replace image mutation
+  const replaceImageMutation = useMutation({
+    mutationFn: async (replacementImageId: number) => {
+      const response = await apiRequest(
+        'POST', 
+        `/api/gallery/${imageData.id}/replace-with/${replacementImageId}`
+      );
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate any queries that might include this image
+      queryClient.invalidateQueries({ queryKey: ['/api/gallery'] });
+      
+      toast({
+        title: "Image replaced successfully",
+        description: "The image has been successfully replaced with the selected one.",
+      });
+      
+      // Close the dialog
+      setIsReplaceDialogOpen(false);
+      
+      // Trigger callback if provided
+      if (onReplaceComplete) {
+        onReplaceComplete();
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error replacing image",
+        description: error.message || "There was an error replacing the image. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
   
-  // In admin mode with image data, wrap with the replacement trigger
+  const handleReplaceClick = () => {
+    setIsReplaceDialogOpen(true);
+  };
+  
+  const handleReplaceImage = (replacementImageId: number) => {
+    replaceImageMutation.mutate(replacementImageId);
+  };
+  
   return (
-    <ImageReplacementTrigger
-      imageData={imageData}
-      triggerPosition={triggerPosition}
-      isAdmin={isAdmin}
-      onReplaceComplete={handleReplaceComplete}
-    >
-      <SafeImage
-        src={imageData.image_url || src}
-        alt={imageData.alt_text || alt}
-        className={className}
-        showLoadingIndicator={showLoadingIndicator}
-        fallbackClassName={fallbackClassName}
+    <div className="relative">
+      <SafeImage 
+        src={imageData.image_url}
+        alt={alt || imageData.alt_text || "Image"}
+        className={className} 
       />
-    </ImageReplacementTrigger>
+      
+      {isAdmin && (
+        <>
+          <Button
+            variant="secondary"
+            size="icon"
+            className={`absolute ${positionClasses[triggerPosition]} opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity z-10`}
+            onClick={handleReplaceClick}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          
+          <ImageReplacementDialog
+            open={isReplaceDialogOpen}
+            onOpenChange={setIsReplaceDialogOpen}
+            onSelectImage={handleReplaceImage}
+            isPending={replaceImageMutation.isPending}
+          />
+        </>
+      )}
+    </div>
   );
 }

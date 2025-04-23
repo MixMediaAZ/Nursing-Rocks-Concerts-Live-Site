@@ -2,7 +2,7 @@ import HeroSection from "@/components/hero-section";
 import UpcomingEvents from "@/components/upcoming-events";
 import FeaturedArtist from "@/components/featured-artist";
 import ConcertCalendar from "@/components/concert-calendar";
-import StableGallery from "@/components/stable-gallery";
+import { StableGallery } from "@/components/stable-gallery";
 import Newsletter from "@/components/newsletter";
 import PromotionButtons from "@/components/promotion-buttons";
 import { Helmet } from "react-helmet";
