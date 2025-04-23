@@ -193,15 +193,15 @@ export function ElementSelectionOverlay({
       {isSelected && (
         <div 
           ref={controlsRef}
-          className="selection-controls absolute top-2 right-2 flex space-x-1 z-20"
+          className={`selection-controls absolute top-2 right-2 flex ${isMobile ? 'space-x-2' : 'space-x-1'} z-20`}
           onClick={(e) => e.stopPropagation()} 
           onTouchStart={(e) => e.stopPropagation()}
         >
           {onEdit && (
             <Button 
               variant="default" 
-              size="sm" 
-              className="bg-blue-500 hover:bg-blue-600 p-1 h-8 w-8 touch-manipulation"
+              size={isMobile ? "default" : "sm"} 
+              className={`bg-blue-500 hover:bg-blue-600 ${isMobile ? 'p-2 h-10 w-10' : 'p-1 h-8 w-8'} touch-manipulation active:scale-95`}
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit();
@@ -211,18 +211,18 @@ export function ElementSelectionOverlay({
               }}
               title={`Edit ${elementType}`}
             >
-              {elementType === 'image' ? <ImageIcon className="h-4 w-4" /> :
-               elementType === 'text' ? <PenSquare className="h-4 w-4" /> :
-               elementType === 'video' ? <Video className="h-4 w-4" /> :
-               <Edit className="h-4 w-4" />}
+              {elementType === 'image' ? <ImageIcon className={isMobile ? "h-5 w-5" : "h-4 w-4"} /> :
+               elementType === 'text' ? <PenSquare className={isMobile ? "h-5 w-5" : "h-4 w-4"} /> :
+               elementType === 'video' ? <Video className={isMobile ? "h-5 w-5" : "h-4 w-4"} /> :
+               <Edit className={isMobile ? "h-5 w-5" : "h-4 w-4"} />}
             </Button>
           )}
           
           {onReplace && (
             <Button 
               variant="default" 
-              size="sm" 
-              className="bg-purple-500 hover:bg-purple-600 p-1 h-8 w-8 touch-manipulation"
+              size={isMobile ? "default" : "sm"} 
+              className={`bg-purple-500 hover:bg-purple-600 ${isMobile ? 'p-2 h-10 w-10' : 'p-1 h-8 w-8'} touch-manipulation active:scale-95`}
               onClick={(e) => {
                 e.stopPropagation();
                 onReplace();
@@ -232,15 +232,15 @@ export function ElementSelectionOverlay({
               }}
               title="Replace element"
             >
-              <Replace className="h-4 w-4" />
+              <Replace className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
             </Button>
           )}
           
           {onMove && (
             <Button 
               variant="default" 
-              size="sm" 
-              className="bg-amber-500 hover:bg-amber-600 p-1 h-8 w-8 touch-manipulation"
+              size={isMobile ? "default" : "sm"} 
+              className={`bg-amber-500 hover:bg-amber-600 ${isMobile ? 'p-2 h-10 w-10' : 'p-1 h-8 w-8'} touch-manipulation active:scale-95`}
               onClick={(e) => {
                 e.stopPropagation();
                 onMove();
@@ -250,14 +250,14 @@ export function ElementSelectionOverlay({
               }}
               title="Move element"
             >
-              <Move className="h-4 w-4" />
+              <Move className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
             </Button>
           )}
           
           <Button 
             variant="destructive" 
-            size="sm" 
-            className="p-1 h-8 w-8 touch-manipulation"
+            size={isMobile ? "default" : "sm"} 
+            className={`${isMobile ? 'p-2 h-10 w-10' : 'p-1 h-8 w-8'} touch-manipulation active:scale-95`}
             onClick={(e) => {
               e.stopPropagation();
               setIsSelected(false);
@@ -267,7 +267,7 @@ export function ElementSelectionOverlay({
             }}
             title="Close selection"
           >
-            <X className="h-4 w-4" />
+            <X className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
           </Button>
         </div>
       )}
@@ -275,20 +275,31 @@ export function ElementSelectionOverlay({
       {/* Type and ID label when selected */}
       {isSelected && (
         <div 
-          className="selection-controls absolute top-2 left-2 bg-blue-500 text-white text-xs sm:text-sm px-2 py-1 rounded z-20 flex items-center gap-1 shadow-sm"
+          className={`selection-controls absolute top-2 left-2 bg-blue-500 text-white ${
+            isMobile ? 'text-sm px-3 py-2' : 'text-xs sm:text-sm px-2 py-1'
+          } rounded-md z-20 flex items-center gap-1.5 shadow-md touch-manipulation`}
           onClick={(e) => e.stopPropagation()} 
           onTouchStart={(e) => e.stopPropagation()}
         >
-          {elementType === 'image' ? <ImageIcon className="h-3 w-3 sm:h-4 sm:w-4" /> : 
-           elementType === 'text' ? <Type className="h-3 w-3 sm:h-4 sm:w-4" /> : 
-           elementType === 'video' ? <Video className="h-3 w-3 sm:h-4 sm:w-4" /> : 
-           <Component className="h-3 w-3 sm:h-4 sm:w-4" />}
-          <span className="whitespace-nowrap">
+          {elementType === 'image' ? 
+            <ImageIcon className={isMobile ? "h-4 w-4" : "h-3 w-3 sm:h-4 sm:w-4"} /> : 
+           elementType === 'text' ? 
+            <Type className={isMobile ? "h-4 w-4" : "h-3 w-3 sm:h-4 sm:w-4"} /> : 
+           elementType === 'video' ? 
+            <Video className={isMobile ? "h-4 w-4" : "h-3 w-3 sm:h-4 sm:w-4"} /> : 
+            <Component className={isMobile ? "h-4 w-4" : "h-3 w-3 sm:h-4 sm:w-4"} />
+          }
+          <span className="whitespace-nowrap font-medium">
             {elementType === 'image' ? 'Image' : 
              elementType === 'text' ? 'Text' : 
              elementType === 'video' ? 'Video' : 'Component'}
-            {elementId && ` #${elementId}`}
+            {elementId && <span className="font-normal">{` #${elementId}`}</span>}
           </span>
+          
+          {/* Mobile-only helper text */}
+          {isMobile && (
+            <ZoomIn className="h-3.5 w-3.5 ml-1 text-blue-100" />
+          )}
         </div>
       )}
       

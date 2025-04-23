@@ -173,4 +173,34 @@
   .responsive-container {
     @apply w-full mx-auto px-4 max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl 2xl:max-w-4xl;
   }
+  
+  /* Touch interaction animations */
+  @keyframes progress-bar {
+    0% { width: 0%; }
+    100% { width: 100%; }
+  }
+  
+  .animate-progress-bar {
+    animation: progress-bar 700ms ease-in-out forwards;
+  }
+  
+  /* Touch-friendly improvements */
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+  
+  /* Mobile active states for touch feedback */
+  @media (hover: none) {
+    .active\:bg-primary\/5:active {
+      background-color: hsl(var(--primary) / 0.05);
+    }
+    
+    .active\:scale-95:active {
+      transform: scale(0.95);
+    }
+    
+    .active\:opacity-70:active {
+      opacity: 0.7;
+    }
+  }
 }
