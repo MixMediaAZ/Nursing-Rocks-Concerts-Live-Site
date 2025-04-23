@@ -88,15 +88,27 @@ export default function AdminPage() {
   };
 
   const handleLogout = () => {
+    // Clear authentication state
     setAuthenticated(false);
     localStorage.removeItem("isAdmin");
     localStorage.removeItem("adminPinVerified");
+    
+    // Also clear editing mode state
+    localStorage.removeItem("editMode");
+    
+    // Reset PIN input
     setPin("");
+    
     toast({
       title: "Logged Out",
-      description: "You have been logged out of the admin dashboard",
+      description: "You have been logged out of the admin dashboard and editing mode has been disabled",
       variant: "default",
     });
+    
+    // Small delay before redirecting to home page
+    setTimeout(() => {
+      window.location.href = "/";
+    }, 1500);
   };
 
   // PIN pad component
@@ -557,6 +569,16 @@ export default function AdminPage() {
                       </div>
                       <Switch defaultChecked />
                     </div>
+                    
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <Button 
+                        variant="outline" 
+                        className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                        onClick={handleLogout}
+                      >
+                        Logout from Admin Dashboard
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -572,19 +594,29 @@ export default function AdminPage() {
                     No recently edited elements found.
                   </div>
                   
-                  <Button 
-                    variant="outline" 
-                    className="w-full mt-2"
-                    onClick={() => {
-                      toast({
-                        title: "View Edit History",
-                        description: "This feature will be available in a future update",
-                        variant: "default",
-                      });
-                    }}
-                  >
-                    View Edit History
-                  </Button>
+                  <div className="flex flex-col gap-2">
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => {
+                        toast({
+                          title: "View Edit History",
+                          description: "This feature will be available in a future update",
+                          variant: "default",
+                        });
+                      }}
+                    >
+                      View Edit History
+                    </Button>
+                    
+                    <Button 
+                      variant="outline"
+                      className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 mt-4"
+                      onClick={handleLogout}
+                    >
+                      Logout from Admin Dashboard
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </div>
