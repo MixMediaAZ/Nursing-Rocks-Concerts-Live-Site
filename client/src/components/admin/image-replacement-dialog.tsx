@@ -128,7 +128,8 @@ export function ImageReplacementDialog({
         ) : (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 my-4">
-              {galleryImages?.rows?.map((image: any) => (
+              {galleryImages && Array.isArray(galleryImages.rows || galleryImages) && 
+               (galleryImages.rows || galleryImages).map((image: any) => (
                 <div 
                   key={image.id}
                   onClick={() => setSelectedImageId(image.id)}
@@ -147,7 +148,9 @@ export function ImageReplacementDialog({
                 </div>
               ))}
               
-              {galleryImages?.rows?.length === 0 && (
+              {(!galleryImages || 
+                (galleryImages.rows && galleryImages.rows.length === 0) || 
+                (Array.isArray(galleryImages) && galleryImages.length === 0)) && (
                 <div className="col-span-full py-8 text-center text-muted-foreground">
                   No images found in gallery. Please upload some images first.
                 </div>

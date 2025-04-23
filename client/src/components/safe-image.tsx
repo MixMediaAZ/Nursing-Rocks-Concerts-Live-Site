@@ -42,15 +42,26 @@ export function SafeImage({
   // Listen for global image replacement events 
   useEffect(() => {
     const handleImageReplaced = (event: Event) => {
-      // Force refresh the image
-      setForceRefresh(Date.now());
+      const detail = (event as CustomEvent).detail;
+      
+      // Check if this image's src matches the replaced image's original URL
+      if (detail && detail.originalUrl && src && src.includes(detail.originalUrl)) {
+        console.log('Image replacement detected for:', src);
+        // Force refresh the image with a delay to ensure the server has processed the change
+        setTimeout(() => {
+          setForceRefresh(Date.now());
+        }, 200);
+      } else {
+        // Force refresh all images as a fallback strategy
+        setForceRefresh(Date.now());
+      }
     };
     
     window.addEventListener('image-replaced', handleImageReplaced);
     return () => {
       window.removeEventListener('image-replaced', handleImageReplaced);
     };
-  }, []);
+  }, [src]);
   
   // If no source is provided, show the fallback
   if (!imageSrc) {

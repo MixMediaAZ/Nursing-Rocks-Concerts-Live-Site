@@ -38,6 +38,7 @@ export function EditableElement({
   placeholder,
 }: EditableElementProps) {
   const [isReplacementDialogOpen, setIsReplacementDialogOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(Date.now());
   const adminState = useAdminEditMode();
   const uniqueId = id || `${type}-${Math.random().toString(36).substring(2, 9)}`;
   
@@ -45,21 +46,32 @@ export function EditableElement({
   useEffect(() => {
     const handleImageReplaced = (event: Event) => {
       if ((event as CustomEvent).detail) {
-        const { elementId, originalUrl } = (event as CustomEvent).detail;
+        const { elementId, originalUrl, newImageId } = (event as CustomEvent).detail;
         
         // Only refresh if this is the element being replaced
         const isTargetElement = 
           (id && elementId && id.toString() === elementId.toString()) || 
-          (src && originalUrl && src === originalUrl);
+          (src && originalUrl && src.includes(originalUrl));
           
         if (isTargetElement) {
+          console.log(`Element detected replacement: ID=${id}, originalUrl=${src}, newImageId=${newImageId}`);
+          
           // Invalidate any relevant cache to force refetch
           queryClient.invalidateQueries();
           
-          // Force a refresh on this component
-          if (onUpdate) {
-            onUpdate({ refreshTimestamp: Date.now() });
-          }
+          // Force a refresh on this component with a short delay to ensure server has processed
+          setTimeout(() => {
+            setRefreshKey(Date.now());
+            
+            // Force a refresh on this component if callback exists
+            if (onUpdate) {
+              onUpdate({ 
+                refreshTimestamp: Date.now(),
+                newImageId,
+                originalUrl 
+              });
+            }
+          }, 300);
         }
       }
     };
