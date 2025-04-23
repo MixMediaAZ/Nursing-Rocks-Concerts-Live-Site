@@ -262,8 +262,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // If dealing with a placeholder image or external URL
         if (originalImage.id === -1) {
-          // For placeholder images, we'll use dimensions from the replacement image
-          // or default dimensions if not available
+          // For placeholder images, we'll use the replacement image's dimensions
           targetPath = path.join(process.cwd(), 'uploads', 'replaced-' + Date.now());
           
           // Ensure target directory exists
@@ -271,29 +270,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
             fs.mkdirSync(path.dirname(targetPath), { recursive: true });
           }
           
-          // Use original dimensions if we can determine them from the URL
-          try {
-            // Handle the case where the URL is a local file
-            const originalPath = path.join(process.cwd(), originalImage.image_url);
+          // Check if the original URL is a web URL or a local path
+          const isWebUrl = originalImage.image_url.startsWith('http://') || originalImage.image_url.startsWith('https://');
+          
+          if (isWebUrl) {
+            console.log('Original image is a web URL, using replacement dimensions');
+            // For web URLs, we'll use the replacement image's dimensions as is
+            // No need to try to get dimensions from web URLs as they might not be accessible
             
-            if (fs.existsSync(originalPath)) {
-              try {
-                const originalImage2 = await sharp(originalPath);
-                const originalMetadata = await originalImage2.metadata();
-                dimensions = {
-                  width: originalMetadata.width,
-                  height: originalMetadata.height
-                };
-                console.log('Found dimensions for placeholder image:', dimensions);
-              } catch (innerErr) {
-                console.warn('Error processing original image with sharp:', innerErr);
+            // For web URLs, we need to generate a proper targetPath
+            const timestamp = Date.now();
+            const outputFilename = `replaced-external-${timestamp}`;
+            targetPath = path.join(process.cwd(), 'uploads', outputFilename);
+            
+            console.log('Using target path for web URL replacement:', targetPath);
+          } else {
+            // Try to get dimensions from local file
+            try {
+              // Handle the case where the URL is a local file
+              const originalPath = path.join(process.cwd(), originalImage.image_url);
+              
+              if (fs.existsSync(originalPath)) {
+                try {
+                  const originalImage2 = await sharp(originalPath);
+                  const originalMetadata = await originalImage2.metadata();
+                  dimensions = {
+                    width: originalMetadata.width,
+                    height: originalMetadata.height
+                  };
+                  console.log('Found dimensions for placeholder image:', dimensions);
+                } catch (innerErr) {
+                  console.warn('Error processing original image with sharp:', innerErr);
+                }
+              } else {
+                console.log('Original image not found locally, using replacement dimensions');
               }
-            } else {
-              console.log('Original image not found locally, using replacement dimensions');
+            } catch (err) {
+              console.warn('Could not determine dimensions from placeholder image, using default:', err);
+              // Continue without dimensions to use the original replacement size
             }
-          } catch (err) {
-            console.warn('Could not determine dimensions from placeholder image, using default:', err);
-            // Continue without dimensions to use the original replacement size
           }
         } else {
           // Regular case - get dimensions from original image
