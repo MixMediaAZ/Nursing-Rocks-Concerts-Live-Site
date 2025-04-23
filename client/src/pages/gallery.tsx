@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter, Di
 import { 
   Copy, Trash2, Download, Edit, Layers, Folder,
   Plus, ImageIcon, CheckCircle2, ChevronsUpDown, Save,
-  X, ChevronLeft, ChevronRight
+  X, ChevronLeft, ChevronRight, Maximize
 } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -538,72 +538,117 @@ export default function GalleryPage() {
 
       {/* Image Viewer Dialog */}
       <Dialog open={showImageViewer} onOpenChange={setShowImageViewer}>
-        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto !p-4">
           {selectedImage && (
             <>
-              <DialogHeader>
-                <DialogTitle className="flex items-center justify-between">
-                  <span>Image #{selectedImage.id}</span>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => setShowImageViewer(false)} 
-                    className="h-6 w-6 rounded-full"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+              <div className="flex items-center justify-between mb-4">
+                <DialogTitle>
+                  <span className="text-xl">Image #{selectedImage.id}</span>
+                  {selectedImage.alt_text && (
+                    <DialogDescription className="mt-1">{selectedImage.alt_text}</DialogDescription>
+                  )}
                 </DialogTitle>
-                {selectedImage.alt_text && (
-                  <DialogDescription>{selectedImage.alt_text}</DialogDescription>
-                )}
-              </DialogHeader>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => setShowImageViewer(false)} 
+                  className="h-8 w-8 rounded-full"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
               
               <div className="flex flex-col items-center justify-center">
-                <div className="relative w-full max-h-[70vh] overflow-hidden flex items-center justify-center">
+                <div className="relative w-full max-h-[70vh] overflow-hidden flex items-center justify-center bg-gray-50 rounded-lg p-2 border border-gray-100">
                   <img 
                     src={selectedImage.image_url} 
                     alt={selectedImage.alt_text || "Gallery image"} 
-                    className="max-w-full max-h-[70vh] object-contain"
+                    className="max-w-full max-h-[65vh] object-contain shadow-sm"
                   />
                 </div>
                 
-                {isLoggedIn && (
-                  <div className="mt-4 flex gap-2 justify-center w-full">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => {
-                        // Go to previous image logic
-                        if (images && images.length > 0) {
-                          const currentIndex = images.findIndex(img => img.id === selectedImage.id);
-                          if (currentIndex > 0) {
-                            setSelectedImage(images[currentIndex - 1]);
-                          }
+                <div className="mt-4 flex flex-wrap gap-2 justify-center w-full">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      // Go to previous image logic
+                      if (images && images.length > 0) {
+                        const currentIndex = images.findIndex(img => img.id === selectedImage.id);
+                        if (currentIndex > 0) {
+                          setSelectedImage(images[currentIndex - 1]);
                         }
+                      }
+                    }}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-2" />
+                    Previous
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      // Go to next image logic
+                      if (images && images.length > 0) {
+                        const currentIndex = images.findIndex(img => img.id === selectedImage.id);
+                        if (currentIndex < images.length - 1) {
+                          setSelectedImage(images[currentIndex + 1]);
+                        }
+                      }
+                    }}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-2" />
+                  </Button>
+                  
+                  {/* Additional actions */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      window.open(selectedImage.image_url, '_blank');
+                    }}
+                    className="ml-2"
+                  >
+                    <Maximize className="h-4 w-4 mr-2" />
+                    Full Size
+                  </Button>
+
+                  {isLoggedIn && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        // Handle download
+                        // Create a link and trigger download
+                        const link = document.createElement('a');
+                        link.href = selectedImage.image_url;
+                        link.download = `gallery-image-${selectedImage.id}.jpg`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        toast({
+                          title: "Download Started",
+                          description: "Your image download has started",
+                        });
                       }}
                     >
-                      <ChevronLeft className="h-4 w-4 mr-2" />
-                      Previous
+                      <Download className="h-4 w-4 mr-2" />
+                      Download
                     </Button>
-                    
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => {
-                        // Go to next image logic
-                        if (images && images.length > 0) {
-                          const currentIndex = images.findIndex(img => img.id === selectedImage.id);
-                          if (currentIndex < images.length - 1) {
-                            setSelectedImage(images[currentIndex + 1]);
-                          }
-                        }
-                      }}
-                    >
-                      Next
-                      <ChevronRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  </div>
-                )}
+                  )}
+                </div>
+                
+                {/* Image metadata */}
+                <div className="mt-4 text-sm text-gray-500 text-center">
+                  <p>
+                    Image ID: {selectedImage.id} 
+                    {selectedImage.folder_id && <span> • Folder ID: {selectedImage.folder_id}</span>}
+                    {selectedImage.event_id && <span> • Event ID: {selectedImage.event_id}</span>}
+                  </p>
+                </div>
               </div>
             </>
           )}
