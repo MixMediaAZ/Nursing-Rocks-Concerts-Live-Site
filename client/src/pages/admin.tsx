@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
-import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,7 +23,6 @@ import {
 const ADMIN_PIN = "1234567";
 
 export default function AdminPage() {
-  const [location, navigate] = useLocation();
   const [pin, setPin] = useState<string>("");
   const [authenticated, setAuthenticated] = useState(false);
   const [loading, setLoading] = useState(false);
