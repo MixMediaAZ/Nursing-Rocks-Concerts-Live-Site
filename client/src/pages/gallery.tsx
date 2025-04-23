@@ -1,17 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "wouter";
-import { Gallery, MediaFolder } from "@shared/schema";
+import { Gallery } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog";
-import { ImageViewer } from "@/components/image-viewer";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { 
-  ArrowUpDown, CheckSquare, Copy, Trash2, Download, Edit, 
-  Filter, Folder, FolderUp, Layers, Tag, Workflow,
-  Plus, ImageIcon, CheckCircle2, ChevronsUpDown, Save,
-  X, ChevronLeft, ChevronRight, Maximize, RefreshCw as Replace,
-  MoreVertical
+  ArrowUpDown, CheckSquare, Copy, Trash2, Edit, 
+  Filter, Folder, Plus, ImageIcon, CheckCircle2
 } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,14 +26,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,13 +36,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { MediaFolderSelector } from "@/components/media-folder-selector";
 import { GalleryUploader } from "@/components/gallery-uploader";
+import FixedGalleryGrid from "@/components/fixed-gallery-grid";
+import { ImageViewer } from "@/components/image-viewer";
 
 export default function GalleryPage() {
-  const [location, navigate] = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const { data: images, isLoading } = useQuery<Gallery[]>({
     queryKey: ["/api/gallery"],
@@ -64,16 +50,12 @@ export default function GalleryPage() {
   const [visibleImages, setVisibleImages] = useState(12);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedImages, setSelectedImages] = useState<Gallery[]>([]);
-  const [clipboardImage, setClipboardImage] = useState<Gallery | null>(null);
-  const [displayStyle, setDisplayStyle] = useState<"grid" | "card" | "box">("grid");
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [imagesToDelete, setImagesToDelete] = useState<Gallery[]>([]);
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest" | "name">("newest");
   const [filterTag, setFilterTag] = useState<string | null>(null);
-  const [showSortFilterMenu, setShowSortFilterMenu] = useState(false);
-  const [showBatchOperationsMenu, setShowBatchOperationsMenu] = useState(false);
   
-  // Media folder states
+  // Media states
   const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null);
   const [showFolderManager, setShowFolderManager] = useState(false);
   const [showUploaderDialog, setShowUploaderDialog] = useState(false);
@@ -98,7 +80,6 @@ export default function GalleryPage() {
       }
     } else {
       setIsLoggedIn(false);
-      // Make sure edit mode is disabled for non-logged in users
       setIsEditMode(false);
     }
   }, []);
@@ -138,14 +119,6 @@ export default function GalleryPage() {
     setShowDeleteConfirmation(true);
   };
 
-  // Handle bulk delete
-  const handleBulkDelete = () => {
-    if (selectedImages.length === 0) return;
-    
-    setImagesToDelete(selectedImages);
-    setShowDeleteConfirmation(true);
-  };
-
   // Confirm delete
   const confirmDelete = () => {
     if (imagesToDelete.length === 0) return;
@@ -180,10 +153,6 @@ export default function GalleryPage() {
     // Apply tag filtering
     if (filterTag) {
       filteredImages = filteredImages.filter(img => 
-        // Check if tags exist (after DB migration) or fallback to alt_text
-        (img.metadata && typeof img.metadata === 'object' && 
-          'tags' in img.metadata && Array.isArray(img.metadata.tags) && 
-          img.metadata.tags.some(tag => tag.toLowerCase().includes(filterTag.toLowerCase()))) ||
         img.alt_text?.toLowerCase().includes(filterTag.toLowerCase())
       );
     }
@@ -192,11 +161,9 @@ export default function GalleryPage() {
     return filteredImages.sort((a, b) => {
       switch (sortOrder) {
         case "newest":
-          return (b.created_at ? new Date(b.created_at).getTime() : 0) - 
-                 (a.created_at ? new Date(a.created_at).getTime() : 0);
+          return b.id - a.id;
         case "oldest":
-          return (a.created_at ? new Date(a.created_at).getTime() : 0) - 
-                 (b.created_at ? new Date(b.created_at).getTime() : 0);
+          return a.id - b.id;
         case "name":
           return (a.alt_text || "").localeCompare(b.alt_text || "");
         default:
@@ -218,52 +185,6 @@ export default function GalleryPage() {
     }
   };
   
-  // Batch operations
-  const handleBatchOperation = (operation: string) => {
-    if (selectedImages.length === 0) {
-      toast({
-        title: "No Images Selected",
-        description: "Please select at least one image to perform this operation",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    switch (operation) {
-      case "move":
-        // Implement moving to another folder
-        toast({
-          title: "Move Images",
-          description: `${selectedImages.length} images selected for moving`,
-        });
-        break;
-      case "tag":
-        // Implement tagging
-        toast({
-          title: "Tag Images",
-          description: `${selectedImages.length} images selected for tagging`,
-        });
-        break;
-      case "download":
-        toast({
-          title: "Download Images",
-          description: `Downloading ${selectedImages.length} images`,
-        });
-        // Trigger downloads
-        selectedImages.forEach(img => {
-          const link = document.createElement('a');
-          link.href = img.image_url;
-          link.download = `gallery-image-${img.id}.jpg`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        });
-        break;
-      default:
-        break;
-    }
-  };
-
   return (
     <>
       <Helmet>
@@ -338,17 +259,6 @@ export default function GalleryPage() {
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                  
-                  {isEditMode && selectedImages.length > 0 && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={handleBulkDelete}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete Selected ({selectedImages.length})
-                    </Button>
-                  )}
                 </>
               ) : (
                 <Button
@@ -360,44 +270,6 @@ export default function GalleryPage() {
                   Login to Edit
                 </Button>
               )}
-              
-              {/* Display Options */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Layers className="h-4 w-4 mr-2" />
-                    Display
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuLabel>Display Style</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setDisplayStyle("grid")}>
-                    <div className="flex items-center">
-                      Grid Layout
-                      {displayStyle === "grid" && (
-                        <CheckCircle2 className="h-4 w-4 ml-2 text-green-600" />
-                      )}
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setDisplayStyle("card")}>
-                    <div className="flex items-center">
-                      Card Layout
-                      {displayStyle === "card" && (
-                        <CheckCircle2 className="h-4 w-4 ml-2 text-green-600" />
-                      )}
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setDisplayStyle("box")}>
-                    <div className="flex items-center">
-                      Box Layout
-                      {displayStyle === "box" && (
-                        <CheckCircle2 className="h-4 w-4 ml-2 text-green-600" />
-                      )}
-                    </div>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
               
               {/* Sort Options */}
               <DropdownMenu>
@@ -434,121 +306,24 @@ export default function GalleryPage() {
                       )}
                     </div>
                   </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              
-              {/* Filter Options */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Filter className="h-4 w-4 mr-2" />
-                    Filter
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuLabel>Filter Images</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <div className="px-3 py-2">
-                    <Input 
-                      type="text" 
-                      placeholder="Filter by tag or keyword" 
-                      value={filterTag || ''}
-                      onChange={(e) => setFilterTag(e.target.value || null)}
-                      className="mb-2"
-                    />
+                  <div className="px-2 py-1.5 text-sm">
+                    Filter by tag:
+                  </div>
+                  <div className="px-2 py-1.5">
                     {filterTag && (
                       <Badge variant="outline" className="bg-[#5D3FD3]/10">
                         <Filter className="h-3 w-3 mr-1" />
                         {filterTag}
-                        <X 
-                          className="h-3 w-3 ml-1 cursor-pointer" 
-                          onClick={() => setFilterTag(null)}
-                        />
                       </Badge>
                     )}
                   </div>
                 </DropdownMenuContent>
               </DropdownMenu>
-              
-              {/* Batch Operations */}
-              {isEditMode && isLoggedIn && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Workflow className="h-4 w-4 mr-2" />
-                      Batch
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuLabel>Batch Operations</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleSelectAllImages}>
-                      <CheckSquare className="h-4 w-4 mr-2" />
-                      {selectedImages.length === (images?.length || 0) ? "Deselect All" : "Select All"}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => handleBatchOperation("move")}>
-                      <FolderUp className="h-4 w-4 mr-2" />
-                      Move to Folder
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleBatchOperation("tag")}>
-                      <Tag className="h-4 w-4 mr-2" />
-                      Add Tags
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleBatchOperation("download")}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Download Selected
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
             </div>
           </div>
           
-          {/* Layout with folder panel */}
-          <div className="flex flex-col md:flex-row gap-6">
-            {/* Folder sidebar - only shown when showFolderManager is true and user is logged in */}
-            {showFolderManager && isLoggedIn && (
-              <div className="md:w-64 flex-shrink-0">
-                <div className="sticky top-20">
-                  <MediaFolderSelector
-                    selectedFolderId={selectedFolderId}
-                    onFolderSelect={(folderId) => {
-                      setSelectedFolderId(folderId);
-                      setViewingAttachedAssets(false);
-                    }}
-                    className="mb-4"
-                  />
-                  
-                  {/* Special option for attached assets */}
-                  <Card className="mb-4">
-                    <CardHeader className="py-3">
-                      <CardTitle className="text-sm font-medium">Special Folders</CardTitle>
-                    </CardHeader>
-                    <CardContent className="py-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className={`w-full justify-start mb-2 ${viewingAttachedAssets ? "bg-[#5D3FD3] text-white" : ""}`}
-                        onClick={() => {
-                          setViewingAttachedAssets(true);
-                          setSelectedFolderId(null);
-                          toast({
-                            title: "View Attached Assets",
-                            description: "Browsing attached assets folder"
-                          });
-                        }}
-                      >
-                        <ImageIcon className="w-4 h-4 mr-2" />
-                        Attached Assets
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            )}
-            
-            {/* Main content */}
+          <div className="flex flex-col md:flex-row gap-8">
             <div className={`flex-1 ${showFolderManager ? 'md:max-w-[calc(100%-17rem)]' : 'w-full'}`}>
               <Tabs defaultValue="all" className="mb-8">
                 <TabsList className="mx-auto flex justify-center">
@@ -557,281 +332,66 @@ export default function GalleryPage() {
                   <TabsTrigger value="event2">New York Event</TabsTrigger>
                 </TabsList>
                 <TabsContent value="all">
-                  {isLoading ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                      {Array.from({ length: 12 }).map((_, i) => (
-                        <Skeleton key={i} className="h-72 w-full rounded-lg" />
-                      ))}
-                    </div>
-                  ) : viewingAttachedAssets ? (
-                    // Render attached assets
+                  {viewingAttachedAssets ? (
                     <div className="mt-4">
                       <h2 className="text-xl font-bold mb-4">Attached Assets</h2>
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         {Array.from({ length: 8 }).map((_, i) => (
-                          <Card key={i} className="overflow-hidden">
-                            <CardContent className="p-0">
-                              <div className="relative h-48 bg-gray-100 flex items-center justify-center">
-                                <ImageIcon className="h-12 w-12 text-gray-400" />
-                              </div>
-                            </CardContent>
-                            <CardFooter className="p-3">
-                              <p className="text-sm font-medium truncate">attached_asset_{i+1}.jpg</p>
-                            </CardFooter>
-                          </Card>
+                          <div key={i} className="bg-gray-100 p-4 rounded flex items-center justify-center">
+                            <ImageIcon className="h-12 w-12 text-gray-400" />
+                          </div>
                         ))}
                       </div>
                     </div>
                   ) : (
-                    // Render normal gallery
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                      {Array.isArray(images) && getSortedAndFilteredImages(images).slice(0, visibleImages).map((image) => (
-                        <Card key={image.id} className="overflow-hidden">
-                          <div className="relative">
-                            <img 
-                              src={image.image_url} 
-                              alt={image.alt_text || "Gallery image"} 
-                              className="w-full h-48 object-cover cursor-pointer" 
-                              onClick={() => {
-                                // Open the image in the viewer
-                                setSelectedImage(image);
-                                setShowImageViewer(true);
-                              }}
-                            />
-                            {isEditMode && (
-                              <div className="absolute top-2 left-2">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedImages.some(img => img.id === image.id)}
-                                  onChange={() => toggleImageSelection(image)}
-                                  className="h-5 w-5"
-                                />
-                              </div>
-                            )}
-                          </div>
-                          <CardFooter className="flex justify-between items-center p-3">
-                            <p className="text-sm truncate">Image #{image.id}</p>
-                            {isEditMode && (
-                              <div className="flex items-center gap-1">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="p-0 h-8 w-8">
-                                      <MoreVertical className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem 
-                                      onClick={() => {
-                                        // Set as clipboard image for copy/paste
-                                        const copiedImage = {...image};
-                                        localStorage.setItem('clipboardImage', JSON.stringify(copiedImage));
-                                        toast({
-                                          title: "Image Copied",
-                                          description: "Image copied to clipboard",
-                                          variant: "default"
-                                        });
-                                      }}
-                                    >
-                                      <Copy className="h-4 w-4 mr-2" />
-                                      Copy
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        // Open replace dialog
-                                        setSelectedImage(image);
-                                        // TODO: Implement replace functionality
-                                        toast({
-                                          title: "Replace Image",
-                                          description: "Replace image functionality will be added",
-                                          variant: "default"
-                                        });
-                                      }}
-                                    >
-                                      <Replace className="h-4 w-4 mr-2" />
-                                      Replace
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        // Edit metadata
-                                        setSelectedImage(image);
-                                        // TODO: Open edit metadata dialog
-                                        toast({
-                                          title: "Edit Metadata",
-                                          description: "Edit image metadata",
-                                          variant: "default"
-                                        });
-                                      }}
-                                    >
-                                      <Edit className="h-4 w-4 mr-2" />
-                                      Edit Info
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      onClick={() => handleDeleteImage(image)}
-                                      className="text-red-500 focus:text-red-500"
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="p-0 h-8 w-8"
-                                  onClick={() => {
-                                    // Select or deselect the image
-                                    toggleImageSelection(image);
-                                  }}
-                                >
-                                  <CheckSquare className={`h-4 w-4 ${selectedImages.some(img => img.id === image.id) ? 'text-primary' : 'text-muted-foreground'}`} />
-                                </Button>
-                              </div>
-                            )}
-                          </CardFooter>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {!viewingAttachedAssets && images && visibleImages < images.length && (
-                    <div className="text-center mt-12">
-                      <Button 
-                        onClick={loadMoreImages}
-                        className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white font-accent font-semibold py-3 px-8 rounded-full"
-                      >
-                        <span>View More Photos</span>
-                      </Button>
-                    </div>
+                    <>
+                      <FixedGalleryGrid
+                        title=""
+                        subtitle=""
+                        images={Array.isArray(images) ? getSortedAndFilteredImages(images).slice(0, visibleImages) : []}
+                        isLoading={isLoading}
+                        isEditMode={isEditMode}
+                        onDeleteImage={handleDeleteImage}
+                      />
+                    
+                      {!viewingAttachedAssets && images && visibleImages < (images?.length || 0) && (
+                        <div className="text-center mt-12">
+                          <Button 
+                            onClick={loadMoreImages}
+                            className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white font-accent font-semibold py-3 px-8 rounded-full"
+                          >
+                            <span>View More Photos</span>
+                          </Button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </TabsContent>
+                
                 <TabsContent value="event1">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {isLoading ? (
-                      Array.from({ length: 6 }).map((_, i) => (
-                        <Skeleton key={i} className="h-72 w-full rounded-lg" />
-                      ))
-                    ) : (
-                      Array.isArray(images) && getSortedAndFilteredImages(images).filter(img => img.event_id === 1).map((image) => (
-                        <Card key={image.id} className="overflow-hidden">
-                          <div className="relative">
-                            <img 
-                              src={image.image_url} 
-                              alt={image.alt_text || "Gallery image"} 
-                              className="w-full h-48 object-cover cursor-pointer" 
-                              onClick={() => {
-                                // Open the image in the viewer
-                                setSelectedImage(image);
-                                setShowImageViewer(true);
-                              }}
-                            />
-                          </div>
-                          <CardFooter className="flex justify-between items-center p-3">
-                            <p className="text-sm truncate">Chicago Image #{image.id}</p>
-                            {isEditMode && (
-                              <div className="flex items-center gap-1">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="p-0 h-8 w-8">
-                                      <MoreVertical className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem 
-                                      onClick={() => {
-                                        const copiedImage = {...image};
-                                        localStorage.setItem('clipboardImage', JSON.stringify(copiedImage));
-                                        toast({
-                                          title: "Image Copied",
-                                          description: "Image copied to clipboard",
-                                          variant: "default"
-                                        });
-                                      }}
-                                    >
-                                      <Copy className="h-4 w-4 mr-2" />
-                                      Copy
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      onClick={() => handleDeleteImage(image)}
-                                      className="text-red-500 focus:text-red-500"
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            )}
-                          </CardFooter>
-                        </Card>
-                      ))
-                    )}
-                  </div>
+                  <FixedGalleryGrid
+                    title=""
+                    subtitle=""
+                    images={Array.isArray(images) ? getSortedAndFilteredImages(images)
+                      .filter(img => img.event_id === 1)
+                      .slice(0, visibleImages) : []}
+                    isLoading={isLoading}
+                    isEditMode={isEditMode}
+                    onDeleteImage={handleDeleteImage}
+                  />
                 </TabsContent>
+                
                 <TabsContent value="event2">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {isLoading ? (
-                      Array.from({ length: 6 }).map((_, i) => (
-                        <Skeleton key={i} className="h-72 w-full rounded-lg" />
-                      ))
-                    ) : (
-                      Array.isArray(images) && getSortedAndFilteredImages(images).filter(img => img.event_id === 2).map((image) => (
-                        <Card key={image.id} className="overflow-hidden">
-                          <div className="relative">
-                            <img 
-                              src={image.image_url} 
-                              alt={image.alt_text || "Gallery image"} 
-                              className="w-full h-48 object-cover cursor-pointer" 
-                              onClick={() => {
-                                // Open the image in the viewer
-                                setSelectedImage(image);
-                                setShowImageViewer(true);
-                              }}
-                            />
-                          </div>
-                          <CardFooter className="flex justify-between items-center p-3">
-                            <p className="text-sm truncate">New York Image #{image.id}</p>
-                            {isEditMode && (
-                              <div className="flex items-center gap-1">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="p-0 h-8 w-8">
-                                      <MoreVertical className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem 
-                                      onClick={() => {
-                                        const copiedImage = {...image};
-                                        localStorage.setItem('clipboardImage', JSON.stringify(copiedImage));
-                                        toast({
-                                          title: "Image Copied",
-                                          description: "Image copied to clipboard",
-                                          variant: "default"
-                                        });
-                                      }}
-                                    >
-                                      <Copy className="h-4 w-4 mr-2" />
-                                      Copy
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      onClick={() => handleDeleteImage(image)}
-                                      className="text-red-500 focus:text-red-500"
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            )}
-                          </CardFooter>
-                        </Card>
-                      ))
-                    )}
-                  </div>
+                  <FixedGalleryGrid
+                    title=""
+                    subtitle=""
+                    images={Array.isArray(images) ? getSortedAndFilteredImages(images)
+                      .filter(img => img.event_id === 2)
+                      .slice(0, visibleImages) : []}
+                    isLoading={isLoading}
+                    isEditMode={isEditMode}
+                    onDeleteImage={handleDeleteImage}
+                  />
                 </TabsContent>
               </Tabs>
             </div>
@@ -839,47 +399,29 @@ export default function GalleryPage() {
         </div>
       </section>
       
-      {/* Delete Confirmation Dialog - only for logged in users */}
-      {isLoggedIn && (
-        <AlertDialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will permanently delete {imagesToDelete.length} image(s) from the gallery. 
-                This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction 
-                onClick={confirmDelete} 
-                className="bg-red-600 hover:bg-red-700"
-              >
-                {deleteMutation.isPending ? (
-                  <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Deleting...
-                  </span>
-                ) : "Delete"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Image{imagesToDelete.length > 1 ? 's' : ''}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {imagesToDelete.length} image{imagesToDelete.length > 1 ? 's' : ''}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
-      {/* Upload Dialog - only for logged in users */}
-      {isLoggedIn && (
+      {/* Media Uploader Dialog */}
+      {showUploaderDialog && (
         <Dialog open={showUploaderDialog} onOpenChange={setShowUploaderDialog}>
-          <DialogContent className="sm:max-w-xl">
+          <DialogContent className="sm:max-w-md">
             <DialogTitle>Upload Media</DialogTitle>
-            <DialogDescription>
-              Upload images to the gallery. You can select multiple files at once.
-            </DialogDescription>
-            
             <GalleryUploader 
               folderId={selectedFolderId}
               onUploadComplete={() => {
@@ -890,8 +432,8 @@ export default function GalleryPage() {
           </DialogContent>
         </Dialog>
       )}
-
-      {/* Using our new stable ImageViewer component */}
+      
+      {/* Image Viewer */}
       <ImageViewer
         image={selectedImage}
         isVisible={showImageViewer}
