@@ -100,6 +100,7 @@ export const gallery = pgTable("gallery", {
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
   z_index: integer("z_index").default(0), // For layering/positioning
+  tags: text("tags").array(), // Array of tags for categorization
   metadata: jsonb("metadata"), // Any additional metadata
 });
 

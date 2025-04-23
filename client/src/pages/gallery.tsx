@@ -64,6 +64,10 @@ export default function GalleryPage() {
   const [displayStyle, setDisplayStyle] = useState<"grid" | "card" | "box">("grid");
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [imagesToDelete, setImagesToDelete] = useState<Gallery[]>([]);
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest" | "name">("newest");
+  const [filterTag, setFilterTag] = useState<string | null>(null);
+  const [showSortFilterMenu, setShowSortFilterMenu] = useState(false);
+  const [showBatchOperationsMenu, setShowBatchOperationsMenu] = useState(false);
   
   // Media folder states
   const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null);
@@ -149,6 +153,101 @@ export default function GalleryPage() {
         return [...prev, image];
       }
     });
+  };
+  
+  // Sort and filter images
+  const getSortedAndFilteredImages = (images: Gallery[] | undefined) => {
+    if (!images) return [];
+    
+    let filteredImages = [...images];
+    
+    // Apply folder filtering
+    if (selectedFolderId !== null) {
+      filteredImages = filteredImages.filter(img => img.folder_id === selectedFolderId);
+    }
+    
+    // Apply tag filtering
+    if (filterTag) {
+      filteredImages = filteredImages.filter(img => 
+        img.tags?.includes(filterTag) || 
+        img.alt_text?.toLowerCase().includes(filterTag.toLowerCase())
+      );
+    }
+    
+    // Apply sorting
+    return filteredImages.sort((a, b) => {
+      switch (sortOrder) {
+        case "newest":
+          return (b.created_at ? new Date(b.created_at).getTime() : 0) - 
+                 (a.created_at ? new Date(a.created_at).getTime() : 0);
+        case "oldest":
+          return (a.created_at ? new Date(a.created_at).getTime() : 0) - 
+                 (b.created_at ? new Date(b.created_at).getTime() : 0);
+        case "name":
+          return (a.alt_text || "").localeCompare(b.alt_text || "");
+        default:
+          return b.id - a.id;
+      }
+    });
+  };
+  
+  // Select/deselect all images
+  const handleSelectAllImages = () => {
+    if (images) {
+      if (selectedImages.length === images.length) {
+        // If all are selected, deselect all
+        setSelectedImages([]);
+      } else {
+        // Otherwise, select all
+        setSelectedImages([...images]);
+      }
+    }
+  };
+  
+  // Batch operations
+  const handleBatchOperation = (operation: string) => {
+    if (selectedImages.length === 0) {
+      toast({
+        title: "No Images Selected",
+        description: "Please select at least one image to perform this operation",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    switch (operation) {
+      case "move":
+        // Implement moving to another folder
+        toast({
+          title: "Move Images",
+          description: `${selectedImages.length} images selected for moving`,
+        });
+        break;
+      case "tag":
+        // Implement tagging
+        toast({
+          title: "Tag Images",
+          description: `${selectedImages.length} images selected for tagging`,
+        });
+        break;
+      case "download":
+        toast({
+          title: "Download Images",
+          description: `Downloading ${selectedImages.length} images`,
+        });
+        // Trigger downloads
+        selectedImages.forEach(img => {
+          const link = document.createElement('a');
+          link.href = img.image_url;
+          link.download = `gallery-image-${img.id}.jpg`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        });
+        break;
+      default:
+        break;
+    }
   };
 
   return (
@@ -248,6 +347,7 @@ export default function GalleryPage() {
                 </Button>
               )}
               
+              {/* Display Options */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">
@@ -284,6 +384,109 @@ export default function GalleryPage() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              
+              {/* Sort Options */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <ArrowUpDown className="h-4 w-4 mr-2" />
+                    Sort
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuLabel>Sort Images</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setSortOrder("newest")}>
+                    <div className="flex items-center">
+                      Newest First
+                      {sortOrder === "newest" && (
+                        <CheckCircle2 className="h-4 w-4 ml-2 text-green-600" />
+                      )}
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortOrder("oldest")}>
+                    <div className="flex items-center">
+                      Oldest First
+                      {sortOrder === "oldest" && (
+                        <CheckCircle2 className="h-4 w-4 ml-2 text-green-600" />
+                      )}
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortOrder("name")}>
+                    <div className="flex items-center">
+                      By Name
+                      {sortOrder === "name" && (
+                        <CheckCircle2 className="h-4 w-4 ml-2 text-green-600" />
+                      )}
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              {/* Filter Options */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filter
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuLabel>Filter Images</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <div className="px-3 py-2">
+                    <Input 
+                      type="text" 
+                      placeholder="Filter by tag or keyword" 
+                      value={filterTag || ''}
+                      onChange={(e) => setFilterTag(e.target.value || null)}
+                      className="mb-2"
+                    />
+                    {filterTag && (
+                      <Badge className="mr-1">
+                        {filterTag}
+                        <X 
+                          className="h-3 w-3 ml-1 cursor-pointer" 
+                          onClick={() => setFilterTag(null)}
+                        />
+                      </Badge>
+                    )}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              {/* Batch Operations */}
+              {isEditMode && isLoggedIn && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Workflow className="h-4 w-4 mr-2" />
+                      Batch
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuLabel>Batch Operations</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSelectAllImages}>
+                      <CheckSquare className="h-4 w-4 mr-2" />
+                      {selectedImages.length === (images?.length || 0) ? "Deselect All" : "Select All"}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => handleBatchOperation("move")}>
+                      <FolderUp className="h-4 w-4 mr-2" />
+                      Move to Folder
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleBatchOperation("tag")}>
+                      <Tag className="h-4 w-4 mr-2" />
+                      Add Tags
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleBatchOperation("download")}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Download Selected
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
           
