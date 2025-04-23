@@ -39,8 +39,15 @@ export default function AdminPage() {
   }, []);
 
   const handlePinInput = (digit: string) => {
+    console.log("Current pin:", pin, "length:", pin.length);
+    console.log("Adding digit:", digit);
+    
     if (pin.length < 7) {
-      setPin(prev => prev + digit);
+      const newPin = pin + digit;
+      console.log("New pin will be:", newPin, "length:", newPin.length);
+      setPin(newPin);
+    } else {
+      console.log("PIN already at max length (7)");
     }
   };
 
@@ -55,9 +62,16 @@ export default function AdminPage() {
   const handleSubmit = () => {
     setLoading(true);
     
+    console.log("Attempting login with PIN:", pin);
+    console.log("Expected PIN:", ADMIN_PIN);
+    console.log("PIN length:", pin.length);
+    console.log("PIN type:", typeof pin);
+    console.log("ADMIN_PIN type:", typeof ADMIN_PIN);
+    
     // Simulate API call delay
     setTimeout(() => {
       if (pin === ADMIN_PIN) {
+        console.log("Authentication successful");
         setAuthenticated(true);
         localStorage.setItem("isAdmin", "true");
         toast({
@@ -65,6 +79,7 @@ export default function AdminPage() {
           description: "Welcome to the admin dashboard",
         });
       } else {
+        console.log("Authentication failed, PIN mismatch");
         toast({
           title: "Authentication Failed",
           description: "Invalid PIN code. Please try again.",
