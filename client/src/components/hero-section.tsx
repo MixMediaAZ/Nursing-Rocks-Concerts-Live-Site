@@ -81,11 +81,11 @@ const HeroSection = () => {
             NURSING ROCKS! CONCERT SERIES
           </div>
           
-          <h2 className="text-base md:text-lg font-semibold mb-4 text-center w-full">
+          <h2 className="text-base md:text-lg font-semibold mb-4 text-left w-full">
             Mission
           </h2>
           
-          <p className="text-lg mb-8 text-center max-w-3xl">
+          <p className="text-lg mb-8 text-left max-w-3xl">
             Empowering and honoring nurses through the uplifting power of live music, our mission is to foster a positive impact within the nursing community at nationwide events. We strive to elevate awareness of the nursing profession and support its advancement through scholarship opportunities for further education.
           </p>
 
