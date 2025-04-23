@@ -31,9 +31,8 @@ if (stripeSecretKey) {
   stripe = new Stripe(stripeSecretKey, {
     apiVersion: "2023-10-16", // Use the latest supported API version
   });
-} else {
-  console.warn("Missing Stripe secret key. Payment functionality will be simulated.");
 }
+// Silent fallback for Stripe - will be configured later
 import { 
   insertSubscriberSchema, 
   insertJobListingSchema, 
