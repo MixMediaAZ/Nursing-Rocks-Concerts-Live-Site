@@ -197,7 +197,7 @@ export default function CitySelector() {
                   onClick={() => handleCitySelect(city.id)}
                 >
                   <div 
-                    className={`h-48 flex items-center justify-center relative overflow-hidden ${cityColors[city.id] || DEFAULT_BG}`}
+                    className={`h-48 flex flex-col items-center justify-center relative overflow-hidden ${cityColors[city.id] || DEFAULT_BG}`}
                   >
                     {/* Pattern overlay for visual interest */}
                     <div className="absolute inset-0 opacity-10">
@@ -206,14 +206,16 @@ export default function CitySelector() {
                       </div>
                     </div>
                     
-                    {/* City name with text shadow for better visibility */}
-                    <h3 className="text-3xl text-white font-extrabold drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] z-10">
-                      {city.name}
-                    </h3>
-                    
-                    {/* Show state abbreviation */}
-                    <div className="absolute bottom-3 right-3 bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded text-xs text-white font-medium">
-                      {city.state}
+                    {/* City name with text shadow for better visibility - improved centering */}
+                    <div className="flex flex-col items-center justify-center text-center z-10">
+                      <h3 className="text-3xl text-white font-extrabold drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+                        {city.name}
+                      </h3>
+                      
+                      {/* State name with improved visibility */}
+                      <p className="text-white text-lg mt-1 font-medium drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+                        {city.state}
+                      </p>
                     </div>
                     
                     {/* Event indicator */}

@@ -161,8 +161,8 @@ export default function CityDetailsPage() {
           />
         </div>
 
-        <div className="container mx-auto px-4 py-16 md:py-24 relative z-10">
-          <div className="max-w-3xl">
+        <div className="container mx-auto px-4 py-16 md:py-24 relative z-10 text-center md:text-left">
+          <div className="max-w-3xl mx-auto md:mx-0">
             <div className="inline-block bg-[#FF3366] text-white px-4 py-1 rounded-full mb-4 font-accent text-sm">
               NURSING ROCKS! CONCERT SERIES
             </div>
@@ -173,14 +173,14 @@ export default function CityDetailsPage() {
               {city.description}
             </p>
 
-            <div className="flex flex-wrap items-center gap-4 mb-8">
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mb-8">
               <div className="flex items-center">
                 <MapPin className="w-5 h-5 mr-2" />
                 <span>{city.location}</span>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap justify-center md:justify-start gap-4">
               <Button
                 asChild
                 className="bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold py-3 px-8 rounded-full"
@@ -279,9 +279,10 @@ export default function CityDetailsPage() {
               </div>
               
               {city.upcomingEvents.length === 0 && (
-                <div className="text-center py-8 border rounded-lg bg-muted/20">
-                  <p className="text-muted-foreground">No upcoming events scheduled in {city.name} yet.</p>
-                  <p className="text-sm mt-2">Please check back soon or subscribe to our newsletter for updates.</p>
+                <div className="text-center py-10 border rounded-lg bg-muted/20">
+                  <p className="text-muted-foreground font-medium">No upcoming events scheduled in {city.name} yet.</p>
+                  <p className="text-sm mt-2 max-w-md mx-auto">Please check back soon or subscribe to our newsletter for updates.</p>
+                  <Button variant="outline" className="mt-4">Subscribe to Updates</Button>
                 </div>
               )}
             </div>
@@ -340,19 +341,20 @@ export default function CityDetailsPage() {
               </div>
               
               {city.scholarships.length === 0 && (
-                <div className="text-center py-8 border rounded-lg bg-muted/20">
-                  <p className="text-muted-foreground">No scholarships available in {city.name} yet.</p>
-                  <p className="text-sm mt-2">Please check back soon or contact us for more information.</p>
+                <div className="text-center py-10 border rounded-lg bg-muted/20">
+                  <p className="text-muted-foreground font-medium">No scholarships available in {city.name} yet.</p>
+                  <p className="text-sm mt-2 max-w-md mx-auto">Please check back soon or contact us for more information about upcoming scholarship opportunities.</p>
+                  <Button variant="outline" className="mt-4">Contact Us</Button>
                 </div>
               )}
               
-              <div className="bg-muted p-6 rounded-lg">
-                <h3 className="text-lg font-semibold mb-2">How Our Scholarships Work</h3>
-                <p className="mb-4">
+              <div className="bg-muted p-8 rounded-lg text-center">
+                <h3 className="text-xl font-semibold mb-3">How Our Scholarships Work</h3>
+                <p className="mb-4 max-w-2xl mx-auto">
                   The Nursing Rocks! Concert Series works with local nursing schools and healthcare organizations to offer scholarships to nursing students in each concert city. These scholarships aim to support the next generation of nursing professionals.
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  Interested in establishing a nursing scholarship in your name or your organization's name? Contact us at scholarships@nursingrocks.com for more information.
+                <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+                  Interested in establishing a nursing scholarship in your name or your organization's name? Contact us at <span className="font-medium text-primary">scholarships@nursingrocks.com</span> for more information.
                 </p>
               </div>
             </div>
