@@ -223,11 +223,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         
         // Update the database entry with the new processed image paths
+        // Don't include tags to avoid errors if the column doesn't exist
         await db.update(gallery)
           .set({
             image_url: processedImage.original,
             thumbnail_url: processedImage.thumbnail,
-            updated_at: new Date()
+            alt_text: replacementImage.alt_text || originalImage.alt_text,
+            updated_at: new Date(),
+            metadata: replacementImage.metadata || originalImage.metadata
           })
           .where(eq(gallery.id, originalImageId));
         
