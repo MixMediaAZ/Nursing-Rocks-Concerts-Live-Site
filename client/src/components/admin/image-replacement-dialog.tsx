@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Loader2 } from 'lucide-react';
 
 interface ImageReplacementDialogProps {
@@ -53,12 +53,18 @@ export function ImageReplacementDialog({
 
     setIsReplacing(true);
     try {
-      const payload: any = { originalUrl };
+      const payload: any = { 
+        originalUrl,
+        timestamp: Date.now() // Add timestamp to help prevent caching issues
+      };
       
       // Use the appropriate API endpoint based on whether we have an element ID
       const endpoint = elementId 
         ? `/api/gallery/${elementId}/replace-with/${selectedImageId}`
         : `/api/gallery/-1/replace-with/${selectedImageId}`;
+      
+      console.log(`Replacing image at endpoint: ${endpoint}`);
+      console.log(`Original URL: ${originalUrl}`);
       
       const response = await apiRequest('POST', endpoint, payload);
       
@@ -67,6 +73,10 @@ export function ImageReplacementDialog({
       }
       
       const result = await response.json();
+      console.log('Image replacement result:', result);
+      
+      // Invalidate any relevant query cache to force refetch
+      queryClient.invalidateQueries({queryKey: ["/api/gallery"]});
       
       toast({
         title: 'Image replaced',
@@ -74,17 +84,26 @@ export function ImageReplacementDialog({
       });
       
       onSelectImage(selectedImageId);
-      onClose();
       
       // Trigger a custom event to refresh images using the new one
       const replaceEvent = new CustomEvent('image-replaced', { 
         detail: { 
           originalUrl, 
           newImageId: selectedImageId,
-          elementId
+          elementId,
+          timestamp: Date.now(),
+          newImageUrl: result.image_url
         } 
       });
-      window.dispatchEvent(replaceEvent);
+      
+      // Dispatch event after a short delay to ensure all components are ready
+      setTimeout(() => {
+        console.log('Dispatching image-replaced event:', replaceEvent.detail);
+        window.dispatchEvent(replaceEvent);
+        
+        // Close dialog after event is dispatched
+        onClose();
+      }, 200);
       
     } catch (error) {
       console.error('Error replacing image:', error);

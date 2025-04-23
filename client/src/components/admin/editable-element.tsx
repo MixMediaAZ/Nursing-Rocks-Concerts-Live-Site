@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ElementSelectionOverlay } from './element-selection-overlay';
 import { ImageReplacementDialog } from './image-replacement-dialog';
+import { TextEditorDialog } from './text-editor-dialog';
 import { useAdminEditMode } from '@/hooks/use-admin-edit-mode';
 import { useElementSelection } from '@/hooks/use-element-selection';
 import { SafeImage } from '../safe-image';
@@ -82,9 +83,32 @@ export function EditableElement({
     };
   }, [id, src, onUpdate]);
 
+  const [isTextEditorOpen, setTextEditorOpen] = useState(false);
+  const [textContent, setTextContent] = useState<string | undefined>(
+    type === 'text' && typeof children === 'string' ? children : undefined
+  );
+
   const handleEdit = () => {
-    // Edit functionality depends on the element type
-    console.log(`Editing ${type} element #${uniqueId}`);
+    // Different edit actions based on element type
+    if (type === 'text') {
+      setTextEditorOpen(true);
+    } else if (type === 'image') {
+      handleReplace();
+    } else {
+      console.log(`Editing ${type} element #${uniqueId}`);
+    }
+  };
+  
+  // Handle text updates
+  const handleTextSaved = (newText: string) => {
+    setTextContent(newText);
+    if (onUpdate) {
+      onUpdate({ 
+        content: newText,
+        elementId: uniqueId,
+        refreshTimestamp: Date.now()
+      });
+    }
   };
 
   const handleReplace = () => {

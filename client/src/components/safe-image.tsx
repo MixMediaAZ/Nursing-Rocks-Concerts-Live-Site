@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ImageOff } from 'lucide-react';
 
 interface SafeImageProps {
@@ -20,6 +20,7 @@ export function SafeImage({
   const [hasError, setHasError] = useState(false);
   const [imageSrc, setImageSrc] = useState<string | null>(src);
   const [forceRefresh, setForceRefresh] = useState(Date.now());
+  const originalSrcRef = useRef<string | null>(src);
   
   // Update image source when it changes or force refresh occurs
   useEffect(() => {
@@ -28,11 +29,16 @@ export function SafeImage({
       return;
     }
     
+    // Store the original src for comparison in event handlers
+    originalSrcRef.current = src;
+    
     // Add cache busting parameter
     const cacheBuster = `t=${Date.now()}`;
     const newSrc = src.includes('?') 
       ? `${src}&${cacheBuster}` 
       : `${src}?${cacheBuster}`;
+    
+    console.log(`SafeImage: Updated src from ${src} to ${newSrc}`);
     
     setImageSrc(newSrc);
     setIsLoading(true);
