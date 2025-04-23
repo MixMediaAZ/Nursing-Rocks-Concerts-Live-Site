@@ -88,20 +88,21 @@ export default function AdminPage() {
 
   // PIN pad component
   const PinPad = () => (
-    <div className="flex flex-col items-center">
-      <Card className="w-full max-w-md mx-auto bg-white shadow-lg">
-        <CardHeader className="text-center">
+    <div className="flex flex-col items-center justify-center min-h-[70vh]">
+      <Card className="w-full max-w-md mx-auto bg-white shadow-xl">
+        <CardHeader className="text-center pb-2">
           <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
-            <Lock className="h-6 w-6" /> Admin Authentication
+            <Lock className="h-6 w-6 text-primary" /> Admin Authentication
           </CardTitle>
+          <p className="text-sm text-muted-foreground mt-1">Enter your 7-digit PIN to access admin dashboard</p>
         </CardHeader>
-        <CardContent>
-          <div className="flex justify-center mb-6">
+        <CardContent className="pt-4">
+          <div className="flex justify-center mb-8">
             <div className="flex gap-2">
               {Array.from({ length: 7 }).map((_, i) => (
                 <div 
                   key={i} 
-                  className={`w-8 h-12 border-2 rounded-md flex items-center justify-center text-xl font-bold
+                  className={`w-9 h-12 border-2 rounded-md flex items-center justify-center text-xl font-bold transition-all
                     ${pin[i] ? "border-primary bg-primary/10" : "border-gray-300"}`}
                 >
                   {pin[i] ? "•" : ""}
@@ -110,12 +111,12 @@ export default function AdminPage() {
             </div>
           </div>
           
-          <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="grid grid-cols-3 gap-4 mb-6">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
               <Button 
                 key={num} 
                 variant="outline" 
-                className="h-14 text-xl font-semibold"
+                className="h-16 text-xl font-semibold hover:bg-primary/5 hover:border-primary/50 active:scale-95 transition-all"
                 onClick={() => handlePinInput(num.toString())}
               >
                 {num}
@@ -123,21 +124,21 @@ export default function AdminPage() {
             ))}
             <Button 
               variant="outline" 
-              className="h-14 text-xl font-semibold"
+              className="h-16 text-sm font-medium text-red-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 active:scale-95 transition-all"
               onClick={handleClear}
             >
               Clear
             </Button>
             <Button 
               variant="outline" 
-              className="h-14 text-xl font-semibold"
+              className="h-16 text-xl font-semibold hover:bg-primary/5 hover:border-primary/50 active:scale-95 transition-all"
               onClick={() => handlePinInput("0")}
             >
               0
             </Button>
             <Button 
               variant="outline" 
-              className="h-14 flex items-center justify-center"
+              className="h-16 flex items-center justify-center hover:bg-primary/5 hover:border-primary/50 active:scale-95 transition-all"
               onClick={handleBackspace}
             >
               <Delete className="h-6 w-6" />
@@ -145,13 +146,13 @@ export default function AdminPage() {
           </div>
           
           <Button 
-            className="w-full h-12 mt-2 font-bold bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white"
+            className="w-full h-14 mt-2 text-lg font-bold bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white shadow-md hover:shadow-lg transition-all"
             onClick={handleSubmit}
             disabled={pin.length !== 7 || loading}
           >
             {loading ? (
-              <span className="flex items-center">
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
@@ -538,7 +539,7 @@ export default function AdminPage() {
         <meta name="description" content="Admin dashboard for Nursing Rocks content management" />
       </Helmet>
       
-      <section className="py-16 bg-white min-h-screen">
+      <section className="py-16 bg-gradient-to-b from-gray-50 to-white min-h-screen">
         <div className="container mx-auto px-4">
           {authenticated ? <AdminDashboard /> : <PinPad />}
         </div>
