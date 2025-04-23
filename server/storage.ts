@@ -13,6 +13,7 @@ import {
   SavedJob, InsertSavedJob,
   JobAlert, InsertJobAlert,
   StoreProduct, InsertStoreProduct,
+  AppSetting, InsertAppSetting,
   StoreOrder, InsertStoreOrder,
   StoreOrderItem, InsertStoreOrderItem,
   AppSetting, InsertAppSetting,

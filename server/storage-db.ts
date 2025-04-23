@@ -17,11 +17,13 @@ import {
   JobApplication, InsertJobApplication,
   SavedJob, InsertSavedJob,
   JobAlert, InsertJobAlert,
+  AppSetting, InsertAppSetting,
   events, artists, gallery, subscribers,
   users, nurseLicenses, tickets,
   storeProducts, storeOrders, storeOrderItems,
   employers, jobListings, nurseProfiles,
-  jobApplications, savedJobs, jobAlerts
+  jobApplications, savedJobs, jobAlerts,
+  appSettings
 } from "@shared/schema";
 import { IStorage } from "./storage";
 
