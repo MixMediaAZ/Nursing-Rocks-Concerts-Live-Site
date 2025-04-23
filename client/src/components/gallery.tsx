@@ -70,12 +70,19 @@ const GallerySection = () => {
         ) : (
           <>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {images?.slice(0, visibleImages).map((image) => (
-                <GalleryImage key={image.id} image={image} />
-              ))}
+              {Array.isArray(images) ? 
+                images.slice(0, visibleImages).map((image) => (
+                  <GalleryImage key={image.id} image={image} />
+                ))
+                :
+                // Fallback if images is not an array
+                <div className="col-span-full text-center py-8">
+                  <p className="text-muted-foreground">No gallery images available</p>
+                </div>
+              }
             </div>
             
-            {images && visibleImages < images.length && (
+            {Array.isArray(images) && images.length > 0 && visibleImages < images.length && (
               <div className="text-center mt-10">
                 <Button 
                   onClick={loadMoreImages}
