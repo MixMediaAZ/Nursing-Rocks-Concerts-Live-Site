@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Key, 
   KeyRound, 
-  Delete,  // Using Delete instead of Backspace which doesn't exist
+  Delete,
   LayoutDashboard, 
   Settings, 
   Calendar, 
@@ -37,15 +37,9 @@ export default function AdminPage() {
   }, []);
 
   const handlePinInput = (digit: string) => {
-    console.log("Current pin:", pin, "length:", pin.length);
-    console.log("Adding digit:", digit);
-    
     if (pin.length < 7) {
       const newPin = pin + digit;
-      console.log("New pin will be:", newPin, "length:", newPin.length);
       setPin(newPin);
-    } else {
-      console.log("PIN already at max length (7)");
     }
   };
 
@@ -60,16 +54,9 @@ export default function AdminPage() {
   const handleSubmit = () => {
     setLoading(true);
     
-    console.log("Attempting login with PIN:", pin);
-    console.log("Expected PIN:", ADMIN_PIN);
-    console.log("PIN length:", pin.length);
-    console.log("PIN type:", typeof pin);
-    console.log("ADMIN_PIN type:", typeof ADMIN_PIN);
-    
     // Simulate API call delay
     setTimeout(() => {
       if (pin === ADMIN_PIN) {
-        console.log("Authentication successful");
         setAuthenticated(true);
         localStorage.setItem("isAdmin", "true");
         // Also set the flag for admin PIN verification for gallery access
@@ -80,7 +67,6 @@ export default function AdminPage() {
           variant: "default",
         });
       } else {
-        console.log("Authentication failed, PIN mismatch");
         toast({
           title: "Authentication Failed",
           description: "Invalid PIN code. Please try again.",
@@ -190,9 +176,8 @@ export default function AdminPage() {
   // Admin Dashboard Component
   const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState("overview");
-    const { toast } = useToast();
     
-    // Function to navigate directly to gallery with admin access
+    // Direct navigation to gallery with admin access
     const openGalleryWithAdminAccess = () => {
       localStorage.setItem("adminPinVerified", "true");
       window.location.href = "/gallery";
@@ -207,15 +192,8 @@ export default function AdminPage() {
           <div className="flex gap-3">
             <Button 
               variant="outline"
-              onClick={openGalleryWithAdminAccess}
-              className="bg-[#5D3FD3] text-white hover:bg-[#5D3FD3]/90"
-            >
-              <ImageIcon className="h-4 w-4 mr-2" /> Open Gallery
-            </Button>
-            <Button 
-              variant="destructive" 
               onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               Logout
             </Button>
@@ -252,34 +230,6 @@ export default function AdminPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <ImageIcon className="h-5 w-5" /> Gallery
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold">87</p>
-                  <p className="text-sm text-muted-foreground">Media items</p>
-                  <Button 
-                    variant="link" 
-                    className="p-0 h-auto mt-2" 
-                    onClick={() => {
-                      // First switch to the gallery tab
-                      setActiveTab("gallery");
-                      // Then notify the user
-                      toast({
-                        title: "Gallery Management",
-                        description: "Loading gallery management interface...",
-                        variant: "default",
-                      });
-                    }}
-                  >
-                    Manage Gallery
-                  </Button>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
                     <Store className="h-5 w-5" /> Store
                   </CardTitle>
                 </CardHeader>
@@ -288,6 +238,21 @@ export default function AdminPage() {
                   <p className="text-sm text-muted-foreground">Products</p>
                   <Button variant="link" className="p-0 h-auto mt-2" onClick={() => setActiveTab("store")}>
                     Manage Store
+                  </Button>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" /> Users
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">152</p>
+                  <p className="text-sm text-muted-foreground">Registered users</p>
+                  <Button variant="link" className="p-0 h-auto mt-2" onClick={() => setActiveTab("users")}>
+                    Manage Users
                   </Button>
                 </CardContent>
               </Card>
@@ -314,22 +279,23 @@ export default function AdminPage() {
                     <Calendar className="h-6 w-6" />
                     <span>Add New Event</span>
                   </Button>
+                  
                   <Button 
                     variant="outline" 
                     className="h-auto py-4 flex flex-col items-center justify-center gap-2"
                     onClick={() => {
-                      setActiveTab("gallery");
-                      // Add toast notification
+                      openGalleryWithAdminAccess();
                       toast({
-                        title: "Media Management",
-                        description: "Opening gallery management interface...",
+                        title: "Gallery Access",
+                        description: "Opening gallery with admin access...",
                         variant: "default",
                       });
                     }}
                   >
                     <ImageIcon className="h-6 w-6" />
-                    <span>Upload Media</span>
+                    <span>Manage Gallery</span>
                   </Button>
+                  
                   <Button 
                     variant="outline" 
                     className="h-auto py-4 flex flex-col items-center justify-center gap-2"
@@ -423,12 +389,7 @@ export default function AdminPage() {
                 
                 <Button
                   className="w-full h-14 mt-2 text-lg font-bold bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white shadow-md hover:shadow-lg transition-all"
-                  onClick={() => {
-                    // Ensure the admin access is set for gallery
-                    localStorage.setItem("adminPinVerified", "true");
-                    // Navigate to the gallery page
-                    window.location.href = "/gallery";
-                  }}
+                  onClick={openGalleryWithAdminAccess}
                 >
                   <ImageIcon className="mr-2 h-5 w-5" />
                   Open Gallery Manager
@@ -671,7 +632,7 @@ export default function AdminPage() {
                 <CardTitle>User Management</CardTitle>
               </CardHeader>
               <CardContent>
-                <p>Manage user accounts, permissions, and nurse verification status.</p>
+                <p>Manage user accounts, permissions, and credentials.</p>
                 <div className="mt-4 space-y-4">
                   <div className="flex flex-col gap-2">
                     <h3 className="font-semibold">Recent Users</h3>
@@ -686,7 +647,7 @@ export default function AdminPage() {
                               Email
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Verification
+                              Status
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Actions
@@ -695,10 +656,10 @@ export default function AdminPage() {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                           {[
-                            { name: "Sarah Johnson", email: "sarah.j@example.com", verified: true },
-                            { name: "Michael Chen", email: "m.chen@example.com", verified: true },
-                            { name: "Jessica Miller", email: "jess.miller@example.com", verified: false },
-                            { name: "David Wilson", email: "d.wilson@example.com", verified: false },
+                            { name: "Jane Smith", email: "jane.smith@example.com", status: "Active" },
+                            { name: "John Doe", email: "john.doe@example.com", status: "Active" },
+                            { name: "Alex Johnson", email: "alex.johnson@example.com", status: "Inactive" },
+                            { name: "Sarah Williams", email: "sarah.williams@example.com", status: "Active" },
                           ].map((user, i) => (
                             <tr key={i}>
                               <td className="px-6 py-4 whitespace-nowrap">
@@ -708,12 +669,10 @@ export default function AdminPage() {
                                 <div className="text-sm text-gray-500">{user.email}</div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                  user.verified 
-                                    ? "bg-green-100 text-green-800" 
-                                    : "bg-yellow-100 text-yellow-800"
+                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                  user.status === "Active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                                 }`}>
-                                  {user.verified ? "Verified" : "Pending"}
+                                  {user.status}
                                 </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -723,30 +682,14 @@ export default function AdminPage() {
                                     size="sm"
                                     onClick={() => {
                                       toast({
-                                        title: "Edit User",
-                                        description: `Editing ${user.name}'s profile...`,
+                                        title: "User Details",
+                                        description: `Viewing details for ${user.name}...`,
                                         variant: "default",
                                       });
                                     }}
                                   >
-                                    Edit
+                                    View
                                   </Button>
-                                  {!user.verified && (
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm" 
-                                      className="text-green-500"
-                                      onClick={() => {
-                                        toast({
-                                          title: "User Verified",
-                                          description: `${user.name} has been verified successfully.`,
-                                          variant: "default", // Using default as success variant
-                                        });
-                                      }}
-                                    >
-                                      Verify
-                                    </Button>
-                                  )}
                                 </div>
                               </td>
                             </tr>
@@ -768,10 +711,10 @@ export default function AdminPage() {
     <>
       <Helmet>
         <title>Admin Dashboard | Nursing Rocks Concert Series</title>
-        <meta name="description" content="Admin dashboard for Nursing Rocks content management" />
+        <meta name="robots" content="noindex, nofollow" />
       </Helmet>
       
-      <section className="py-16 bg-gradient-to-b from-gray-50 to-white min-h-screen">
+      <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
           {authenticated ? <AdminDashboard /> : <PinPad />}
         </div>
