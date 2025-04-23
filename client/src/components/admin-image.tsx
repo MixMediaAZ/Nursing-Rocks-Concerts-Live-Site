@@ -57,6 +57,13 @@ export function AdminImage({
   // Replace image mutation
   const replaceImageMutation = useMutation({
     mutationFn: async (replacementImageId: number) => {
+      // Log the replacement attempt for debugging
+      console.log('Replacing image:', {
+        originalId: imageData.id,
+        originalUrl: imageData.image_url,
+        replacementId: replacementImageId
+      });
+      
       // Include original URL in the request body for placeholder images (-1 ID)
       const response = await apiRequest(
         'POST', 
@@ -74,16 +81,24 @@ export function AdminImage({
       return response.json();
     },
     onSuccess: (data) => {
-      // Update local image URL
+      console.log('Image replacement successful:', data);
+      
+      // Update local image URL with a random cache buster parameter to force browser refresh
       if (data && data.image_url) {
         // Update the original image data
-        imageData.image_url = data.image_url;
+        const cacheBuster = `?t=${Date.now()}`;
+        const imageUrl = data.image_url.includes('?') 
+          ? `${data.image_url}&cb=${Date.now()}` 
+          : `${data.image_url}${cacheBuster}`;
+          
+        imageData.image_url = imageUrl;
+        
         if (data.thumbnail_url) {
           imageData.thumbnail_url = data.thumbnail_url;
         }
         
         // Update state variables to force a re-render
-        setCurrentImageUrl(data.image_url);
+        setCurrentImageUrl(imageUrl);
         setRefreshKey(prevKey => prevKey + 1);
       }
       
@@ -102,6 +117,13 @@ export function AdminImage({
       if (onReplaceComplete) {
         onReplaceComplete();
       }
+      
+      // Force a page-level refresh after a brief delay to ensure everything is updated
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('image-replaced', {
+          detail: { imageId: imageData.id, newUrl: data.image_url }
+        }));
+      }, 200);
     },
     onError: (error: Error) => {
       toast({

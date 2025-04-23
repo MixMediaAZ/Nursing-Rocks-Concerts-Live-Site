@@ -331,16 +331,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get replacement image
         const replacementPath = path.join(process.cwd(), replacementImage.image_url);
         
-        // Skip processing if the original is an external URL and we can't determine dimensions
+        // Skip processing for external URLs completely
         let processedImage;
         
-        // Check if original is a web URL
-        const isOriginalWebUrl = originalImage.id === -1 && 
-          (originalImage.image_url.startsWith('http://') || originalImage.image_url.startsWith('https://'));
+        // Check if original image URL is a web URL
+        const isOriginalWebUrl = originalImage.image_url.startsWith('http://') || 
+                                originalImage.image_url.startsWith('https://');
         
-        if (isOriginalWebUrl && Object.keys(dimensions).length === 0) {
-          // For external URLs without dimensions, just use the replacement image directly
-          console.log('Using replacement image directly for external URL without dimensions');
+        // Check if replacement image URL is external (shouldn't normally happen but just in case)
+        const isReplacementWebUrl = replacementImage.image_url.startsWith('http://') || 
+                                  replacementImage.image_url.startsWith('https://');
+        
+        if (isOriginalWebUrl || originalImage.id === -1) {
+          // For ALL external URLs or placeholder images, just use the replacement image directly
+          // This completely bypasses Sharp processing for any external URLs
+          console.log('BYPASS: Using replacement image directly, no processing');
           processedImage = {
             original: replacementImage.image_url,
             thumbnail: replacementImage.thumbnail_url || replacementImage.image_url,
@@ -349,13 +354,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
             large: replacementImage.image_url
           };
         } else {
-          // Generate resized images from the replacement
-          processedImage = await processImage(
-            replacementPath,
-            path.dirname(targetPath),
-            path.basename(targetPath, path.extname(targetPath)),
-            dimensions
-          );
+          try {
+            // Generate resized images from the replacement
+            processedImage = await processImage(
+              replacementPath,
+              path.dirname(targetPath),
+              path.basename(targetPath, path.extname(targetPath)),
+              dimensions
+            );
+          } catch (err) {
+            // Fallback to direct replacement if processing fails
+            console.error('Image processing failed, using direct replacement:', err);
+            processedImage = {
+              original: replacementImage.image_url,
+              thumbnail: replacementImage.thumbnail_url || replacementImage.image_url,
+              small: replacementImage.image_url,
+              medium: replacementImage.image_url,
+              large: replacementImage.image_url
+            };
+          }
         }
         
         // For regular database images, update the database entry
