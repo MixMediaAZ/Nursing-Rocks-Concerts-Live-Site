@@ -15,11 +15,13 @@ import {
   StoreProduct, InsertStoreProduct,
   StoreOrder, InsertStoreOrder,
   StoreOrderItem, InsertStoreOrderItem,
+  AppSetting, InsertAppSetting,
   events, artists, gallery, subscribers,
   users, nurseLicenses, tickets,
   employers, jobListings, nurseProfiles, 
   jobApplications, savedJobs, jobAlerts,
-  storeProducts, storeOrders, storeOrderItems
+  storeProducts, storeOrders, storeOrderItems,
+  appSettings
 } from "@shared/schema";
 import { DatabaseStorage } from "./storage-db";
 
@@ -161,6 +163,14 @@ export interface IStorage {
   
   // Store Order Items
   getStoreOrderItemsByOrderId(orderId: number): Promise<StoreOrderItem[]>;
+  
+  // ========== APP SETTINGS ==========
+  
+  // App Settings management
+  getAppSettingByKey(key: string): Promise<AppSetting | undefined>;
+  getAllAppSettings(): Promise<AppSetting[]>;
+  createOrUpdateAppSetting(key: string, value: string, description?: string, isSensitive?: boolean): Promise<AppSetting>;
+  deleteAppSetting(key: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -180,6 +190,7 @@ export class MemStorage implements IStorage {
   private storeProducts: Map<number, StoreProduct>;
   private storeOrders: Map<number, StoreOrder>;
   private storeOrderItems: Map<number, StoreOrderItem>;
+  private appSettings: Map<string, AppSetting>;
   
   private eventId: number;
   private artistId: number;
@@ -215,6 +226,7 @@ export class MemStorage implements IStorage {
     this.storeProducts = new Map();
     this.storeOrders = new Map();
     this.storeOrderItems = new Map();
+    this.appSettings = new Map();
     
     this.eventId = 1;
     this.artistId = 1;

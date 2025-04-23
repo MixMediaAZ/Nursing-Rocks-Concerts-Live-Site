@@ -526,6 +526,26 @@ export type InsertJobAlert = z.infer<typeof insertJobAlertSchema>;
 
 // ========== STORE MODELS ==========
 
+// App Settings model for storing configuration
+export const appSettings = pgTable("app_settings", {
+  id: serial("id").primaryKey(),
+  key: varchar("key", { length: 100 }).notNull().unique(),
+  value: text("value"),
+  description: text("description"),
+  is_sensitive: boolean("is_sensitive").default(false),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+export const insertAppSettingSchema = createInsertSchema(appSettings).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+export type AppSetting = typeof appSettings.$inferSelect;
+export type InsertAppSetting = z.infer<typeof insertAppSettingSchema>;
+
 // Store Product model
 export const storeProducts = pgTable("store_products", {
   id: serial("id").primaryKey(),
