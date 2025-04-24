@@ -178,23 +178,71 @@ export function ImageReplacementDialog({
       // Close the dialog first
       onClose();
       
-      // ULTRA DIRECT METHOD:
+      // ULTRA DIRECT METHOD with targeted element approach:
       // Just change the src attribute directly without DOM replacement
-      // This avoids the flashing completely
+      // This avoids the flashing completely AND targets only the specific image
       setTimeout(() => {
-        document.querySelectorAll('img').forEach(imgElement => {
-          // Normalize URLs for comparison
-          const imgSrc = imgElement.src.split('?')[0];
-          const origSrc = (originalUrl || '').split('?')[0];
+        // If we have a specific elementId, only update that specific element
+        if (elementId) {
+          console.log(`Looking for specific element with ID: ${elementId}`);
           
-          if (imgSrc.includes(origSrc) || origSrc.includes(imgSrc)) {
-            console.log(`Found matching image to update:`, imgElement);
-            
-            // Just change the src attribute directly (no DOM replacement)
-            // This is the most direct method and avoids flashing completely
-            imgElement.src = uniqueServerUrl;
+          // Try to find the element by ID first (most specific)
+          const specificElement = document.getElementById(String(elementId));
+          
+          if (specificElement && specificElement.tagName === 'IMG') {
+            console.log(`Found exact element match by ID, updating:`, specificElement);
+            (specificElement as HTMLImageElement).src = uniqueServerUrl;
+          } else {
+            // If not found by ID, try to find elements with a data-element-id attribute
+            document.querySelectorAll(`[data-element-id="${elementId}"]`).forEach(el => {
+              if (el.tagName === 'IMG') {
+                console.log(`Found element by data-element-id, updating:`, el);
+                (el as HTMLImageElement).src = uniqueServerUrl;
+              } else {
+                // If it's a container with an image inside
+                const imgInside = el.querySelector('img');
+                if (imgInside) {
+                  console.log(`Found image inside element with data-element-id, updating:`, imgInside);
+                  imgInside.src = uniqueServerUrl;
+                }
+              }
+            });
           }
-        });
+        } else {
+          // Fallback to URL matching only when no elementId is provided
+          // This ensures backward compatibility with any existing code
+          console.log(`No elementId provided, falling back to URL matching`);
+          
+          document.querySelectorAll('img').forEach(imgElement => {
+            // Normalize URLs for comparison
+            const imgSrc = imgElement.src.split('?')[0];
+            const origSrc = (originalUrl || '').split('?')[0];
+            
+            if (imgSrc.includes(origSrc) || origSrc.includes(imgSrc)) {
+              // For URL matches, we can add additional checks to make replacement more targeted
+              // Look at the surrounding DOM structure to ensure we're only replacing specific instances
+              
+              // Check if this element has a parent with a feature-product class
+              const isInProduct = imgElement.closest('.featured-product') !== null;
+              
+              // If it's the targeted element, update it
+              if (elementId) {
+                // Only update if the element has the matching ID or data attribute
+                const hasMatchingId = imgElement.id === String(elementId) || 
+                                     imgElement.closest(`[data-element-id="${elementId}"]`) !== null;
+                
+                if (hasMatchingId) {
+                  console.log(`Found matching image by URL and ID to update:`, imgElement);
+                  imgElement.src = uniqueServerUrl;
+                }
+              } else {
+                // If no elementId, update all matching URLs (legacy behavior)
+                console.log(`Found matching image by URL only to update:`, imgElement);
+                imgElement.src = uniqueServerUrl;
+              }
+            }
+          });
+        }
       }, 100);
       
     } catch (error) {
