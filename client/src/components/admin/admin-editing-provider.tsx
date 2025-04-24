@@ -2,10 +2,10 @@ import { ReactNode, useEffect, useState } from 'react';
 import { useAdminEditMode } from '@/hooks/use-admin-edit-mode';
 import { useElementSelection, SelectedElement } from '@/hooks/use-element-selection';
 import { ImageReplacementDialog } from './image-replacement-dialog';
-import { TextEditorDialog } from './text-editor-dialog';
+import { TextEditorDialog, TextSaveOptions } from './text-editor-dialog';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { X, Edit, Wand, Save, Type, HandIcon, Settings, MousePointer, LayoutDashboard, LogOut } from 'lucide-react';
+import { X, Edit, Wand, Save, Type, HandIcon, Settings, MousePointer, LayoutDashboard, LogOut, Plus } from 'lucide-react';
 
 interface AdminEditingProviderProps {
   children: ReactNode;
@@ -17,10 +17,12 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
     selectedElement, 
     isImageReplacementDialogOpen,
     isTextEditorDialogOpen,
+    isCreatingNewText,
     textContent,
     openImageReplacementDialog,
     closeImageReplacementDialog,
     openTextEditorDialog,
+    openNewTextDialog,
     closeTextEditorDialog,
     updateTextContent,
     clearSelectedElement,
@@ -251,11 +253,41 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
       <TextEditorDialog
         isOpen={isTextEditorDialogOpen}
         onClose={closeTextEditorDialog}
-        onSave={(newContent) => {
+        onSave={(newContent, options) => {
           updateTextContent(newContent);
           closeTextEditorDialog();
           
-          if (selectedElement) {
+          if (isCreatingNewText) {
+            // Create new text element logic
+            const targetElement = selectedElement?.element;
+            if (targetElement && options) {
+              // Create the new element
+              const newElement = document.createElement(options.elementType || 'p');
+              newElement.textContent = newContent;
+              newElement.id = `editable-element-${Date.now()}`;
+              
+              // Insert the element according to the specified location
+              if (options.insertLocation === 'before') {
+                targetElement.parentNode?.insertBefore(newElement, targetElement);
+              } else if (options.insertLocation === 'after') {
+                targetElement.parentNode?.insertBefore(newElement, targetElement.nextSibling);
+              } else if (options.insertLocation === 'append') {
+                targetElement.appendChild(newElement);
+              } else if (options.insertLocation === 'prepend') {
+                targetElement.insertBefore(newElement, targetElement.firstChild);
+              }
+              
+              toast({
+                title: 'Text Element Created',
+                description: `Added new ${options.elementType || 'paragraph'} element`,
+              });
+            }
+          } else if (selectedElement) {
+            // Update existing text
+            if (selectedElement.element) {
+              selectedElement.element.textContent = newContent;
+            }
+            
             toast({
               title: 'Text Updated',
               description: 'The selected text has been updated',
@@ -266,9 +298,10 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
         }}
         elementId={selectedElement?.id}
         initialContent={textContent}
-        title="Edit Text Content"
-        description="Update the text for this element"
+        title={isCreatingNewText ? "Add New Text" : "Edit Text Content"}
+        description={isCreatingNewText ? "Create a new text element" : "Update the text for this element"}
         multiline={true}
+        isCreatingNew={isCreatingNewText}
       />
       
       {/* Admin mode toolbar - only shown when admin mode is active */}
@@ -299,6 +332,28 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
             )}
             
             <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
+              <Button
+                data-admin-action="add-text"
+                variant="outline"
+                size="sm"
+                className="h-9"
+                onClick={() => {
+                  if (selectedElement) {
+                    // If an element is selected, use it as the target for inserting the new text
+                    openNewTextDialog();
+                  } else {
+                    toast({
+                      title: 'Select an Element First',
+                      description: 'Please select an element to add text relative to it',
+                      variant: 'destructive',
+                    });
+                  }
+                }}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add Text
+              </Button>
+              
               {selectedElement && (
                 <Button
                   data-admin-action="clear"

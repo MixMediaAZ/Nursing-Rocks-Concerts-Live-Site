@@ -77,15 +77,27 @@ export function TextEditorDialog({
     // Save on Ctrl+Enter or Cmd+Enter (for multiline)
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
-      onSave(content);
-      onClose();
+      handleSave();
     }
+  };
+
+  const handleSave = () => {
+    if (isCreatingNew) {
+      // Save with options for new text element
+      onSave(content, {
+        elementType,
+        insertLocation
+      });
+    } else {
+      // Standard save for existing text
+      onSave(content);
+    }
+    onClose();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(content);
-    onClose(); // Close dialog immediately after saving
+    handleSave();
   };
 
   return (

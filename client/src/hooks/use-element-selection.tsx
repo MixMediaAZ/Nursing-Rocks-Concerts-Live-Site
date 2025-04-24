@@ -16,6 +16,7 @@ interface ElementSelectionState {
   selectedElement: SelectedElement | null;
   isImageReplacementDialogOpen: boolean;
   isTextEditorDialogOpen: boolean; 
+  isCreatingNewText: boolean; // Flag to indicate if we're creating a new text element
   textContent: string;
   universalSelectionEnabled: boolean; // Controls whether all elements are selectable
   setSelectedElement: (element: SelectedElement | null) => void;
@@ -23,6 +24,7 @@ interface ElementSelectionState {
   openImageReplacementDialog: () => void;
   closeImageReplacementDialog: () => void;
   openTextEditorDialog: (content: string) => void;
+  openNewTextDialog: () => void; // Opens text editor in "create new" mode
   closeTextEditorDialog: () => void;
   updateTextContent: (content: string) => void;
   setUniversalSelectionEnabled: (enabled: boolean) => void;
@@ -32,6 +34,7 @@ export const useElementSelection = create<ElementSelectionState>((set) => ({
   selectedElement: null,
   isImageReplacementDialogOpen: false,
   isTextEditorDialogOpen: false,
+  isCreatingNewText: false,
   textContent: '',
   universalSelectionEnabled: false,
   
@@ -45,10 +48,20 @@ export const useElementSelection = create<ElementSelectionState>((set) => ({
   
   openTextEditorDialog: (content: string) => set({ 
     isTextEditorDialogOpen: true,
+    isCreatingNewText: false,
     textContent: content
   }),
   
-  closeTextEditorDialog: () => set({ isTextEditorDialogOpen: false }),
+  openNewTextDialog: () => set({
+    isTextEditorDialogOpen: true,
+    isCreatingNewText: true,
+    textContent: ''
+  }),
+  
+  closeTextEditorDialog: () => set({ 
+    isTextEditorDialogOpen: false,
+    isCreatingNewText: false
+  }),
   
   updateTextContent: (content: string) => set({ textContent: content }),
   
