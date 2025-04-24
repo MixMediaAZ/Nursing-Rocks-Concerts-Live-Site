@@ -255,7 +255,9 @@ export default function AdminPage() {
 
   // Admin Dashboard Component
   const AdminDashboard = () => {
-    const [activeTab, setActiveTab] = useState("overview");
+    // Check if we have a stored tab to navigate to
+    const storedTab = localStorage.getItem("adminActiveTab");
+    const [activeTab, setActiveTab] = useState(storedTab || "overview");
     
     // Admin mode state - controls access to editing features
     const [isAdminMode, setIsAdminMode] = useState(true);
@@ -263,6 +265,30 @@ export default function AdminPage() {
     // PIN verification dialog state
     const [showPinDialog, setShowPinDialog] = useState(false);
     const [pinInput, setPinInput] = useState("");
+    
+    // Effect to handle the redirect to CustomCat settings if needed
+    useEffect(() => {
+      const shouldScrollToCustomCat = localStorage.getItem("scrollToCustomCat") === "true";
+      
+      if (shouldScrollToCustomCat) {
+        // Clear the flag so it doesn't trigger again on refresh
+        localStorage.removeItem("scrollToCustomCat");
+        localStorage.removeItem("adminActiveTab");
+        
+        // Scroll to the CustomCat settings section
+        setTimeout(() => {
+          const element = document.getElementById('store-api-settings-wrapper');
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+            // Highlight the element briefly
+            element.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
+            setTimeout(() => {
+              element.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
+            }, 2000);
+          }
+        }, 500); // Give it more time to render
+      }
+    }, []);
     
     // Direct navigation to gallery with admin access
     const openGalleryWithAdminAccess = () => {
@@ -502,7 +528,7 @@ export default function AdminPage() {
           )}
         </div>
 
-        <Tabs defaultValue="overview" className="w-full" onValueChange={setActiveTab}>
+        <Tabs value={activeTab} defaultValue="overview" className="w-full" onValueChange={setActiveTab}>
           <TabsList className="w-full grid grid-cols-2 md:grid-cols-7 mb-8">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="editor">
@@ -685,35 +711,18 @@ export default function AdminPage() {
                     </p>
                     <Button
                       onClick={() => {
-                        // First update the active tab state
-                        setActiveTab("store");
+                        // Set a localStorage item to indicate we need to go to store tab
+                        localStorage.setItem("adminActiveTab", "store");
+                        localStorage.setItem("scrollToCustomCat", "true");
+                        
+                        // Reload the admin page to ensure fresh state
+                        window.location.href = "/admin";
+                        
                         toast({
                           title: "CustomCat API",
                           description: "Opening CustomCat API configuration...",
                           variant: "default",
                         });
-                        
-                        // Then refresh tabs component to show the correct content
-                        const tabsElement = document.querySelector('[role="tablist"]');
-                        if (tabsElement) {
-                          const storeTab = tabsElement.querySelector('[data-value="store"]');
-                          if (storeTab && storeTab instanceof HTMLElement) {
-                            storeTab.click();
-                            
-                            // Scroll to CustomCat API settings after tab switch completes
-                            setTimeout(() => {
-                              const element = document.getElementById('store-api-settings-wrapper');
-                              if (element) {
-                                element.scrollIntoView({ behavior: 'smooth' });
-                                // Highlight the element briefly
-                                element.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
-                                setTimeout(() => {
-                                  element.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
-                                }, 2000);
-                              }
-                            }, 300);
-                          }
-                        }
                       }}
                       className="w-full"
                     >
