@@ -14,6 +14,8 @@ interface ImageReplacementDialogProps {
   originalUrl?: string;
   title?: string;
   description?: string;
+  productId?: number; // Add product ID for targeting product images
+  isPending?: boolean; // Add loading state
 }
 
 export function ImageReplacementDialog({
@@ -22,8 +24,10 @@ export function ImageReplacementDialog({
   onSelectImage,
   elementId,
   originalUrl,
+  productId,
   title = 'Select Replacement Image',
-  description = 'Choose an image from the gallery to replace the current one. The system will automatically resize it to maintain layout consistency.'
+  description = 'Choose an image from the gallery to replace the current one. The system will automatically resize it to maintain layout consistency.',
+  isPending = false
 }: ImageReplacementDialogProps) {
   const [selectedImageId, setSelectedImageId] = useState<number | null>(null);
   const [isReplacing, setIsReplacing] = useState(false);
@@ -106,6 +110,17 @@ export function ImageReplacementDialog({
         // Close dialog first
         onClose();
         
+        // Dispatch custom event for image replacement with placeholder
+        window.dispatchEvent(new CustomEvent('image-replaced', {
+          detail: { 
+            imageId: -999,
+            newUrl: placeholderUrl,
+            originalUrl: originalUrl || '',
+            elementId: elementId || `product-image-${productId}`,
+            productId: productId
+          }
+        }));
+        
         // ULTRA DIRECT METHOD:
         // Just change the src attribute directly without DOM replacement
         // This avoids the flashing completely
@@ -177,6 +192,18 @@ export function ImageReplacementDialog({
       
       // Close the dialog first
       onClose();
+      
+      // Dispatch custom event for image replacement
+      // This will help coordinate updates across components
+      window.dispatchEvent(new CustomEvent('image-replaced', {
+        detail: { 
+          imageId: result.id || -1,
+          newUrl: uniqueServerUrl,
+          originalUrl: originalUrl || '',
+          elementId: elementId || `product-image-${productId}`,
+          productId: productId
+        }
+      }));
       
       // ULTRA DIRECT METHOD with targeted element approach:
       // Just change the src attribute directly without DOM replacement
