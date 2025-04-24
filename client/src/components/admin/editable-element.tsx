@@ -43,53 +43,7 @@ export function EditableElement({
   const adminState = useAdminEditMode();
   const uniqueId = id || `${type}-${Math.random().toString(36).substring(2, 9)}`;
   
-  // Set up event listener for image replacement
-  useEffect(() => {
-    const handleImageReplaced = (event: Event) => {
-      if ((event as CustomEvent).detail) {
-        const { elementId, originalUrl, newImageId, newImageUrl } = (event as CustomEvent).detail;
-        
-        // Log the event details for debugging
-        console.log(`Image replacement event received:`, (event as CustomEvent).detail);
-        console.log(`This element: ID=${id}, src=${src}`);
-        
-        // Only refresh if this is the element being replaced
-        // Check if either the element ID matches or the original URL is part of the src
-        const isTargetElement = 
-          (id && elementId && id.toString() === elementId.toString()) || 
-          (src && originalUrl && src.includes(originalUrl));
-          
-        if (isTargetElement) {
-          console.log(`Element matched for replacement: ID=${id}, originalUrl=${src}, newImageId=${newImageId}, newImageUrl=${newImageUrl}`);
-          
-          // Invalidate any relevant cache to force refetch
-          queryClient.invalidateQueries();
-          
-          // Force update this component immediately - the image needs to be refreshed
-          setRefreshKey(Date.now());
-          
-          // If we have a new image URL and a callback, trigger it
-          if (newImageUrl && onUpdate) {
-            console.log(`Updating element with new image URL: ${newImageUrl}`);
-            onUpdate({ 
-              refreshTimestamp: Date.now(),
-              newImageId,
-              originalUrl,
-              newImageUrl,
-              content: newImageUrl // Add content property for consistency with text updates
-            });
-          } else {
-            console.log(`No update callback found or missing new image URL`);
-          }
-        }
-      }
-    };
-    
-    window.addEventListener('image-replaced', handleImageReplaced);
-    return () => {
-      window.removeEventListener('image-replaced', handleImageReplaced);
-    };
-  }, [id, src, onUpdate]);
+  // REMOVED: Combined with the other event listener below
 
   // Update text content if children changes
   useEffect(() => {
@@ -150,12 +104,47 @@ export function EditableElement({
   useEffect(() => {
     const handleImageReplaced = (event: Event) => {
       if ((event as CustomEvent).detail) {
-        const { elementId, originalUrl, newImageUrl } = (event as CustomEvent).detail;
+        const { elementId, originalUrl, newImageId, newImageUrl, timestamp } = (event as CustomEvent).detail;
         
-        // Update the image source if this is our element
-        if (elementId && id && elementId.toString() === id.toString() && newImageUrl) {
-          console.log(`EditableElement setting new image URL: ${newImageUrl}`);
-          setCurrentImageSrc(newImageUrl);
+        // Log the event details for debugging
+        console.log(`Image replacement event received:`, (event as CustomEvent).detail);
+        console.log(`This element: ID=${id}, src=${src}`);
+        
+        // Check if this is our element by ID match
+        const idMatch = id && elementId && id.toString() === elementId.toString();
+        
+        // Also check if this is our element by URL match
+        const urlMatch = src && originalUrl && (
+          src.includes(originalUrl) || 
+          // Try to normalize URLs for comparison (strip hostname)
+          src.replace(/^https?:\/\/[^\/]+/, '').includes(originalUrl.replace(/^https?:\/\/[^\/]+/, ''))
+        );
+        
+        if (idMatch || urlMatch) {
+          console.log(`Element matched for replacement: ID=${id}, originalUrl=${src}, newImageUrl=${newImageUrl}`);
+          
+          // Force update this component immediately
+          setRefreshKey(timestamp || Date.now());
+          
+          // Update the src state if we have a new URL
+          if (newImageUrl) {
+            console.log(`EditableElement setting new image URL: ${newImageUrl}`);
+            setCurrentImageSrc(newImageUrl);
+            
+            // If we have an update callback, call it with the new data
+            if (onUpdate) {
+              console.log(`Calling onUpdate with new image URL: ${newImageUrl}`);
+              onUpdate({ 
+                refreshTimestamp: timestamp || Date.now(),
+                newImageId,
+                originalUrl,
+                newImageUrl,
+                content: newImageUrl // Add content property for consistency with text updates
+              });
+            }
+          } else {
+            console.log(`No new image URL provided in the event`);
+          }
         }
       }
     };
@@ -164,7 +153,7 @@ export function EditableElement({
     return () => {
       window.removeEventListener('image-replaced', handleImageReplaced);
     };
-  }, [id]);
+  }, [id, src, onUpdate]);
   
   // Render based on element type
   const renderContent = () => {
