@@ -234,6 +234,11 @@ export default function AdminPage() {
       window.location.href = "/gallery";
     };
     
+    // Direct navigation to store settings for CustomCat integration
+    const openCustomCatSettings = () => {
+      setActiveTab("store");
+    };
+    
     // Check if element editing mode is active
     const [isEditModeActive, setIsEditModeActive] = useState(
       localStorage.getItem("editMode") === "true"
