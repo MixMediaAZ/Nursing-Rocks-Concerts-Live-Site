@@ -25,10 +25,12 @@ const storage = multer.diskStorage({
 
 // File filter to accept only image files
 const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  console.log(`Validating file: ${file.originalname}, mimetype: ${file.mimetype}`);
   if (SUPPORTED_IMAGE_TYPES.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Only image files are allowed'));
+    // More descriptive error for debugging
+    cb(new Error(`File "${file.originalname}" has unsupported mime type: ${file.mimetype}. Supported types: ${SUPPORTED_IMAGE_TYPES.join(', ')}`));
   }
 };
 
@@ -190,21 +192,28 @@ export async function deleteMediaFolder(req: Request, res: Response) {
  */
 export async function uploadGalleryImages(req: Request, res: Response) {
   try {
+    console.log(`Starting gallery upload process. Files received:`, req.files ? 
+      (Array.isArray(req.files) ? req.files.length : 'not an array') : 'no files');
+    
     if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
       return res.status(400).json({ error: 'No files uploaded' });
     }
     
     const uploadedFiles = req.files as Express.Multer.File[];
+    console.log(`Processing ${uploadedFiles.length} files for gallery upload`);
+    
     const event_id = req.body.event_id ? parseInt(req.body.event_id, 10) : null;
     const folder_id = req.body.folder_id ? parseInt(req.body.folder_id, 10) : null;
     const alt_text = req.body.alt_text || '';
     const media_type = req.body.media_type || 'image';
     
     const uploadResults = [];
+    const failedUploads = [];
     
     // Process each uploaded file
     for (const file of uploadedFiles) {
       try {
+        console.log(`Processing file: ${file.originalname}, size: ${file.size}`);
         const uploadDir = path.join(process.cwd(), 'uploads', 'gallery');
         
         // Process image to create different sizes
@@ -218,7 +227,8 @@ export async function uploadGalleryImages(req: Request, res: Response) {
         const rawInsertQuery = `
           INSERT INTO gallery (
             image_url, thumbnail_url, alt_text, event_id, folder_id,
-            media_type, file_size, dimensions, sort_order, z_index, metadata
+            media_type, file_size, dimensions, sort_order, z_index, metadata,
+            created_at, updated_at
           ) VALUES (
             '${sizes.original.replace(/'/g, "''")}',
             ${sizes.thumbnail ? `'${sizes.thumbnail.replace(/'/g, "''")}'` : 'NULL'},
@@ -230,28 +240,55 @@ export async function uploadGalleryImages(req: Request, res: Response) {
             NULL,
             0,
             0,
-            '{}'
+            '{}',
+            NOW(),
+            NOW()
           ) RETURNING *
         `;
         
         // Execute the raw query
         const result = await db.execute(rawInsertQuery);
-        const newImage = result.rows[0];
-        uploadResults.push(newImage);
+        
+        if (result && result.rows && result.rows.length > 0) {
+          const newImage = result.rows[0];
+          uploadResults.push(newImage);
+          console.log(`Successfully uploaded: ${file.originalname}, DB ID: ${newImage.id}`);
+        } else {
+          console.error('No rows returned from insert query for file:', file.originalname);
+          failedUploads.push({
+            filename: file.originalname,
+            reason: 'Database insertion failed, no rows returned'
+          });
+        }
       } catch (innerError) {
-        console.error('Error processing file:', file.filename, innerError);
+        console.error('Error processing file:', file.originalname, innerError);
+        failedUploads.push({
+          filename: file.originalname,
+          reason: innerError instanceof Error ? innerError.message : 'Unknown error'
+        });
         // Continue with other files even if one fails
       }
     }
     
     if (uploadResults.length === 0) {
-      return res.status(500).json({ error: 'Failed to upload any gallery images' });
+      return res.status(500).json({ 
+        error: 'Failed to upload any gallery images',
+        failedUploads 
+      });
     }
     
-    res.json({ images: uploadResults });
+    res.json({ 
+      images: uploadResults,
+      total: uploadResults.length,
+      failed: failedUploads.length,
+      failedUploads: failedUploads.length > 0 ? failedUploads : undefined
+    });
   } catch (error) {
     console.error('Error uploading gallery images:', error);
-    res.status(500).json({ error: 'Failed to upload gallery images' });
+    res.status(500).json({ 
+      error: 'Failed to upload gallery images',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 }
 
