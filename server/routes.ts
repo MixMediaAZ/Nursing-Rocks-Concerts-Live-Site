@@ -6,7 +6,7 @@ import fs from "fs";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { storage } from "./storage";
-import { gallery, mediaFolders, events } from "@shared/schema";
+import { gallery, mediaFolders, events, artists } from "@shared/schema";
 import sharp from "sharp";
 import { processImage } from "./image-utils";
 import { customCatEndpoints } from "./customcat-endpoints";
