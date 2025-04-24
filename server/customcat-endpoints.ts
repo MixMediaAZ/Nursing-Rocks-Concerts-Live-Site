@@ -2,53 +2,25 @@
  * CustomCat API endpoint configurations to try
  * 
  * Based on the official CustomCat API documentation:
- * - The correct endpoint is /catalog not /products
+ * - The base URL is https://customcat-beta.mylocker.net/api/v1/
+ * - The correct endpoint is /catalog
  * - The API key should be sent as a query parameter, not a header
  */
 export const customCatEndpoints = [
-  // Based on official documentation - these should work
+  // Primary endpoint from the documentation - this should work
   {
-    name: "api.customcat.com catalog",
-    url: "https://api.customcat.com/catalog",
-    useQueryParam: true
+    name: "CustomCat Official API",
+    url: "https://customcat-beta.mylocker.net/api/v1/catalog",
+    useQueryParam: true,
+    extraParams: {
+      limit: "250"
+    }
   },
+  
+  // Try with different category options
   {
-    name: "customcat.com catalog",
-    url: "https://customcat.com/api/catalog",
-    useQueryParam: true
-  },
-  {
-    name: "api.customcat.io catalog",
-    url: "https://api.customcat.io/catalog",
-    useQueryParam: true
-  },
-  // Try with version prefix
-  {
-    name: "api.customcat.com v1 catalog",
-    url: "https://api.customcat.com/v1/catalog",
-    useQueryParam: true
-  },
-  // App subdomain alternative
-  {
-    name: "app.customcat.com catalog",
-    url: "https://app.customcat.com/api/catalog",
-    useQueryParam: true
-  },
-  // Try various alternative formats to be comprehensive
-  {
-    name: "api.customcat.com v2 catalog",
-    url: "https://api.customcat.com/v2/catalog",
-    useQueryParam: true
-  },
-  {
-    name: "Direct catalog endpoint",
-    url: "https://api.customcat.com/catalog?category=Digisoft&limit=250",
-    useQueryParam: true
-  },
-  // Try with different parameter options
-  {
-    name: "Digisoft category endpoint",
-    url: "https://api.customcat.com/catalog",
+    name: "CustomCat Digisoft Category",
+    url: "https://customcat-beta.mylocker.net/api/v1/catalog",
     useQueryParam: true,
     extraParams: {
       category: "Digisoft",
@@ -56,11 +28,29 @@ export const customCatEndpoints = [
     }
   },
   {
-    name: "Sublimation category endpoint",
-    url: "https://api.customcat.com/catalog",
+    name: "CustomCat Sublimation Category",
+    url: "https://customcat-beta.mylocker.net/api/v1/catalog",
     useQueryParam: true,
     extraParams: {
       category: "Sublimation",
+      limit: "250"
+    }
+  },
+  
+  // Other possible variations just in case
+  {
+    name: "CustomCat Catalog V1",
+    url: "https://customcat.mylocker.net/api/v1/catalog",
+    useQueryParam: true,
+    extraParams: {
+      limit: "250"
+    }
+  },
+  {
+    name: "CustomCat Production API",
+    url: "https://customcat.com/api/v1/catalog",
+    useQueryParam: true,
+    extraParams: {
       limit: "250"
     }
   }

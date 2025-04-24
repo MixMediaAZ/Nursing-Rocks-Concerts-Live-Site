@@ -10,6 +10,7 @@ import { gallery, mediaFolders, events } from "@shared/schema";
 import sharp from "sharp";
 import { processImage } from "./image-utils";
 import { customCatEndpoints } from "./customcat-endpoints";
+import { fetchCustomCatProducts } from "./customcat-api";
 import { 
   galleryUpload, 
   createMediaFolder, 
@@ -1731,108 +1732,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       ];
       
-      // Try to make real API request first, then fall back to sample data
-      let responseData;
+      // Try each endpoint in our list
+      let responseData: any = null;
       let usingRealApi = false;
       
-      try {
-        // Test multiple possible API endpoints
-        const possibleEndpoints = [
-          {
-            name: "api.customcat.com",
-            url: "https://api.customcat.com/v1/products"
-          },
-          {
-            name: "api.customcat.io",
-            url: "https://api.customcat.io/v1/products"
-          },
-          {
-            name: "app.customcat.com",
-            url: "https://app.customcat.com/api/v1/products"
-          },
-          {
-            name: "customcat.com API v2",
-            url: "https://api.customcat.com/v2/products"
-          }
-        ];
-        
-        console.log(`Testing ${possibleEndpoints.length} possible CustomCat API endpoints for product sync...`);
-        
-        const errors: Record<string, string> = {};
-        let connectionSucceeded = false;
-        let successfulEndpoint = null;
-        
-        // Try each endpoint sequentially
-        for (const endpoint of possibleEndpoints) {
-          if (connectionSucceeded) break; // Stop if we already found a working endpoint
+      for (const endpoint of customCatEndpoints) {
+        try {
+          console.log(`Attempting to connect to ${endpoint.name}: ${endpoint.url}`);
           
-          try {
-            console.log(`Attempting to connect to ${endpoint.name}: ${endpoint.url}`);
-            
-            const response = await fetch(endpoint.url, {
-              method: "GET",
-              headers: {
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "X-Api-Key": apiKeyValue
-              },
-              signal: AbortSignal.timeout(3000) // shorter timeout for multiple attempts
+          // Build the URL with query parameters as specified in the CustomCat API docs
+          const url = new URL(endpoint.url);
+          
+          // Add API key as query parameter (not header)
+          url.searchParams.append('api_key', apiKeyValue);
+          
+          // Add any extra parameters if specified
+          if (endpoint.extraParams) {
+            Object.entries(endpoint.extraParams).forEach(([key, value]) => {
+              url.searchParams.append(key, String(value));
             });
+          }
+          
+          console.log(`Sending request to: ${url.toString()}`);
+          
+          const response = await fetch(url.toString(), {
+            method: "GET",
+            headers: {
+              "Accept": "application/json",
+              "Content-Type": "application/json"
+            },
+            signal: AbortSignal.timeout(5000) // slightly longer timeout for API calls
+          });
+          
+          if (response.ok) {
+            console.log(`✓ Connection to ${endpoint.name} successful`);
             
-            if (response.ok) {
-              console.log(`✓ Connection to ${endpoint.name} successful`);
-              responseData = await response.json();
+            // Try to parse the response
+            const jsonResponse = await response.json();
+            console.log(`Got response from CustomCat API with ${Array.isArray(jsonResponse) ? jsonResponse.length : 'unknown'} items`);
+            
+            // Check if we have a valid response with products
+            if (jsonResponse && (Array.isArray(jsonResponse) || jsonResponse.data)) {
+              responseData = jsonResponse;
               usingRealApi = true;
-              connectionSucceeded = true;
-              successfulEndpoint = endpoint;
-              console.log(`CustomCat API response received successfully from ${endpoint.name}`);
+              console.log(`Successfully connected to CustomCat API via ${endpoint.name}`);
               break; // Success! Exit the loop
             } else {
-              // We got a response, but it wasn't OK
-              console.log(`✗ ${endpoint.name} responded with status ${response.status}`);
-              const errorData = await response.json().catch(() => ({}));
-              const errorMessage = errorData.message || `API Error (${response.status})`;
-              errors[endpoint.name] = errorMessage;
+              console.log(`Response from ${endpoint.name} didn't contain product data, trying next endpoint`);
             }
-          } catch (error) {
-            // This endpoint failed completely
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            console.error(`✗ Error with ${endpoint.name}:`, errorMessage);
-            errors[endpoint.name] = errorMessage;
+          } else {
+            console.error(`✗ ${endpoint.name} API request failed with status ${response.status}`);
+            if (response.status === 401 || response.status === 403) {
+              console.error(`Authentication error with ${endpoint.name} - API key may be invalid`);
+            }
           }
+        } catch (endpointError) {
+          console.error(`Error connecting to ${endpoint.name}:`, endpointError);
         }
-        
-        // If we didn't succeed with any endpoint, fall back to sample data
-        if (!connectionSucceeded) {
-          console.error("All CustomCat API endpoints failed for product sync");
-          responseData = sampleProducts;
-          
-          // Alert the client that we're using sample data
-          return res.status(207).json({
-            success: true,
-            partial: true,
-            message: "All API endpoint attempts failed. Using sample data for development.",
-            apiErrors: errors,
-            apiKeyProvided: !!apiKeyValue,
-            apiKeyLength: apiKeyValue ? apiKeyValue.length : 0,
-            results: {
-              total: sampleProducts.length,
-              added: sampleProducts.length,
-              updated: 0,
-              errors: 0,
-              fromApi: false
-            }
-          });
-        }
-      } catch (endpointError) {
-        console.error("Error during API endpoint testing:", endpointError);
+      }
+      
+      // If all API endpoints failed, use sample data
+      if (!responseData) {
+        console.log("All CustomCat API endpoints failed. Using sample data for development.");
         responseData = sampleProducts;
         
         return res.status(207).json({
           success: true,
           partial: true,
-          message: "Error during API endpoint testing. Using sample data for development.",
-          error: endpointError instanceof Error ? endpointError.message : String(endpointError),
+          message: "All API endpoint attempts failed. Using sample data for development.",
+          apiKeyProvided: !!apiKeyValue,
+          apiKeyLength: apiKeyValue ? apiKeyValue.length : 0,
           results: {
             total: sampleProducts.length,
             added: sampleProducts.length,
@@ -1843,9 +1812,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Process the API response
+      // Process the API response - handle different response formats
       const productsData = Array.isArray(responseData) ? responseData : 
-                         (responseData.products || responseData.data || []);
+                          (responseData.products || responseData.data || []);
       
       if (!Array.isArray(productsData)) {
         return res.status(500).json({ 
@@ -1854,35 +1823,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      console.log(`Processing ${productsData.length} products from CustomCat API`);
+      
       // Process and insert/update products
       const syncResults = {
         total: productsData.length,
         added: 0,
         updated: 0,
         skipped: 0,
-        errors: 0
+        errors: 0,
+        fromApi: usingRealApi
       };
       
       for (const product of productsData) {
         try {
-          // Check if product exists
-          const existingProduct = await storage.getStoreProductByExternalId("customcat", product.id.toString());
+          // Extract the ID from the product - handle different formats
+          const productId = product.id?.toString() || 
+                           product.product_id?.toString() || 
+                           product.catalog_product_id?.toString();
           
-          // Map the product data
+          if (!productId) {
+            console.error("Product missing ID, skipping:", product);
+            syncResults.skipped++;
+            continue;
+          }
+          
+          // Check if product exists
+          const existingProduct = await storage.getStoreProductByExternalId("customcat", productId);
+          
+          // Map the product data - handle different formats from the API
           const productData = {
-            name: product.name || product.title || "CustomCat Product",
-            description: product.description || "",
+            name: product.name || product.title || product.product_name || "CustomCat Product",
+            description: product.description || product.product_description || "",
             price: product.price ? parseFloat(product.price).toFixed(2) : "29.99",
-            image_url: product.image_url || product.thumbnail || (product.images && product.images[0]) || null,
-            category: product.category || "CustomCat Products",
+            image_url: product.image_url || product.thumbnail || product.product_image || 
+                      (product.images && product.images[0]) || null,
+            category: product.category || product.subcategory || "CustomCat Products",
             is_featured: false,
             is_available: true,
-            stock_quantity: product.inventory || product.stock || 100,
-            external_id: product.id.toString(),
+            stock_quantity: product.inventory || product.stock || product.quantity || 100,
+            external_id: productId,
             external_source: "customcat",
             metadata: {
               customcat_data: product,
-              variants: product.variants || product.options || []
+              variants: product.variants || product.options || product.sizes || []
             }
           };
           
@@ -1901,7 +1885,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.json({ 
         success: true, 
-        message: "Product synchronization complete",
+        message: usingRealApi ? 
+          "Product synchronization complete with real API data" : 
+          "Product synchronization complete with sample data",
         results: syncResults
       });
     } catch (error) {

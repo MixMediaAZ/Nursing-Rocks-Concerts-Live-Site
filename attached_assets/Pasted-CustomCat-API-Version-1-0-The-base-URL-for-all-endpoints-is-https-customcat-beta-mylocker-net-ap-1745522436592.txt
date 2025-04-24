@@ -1,0 +1,506 @@
+CustomCat API
+Version 1.0
+The base URL for all endpoints is https://customcat-beta.mylocker.net/api/v1/
+Getting Started:
+Select your intended use:
+1. I am a seller and I want to use CustomCat's product mock-ups to place products on my website AND have CustomCat fulfill my orders.
+2. I am a seller and I have my own product mock-ups. I want to use CustomCat to ONLY fulfill my orders.
+3. I am a site owner that enables multiple sellers to upload designs and sell products. I have my own mock-ups and I want to use CustomCat to ONLY fulfill my orders. I want to handle all transactions outside of CustomCat. CustomCat will charge me directly and will not provide support for my sellers.
+4. I am a site owner that operates a platform for users to sell products. I want my sellers to use CustomCat features and technology to upload designs and generate products to sell on my site. I want CustomCat to handle all seller transactions and I am not involved. CustomCat will provide support for my sellers.
+Authentication:
+Authentication and identification to the CustomCat API is done by providing an API Key on every request. CustomCat also requires that all communication with the API is secured using TLS. Requests made over HTTP or without a proper API Key will fail.
+
+CustomCat provides two types of API Keys: Read and Write.
+
+You can manage your API Keys from your account.
+
+Treat your API Keys as passwords, keep them secret. API Keys give full read/write access to your account, so they should not be included in public repositories, emails, client side code, etc. If your key gets leaked, you can disable it through your account under API Keys
+Resources: 
+catalog
+Description:
+Catalog is the full list of products available on CustomCat. Please note: an order line item that contains both a front and back print will add a $5 fee for the back print to the product.
+
+Endpoints:
+/catalog
+GET
+get
+required string api_key
+optional string category (default: Digisoft)
+Options: Digisoft and Sublimation
+optional string subcategory (default: "")
+optional numeric page (default: 1)
+Page to show. Total number of products returned in header value 'X-Total-Count'
+optional numeric limit (default: 25)
+Number of products to return per page. Max is 250.
+/catalog/{catalog_product_id}
+GET
+get
+required string api_key
+required numeric catalog_product_id
+/catalog/sku/{catalog_sku_id}
+GET
+get
+required string api_key
+required numeric catalog_sku_id
+catalogcategory
+Description:
+List the available product categories and subcategories to narrow the catalog list.
+
+View Response
+Endpoints:
+/catalogcategory
+GET
+get
+required string api_key
+/catalogcategory/{category_url_slug}
+GET
+get
+required string api_key
+required string category_url_slug
+design
+Response:
+[
+   {
+      "embroidery_url": "https://...",
+      "design_id": 4773,
+      "tags": "hats,embroidery",
+      "default_product_id": 0,
+      "digital_url": "https://...",
+      "design_name": "CustomCat Logo",
+      "last_updated": "August, 31 2017 15:36:20",
+      "default_product_name": ""
+   },
+   {
+      "embroidery_url": "",
+      "design_id": 4772,
+      "tags": "mugs",
+      "default_product_id": 1032,
+      "digital_url": "https://...",
+      "design_name": "CustomCat Logo Mugs",
+      "last_updated": "August, 31 2017 15:36:18",
+      "default_product_name": "21504 15 oz. White Mug"
+   }
+]
+/design
+GET
+get
+required string api_key
+optional numeric page (default: 1)
+Page to show.
+optional numeric limit (default: 25)
+Number of designs to return per page. Max is 250.
+optional numeric since_id (default: 0)
+Restricts to designs created after a specified id
+optional string updated_since (default: "")
+Restricts to designs created or updated since specified date
+order
+Description:
+The orders API allows you to create, view, update, and delete/cancel individual orders to be fulfilled by CustomCat. Only items to be fulfilled by CustomCat should be included in the order. Please note: a line item that contains both a front and back print will include a $5 fee for the back print.
+
+When sending an order, please ensure to add your order id in the URL.
+ex: https://customcat-beta.mylocker.net/api/v1/order/101-102938
+View POST Request Example Using External Designs
+View POST Request Example Using Uploaded Designs
+View POST Response
+Design Placement Presets
+When using external design URLs you can pass the string, "preset_id" where the design will be trimmed and positioned based on the preset options below; but it is not a required string. IF you do NOT pass a "preset_id", we will NOT trim the transparent space and enlarge the artwork. Instead, the artwork is positioned based on the placement of the design inside the Art Board, with negative space observed.
+PRESET OPTIONS:
+
+DIGISOFT™ Products:
+No preset_id (exclude preset_id string)
+Exact Artwork Placement
+Transparent space in the design file is NOT trimmed.
+Design is printed based on exact position within the Art Board and negative space is observed.
+Must submit an art file with appropriate artboard size based on product (maximum printable area below).
+File must be 300 dpi at size OR you must pass the optional embedded_dpi string.
+Use no preset if you want full control of the position, scaling and dimensions of your design or if you have created artwork to our max print dimensions.
+preset_id = 2
+Full Front Placement
+Transparent space in design file is trimmed and design is maximized within the Full Front print area
+Full Front Print area varies by product. See Maximum Printable Area.
+The listed dimensions indicate the largest possible print size for each garment type â€“ these are typically achieved on sizes Large or X-Large.
+Your print will be scaled down proportionately from size L or XL to look as similar to your mockup as possible on smaller sized garments.
+Select this preset if you would like to utilize the maximum printable area available for that garment or if you have created artwork to our max print dimensions.
+preset_id = 3
+Full Back Placement
+Transparent space in design file is trimmed and design is maximized within the Full Back print area/li>
+Full Back Print area varies by product. See Maximum Printable Area.
+The listed dimensions indicate the largest possible print size for each garment type â€“ these are typically achieved on sizes Large or X-Large.
+Your print will be scaled down proportionately from size L or XL to look as similar to your mockup as possible on smaller sized garments.
+Select this preset if you would like to utilize the maximum printable area available for that garment or if you have created artwork to our max print dimensions.
+Maximum Printable Area
+
+Adult Crewneck Front/Back: 11.41 x 15.11 inches
+Adult V-Neck Front: 11.41 x 12.12 inches
+Adult Hoodie Front: 11.41 x 11.41 inches
+Youth Front/Back: 10 x 12 inches
+Youth Hoodie Front: 10 x 10 inches
+
+preset_id = 4
+CC Preset (Default Center Chest) Placement
+Transparent space in the design file is trimmed and design is centered on the front chest./li>
+Artwork will be centered on the garment & positioned to what our experience tells us is the â€˜idealâ€™ size/placement for that garment.
+Artwork will be scaled down proportionately based on the garment size.
+Select this preset if you want us to optimize the size & position of your design for you.
+preset_id = 1
+Left Chest Placement (wider than tall)
+Transparent space in design file is trimmed and design is maximized within Left Chest print area for a wider than tall image.
+Artwork will be positioned to what our experience tells us is the â€˜idealâ€™ size/placement for left chest on that garment.
+Artwork will be scaled down proportionately based on the garment size.
+Adult Left Chest: 5.61 x 4.91 inches(4 x 3.5 aspect ratio)
+Left Chest preset should be used for designs that are wider than they are tall.
+preset_id = 10
+Left Chest Placement (taller than wide)
+Transparent space in design file is trimmed and design is maximized within Left Chest print area for a taller than wide image.
+Artwork will be positioned to what our experience tells us is the â€˜idealâ€™ size/placement for left chest on that garment.
+Adult Left Chest: 4.91 x 5.61 inches(3.5 x 4 aspect ratio)
+Left Chest (tall) preset should be used for designs that are taller than they are wide.
+preset_id = 9
+CC Preset (Default Back Placement)
+Transparent space in the design file is trimmed and design is centered on the back./li>
+Artwork will be centered on the garment & positioned to what our experience tells us is the â€˜idealâ€™ size/placement for that garment.
+Artwork will be scaled down proportionately based on the garment size.
+Select this preset if you want us to optimize the size & position of your design for you.
+Sublimation Products:
+
+preset_id = 4
+Dye Sub Default Placement
+Transparent space in design file is trimmed and design is centered within the printable area.
+For Mugs, design will be duplicated and centered on either side of the handle.
+Select this preset if you want us to optimize the size & position of your design for you.
+No preset_id (exclude preset_id string)
+Exact Artwork Placement (Printed edge to edge)
+Design is printed based on exact position within the Art Board and negative space is observed.
+Must submit art file with appropriate artboard size based on CustomCat art templates.
+CustomCat art templates can be found here: https://blog.customcat.com/artwork-guidelines/
+File must use dpi specified in art template.
+Use no preset if you want full control of the position, scaling and dimensions of your design or if you have created artwork to our max print dimensions.
+Hats/Caps with Leather Patches:
+
+No preset_id (exclude preset_id string)
+Same as Preset 2 - Rectangle Patch
+Exact Artwork Placement (Printed edge to edge)
+Design is printed based on exact position within the Art Board and negative space is observed.
+Must submit art file with appropriate artboard size based on CustomCat art templates.
+CustomCat art templates can be found here: https://blog.customcat.com/artwork-guidelines/
+File must use dpi specified in art template.
+preset_id = 2
+Rectangle Patch
+Exact Artwork Placement (Printed edge to edge)
+Design is printed based on exact position within the Art Board and negative space is observed.
+Must submit art file with appropriate artboard size based on CustomCat art templates.
+CustomCat art templates can be found here: https://blog.customcat.com/artwork-guidelines/
+File must use dpi specified in art template.
+preset_id = 12
+Oval Patch
+Exact Artwork Placement (Printed edge to edge)
+Design is printed based on exact position within the Art Board and negative space is observed.
+Must submit art file with appropriate artboard size based on CustomCat art templates.
+CustomCat art templates can be found here: https://blog.customcat.com/artwork-guidelines/
+File must use dpi specified in art template.
+preset_id = 14
+Circle Patch
+Exact Artwork Placement (Printed edge to edge)
+Design is printed based on exact position within the Art Board and negative space is observed.
+Must submit art file with appropriate artboard size based on CustomCat art templates.
+CustomCat art templates can be found here: https://blog.customcat.com/artwork-guidelines/
+File must use dpi specified in art template.
+preset_id = 18
+Small Circle Patch
+Exact Artwork Placement (Printed edge to edge)
+Design is printed based on exact position within the Art Board and negative space is observed.
+Must submit art file with appropriate artboard size based on CustomCat art templates.
+CustomCat art templates can be found here: https://blog.customcat.com/artwork-guidelines/
+File must use dpi specified in art template.
+Resources:
+
+CustomCat Design Guidelines & Best Practices:
+https://customcat.com/wp-content/uploads/2023/06/CustomCat-Design-Guidelines-Best-Practices-DIGISOFT-6-12-23.pdf
+
+Common Error Messages:
+Code	Error	Message	Description
+400	Bad Request	Duplicate Order	The order id submitted has already been processed.
+400	Bad Request	Invalid state	The shipping state/province provided was not found.
+400	Bad Request	Invalid Country	The shipping country code provided was not found. Please refer to https://en.wikipedia.org/wiki/ISO_3166-1 for proper country codes.
+400	Bad Request	There is an issue with the order. SKU: {sku} - {out of stock status}.	A line item in the order contained an out-of-stock sku. The /catalog/sku/{catalog_sku_id} can be used to determine if the sku is in-stock.
+Out of stock statuses:
+Invalid Sku
+Item temporarily out of stock.
+Stock on the way!
+Item discontinued.
+400	Bad Request	There is an issue with the order. Please confirm the line item skus.	A line item contained an invalid sku.
+400	Bad Request	Charge Failed.	Our payment processor could not verify the payment method on file as valid. If you feel this is not correct, please try to submit the order again.
+400	Bad Request	Invalid Shipping Method.	The shipping method was not correct. Refer the /shipping endpoint for valid shipping methods.
+400	Bad Request	Customer Email Required.	A customer email is required for all orders.
+400	Bad Request	Invalid Shipping Address.	The city, state, and zipcode did not pass our address verification check. Applicable to U.S. addresses only. More Below.
+Address Verification Services (AVS):
+Both U.S. and International shipping addresses are checked to be complete. Currently only U.S. addresses are verified using an address verification service. We test the city, state and zip code combination against an authoritative database of known addresses. If the address in question matches an address in the official database, the address "validates", meaning it's a real address. Addresses that do not match any addresses in the database are marked as "invalid", meaning the address either doesn't exist or isn't registered with the official postal service. For purposes of the API request we will return a standard 400 error with a description of the error. If available the response will also include a list of possible matches for address correction. Examples of an incomplete and invalid shipping address is shown below.
+
+Incomplete Shipping Address:
+
+Charlotte, MI 48843
+
+Response:
+
+
+{
+	"error_description":"Incomplete shipping address. Address line 1 is empty."
+}
+		
+Bad Address:
+
+123 Elm Street
+Charlotte, MI 48843
+
+Response:
+
+
+{
+	"error_description":"Conflicting ZIP Code\/city\/state information.",
+	"suggestions":[
+		{
+			"city":"Charlotte",
+			"country":"US",
+			"zipcode":"48813",
+			"state":"MI",
+			"address1":"123 Elm Street",
+			"address2":""
+		}
+	]
+}
+		
+Order Status:
+The following statuses are returned from the order/status/{order_id} endpoint.
+
+View Order Status Response
+Order Status:
+
+Pending - Received and waiting to process
+Verified - Verified and production started
+Shipped - Shipped
+Item Status:
+
+Processing - Waiting to begin production process
+Picked / Received - Pulled from stock
+Printed - Printed
+Binned - Binned for shipping (waiting on other items from the order to complete)
+Ready to Ship - All items from order completed and ready to ship
+Shipped - Shipped
+Failed QA - The item had a flaw, and will start the production process over.
+Cancelled - Item Cancelled from the order
+Endpoints:
+/order/{order_id}
+DELETEPOST
+delete
+required string api_key
+required string order_id
+Your id for the order
+post
+required string api_key
+required string order_id
+Your id for the order
+required string shipping_first_name
+required string shipping_last_name
+required string shipping_email
+required string shipping_phone
+required string shipping_address1
+optional string shipping_address2 (default: "")
+required string shipping_city
+required string shipping_state
+required string shipping_zip
+required string shipping_country
+required string shipping_method
+Method from the shipping endpoint
+optional any shipping_label (default: {})
+SPECIAL PERMISSION NEEDED. carrier, label_url, tracking_number, shipping_method
+optional string seller_name (default: "")
+Name of the seller/company to appear on shipping labels. Only needed if you are providing a service to other sellers/companies.
+optional string seller_phone (default: "")
+optional string seller_address1 (default: "")
+optional string seller_address2 (default: "")
+optional string seller_city (default: "")
+optional string seller_state (default: "")
+optional string seller_zip (default: "")
+optional string seller_country (default: "")
+required array items
+JSON array
+- quantity - required - how many of item in the order
+Parameters when using product created through CustomCat
+- sku - required - Product sku from product endpoint
+
+Parameters when not uploading designs to CustomCat
+- catalog_sku - required - catalog sku from catalog endpoint
+- design_url - required - Fully qualified url to your design
+- design_url_back - optional - Fully qualified url to the back design. Leave 'design_url' blank if design is back only
+- mockup_url - optional - Fully qualified url to a mockup of the front of the product with the design. Used during the QA process after the item is produced
+- mockup_url_back - optional - Fully qualified url to the mockup of the back of the product with the design. Used during the QA process after the item is produced
+- preset_id - optional
+- use_embedded_dpi - optional- boolean - Enable this option to have CustomCat use the DPI embedded in your images rather than their default of 300 DPI.
+optional string sandbox (default: 0)
+/order/replacement/{order_id}
+DELETEPOST
+Special Permission Required!!!
+delete
+required string api_key
+required string order_id
+Your id for the order
+post
+required string api_key
+required string order_id
+Your id for the order
+required string original_order_id
+The order id you are replacing
+required numeric reason_id
+The reason for the replacement
+required string shipping_first_name
+required string shipping_last_name
+required string shipping_email
+required string shipping_phone
+required string shipping_address1
+optional string shipping_address2 (default: "")
+required string shipping_city
+required string shipping_state
+required string shipping_zip
+required string shipping_country
+required string shipping_method
+Method from the shipping endpoint
+optional string seller_name (default: "")
+Name of the seller/company to appear on shipping labels. Only needed if you are providing a service to other sellers/companies.
+optional string seller_phone (default: "")
+optional string seller_address1 (default: "")
+optional string seller_address2 (default: "")
+optional string seller_city (default: "")
+optional string seller_state (default: "")
+optional string seller_zip (default: "")
+optional string seller_country (default: "")
+required array items
+JSON array
+- quantity - required - how many of item in the order
+Parameters when using product created through CustomCat
+- sku - required - Product sku from product endpoint
+
+Parameters when not uploading designs to CustomCat
+- catalog_sku - required - catalog sku from catalog endpoint
+- design_url - required - Fully qualified url to your design
+- design_url_back - optional - Fully qualified url to the back design. Leave 'design_url' blank if design is back only
+- mockup_url - optional - Fully qualified url to a mockup of the front of the product with the design. Used during the QA process after the item is produced
+- mockup_url_back - optional - Fully qualified url to the mockup of the back of the product with the design. Used during the QA process after the item is produced
+- preset_id - optional
+- use_embedded_dpi - optional- boolean - Enable this option to have CustomCat use the DPI embedded in your images rather than their default of 300 DPI.
+optional string sandbox (default: 0)
+/order/replacementreasons
+GET
+Special Permission Required!!!
+get
+required string api_key
+/order/status/{order_id}
+GET
+get
+required string api_key
+required string order_id
+Your order id
+optional string sandbox (default: 0)
+product
+Description:
+Products is the list of items from the catalog that you want to use on your site.
+Allows you to create, retrieve, update, and delete individual products to be stored by CustomCat.
+A product is design plus either one item or a group of items from the catalog.
+
+View Response
+Endpoints:
+/product
+GET
+get
+required string api_key
+optional numeric page (default: 1)
+Page to show.
+optional numeric limit (default: 25)
+Number of products to return per page. Max is 250.
+optional string since_id (default: "")
+Restricts to products created after a specified id
+optional string updated_since (default: "")
+Restricts to products created or updated since specified date
+/product/{product_id}
+GET
+get
+required string api_key
+required string product_id
+shipping
+/shipping
+GET
+get
+Returns shipping methods
+required string api_key
+optional string country (default: United States)
+Ignored if country code is provided. United States[default], https://en.wikipedia.org/wiki/ISO_3166-1
+optional string country_code (default: "")
+https://en.wikipedia.org/wiki/ISO_3166-1
+/shipping/{shipping_id}
+POST
+post
+Returns the shipping cost for an order.
+required string api_key
+required numeric shipping_id
+optional string state (default: "")
+The shipping state/province.
+optional string country_code (default: US)
+https://en.wikipedia.org/wiki/ISO_3166-1
+required array items
+JSON array of objects that contain catalog_sku and quantity being shipped.
+webhook
+Description:
+Webhooks are a useful tool for shops that want to execute code after a specific event happens on CustomCat. Instead making an API call to check if a specific event has occured, you can register webhooks, which send an HTTP request from CustomCat telling your shop that the event has occurred.
+
+Topics:
+The topic is a combination of the resource (ex. order) and event (ex. shipped)
+
+Available Topics:
+Resource	Event	Topic	Description
+Order	shipped	order-shipped	Full order has shipped. View JSON
+Order	partial-shipment	order-partial-shipment	If multiple shipments are needed. Order shipped is called when the last item is shipped. View JSON
+Product	created	product-created	The seller creates a new product in CustomCat View JSON
+Product	deleted	product-deleted	The seller deletes a product in CustomCat
+Product	updated	product-updated	The seller updates a product in CustomCat
+Design	rejected	design-rejected	A design maybe rejected because of quality, copyright infringement, etc View JSON
+Endpoints:
+/webhook
+PUTPOSTGET
+get
+required string api_key
+put
+required string api_key
+required string topic
+required string url
+post
+required string api_key
+required string topic
+required string url
+/webhook/{webhook_id}
+DELETEPUTGET
+get
+required string api_key
+required numeric webhook_id
+delete
+required string api_key
+required numeric webhook_id
+put
+required string api_key
+required numeric webhook_id
+required string topic
+required string url
+
+Error Codes & Responses
+HTTP Status Codes
+The CustomCat API attempts to return appropriate HTTP status codes for every request.
+
+Code	Text	Description
+200	OK	Success!
+304	Not Modified	There was no new data to return.
+400	Bad Request	The request was invalid or cannot be otherwise served. Usually caused by bad input data. An accompanying error message in the "X-FAIL-MESSAGE" header field will explain further.
+401	Unauthorized	API Key was missing or incorrect.
+403	Forbidden	The request is understood, but it has been refused or access is not allowed. An accompanying error message in the "X-FAIL-MESSAGE" header field will explain why. This usually occurs when trying to call a write operation using a read-only API key.
+404	Not Found	The URI requested is invalid or the resource requested, such as a cart, does not exists. The message in "X-FAIL-MESSAGE" header field will explain why.
+405	Not Allowed	The requested verb is not allowed for this resource. For example, trying to do a POST on the "shippping" resource
+500	Internal Server Error	Something is broken. Please contact us.
+502	Bad Gateway	The API is down or being upgraded.
+If you see an error response which is not listed in the above table, then fall back to the HTTP status code in order to determine the best way to address the error.
