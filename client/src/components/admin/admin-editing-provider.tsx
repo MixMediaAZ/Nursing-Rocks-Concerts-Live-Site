@@ -93,7 +93,7 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
       if (!universalSelectionEnabled) return;
       
       // Don't process clicks on the admin toolbar or dialogs
-      const target = e.target as HTMLElement;
+      let target = e.target as HTMLElement;
       if (
         target.closest('[data-admin-toolbar]') || 
         target.closest('[role="dialog"]') ||
@@ -103,6 +103,21 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
       // Prevent default behavior to avoid navigation on links
       e.preventDefault();
       e.stopPropagation();
+      
+      // Special handling for SPAN elements inside buttons or links
+      // If the clicked element is a SPAN inside a BUTTON or A, select the parent instead
+      if (target.tagName === 'SPAN') {
+        const parentButton = target.closest('BUTTON');
+        const parentLink = target.closest('A');
+        
+        if (parentButton) {
+          console.log('Selecting parent button instead of span');
+          target = parentButton as HTMLElement;
+        } else if (parentLink) {
+          console.log('Selecting parent link instead of span');
+          target = parentLink as HTMLElement;
+        }
+      }
       
       // Determine element type based on tag
       let elementType: SelectedElement['type'] = 'generic';
@@ -379,6 +394,19 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
                   // For buttons and links, we need to carefully update the text without disrupting other elements
                   console.log(`Updating ${selectedElement.element.tagName} text to: "${newContent}"`);
 
+                  // Check if the button contains a SPAN that holds the text - common pattern
+                  const spanElements = selectedElement.element.querySelectorAll('span');
+                  if (spanElements.length === 1) {
+                    // Found exactly one span, probably the text container
+                    console.log('Found a span inside the button, updating it directly');
+                    // Use requestAnimationFrame to reduce flicker
+                    requestAnimationFrame(() => {
+                      spanElements[0].textContent = newContent;
+                    });
+                    return; // Exit early, we've handled the update
+                  }
+
+                  // If we don't have a span element, continue with standard approach
                   // Store a reference to all non-text nodes (icons, etc.)
                   const nonTextNodes = [];
                   const fragment = document.createDocumentFragment();
@@ -391,31 +419,34 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
                     }
                   }
                   
-                  // Two approaches based on complexity
-                  if (nonTextNodes.length === 0) {
-                    // Simple case: button only contains text
-                    selectedElement.element.textContent = newContent;
-                  } else {
-                    // Complex case: button has icons or other elements
-                    
-                    // 1. Remove all current content while saving the references
-                    while (selectedElement.element.firstChild) {
-                      selectedElement.element.removeChild(selectedElement.element.firstChild);
+                  // Use requestAnimationFrame for both approaches to reduce flicker
+                  requestAnimationFrame(() => {
+                    // Two approaches based on complexity
+                    if (nonTextNodes.length === 0) {
+                      // Simple case: button only contains text
+                      selectedElement.element.textContent = newContent;
+                    } else {
+                      // Complex case: button has icons or other elements
+                      
+                      // 1. Remove all current content while saving the references
+                      while (selectedElement.element.firstChild) {
+                        selectedElement.element.removeChild(selectedElement.element.firstChild);
+                      }
+                      
+                      // 2. Analyze the original element structure to determine where text was
+                      // For simplicity, we'll insert text at the beginning if there was no text node before
+                      fragment.appendChild(document.createTextNode(newContent));
+                      
+                      // 3. Add back all the non-text nodes in their original positions
+                      // This is a simplified approach - we're appending all non-text nodes after the text
+                      nonTextNodes.forEach(node => {
+                        fragment.appendChild(node);
+                      });
+                      
+                      // 4. Apply all changes at once to minimize reflows/repaints
+                      selectedElement.element.appendChild(fragment);
                     }
-                    
-                    // 2. Analyze the original element structure to determine where text was
-                    // For simplicity, we'll insert text at the beginning if there was no text node before
-                    fragment.appendChild(document.createTextNode(newContent));
-                    
-                    // 3. Add back all the non-text nodes in their original positions
-                    // This is a simplified approach - we're appending all non-text nodes after the text
-                    nonTextNodes.forEach(node => {
-                      fragment.appendChild(node);
-                    });
-                    
-                    // 4. Apply all changes at once to minimize reflows/repaints
-                    selectedElement.element.appendChild(fragment);
-                  }
+                  });
                 } else {
                   // For other elements, use innerHTML with sanitization
                   // But apply it in a way that minimizes flicker
