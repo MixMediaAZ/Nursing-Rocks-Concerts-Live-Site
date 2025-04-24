@@ -213,23 +213,33 @@ export async function uploadGalleryImages(req: Request, res: Response) {
         path.parse(file.filename).name
       );
       
-      // Check if tags column exists (adding this check for schema compatibility)
-      let galleryValues: any = {
-        image_url: sizes.original,
-        thumbnail_url: sizes.thumbnail,
-        alt_text,
-        event_id,
-        folder_id,
-        media_type,
-        file_size: file.size,
-        dimensions: null, // Could extract from metadata if needed
-        sort_order: 0,
-        z_index: 0,
-        metadata: {}
-      };
+      // Use a raw SQL query to avoid schema incompatibility issues
+      const rawInsertQuery = `
+        INSERT INTO gallery (
+          image_url, thumbnail_url, alt_text, event_id, folder_id,
+          media_type, file_size, dimensions, sort_order, z_index, metadata
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+        ) RETURNING *
+      `;
       
-      // Insert into database
-      const newImage = await db.insert(gallery).values(galleryValues).returning();
+      const insertValues = [
+        sizes.original,             // $1: image_url
+        sizes.thumbnail,            // $2: thumbnail_url
+        alt_text,                   // $3: alt_text
+        event_id,                   // $4: event_id
+        folder_id,                  // $5: folder_id
+        media_type,                 // $6: media_type
+        file.size,                  // $7: file_size
+        null,                       // $8: dimensions
+        0,                          // $9: sort_order
+        0,                          // $10: z_index
+        '{}'                        // $11: metadata (empty JSON object)
+      ];
+      
+      // Execute the raw query
+      const result = await db.execute(rawInsertQuery, insertValues);
+      const newImage = result.rows;
       
       uploadResults.push(newImage[0]);
     }
@@ -317,21 +327,34 @@ export async function updateGalleryImage(req: Request, res: Response) {
       return res.status(404).json({ error: 'Image not found' });
     }
     
-    // Update the image
-    let updateValues: any = {
-      alt_text: alt_text !== undefined ? alt_text : existingImage.alt_text,
-      event_id: event_id !== undefined ? event_id : existingImage.event_id,
-      folder_id: folder_id !== undefined ? folder_id : existingImage.folder_id,
-      sort_order: sort_order !== undefined ? sort_order : existingImage.sort_order,
-      z_index: z_index !== undefined ? z_index : existingImage.z_index,
-      metadata: metadata !== undefined ? metadata : existingImage.metadata,
-      updated_at: new Date(),
-    };
+    // Update the image using raw SQL to avoid schema issues
+    const rawUpdateQuery = `
+      UPDATE gallery
+      SET 
+        alt_text = $1,
+        event_id = $2,
+        folder_id = $3,
+        sort_order = $4,
+        z_index = $5,
+        metadata = $6,
+        updated_at = $7
+      WHERE id = $8
+      RETURNING *
+    `;
     
-    const updatedImage = await db.update(gallery)
-      .set(updateValues)
-      .where(eq(gallery.id, imageId))
-      .returning();
+    const updateValues = [
+      alt_text !== undefined ? alt_text : existingImage.alt_text,         // $1: alt_text
+      event_id !== undefined ? event_id : existingImage.event_id,         // $2: event_id
+      folder_id !== undefined ? folder_id : existingImage.folder_id,      // $3: folder_id
+      sort_order !== undefined ? sort_order : existingImage.sort_order,   // $4: sort_order
+      z_index !== undefined ? z_index : existingImage.z_index,            // $5: z_index
+      metadata !== undefined ? metadata : existingImage.metadata,         // $6: metadata
+      new Date(),                                                         // $7: updated_at
+      imageId                                                             // $8: id
+    ];
+    
+    const result = await db.execute(rawUpdateQuery, updateValues);
+    const updatedImage = result.rows;
     
     res.json(updatedImage[0]);
   } catch (error) {
@@ -493,19 +516,30 @@ export async function replaceGalleryImage(req: Request, res: Response) {
         path.parse(file.filename).name
       );
       
-      // Update the image record
-      let updateValues: any = {
-        image_url: sizes.original,
-        thumbnail_url: sizes.thumbnail,
-        file_size: file.size,
-        dimensions: null, // Could extract from metadata if needed
-        updated_at: new Date(),
-      };
+      // Update the image record using raw SQL to avoid schema issues
+      const rawUpdateQuery = `
+        UPDATE gallery
+        SET 
+          image_url = $1,
+          thumbnail_url = $2,
+          file_size = $3,
+          dimensions = $4,
+          updated_at = $5
+        WHERE id = $6
+        RETURNING *
+      `;
       
-      const updatedImage = await db.update(gallery)
-        .set(updateValues)
-        .where(eq(gallery.id, targetImageId))
-        .returning();
+      const updateParams = [
+        sizes.original,      // $1: image_url
+        sizes.thumbnail,     // $2: thumbnail_url
+        file.size,           // $3: file_size
+        null,                // $4: dimensions
+        new Date(),          // $5: updated_at
+        targetImageId        // $6: id
+      ];
+      
+      const result = await db.execute(rawUpdateQuery, updateParams);
+      const updatedImage = result.rows;
       
       // Clean up old files (optional)
       const oldBasePath = path.join(process.cwd(), originalImage.image_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
@@ -592,19 +626,30 @@ export async function replaceGalleryImage(req: Request, res: Response) {
         }
       );
       
-      // Update the target image record with the new image data
-      let updateTargetValues: any = {
-        image_url: sizes.original,
-        thumbnail_url: sizes.thumbnail,
-        file_size: fs.statSync(path.join(process.cwd(), sizes.original.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'))).size,
-        updated_at: new Date(),
-        // Preserve other metadata from the target image (alt_text, event_id, folder_id, etc.)
-      };
+      // Update the target image record with the new image data using raw SQL
+      const rawUpdateQuery = `
+        UPDATE gallery
+        SET 
+          image_url = $1,
+          thumbnail_url = $2,
+          file_size = $3,
+          updated_at = $4
+        WHERE id = $5
+        RETURNING *
+      `;
       
-      const updatedImage = await db.update(gallery)
-        .set(updateTargetValues)
-        .where(eq(gallery.id, targetImageId))
-        .returning();
+      const fileSize = fs.statSync(path.join(process.cwd(), sizes.original.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'))).size;
+      
+      const updateParams = [
+        sizes.original,      // $1: image_url
+        sizes.thumbnail,     // $2: thumbnail_url
+        fileSize,            // $3: file_size
+        new Date(),          // $4: updated_at
+        targetImageId        // $5: id
+      ];
+      
+      const result = await db.execute(rawUpdateQuery, updateParams);
+      const updatedImage = result.rows;
       
       // Clean up old files (optional)
       const oldBasePath = path.join(process.cwd(), targetImage.image_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
