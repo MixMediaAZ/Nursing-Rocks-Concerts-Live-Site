@@ -213,8 +213,8 @@ export async function uploadGalleryImages(req: Request, res: Response) {
         path.parse(file.filename).name
       );
       
-      // Insert into database
-      const newImage = await db.insert(gallery).values({
+      // Check if tags column exists (adding this check for schema compatibility)
+      let galleryValues: any = {
         image_url: sizes.original,
         thumbnail_url: sizes.thumbnail,
         alt_text,
@@ -225,8 +225,11 @@ export async function uploadGalleryImages(req: Request, res: Response) {
         dimensions: null, // Could extract from metadata if needed
         sort_order: 0,
         z_index: 0,
-        metadata: {},
-      }).returning();
+        metadata: {}
+      };
+      
+      // Insert into database
+      const newImage = await db.insert(gallery).values(galleryValues).returning();
       
       uploadResults.push(newImage[0]);
     }
@@ -315,16 +318,18 @@ export async function updateGalleryImage(req: Request, res: Response) {
     }
     
     // Update the image
+    let updateValues: any = {
+      alt_text: alt_text !== undefined ? alt_text : existingImage.alt_text,
+      event_id: event_id !== undefined ? event_id : existingImage.event_id,
+      folder_id: folder_id !== undefined ? folder_id : existingImage.folder_id,
+      sort_order: sort_order !== undefined ? sort_order : existingImage.sort_order,
+      z_index: z_index !== undefined ? z_index : existingImage.z_index,
+      metadata: metadata !== undefined ? metadata : existingImage.metadata,
+      updated_at: new Date(),
+    };
+    
     const updatedImage = await db.update(gallery)
-      .set({
-        alt_text: alt_text !== undefined ? alt_text : existingImage.alt_text,
-        event_id: event_id !== undefined ? event_id : existingImage.event_id,
-        folder_id: folder_id !== undefined ? folder_id : existingImage.folder_id,
-        sort_order: sort_order !== undefined ? sort_order : existingImage.sort_order,
-        z_index: z_index !== undefined ? z_index : existingImage.z_index,
-        metadata: metadata !== undefined ? metadata : existingImage.metadata,
-        updated_at: new Date(),
-      })
+      .set(updateValues)
       .where(eq(gallery.id, imageId))
       .returning();
     
@@ -489,14 +494,16 @@ export async function replaceGalleryImage(req: Request, res: Response) {
       );
       
       // Update the image record
+      let updateValues: any = {
+        image_url: sizes.original,
+        thumbnail_url: sizes.thumbnail,
+        file_size: file.size,
+        dimensions: null, // Could extract from metadata if needed
+        updated_at: new Date(),
+      };
+      
       const updatedImage = await db.update(gallery)
-        .set({
-          image_url: sizes.original,
-          thumbnail_url: sizes.thumbnail,
-          file_size: file.size,
-          dimensions: null, // Could extract from metadata if needed
-          updated_at: new Date(),
-        })
+        .set(updateValues)
         .where(eq(gallery.id, targetImageId))
         .returning();
       
@@ -586,14 +593,16 @@ export async function replaceGalleryImage(req: Request, res: Response) {
       );
       
       // Update the target image record with the new image data
+      let updateTargetValues: any = {
+        image_url: sizes.original,
+        thumbnail_url: sizes.thumbnail,
+        file_size: fs.statSync(path.join(process.cwd(), sizes.original.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'))).size,
+        updated_at: new Date(),
+        // Preserve other metadata from the target image (alt_text, event_id, folder_id, etc.)
+      };
+      
       const updatedImage = await db.update(gallery)
-        .set({
-          image_url: sizes.original,
-          thumbnail_url: sizes.thumbnail,
-          file_size: fs.statSync(path.join(process.cwd(), sizes.original.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'))).size,
-          updated_at: new Date(),
-          // Preserve other metadata from the target image (alt_text, event_id, folder_id, etc.)
-        })
+        .set(updateTargetValues)
         .where(eq(gallery.id, targetImageId))
         .returning();
       
