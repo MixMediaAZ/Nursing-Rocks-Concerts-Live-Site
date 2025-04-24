@@ -33,12 +33,14 @@ function TshirtButton() {
   
   return (
     <div className="flex flex-col items-center w-full max-w-xl">
-      <div className="mb-6 bg-white p-4 rounded-lg shadow-md w-full" style={{ height: "300px" }}>
-        <img 
-          src={nursingRocksLogo} 
-          alt={text} 
-          className="w-full h-full object-contain"
-        />
+      <div className="mb-6 bg-white p-4 rounded-lg shadow-md w-full aspect-square" style={{ maxHeight: "300px" }}>
+        <div className="w-full h-full flex items-center justify-center">
+          <img 
+            src={nursingRocksLogo} 
+            alt={text} 
+            className="max-w-full max-h-full object-contain"
+          />
+        </div>
       </div>
       <div className="relative w-full">
         <Button 
