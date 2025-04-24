@@ -4,7 +4,7 @@ import FeaturedArtist from "@/components/featured-artist";
 import ConcertCalendar from "@/components/concert-calendar";
 import { StableGallery } from "@/components/stable-gallery";
 import Newsletter from "@/components/newsletter";
-import PromotionButtons from "@/components/promotion-buttons";
+import PromotionButtons from "@/components/promotion-buttons-new";
 import { Helmet } from "react-helmet";
 
 const Home = () => {
