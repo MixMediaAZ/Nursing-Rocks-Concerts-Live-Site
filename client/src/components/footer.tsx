@@ -1,11 +1,34 @@
 import { Link } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Heart, Mail, Phone, MapPin, Instagram, Facebook, Twitter, Lock } from "lucide-react";
+import { Heart, Mail, Phone, MapPin, Instagram, Facebook, Twitter, Lock, LogOut } from "lucide-react";
 import logoPath from "../assets/nursing-rocks-logo.png";
+import { useEffect, useState } from "react";
+import { toast } from "@/hooks/use-toast";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
+  const [isAdmin, setIsAdmin] = useState(false);
+  
+  // Check if user is in admin mode
+  useEffect(() => {
+    const checkAdminStatus = () => {
+      const adminStatus = localStorage.getItem("isAdmin") === "true";
+      setIsAdmin(adminStatus);
+    };
+    
+    // Initial check
+    checkAdminStatus();
+    
+    // Listen for changes to admin status
+    window.addEventListener('admin-mode-changed', checkAdminStatus);
+    window.addEventListener('storage', checkAdminStatus);
+    
+    return () => {
+      window.removeEventListener('admin-mode-changed', checkAdminStatus);
+      window.removeEventListener('storage', checkAdminStatus);
+    };
+  }, []);
   
   return (
     <footer className="border-t bg-background mt-auto">
@@ -120,11 +143,47 @@ export function Footer() {
                   FAQ
                 </div>
               </Link>
-              <a href="/admin" className="no-underline">
-                <div className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors cursor-pointer border border-primary/30 rounded-md px-2 py-1 flex items-center justify-center gap-1">
-                  <Lock className="h-3 w-3" /> Admin Login
+              {isAdmin ? (
+                <div 
+                  className="text-sm font-semibold text-red-500 hover:text-red-600 transition-colors cursor-pointer border border-red-300 rounded-md px-2 py-1 flex items-center justify-center gap-1"
+                  onClick={() => {
+                    // Perform admin logout
+                    fetch('/api/admin/logout', { method: 'POST' })
+                      .then(() => {
+                        // Clear all admin-related local storage items
+                        localStorage.removeItem('adminToken');
+                        localStorage.removeItem('isAdmin');
+                        localStorage.removeItem('adminPinVerified');
+                        localStorage.removeItem('editMode');
+                        
+                        // Show success toast
+                        toast({
+                          title: 'Logged Out',
+                          description: 'You have been logged out of admin mode',
+                        });
+                        
+                        // Reload page to ensure all admin components are unmounted
+                        window.location.reload();
+                      })
+                      .catch(err => {
+                        console.error('Logout error:', err);
+                        toast({
+                          title: 'Logout Failed',
+                          description: 'There was an error logging out. Please try again.',
+                          variant: 'destructive',
+                        });
+                      });
+                  }}
+                >
+                  <LogOut className="h-3 w-3" /> Admin Logout
                 </div>
-              </a>
+              ) : (
+                <a href="/admin" className="no-underline">
+                  <div className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors cursor-pointer border border-primary/30 rounded-md px-2 py-1 flex items-center justify-center gap-1">
+                    <Lock className="h-3 w-3" /> Admin Login
+                  </div>
+                </a>
+              )}
             </div>
             <div className="flex items-center gap-1 mt-2">
               <span className="text-sm text-muted-foreground">Made with</span>

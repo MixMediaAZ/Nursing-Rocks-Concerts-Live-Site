@@ -360,7 +360,10 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
                 onClick={() => {
                   // Perform logout action
                   fetch('/api/admin/logout', { method: 'POST' })
-                    .then(() => {
+                    .then((response) => {
+                      if (!response.ok) {
+                        throw new Error('Logout request failed');
+                      }
                       // Clear admin mode
                       adminState.setAdminMode(false);
                       clearSelectedElement();
@@ -369,15 +372,14 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
                       localStorage.removeItem('isAdmin');
                       localStorage.removeItem('adminPinVerified');
                       localStorage.removeItem('editMode');
-                      // Navigate home with a small delay to ensure logout is processed
-                      setTimeout(() => {
-                        window.location.href = '/';
-                      }, 300);
+                      
                       toast({
                         title: 'Logged Out',
                         description: 'You have been logged out of admin mode',
-                        variant: 'destructive',
                       });
+                      
+                      // Reload the page to ensure all admin components are reset
+                      window.location.reload();
                     })
                     .catch(err => {
                       console.error('Logout error:', err);
