@@ -967,7 +967,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/store/products", async (_req: Request, res: Response) => {
     try {
       const products = await storage.getAllStoreProducts();
-      res.json(products);
+      
+      // Check if we have CustomCat products
+      const customCatProducts = products.filter(product => product.external_source === "customcat");
+      
+      // If we have CustomCat products, return only them (exclude placeholders)
+      if (customCatProducts.length > 0) {
+        res.json(customCatProducts);
+      } else {
+        // If no CustomCat products, return all products (including placeholders)
+        res.json(products);
+      }
     } catch (error) {
       console.error("Error fetching store products:", error);
       res.status(500).json({ message: "Failed to fetch store products" });
@@ -978,7 +988,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
       const products = await storage.getFeaturedStoreProducts(limit);
-      res.json(products);
+      
+      // Check if we have CustomCat products
+      const allProducts = await storage.getAllStoreProducts();
+      const customCatProducts = allProducts.filter(product => product.external_source === "customcat");
+      
+      if (customCatProducts.length > 0) {
+        // If we have CustomCat products, feature some of them
+        // Get at least 4 CustomCat products to show as featured
+        const featuredCustomCat = customCatProducts
+          .sort(() => Math.random() - 0.5) // Random shuffle
+          .slice(0, limit || 4);
+          
+        res.json(featuredCustomCat);
+      } else {
+        // If no CustomCat products, return original featured products
+        res.json(products);
+      }
     } catch (error) {
       console.error("Error fetching featured products:", error);
       res.status(500).json({ message: "Failed to fetch featured products" });
@@ -988,8 +1014,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/store/products/category/:category", async (req: Request, res: Response) => {
     try {
       const category = req.params.category;
-      const products = await storage.getStoreProductsByCategory(category);
-      res.json(products);
+      let products = await storage.getStoreProductsByCategory(category);
+      
+      // Check if we have CustomCat products
+      const allProducts = await storage.getAllStoreProducts();
+      const customCatProducts = allProducts.filter(product => product.external_source === "customcat");
+      
+      if (customCatProducts.length > 0) {
+        // If we have CustomCat products, filter by category from CustomCat
+        const customCatInCategory = customCatProducts.filter(product => {
+          // Category might be in the title, description or category field
+          const searchFields = [
+            product.name?.toLowerCase() || "",
+            product.description?.toLowerCase() || "",
+            product.category?.toLowerCase() || ""
+          ];
+          
+          return searchFields.some(field => field.includes(category.toLowerCase()));
+        });
+        
+        if (customCatInCategory.length > 0) {
+          // Return CustomCat products in this category
+          res.json(customCatInCategory);
+        } else {
+          // No CustomCat products in this category, return empty array
+          res.json([]);
+        }
+      } else {
+        // If no CustomCat products, return original products
+        res.json(products);
+      }
     } catch (error) {
       console.error("Error fetching products by category:", error);
       res.status(500).json({ message: "Failed to fetch products by category" });
