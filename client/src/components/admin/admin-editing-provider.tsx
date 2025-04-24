@@ -172,28 +172,40 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
     document.addEventListener('click', handleElementClick, true);
     
     // Add CSS for hover highlight
-    const style = document.createElement('style');
-    style.textContent = `
-      .admin-hover-highlight {
-        outline: 2px dashed #5D3FD3 !important;
-        outline-offset: 2px !important;
-        cursor: pointer !important;
-        position: relative !important;
-      }
-      .admin-selected-element {
-        outline: 3px solid #5D3FD3 !important;
-        outline-offset: 2px !important;
-        position: relative !important;
-      }
-    `;
-    document.head.appendChild(style);
+    const styleId = 'admin-highlight-style';
+    let styleElement = document.getElementById(styleId) as HTMLStyleElement;
+    
+    // Only create the style if it doesn't already exist
+    if (!styleElement) {
+      styleElement = document.createElement('style');
+      styleElement.id = styleId;
+      styleElement.textContent = `
+        .admin-hover-highlight {
+          outline: 2px dashed #5D3FD3 !important;
+          outline-offset: 2px !important;
+          cursor: pointer !important;
+          position: relative !important;
+        }
+        .admin-selected-element {
+          outline: 3px solid #5D3FD3 !important;
+          outline-offset: 2px !important;
+          position: relative !important;
+        }
+      `;
+      document.head.appendChild(styleElement);
+    }
     
     return () => {
       // Clean up event listeners and styles
       document.removeEventListener('mouseover', handleMouseOver, true);
       document.removeEventListener('mouseout', handleMouseOut, true);
       document.removeEventListener('click', handleElementClick, true);
-      document.head.removeChild(style);
+      
+      // Safely remove the style element if it exists and is a child of document.head
+      const styleToRemove = document.getElementById(styleId);
+      if (styleToRemove && document.head.contains(styleToRemove)) {
+        document.head.removeChild(styleToRemove);
+      }
       
       // Remove any remaining highlight classes
       document.querySelectorAll('.admin-hover-highlight').forEach(el => {
