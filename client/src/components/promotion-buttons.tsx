@@ -27,7 +27,7 @@ function TshirtButton() {
   
   return (
     <div className="flex flex-col items-center w-full sm:w-1/2">
-      <div className="mb-4 bg-white p-3 rounded-lg shadow-md w-full max-w-sm">
+      <div className="mb-4 bg-white p-3 rounded-lg shadow-md w-full max-w-sm" style={{ height: "248px" }}>
         <img 
           src={nursingRocksLogo} 
           alt={text} 
@@ -39,6 +39,7 @@ function TshirtButton() {
           onClick={() => setLocation("/store/category/tshirts")}
           className="flex items-center justify-center gap-3 bg-[#F61D7A] hover:bg-[#E01060] text-white px-8 py-6 rounded-lg text-lg font-semibold transition-transform hover:scale-105 shadow-md w-full"
           id="tshirtButton"
+          style={{ minHeight: "64px" }} // Ensure consistent height with copy button
         >
           <Shirt className="h-6 w-6 flex-shrink-0" />
           <span className="text-center" id="tshirtText">{text}</span>
@@ -96,6 +97,7 @@ function CopyButtonContainer() {
     // Create the image container
     const imageContainer = document.createElement('div');
     imageContainer.className = "mb-4 bg-white p-3 rounded-lg shadow-md w-full max-w-sm";
+    imageContainer.style.height = "248px"; // Match the height of the T-shirt container
     
     // Create the image
     const img = document.createElement('img');
@@ -114,6 +116,7 @@ function CopyButtonContainer() {
     link.className = "flex items-center justify-center gap-3 bg-[#00A3E0] hover:bg-[#0089BE] text-white px-8 py-6 rounded-lg text-lg font-semibold transition-transform hover:scale-105 shadow-md w-full";
     link.style.textDecoration = "none";
     link.style.display = "flex";
+    link.style.minHeight = "64px"; // Ensure consistent height
     
     // Create the SVG icon
     const svgNS = "http://www.w3.org/2000/svg";
@@ -147,7 +150,7 @@ function CopyButtonContainer() {
     // Create the text
     const span = document.createElement('span');
     span.className = "text-center";
-    span.textContent = "copy";
+    span.textContent = "Copy";
     link.appendChild(span);
     
     // Append everything together
