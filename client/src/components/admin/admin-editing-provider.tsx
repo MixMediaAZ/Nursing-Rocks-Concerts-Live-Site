@@ -204,36 +204,53 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
       document.removeEventListener('click', handleElementClick, true);
       
       // Safely remove the style element if it exists and is a child of document.head
-      const styleToRemove = document.getElementById(styleId);
-      if (styleToRemove && document.head.contains(styleToRemove)) {
-        document.head.removeChild(styleToRemove);
+      try {
+        const styleToRemove = document.getElementById(styleId);
+        if (styleToRemove && document.head.contains(styleToRemove)) {
+          document.head.removeChild(styleToRemove);
+        }
+      } catch (error) {
+        // Ignore errors from style element removal
+        console.warn('Failed to remove style element, it may have already been removed');
       }
       
-      // Remove any remaining highlight classes
-      document.querySelectorAll('.admin-hover-highlight').forEach(el => {
-        el.classList.remove('admin-hover-highlight');
-      });
-      document.querySelectorAll('.admin-selected-element').forEach(el => {
-        el.classList.remove('admin-selected-element');
-      });
+      // Remove any remaining highlight classes - use try/catch to prevent errors
+      try {
+        document.querySelectorAll('.admin-hover-highlight').forEach(el => {
+          el.classList.remove('admin-hover-highlight');
+        });
+        document.querySelectorAll('.admin-selected-element').forEach(el => {
+          el.classList.remove('admin-selected-element');
+        });
+      } catch (error) {
+        console.warn('Failed to remove highlight classes from elements');
+      }
     };
   }, [universalSelectionEnabled, hoveredElement, openImageReplacementDialog, openTextEditorDialog, setSelectedElement]);
 
   // Add selected element highlight
   useEffect(() => {
-    // Remove any existing selection highlights
-    document.querySelectorAll('.admin-selected-element').forEach(el => {
-      el.classList.remove('admin-selected-element');
-    });
-    
-    // Add highlight to the selected element
-    if (selectedElement?.element) {
-      selectedElement.element.classList.add('admin-selected-element');
+    try {
+      // Remove any existing selection highlights
+      document.querySelectorAll('.admin-selected-element').forEach(el => {
+        el.classList.remove('admin-selected-element');
+      });
+      
+      // Add highlight to the selected element
+      if (selectedElement?.element) {
+        selectedElement.element.classList.add('admin-selected-element');
+      }
+    } catch (error) {
+      console.warn('Error managing element highlights:', error);
     }
     
     return () => {
-      if (selectedElement?.element) {
-        selectedElement.element.classList.remove('admin-selected-element');
+      try {
+        if (selectedElement?.element) {
+          selectedElement.element.classList.remove('admin-selected-element');
+        }
+      } catch (error) {
+        console.warn('Error cleaning up element highlights:', error);
       }
     };
   }, [selectedElement]);
@@ -243,20 +260,32 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
     if (!adminState.isAdminMode) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Escape key exits admin mode
-      if (e.key === 'Escape') {
-        adminState.setAdminMode(false);
-        toast({
-          title: 'Admin Mode Disabled',
-          description: 'Exited element editing mode',
-        });
+      try {
+        // Escape key exits admin mode
+        if (e.key === 'Escape') {
+          adminState.setAdminMode(false);
+          toast({
+            title: 'Admin Mode Disabled',
+            description: 'Exited element editing mode',
+          });
+        }
+      } catch (error) {
+        console.warn('Error handling keyboard shortcut:', error);
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    try {
+      window.addEventListener('keydown', handleKeyDown);
+    } catch (error) {
+      console.warn('Error setting up keyboard listener:', error);
+    }
     
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      try {
+        window.removeEventListener('keydown', handleKeyDown);
+      } catch (error) {
+        console.warn('Error removing keyboard listener:', error);
+      }
     };
   }, [adminState]);
 
