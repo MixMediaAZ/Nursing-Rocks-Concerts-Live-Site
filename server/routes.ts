@@ -1470,6 +1470,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to generate admin token" });
     }
   });
+  
+  // Admin logout endpoint
+  app.post("/api/admin/logout", (_req: Request, res: Response) => {
+    try {
+      // Since we're using JWT tokens, we only need to return success
+      // The actual token invalidation happens client-side by removing the token
+      res.status(200).json({ message: "Admin logout successful" });
+    } catch (error) {
+      console.error("Error in admin logout:", error);
+      res.status(500).json({ message: "Failed to process logout" });
+    }
+  });
 
   // Check if the CustomCat API connection is valid by making a test request
   app.get("/api/store/customcat/verify-connection", async (_req: Request, res: Response) => {
