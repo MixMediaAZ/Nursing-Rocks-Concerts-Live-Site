@@ -1630,107 +1630,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // For development purposes, we'll simulate successful product synchronization
-      // with sample products instead of making actual API calls that could fail
-      
-      // Sample product data for simulation
-      const mockProducts = [
-        {
-          id: "CC101",
-          name: "Nursing Rocks T-Shirt",
-          description: "Official Nursing Rocks 2025 Concert T-Shirt",
-          price: "29.99",
-          image_url: "https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-          category: "T-Shirts",
-          inventory: 100
-        },
-        {
-          id: "CC102",
-          name: "Healthcare Heroes Hoodie",
-          description: "Comfortable hoodie for everyday heroes",
-          price: "49.99",
-          image_url: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-          category: "Hoodies",
-          inventory: 75
-        },
-        {
-          id: "CC103",
-          name: "Support A Nurse Tote Bag",
-          description: "Proceeds from this bag directly support nurse scholarships",
-          price: "19.99",
-          image_url: "https://images.unsplash.com/photo-1520333789090-1afc82db536a?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-          category: "Bags",
-          inventory: 120
-        },
-        {
-          id: "CC104",
-          name: "Nursing Rocks Water Bottle",
-          description: "Stay hydrated during your shift",
-          price: "24.99",
-          image_url: "https://images.unsplash.com/photo-1546027658-7aa750153465?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-          category: "Accessories",
-          inventory: 150
-        }
-      ];
-      
-      // Process and insert/update mock products in our database
-      const syncResults = {
-        total: mockProducts.length,
-        added: 0,
-        updated: 0,
-        skipped: 0,
-        errors: 0
-      };
-      
-      for (const product of mockProducts) {
-        try {
-          // Check if product already exists in our database by external_id
-          const existingProduct = await storage.getStoreProductByExternalId("customcat", product.id.toString());
-          
-          // Map the CustomCat product data to our store format
-          const productData = {
-            name: product.name || "CustomCat Product",
-            description: product.description || "",
-            price: product.price || "29.99",
-            image_url: product.image_url || null,
-            category: product.category || "CustomCat Products",
-            is_featured: false,
-            is_available: true,
-            stock_quantity: product.inventory || 100,
-            external_id: product.id.toString(),
-            external_source: "customcat",
-            metadata: {
-              customcat_data: product,
-              variants: []
-            }
-          };
-          
-          if (existingProduct) {
-            // Update existing product
-            await storage.updateStoreProduct(existingProduct.id, productData);
-            syncResults.updated++;
-          } else {
-            // Create new product
-            await storage.createStoreProduct(productData);
-            syncResults.added++;
-          }
-        } catch (err) {
-          console.error("Error processing product:", err);
-          syncResults.errors++;
-        }
-      }
-      
-      // Return success response with simulated results
-      res.json({ 
-        success: true, 
-        message: "Product synchronization complete (simulated for development)",
-        results: syncResults
-      });
-      
-      /* Commented out real API call to avoid network issues
       // Fetch products from CustomCat API
       // Ensure we have a string value for the API key, not null
       const apiKeyValue = apiKeySetting.value || "";
+      
+      console.log("Making request to CustomCat API for product synchronization...");
       const response = await fetch("https://api.customcat.com/catalog/products", {
         method: "GET",
         headers: {
@@ -1741,6 +1645,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       if (!response.ok) {
+        console.error(`CustomCat API request failed: ${response.status}`);
         const errorData = await response.json().catch(() => ({}));
         return res.status(response.status).json({ 
           success: false, 
@@ -1750,10 +1655,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const responseData = await response.json();
+      console.log("CustomCat API response received successfully");
       
       // CustomCat API returns the products array directly (if not, extract it)
       const productsData = Array.isArray(responseData) ? responseData : 
-                          (responseData.products || responseData.data || []);
+                         (responseData.products || responseData.data || []);
       
       if (!Array.isArray(productsData)) {
         return res.status(500).json({ 
@@ -1814,7 +1720,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Product synchronization complete",
         results: syncResults
       });
-      */
     } catch (error) {
       console.error("Error syncing CustomCat products:", error);
       res.status(500).json({ 
