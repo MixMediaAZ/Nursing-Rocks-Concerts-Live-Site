@@ -275,18 +275,66 @@ export default function AdminPage() {
         localStorage.removeItem("scrollToCustomCat");
         localStorage.removeItem("adminActiveTab");
         
-        // Scroll to the CustomCat settings section
-        setTimeout(() => {
-          const element = document.getElementById('store-api-settings-wrapper');
+        // More reliable approach - use multiple attempts with increasing delays
+        const tryToScrollToElement = (attemptCount = 1) => {
+          console.log(`Attempt ${attemptCount} to scroll to CustomCat settings`);
+          
+          // Try to find the anchor element first, then fall back to the wrapper
+          const element = document.getElementById('api-settings-anchor') || 
+                         document.getElementById('store-api-settings-wrapper');
           if (element) {
-            element.scrollIntoView({ behavior: 'smooth' });
-            // Highlight the element briefly
-            element.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
-            setTimeout(() => {
-              element.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
-            }, 2000);
+            console.log('CustomCat settings element found, scrolling to it');
+            
+            // Use window.scrollTo instead of element.scrollIntoView for more reliable behavior
+            const rect = element.getBoundingClientRect();
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const targetY = rect.top + scrollTop - 100; // 100px offset from top
+            
+            window.scrollTo({
+              top: targetY,
+              behavior: 'smooth'
+            });
+            
+            // Find the wrapper to highlight (we want to highlight the card, not just the invisible anchor)
+            const wrapperToHighlight = document.getElementById('store-api-settings-wrapper');
+            if (wrapperToHighlight) {
+              // Apply a pulsing animation to draw attention
+              wrapperToHighlight.classList.add('ring-4', 'ring-primary', 'ring-offset-2', 'transition-all', 'duration-300');
+              
+              // Create a pulsing effect
+              let pulseCount = 0;
+              const pulseInterval = setInterval(() => {
+                if (pulseCount >= 5) {
+                  clearInterval(pulseInterval);
+                  wrapperToHighlight.classList.remove('ring-4', 'ring-primary', 'ring-offset-2', 'transition-all', 'duration-300');
+                  return;
+                }
+                
+                // Toggle between different states to create pulsing
+                if (pulseCount % 2 === 0) {
+                  wrapperToHighlight.classList.add('ring-opacity-50', 'scale-[1.01]');
+                } else {
+                  wrapperToHighlight.classList.remove('ring-opacity-50', 'scale-[1.01]');
+                }
+                
+                pulseCount++;
+              }, 400);
+            }
+            
+            return true;
+          } else if (attemptCount < 5) {
+            // Try again with exponential backoff
+            console.log(`Element not found, retrying in ${attemptCount * 300}ms`);
+            setTimeout(() => tryToScrollToElement(attemptCount + 1), attemptCount * 300);
+            return false;
+          } else {
+            console.log('Failed to find CustomCat settings element after multiple attempts');
+            return false;
           }
-        }, 500); // Give it more time to render
+        };
+        
+        // Start the first attempt after the DOM has had time to render
+        setTimeout(() => tryToScrollToElement(), 800);
       }
     }, []);
     
@@ -1185,12 +1233,17 @@ export default function AdminPage() {
           <TabsContent value="store">
             <div className="grid grid-cols-1 gap-6">
               {/* Store Integration Settings */}
-              <div id="store-api-settings-wrapper">
-                <Card>
-                  <CardHeader>
+              <div id="store-api-settings-wrapper" className="relative">
+                {/* Visual indicator for when scrolling to this section */}
+                <div className="absolute -top-20" id="api-settings-anchor"></div>
+                <Card className="border-primary/30">
+                  <CardHeader className="bg-primary/5">
                     <CardTitle className="flex items-center gap-2">
-                      <Settings className="h-5 w-5" /> Store Integration Settings
+                      <Settings className="h-5 w-5 text-primary" /> CustomCat API Settings
                     </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Configure your CustomCat API connection for the store
+                    </p>
                   </CardHeader>
                   <CardContent>
                     <CustomCatApiSettings />
