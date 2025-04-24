@@ -32,7 +32,8 @@ import {
   Lock,
   Edit,
   LogOut,
-  Shield
+  Shield,
+  Download
 } from "lucide-react";
 import CustomCatApiSettings from "@/components/admin/custom-cat-api-settings";
 import ProductSyncTool from "@/components/admin/product-sync-tool";
@@ -692,6 +693,32 @@ export default function AdminPage() {
                       }}
                     >
                       Open Editor
+                    </Button>
+                  </CardContent>
+                </Card>
+                
+                <Card className="hover:shadow-md transition-all duration-200 border-orange-400/30">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Download className="h-5 w-5 text-orange-500" /> Product Sync Tool
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Sync CustomCat products directly to your store catalog
+                    </p>
+                    <Button 
+                      className="w-full bg-orange-500 hover:bg-orange-600"
+                      onClick={() => {
+                        window.location.href = "/admin/product-sync";
+                        toast({
+                          title: "Product Sync Tool",
+                          description: "Opening product synchronization tool...",
+                          variant: "default",
+                        });
+                      }}
+                    >
+                      Open Sync Tool
                     </Button>
                   </CardContent>
                 </Card>
