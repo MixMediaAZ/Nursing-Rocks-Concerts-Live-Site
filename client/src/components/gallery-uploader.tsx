@@ -74,7 +74,7 @@ export function GalleryUploader({
     const formData = new FormData();
     
     Array.from(files).forEach((file) => {
-      formData.append("files", file);
+      formData.append("images", file);
     });
     
     uploadMutation.mutate(formData);
