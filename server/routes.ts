@@ -9,6 +9,7 @@ import { storage } from "./storage";
 import { gallery, mediaFolders, events } from "@shared/schema";
 import sharp from "sharp";
 import { processImage } from "./image-utils";
+import { customCatEndpoints } from "./customcat-endpoints";
 import { 
   galleryUpload, 
   createMediaFolder, 
