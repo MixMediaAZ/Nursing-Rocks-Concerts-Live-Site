@@ -106,34 +106,24 @@ export function ImageReplacementDialog({
         // Close dialog first
         onClose();
         
-        // Create an Image object to preload the new image before replacing
-        const img = new Image();
-        img.onload = () => {
-          // Direct DOM replacement for the most reliable update
+        // ULTRA DIRECT METHOD:
+        // Just change the src attribute directly without DOM replacement
+        // This avoids the flashing completely
+        setTimeout(() => {
           document.querySelectorAll('img').forEach(imgElement => {
             // Normalize URLs for comparison
             const imgSrc = imgElement.src.split('?')[0];
             const origSrc = (originalUrl || '').split('?')[0];
             
             if (imgSrc.includes(origSrc) || origSrc.includes(imgSrc)) {
-              console.log(`Found matching image to update with placeholder:`, imgElement);
+              console.log(`Found matching image to update with placeholder`, imgElement);
               
-              // Create a completely new image element
-              const newImg = document.createElement('img');
-              newImg.src = placeholderUrl;
-              newImg.alt = imgElement.alt;
-              newImg.className = imgElement.className;
-              
-              // Directly replace in the DOM for guaranteed update
-              if (imgElement.parentNode) {
-                imgElement.parentNode.replaceChild(newImg, imgElement);
-              }
+              // Just change the src attribute directly (no DOM replacement)
+              // This is the most direct method and avoids flashing completely
+              imgElement.src = placeholderUrl;
             }
           });
-        };
-        
-        // Start loading the placeholder image
-        img.src = placeholderUrl;
+        }, 100);
         
         return;
       }
@@ -188,10 +178,10 @@ export function ImageReplacementDialog({
       // Close the dialog first
       onClose();
       
-      // Create an Image object to preload the new image before replacing
-      const img = new Image();
-      img.onload = () => {
-        // Direct DOM replacement for the most reliable update
+      // ULTRA DIRECT METHOD:
+      // Just change the src attribute directly without DOM replacement
+      // This avoids the flashing completely
+      setTimeout(() => {
         document.querySelectorAll('img').forEach(imgElement => {
           // Normalize URLs for comparison
           const imgSrc = imgElement.src.split('?')[0];
@@ -200,22 +190,12 @@ export function ImageReplacementDialog({
           if (imgSrc.includes(origSrc) || origSrc.includes(imgSrc)) {
             console.log(`Found matching image to update:`, imgElement);
             
-            // Create a completely new image element
-            const newImg = document.createElement('img');
-            newImg.src = uniqueServerUrl;
-            newImg.alt = imgElement.alt;
-            newImg.className = imgElement.className;
-            
-            // Directly replace in the DOM for guaranteed update
-            if (imgElement.parentNode) {
-              imgElement.parentNode.replaceChild(newImg, imgElement);
-            }
+            // Just change the src attribute directly (no DOM replacement)
+            // This is the most direct method and avoids flashing completely
+            imgElement.src = uniqueServerUrl;
           }
         });
-      };
-      
-      // Start loading the new image
-      img.src = uniqueServerUrl;
+      }, 100);
       
     } catch (error) {
       console.error('Error replacing image:', error);
