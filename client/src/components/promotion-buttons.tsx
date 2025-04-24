@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
-import { Shirt } from "lucide-react";
+import { Shirt, ShoppingBag } from "lucide-react";
 import nursingRocksLogo from "@assets/NursingRocks_NewLogo.png";
 import { useState, useEffect, useRef } from "react";
 import { PromotionButtonEditor } from "./promotion-button-editor";
@@ -90,135 +90,87 @@ function TshirtButton() {
   );
 }
 
-// Static HTML div for "copy" button using useRef and direct DOM creation
+// React-based "Copy" button component to avoid DOM manipulation issues
 function CopyButtonContainer() {
-  const containerRef = useRef<HTMLDivElement>(null);
   const { isAdminMode } = useAdminEditMode();
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-    
-    // Clear the container first to avoid duplicates
-    containerRef.current.innerHTML = '';
-    
-    // Create the image container
-    const imageContainer = document.createElement('div');
-    imageContainer.className = "mb-4 bg-white p-3 rounded-lg shadow-md w-full max-w-sm";
-    imageContainer.style.height = "248px"; // Match the height of the T-shirt container
-    
-    // Create the image
-    const img = document.createElement('img');
-    img.src = nursingRocksLogo;
-    img.alt = "Copy";
-    img.className = "w-full h-56 object-contain";
-    imageContainer.appendChild(img);
-    
-    // Create the button container
-    const buttonContainer = document.createElement('div');
-    buttonContainer.className = "relative w-full max-w-sm";
-    
-    // Get the saved text from localStorage or use default
-    const savedCopyText = localStorage.getItem('copyButtonText') || "Copy";
-    
-    // Create the link element
-    const link = document.createElement('a');
-    link.href = "/copy";
-    link.className = "flex items-center justify-center gap-3 bg-[#00A3E0] hover:bg-[#0089BE] text-white px-8 py-6 rounded-lg text-lg font-semibold transition-transform hover:scale-105 shadow-md w-full";
-    link.style.textDecoration = "none";
-    link.style.display = "flex";
-    link.style.minHeight = "64px"; // Ensure consistent height
-    
-    // Create the SVG icon
-    const svgNS = "http://www.w3.org/2000/svg";
-    const svg = document.createElementNS(svgNS, "svg");
-    svg.setAttribute("xmlns", svgNS);
-    svg.setAttribute("width", "24");
-    svg.setAttribute("height", "24");
-    svg.setAttribute("viewBox", "0 0 24 24");
-    svg.setAttribute("fill", "none");
-    svg.setAttribute("stroke", "currentColor");
-    svg.setAttribute("stroke-width", "2");
-    svg.setAttribute("stroke-linecap", "round");
-    svg.setAttribute("stroke-linejoin", "round");
-    svg.style.flexShrink = "0";
-    
-    // Create the SVG paths
-    const path1 = document.createElementNS(svgNS, "path");
-    path1.setAttribute("d", "M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z");
-    svg.appendChild(path1);
-    
-    const path2 = document.createElementNS(svgNS, "path");
-    path2.setAttribute("d", "M3 6h18");
-    svg.appendChild(path2);
-    
-    const path3 = document.createElementNS(svgNS, "path");
-    path3.setAttribute("d", "M16 10a4 4 0 0 1-8 0");
-    svg.appendChild(path3);
-    
-    link.appendChild(svg);
-    
-    // Create the text
-    const span = document.createElement('span');
-    span.className = "text-center";
-    span.id = "copyText"; // Add ID for easy updating
-    span.textContent = savedCopyText;
-    link.appendChild(span);
-    
-    // Add edit button if in admin mode
-    if (isAdminMode) {
-      const editButton = document.createElement('button');
-      editButton.className = "absolute -top-3 -right-3 p-1.5 bg-primary text-white rounded-full shadow-md hover:bg-primary/80 transition-colors z-10";
-      editButton.title = "Edit Copy Button Text";
-      editButton.innerHTML = `
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          width="16" 
-          height="16" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
-          strokeWidth="2" 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
-        >
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-        </svg>
-      `;
-      
-      // Add click event to edit button
-      editButton.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        
-        // Show a simple prompt for editing
-        const currentText = span.textContent || "Copy";
-        const newText = prompt("Edit Copy button text:", currentText);
-        
-        if (newText !== null && newText.trim() !== "") {
-          // Update the text
-          span.textContent = newText;
-          
-          // Save to localStorage
-          localStorage.setItem('copyButtonText', newText);
-          
-          // Show a toast notification
-          alert("Button text updated successfully!");
-        }
-      });
-      
-      buttonContainer.appendChild(editButton);
-    }
-    
-    // Append everything together
-    buttonContainer.appendChild(link);
-    
-    // Append to the container ref
-    containerRef.current.appendChild(imageContainer);
-    containerRef.current.appendChild(buttonContainer);
-  }, [isAdminMode]); // Re-render when admin mode changes
+  const { toast } = useToast();
   
-  return <div ref={containerRef} className="flex flex-col items-center w-full sm:w-1/2"></div>;
+  // Initialize text from localStorage or default text
+  const savedText = localStorage.getItem('copyButtonText');
+  const [buttonText, setButtonText] = useState(savedText || "Copy");
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  
+  // Handle saving the edited button text
+  const handleSaveButtonText = (newText: string) => {
+    setButtonText(newText);
+    setIsEditDialogOpen(false);
+    
+    // Save to localStorage for persistence across page reloads
+    localStorage.setItem('copyButtonText', newText);
+    
+    toast({
+      title: "Button Text Updated",
+      description: `Successfully updated the button text to: ${newText}`
+    });
+  };
+  
+  return (
+    <div className="flex flex-col items-center w-full sm:w-1/2">
+      <div className="mb-4 bg-white p-3 rounded-lg shadow-md w-full max-w-sm" style={{ height: "248px" }}>
+        <img 
+          src={nursingRocksLogo} 
+          alt={buttonText} 
+          className="w-full h-56 object-contain"
+        />
+      </div>
+      <div className="relative w-full max-w-sm">
+        <Button 
+          onClick={() => window.location.href = "/copy"}
+          className="flex items-center justify-center gap-3 bg-[#00A3E0] hover:bg-[#0089BE] text-white px-8 py-6 rounded-lg text-lg font-semibold transition-transform hover:scale-105 shadow-md w-full"
+          id="copyButton"
+          style={{ minHeight: "64px" }} // Ensure consistent height with t-shirt button
+        >
+          <ShoppingBag className="h-6 w-6 flex-shrink-0" />
+          <span className="text-center" id="copyText">{buttonText}</span>
+        </Button>
+        
+        {isAdminMode && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              setIsEditDialogOpen(true);
+            }}
+            className="absolute -top-3 -right-3 p-1.5 bg-primary text-white rounded-full shadow-md hover:bg-primary/80 transition-colors z-10"
+            title="Edit Copy Button Text"
+          >
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              width="16" 
+              height="16" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+            >
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </button>
+        )}
+        
+        <PromotionButtonEditor
+          isOpen={isEditDialogOpen}
+          onClose={() => setIsEditDialogOpen(false)}
+          initialText={buttonText}
+          buttonId="copyButton"
+          onSave={handleSaveButtonText}
+        />
+      </div>
+    </div>
+  );
 }
 
 // Main component
