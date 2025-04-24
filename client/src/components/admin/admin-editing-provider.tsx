@@ -273,42 +273,84 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
       
       {/* Admin mode toolbar - only shown when admin mode is active */}
       {adminState.isAdminMode && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white rounded-full shadow-lg border border-gray-200 p-2 z-50 flex items-center gap-2">
-          <div className="bg-blue-500 text-white text-xs px-3 py-1 rounded-full">
+        <div 
+          data-admin-toolbar="true"
+          className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white rounded-full shadow-lg border border-gray-200 p-2 z-50 flex items-center gap-2"
+        >
+          <div className="bg-primary text-white text-xs px-3 py-1 rounded-full">
             Element Edit Mode
           </div>
           
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 px-3"
-            onClick={() => {
-              toast({
-                title: 'Changes Saved',
-                description: 'Your edits have been saved',
-              });
-            }}
-          >
-            <Save className="h-4 w-4 mr-1" />
-            Save
-          </Button>
+          {selectedElement ? (
+            <div className="bg-slate-100 text-xs px-3 py-1 rounded-full flex items-center">
+              <span className="font-medium mr-1">Selected:</span> 
+              <span className="bg-white px-2 py-0.5 rounded border text-primary font-mono">
+                {selectedElement.type === 'image' ? 'Image' : 
+                 selectedElement.type === 'text' ? 'Text' : 
+                 selectedElement.type === 'video' ? 'Video' : 
+                 selectedElement.metadata?.tagName || 'Element'}
+              </span>
+            </div>
+          ) : (
+            <div className="bg-slate-100 text-xs px-3 py-1 rounded-full flex items-center text-muted-foreground">
+              <MousePointer className="h-3 w-3 mr-1" /> Click any element to edit
+            </div>
+          )}
           
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 px-3"
-            onClick={() => {
-              adminState.setAdminMode(false);
-              clearSelectedElement();
-              toast({
-                title: 'Admin Mode Disabled',
-                description: 'Exited element editing mode',
-              });
-            }}
-          >
-            <X className="h-4 w-4 mr-1" />
-            Exit
-          </Button>
+          <div className="flex items-center gap-2">
+            {selectedElement && (
+              <Button
+                data-admin-action="clear"
+                variant="outline"
+                size="sm"
+                className="h-9 px-3"
+                onClick={() => {
+                  clearSelectedElement();
+                  toast({
+                    title: 'Selection Cleared',
+                    description: 'Element selection has been cleared',
+                  });
+                }}
+              >
+                <X className="h-4 w-4 mr-1" />
+                Clear
+              </Button>
+            )}
+            
+            <Button
+              data-admin-action="save"
+              variant="outline"
+              size="sm"
+              className="h-9 px-3"
+              onClick={() => {
+                toast({
+                  title: 'Changes Saved',
+                  description: 'Your edits have been saved',
+                });
+              }}
+            >
+              <Save className="h-4 w-4 mr-1" />
+              Save
+            </Button>
+            
+            <Button
+              data-admin-action="exit"
+              variant="destructive"
+              size="sm"
+              className="h-9 px-3"
+              onClick={() => {
+                adminState.setAdminMode(false);
+                clearSelectedElement();
+                toast({
+                  title: 'Admin Mode Disabled',
+                  description: 'Exited element editing mode',
+                });
+              }}
+            >
+              <X className="h-4 w-4 mr-1" />
+              Exit
+            </Button>
+          </div>
         </div>
       )}
     </>
