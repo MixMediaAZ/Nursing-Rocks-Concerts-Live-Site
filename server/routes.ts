@@ -409,15 +409,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Additionally, check if there are any events using this image and update them too
         try {
-          // Get the original image URL without any cache busters
-          const originalImgUrl = originalImage.image_url.split('?')[0];
+          // Get the original image URL without any cache busters or query parameters
+          const stripQueryParams = (url: string) => url.split('?')[0];
+          const originalImgUrl = stripQueryParams(originalImage.image_url);
           
           console.log('Checking for events using image:', originalImgUrl);
           
-          // Find events using this image
-          const eventsToUpdate = await db.select()
-            .from(events)
-            .where(eq(events.image_url, originalImgUrl));
+          // Find events using this image - need to use a more flexible approach since URLs might have query parameters
+          const allEvents = await db.select().from(events);
+          
+          // Filter events by checking if their image_url matches our original URL (ignoring query parameters)
+          const eventsToUpdate = allEvents.filter(event => {
+            if (!event.image_url) return false;
+            
+            // Strip query parameters for comparison
+            const eventImgUrl = stripQueryParams(event.image_url);
+            return eventImgUrl === originalImgUrl || eventImgUrl.includes(originalImgUrl);
+          });
             
           if (eventsToUpdate && eventsToUpdate.length > 0) {
             console.log(`Found ${eventsToUpdate.length} events using this image, updating them`);
@@ -433,10 +441,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               console.log(`Updated event ${event.id} with new image ${processedImage.original}`);
             }
+          } else {
+            console.log('No events found using this image');
+          }
+          
+          // Check for artists using this image too
+          const allArtists = await db.select().from(artists);
+          
+          // Filter artists by checking if their image_url matches our original URL
+          const artistsToUpdate = allArtists.filter(artist => {
+            if (!artist.image_url) return false;
+            const artistImgUrl = stripQueryParams(artist.image_url);
+            return artistImgUrl === originalImgUrl || artistImgUrl.includes(originalImgUrl);
+          });
+          
+          if (artistsToUpdate && artistsToUpdate.length > 0) {
+            console.log(`Found ${artistsToUpdate.length} artists using this image, updating them`);
+            
+            // Update each artist
+            for (const artist of artistsToUpdate) {
+              await db.update(artists)
+                .set({
+                  image_url: processedImage.original,
+                  updated_at: new Date()
+                })
+                .where(eq(artists.id, artist.id));
+              
+              console.log(`Updated artist ${artist.id} with new image ${processedImage.original}`);
+            }
+          } else {
+            console.log('No artists found using this image');
           }
         } catch (err) {
-          console.error('Error updating events that use this image:', err);
-          // Continue with the image replacement even if event updates fail
+          console.error('Error updating records that use this image:', err);
+          // Continue with the image replacement even if updates fail
         }
         
         // Return the processed image info
