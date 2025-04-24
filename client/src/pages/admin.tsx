@@ -318,50 +318,52 @@ export default function AdminPage() {
     return (
       <div className="flex flex-col">
         {/* Admin Mode Toggle Bar */}
-        <div className="flex justify-between items-center mb-6 p-4 bg-slate-100 rounded-lg border border-slate-200">
-          <div className="flex items-center">
-            <Badge variant={isAdminMode ? "default" : "outline"} className="mr-2 py-1.5">
-              <Shield className="h-4 w-4 mr-1" /> ADMIN
-            </Badge>
-            
-            <span className="text-sm font-medium mr-3">
-              Mode: <span className="font-bold">{isAdminMode ? "Active" : "Inactive"}</span>
-            </span>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <div className="flex items-center space-x-2 mr-2 bg-white py-1 px-3 rounded-full border">
-              <Label htmlFor="admin-mode-toggle" className="text-sm whitespace-nowrap">
-                Admin Mode
-              </Label>
-              <Switch
-                id="admin-mode-toggle"
-                checked={isAdminMode}
-                onCheckedChange={(checked) => {
-                  if (!checked) {
-                    // Turning admin mode off
-                    setIsAdminMode(false);
-                    localStorage.removeItem("adminToken");
-                    toast({
-                      title: "Admin Mode Disabled",
-                      description: "You have exited admin mode. PIN will be required to re-enter.",
-                      variant: "default",
-                    });
-                  } else {
-                    // Show PIN dialog to re-enable admin mode
-                    setShowPinDialog(true);
-                  }
-                }}
-              />
+        <div className="w-full mb-6 p-4 bg-slate-100 rounded-lg border border-slate-200 overflow-hidden">
+          <div className="flex flex-wrap justify-between items-center gap-y-3">
+            <div className="flex items-center flex-shrink-0">
+              <Badge variant={isAdminMode ? "default" : "outline"} className="mr-2 py-1.5">
+                <Shield className="h-4 w-4 mr-1" /> ADMIN
+              </Badge>
+              
+              <span className="text-sm font-medium mr-3">
+                Mode: <span className="font-bold">{isAdminMode ? "Active" : "Inactive"}</span>
+              </span>
             </div>
             
-            <Button 
-              variant="destructive"
-              onClick={handleLogout}
-              className="flex items-center gap-2"
-            >
-              <LogOut className="h-4 w-4" /> Logout
-            </Button>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center space-x-2 bg-white py-1 px-3 rounded-full border flex-shrink-0">
+                <Label htmlFor="admin-mode-toggle" className="text-sm whitespace-nowrap">
+                  Admin Mode
+                </Label>
+                <Switch
+                  id="admin-mode-toggle"
+                  checked={isAdminMode}
+                  onCheckedChange={(checked) => {
+                    if (!checked) {
+                      // Turning admin mode off
+                      setIsAdminMode(false);
+                      localStorage.removeItem("adminToken");
+                      toast({
+                        title: "Admin Mode Disabled",
+                        description: "You have exited admin mode. PIN will be required to re-enter.",
+                        variant: "default",
+                      });
+                    } else {
+                      // Show PIN dialog to re-enable admin mode
+                      setShowPinDialog(true);
+                    }
+                  }}
+                />
+              </div>
+              
+              <Button 
+                variant="destructive"
+                onClick={handleLogout}
+                className="flex items-center gap-2 flex-shrink-0 h-9 px-4"
+              >
+                <LogOut className="h-4 w-4 mr-1" /> Logout
+              </Button>
+            </div>
           </div>
         </div>
         
@@ -457,15 +459,15 @@ export default function AdminPage() {
           </DialogContent>
         </Dialog>
         
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-wrap justify-between items-center gap-y-4 mb-6">
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <LayoutDashboard className="h-7 w-7" /> Admin Dashboard
           </h1>
           
           {/* Live Editing Toggle - only shown when admin mode is active */}
           {isAdminMode && (
-            <div className="flex items-center gap-4">
-              <div className="flex items-center space-x-2 p-2 rounded-md bg-slate-50 border border-slate-200">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center space-x-2 p-2 rounded-md bg-slate-50 border border-slate-200 min-w-[160px]">
                 <Switch
                   id="edit-mode"
                   checked={isEditModeActive}
@@ -478,10 +480,19 @@ export default function AdminPage() {
                     });
                   }}
                 />
-                <Label htmlFor="edit-mode" className="flex items-center gap-1 text-sm font-medium">
+                <Label htmlFor="edit-mode" className="flex items-center gap-1 text-sm font-medium whitespace-nowrap">
                   <Edit className="h-4 w-4" /> Live Edit Mode
                 </Label>
               </div>
+              
+              <Button 
+                variant="default"
+                size="sm"
+                className="bg-primary"
+                onClick={() => openLiveSiteInAdminMode(true)}
+              >
+                <Edit className="h-4 w-4 mr-1" /> Open Editor
+              </Button>
             </div>
           )}
         </div>
