@@ -12,12 +12,18 @@ function TshirtButton() {
   const [_, setLocation] = useLocation();
   const { isAdminMode } = useAdminEditMode();
   const { toast } = useToast();
-  const [text, setText] = useState("Nursing Rocks! T-shirts");
+  
+  // Initialize text from localStorage or default text
+  const savedText = localStorage.getItem('tshirtButtonText');
+  const [text, setText] = useState(savedText || "Nursing Rocks! T-shirts");
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   
   const handleSaveButtonText = (newText: string) => {
     setText(newText);
     setIsEditorOpen(false);
+    
+    // Save to localStorage for persistence across page reloads
+    localStorage.setItem('tshirtButtonText', newText);
     
     toast({
       title: "Button Text Updated",
@@ -87,6 +93,7 @@ function TshirtButton() {
 // Static HTML div for "copy" button using useRef and direct DOM creation
 function CopyButtonContainer() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { isAdminMode } = useAdminEditMode();
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -109,6 +116,9 @@ function CopyButtonContainer() {
     // Create the button container
     const buttonContainer = document.createElement('div');
     buttonContainer.className = "relative w-full max-w-sm";
+    
+    // Get the saved text from localStorage or use default
+    const savedCopyText = localStorage.getItem('copyButtonText') || "Copy";
     
     // Create the link element
     const link = document.createElement('a');
@@ -150,8 +160,55 @@ function CopyButtonContainer() {
     // Create the text
     const span = document.createElement('span');
     span.className = "text-center";
-    span.textContent = "Copy";
+    span.id = "copyText"; // Add ID for easy updating
+    span.textContent = savedCopyText;
     link.appendChild(span);
+    
+    // Add edit button if in admin mode
+    if (isAdminMode) {
+      const editButton = document.createElement('button');
+      editButton.className = "absolute -top-3 -right-3 p-1.5 bg-primary text-white rounded-full shadow-md hover:bg-primary/80 transition-colors z-10";
+      editButton.title = "Edit Copy Button Text";
+      editButton.innerHTML = `
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          width="16" 
+          height="16" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+        >
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+      `;
+      
+      // Add click event to edit button
+      editButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        // Show a simple prompt for editing
+        const currentText = span.textContent || "Copy";
+        const newText = prompt("Edit Copy button text:", currentText);
+        
+        if (newText !== null && newText.trim() !== "") {
+          // Update the text
+          span.textContent = newText;
+          
+          // Save to localStorage
+          localStorage.setItem('copyButtonText', newText);
+          
+          // Show a toast notification
+          alert("Button text updated successfully!");
+        }
+      });
+      
+      buttonContainer.appendChild(editButton);
+    }
     
     // Append everything together
     buttonContainer.appendChild(link);
@@ -159,7 +216,7 @@ function CopyButtonContainer() {
     // Append to the container ref
     containerRef.current.appendChild(imageContainer);
     containerRef.current.appendChild(buttonContainer);
-  }, []);
+  }, [isAdminMode]); // Re-render when admin mode changes
   
   return <div ref={containerRef} className="flex flex-col items-center w-full sm:w-1/2"></div>;
 }

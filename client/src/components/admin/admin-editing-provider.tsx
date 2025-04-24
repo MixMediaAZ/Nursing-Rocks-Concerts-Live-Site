@@ -711,9 +711,13 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
                       localStorage.removeItem('adminPinVerified');
                       localStorage.removeItem('editMode');
                       
+                      // Clear any edit-related localStorage items
+                      localStorage.removeItem('tshirtButtonText');
+                      localStorage.removeItem('copyButtonText');
+                      
                       toast({
                         title: 'Logged Out',
-                        description: 'You have been logged out of admin mode',
+                        description: 'You have been logged out of admin mode and all changes were reset',
                       });
                       
                       // Reload the page to ensure all admin components are reset
@@ -741,9 +745,14 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
                 onClick={() => {
                   adminState.setAdminMode(false);
                   clearSelectedElement();
+                  
+                  // Clear any edit-related localStorage items when exiting admin mode
+                  localStorage.removeItem('tshirtButtonText');
+                  localStorage.removeItem('copyButtonText');
+                  
                   toast({
                     title: 'Admin Mode Disabled',
-                    description: 'Exited element editing mode',
+                    description: 'Exited element editing mode and reset all changes',
                   });
                 }}
               >
