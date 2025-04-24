@@ -489,12 +489,21 @@ export default function AdminPage() {
                   <div 
                     className="h-auto py-4 flex flex-col items-center justify-center gap-2 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground cursor-pointer shadow-sm hover:shadow transition-all"
                     onClick={() => {
-                      setActiveTab("events");
                       toast({
                         title: "Event Management",
                         description: "Opening event management interface...",
                         variant: "default",
                       });
+                      // First update the active tab state
+                      setActiveTab("events");
+                      // Then refresh tabs component to show the correct content
+                      const tabsElement = document.querySelector('[role="tablist"]');
+                      if (tabsElement) {
+                        const eventsTab = tabsElement.querySelector('[data-value="events"]');
+                        if (eventsTab && eventsTab instanceof HTMLElement) {
+                          eventsTab.click();
+                        }
+                      }
                     }}
                   >
                     <Calendar className="h-6 w-6" />
@@ -504,12 +513,21 @@ export default function AdminPage() {
                   <div 
                     className="h-auto py-4 flex flex-col items-center justify-center gap-2 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground cursor-pointer shadow-sm hover:shadow transition-all"
                     onClick={() => {
-                      setActiveTab("store");
                       toast({
                         title: "Store Management",
                         description: "Opening store management interface...",
                         variant: "default",
                       });
+                      // First update the active tab state
+                      setActiveTab("store");
+                      // Then refresh tabs component to show the correct content
+                      const tabsElement = document.querySelector('[role="tablist"]');
+                      if (tabsElement) {
+                        const storeTab = tabsElement.querySelector('[data-value="store"]');
+                        if (storeTab && storeTab instanceof HTMLElement) {
+                          storeTab.click();
+                        }
+                      }
                     }}
                   >
                     <Store className="h-6 w-6" />
