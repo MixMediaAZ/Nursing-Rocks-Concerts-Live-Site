@@ -93,6 +93,8 @@ function SimplePromotionButton({
 
 // This is our main exported component
 export default function PromotionButtons() {
+  const [_, setLocation] = useLocation();
+  
   return (
     <section className="bg-background py-10">
       <div className="container mx-auto">
@@ -108,14 +110,29 @@ export default function PromotionButtons() {
             onClick="/store/category/tshirts"
           />
           
-          <SimplePromotionButton 
-            id="comfortSocksButton"
-            textId="comfortSocksText"
-            initialText="Comfort Socks for Nurses"
-            icon={<ShoppingBag className="h-6 w-6 flex-shrink-0" />}
-            bgColor="bg-[#00A3E0] hover:bg-[#0089BE]"
-            onClick="/store/category/socks"
-          />
+          {/* Copy Button Feature */}
+          <div className="flex flex-col items-center w-full sm:w-1/2">
+            <div className="mb-4 bg-white p-3 rounded-lg shadow-md w-full max-w-sm">
+              <img 
+                src={nursingRocksLogo} 
+                alt="Copy feature" 
+                className="w-full h-56 object-contain"
+              />
+            </div>
+            <div className="relative w-full max-w-sm">
+              <Button 
+                onClick={() => {
+                  navigator.clipboard.writeText("copy");
+                  alert("Text 'copy' has been copied to clipboard!");
+                }}
+                className="flex items-center justify-center gap-3 bg-[#00A3E0] hover:bg-[#0089BE] text-white px-8 py-6 rounded-lg text-lg font-semibold transition-transform hover:scale-105 shadow-md w-full"
+                id="copyButton"
+              >
+                <ShoppingBag className="h-6 w-6 flex-shrink-0" />
+                <span className="text-center" id="copyText">copy</span>
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </section>
