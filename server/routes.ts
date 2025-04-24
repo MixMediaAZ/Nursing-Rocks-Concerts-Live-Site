@@ -57,7 +57,7 @@ import {
   getUserTickets,
   authenticateToken
 } from "./auth";
-import { generateToken } from './jwt';
+import { generateToken, isUserAdmin } from './jwt';
 import {
   upload,
   uploadMediaFiles,
@@ -1352,9 +1352,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: `Setting with key '${key}' not found` });
       }
       
-      // Only return sensitive settings to admins
-      if (setting.is_sensitive && (!req.user || !req.user.isAdmin)) {
-        return res.status(403).json({ message: "You don't have permission to access this setting" });
+      // Only return sensitive settings to admins - use isUserAdmin helper for reliable JWT checks
+      // For sensitive keys (like API keys), always check for proper admin authentication
+      if (setting.is_sensitive) {
+        const isAdmin = isUserAdmin(req);
+        if (!isAdmin) {
+          return res.status(403).json({ message: "You don't have permission to access this setting" });
+        }
       }
       
       res.json(setting);

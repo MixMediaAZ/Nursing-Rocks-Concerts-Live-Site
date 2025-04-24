@@ -21,10 +21,12 @@ export const CustomCatApiSettings = () => {
   const [showApiKey, setShowApiKey] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true); // Track authentication state
   const [connectionStatus, setConnectionStatus] = useState<{
     checked: boolean;
     configured: boolean;
     message: string;
+    status?: string;
   }>({
     checked: false,
     configured: false,
