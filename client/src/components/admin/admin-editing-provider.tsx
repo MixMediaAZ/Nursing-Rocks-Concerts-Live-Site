@@ -149,14 +149,23 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
       if (elementType === 'image') {
         openImageReplacementDialog();
       } else if (elementType === 'text') {
-        // Use innerHTML to preserve formatting for editing
-        // First convert <br> tags to newlines for textarea input
-        const content = target.innerHTML
-          .replace(/<br\s*\/?>/gi, '\n') // Replace <br> tags with newlines
-          .replace(/&lt;/g, '<')         // Replace &lt; with <
-          .replace(/&gt;/g, '>')         // Replace &gt; with >
-          .replace(/&nbsp;/g, ' ')       // Replace &nbsp; with spaces
-          .replace(/&amp;/g, '&');       // Replace &amp; with &
+        // For buttons, we need to handle innerText differently to properly capture the text
+        let content = '';
+        
+        if (target.tagName === 'BUTTON' || target.tagName === 'A') {
+          // For buttons and links, directly use innerText to get the visible text
+          content = target.innerText;
+          console.log(`Extracted button/link text: "${content}" from ${target.tagName}`);
+        } else {
+          // For other elements, use innerHTML to preserve formatting for editing
+          // First convert <br> tags to newlines for textarea input
+          content = target.innerHTML
+            .replace(/<br\s*\/?>/gi, '\n') // Replace <br> tags with newlines
+            .replace(/&lt;/g, '<')         // Replace &lt; with <
+            .replace(/&gt;/g, '>')         // Replace &gt; with >
+            .replace(/&nbsp;/g, ' ')       // Replace &nbsp; with spaces
+            .replace(/&amp;/g, '&');       // Replace &amp; with &
+        }
           
         openTextEditorDialog(content);
       } else {
@@ -364,19 +373,58 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
           } else if (selectedElement) {
             // Update existing text
             if (selectedElement.element) {
-              // Use innerHTML instead of textContent to support formatted text
-              // First sanitize to prevent XSS (basic sanitization)
-              const sanitizedContent = newContent
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/&lt;br&gt;/g, '<br>') // Allow <br> tags
-                .replace(/\n/g, '<br>'); // Convert newlines to <br>
+              try {
+                // Handle buttons and links differently than other elements
+                if (selectedElement.element.tagName === 'BUTTON' || selectedElement.element.tagName === 'A') {
+                  // For buttons and links, just update the innerText/textContent
+                  // This preserves any icons or other elements that might be in the button
+                  console.log(`Updating ${selectedElement.element.tagName} text to: "${newContent}"`);
+                  
+                  // Check if button contains only text or has child elements
+                  if (selectedElement.element.childElementCount === 0) {
+                    // Simple text button, just set the text content
+                    selectedElement.element.textContent = newContent;
+                  } else {
+                    // Button has child elements (like icons), try to update just the text nodes
+                    let hasUpdatedTextNode = false;
+                    
+                    // Loop through child nodes to find text nodes
+                    for (let i = 0; i < selectedElement.element.childNodes.length; i++) {
+                      const node = selectedElement.element.childNodes[i];
+                      if (node.nodeType === Node.TEXT_NODE) {
+                        node.textContent = newContent;
+                        hasUpdatedTextNode = true;
+                        break; // Update only the first text node
+                      }
+                    }
+                    
+                    // If no text node found, append a new one
+                    if (!hasUpdatedTextNode) {
+                      selectedElement.element.appendChild(document.createTextNode(newContent));
+                    }
+                  }
+                } else {
+                  // For other elements, use innerHTML with sanitization
+                  const sanitizedContent = newContent
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/&lt;br&gt;/g, '<br>') // Allow <br> tags
+                    .replace(/\n/g, '<br>'); // Convert newlines to <br>
+                    
+                  selectedElement.element.innerHTML = sanitizedContent;
+                }
                 
-              selectedElement.element.innerHTML = sanitizedContent;
-              
-              // Apply styling if provided
-              if (options?.styles) {
-                applyStylesToElement(selectedElement.element, options.styles);
+                // Apply styling if provided - for all element types
+                if (options?.styles) {
+                  applyStylesToElement(selectedElement.element, options.styles);
+                }
+              } catch (error) {
+                console.error("Error updating element text:", error);
+                toast({
+                  title: 'Error Updating Text',
+                  description: 'There was a problem updating the text. Please try again.',
+                  variant: 'destructive',
+                });
               }
             }
             
