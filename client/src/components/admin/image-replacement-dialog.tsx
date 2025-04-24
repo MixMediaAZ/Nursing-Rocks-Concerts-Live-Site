@@ -135,15 +135,47 @@ export function ImageReplacementDialog({
         timestamp: Date.now() // Add timestamp to help prevent caching issues
       };
       
-      // Use the appropriate API endpoint based on whether we have an element ID
-      const endpoint = elementId 
-        ? `/api/gallery/${elementId}/replace-with/${selectedImageId}`
-        : `/api/gallery/-1/replace-with/${selectedImageId}`;
+      // Determine the appropriate API endpoint based on the element ID
+      let endpoint;
+      
+      // Check if this is an editable element (with the special ID format)
+      const isEditableElement = elementId && typeof elementId === 'string' && 
+          elementId.toString().startsWith('editable-element-');
+      
+      if (isEditableElement) {
+        // For editable elements, use the special editable element endpoint format
+        endpoint = `/api/gallery/${elementId}/replace-with/${selectedImageId}`;
+        console.log(`Using editable element replacement endpoint: ${endpoint}`);
+        
+        // For editable elements, ensure we include the original URL in the payload
+        if (originalUrl) {
+          payload.originalUrl = originalUrl;
+        }
+      } 
+      else if (elementId) {
+        // For regular gallery images with an ID
+        endpoint = `/api/gallery/${elementId}/replace-with/${selectedImageId}`;
+      } 
+      else {
+        // Fallback for cases without an element ID (using -1 as placeholder)
+        endpoint = `/api/gallery/-1/replace-with/${selectedImageId}`;
+      }
       
       console.log(`Replacing image at endpoint: ${endpoint}`);
-      console.log(`Original URL: ${originalUrl}`);
+      console.log(`Original URL: ${originalUrl || 'None provided'}`);
+      console.log(`Payload:`, payload);
       
-      const response = await apiRequest('POST', endpoint, payload);
+      // For editable elements, we need to post the payload in the request body
+      const response = await apiRequest(
+        'POST', 
+        endpoint, 
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload)
+        }
+      );
       
       if (!response.ok) {
         throw new Error('Failed to replace image');
