@@ -217,32 +217,15 @@ export function ImageReplacementDialog({
         } 
       });
       
-      // First dispatch immediately
-      console.log('Dispatching immediate image-replaced event');
-      window.dispatchEvent(replaceEvent);
+      // Just use a single dispatch with the dialog already closed
+      // This prevents screen flashing when the cursor is in the replacement window
+      onClose(); // Close dialog first
       
-      // Then dispatch again after a delay to make sure components have updated
+      // Wait a brief moment to ensure dialog has fully closed
       setTimeout(() => {
-        console.log('Dispatching delayed image-replaced event:', replaceEvent.detail);
+        console.log('Dispatching image-replaced event with dialog closed');
         window.dispatchEvent(replaceEvent);
-        
-        // Try once more with a new timestamp to ensure the browser reloads the image
-        setTimeout(() => {
-          const finalEvent = new CustomEvent('image-replaced', { 
-            detail: { 
-              ...replaceEvent.detail,
-              timestamp: Date.now(),
-              newImageUrl: originalImageUrl.split('?')[0] + 
-                `?final=${Date.now()}_${Math.random().toString(36).substring(2, 15)}`
-            } 
-          });
-          console.log('Dispatching final image-replaced event');
-          window.dispatchEvent(finalEvent);
-          
-          // Close dialog after all events are dispatched
-          onClose();
-        }, 500);
-      }, 300);
+      }, 100);
       
     } catch (error) {
       console.error('Error replacing image:', error);

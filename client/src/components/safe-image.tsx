@@ -99,36 +99,26 @@ export function SafeImage({
           console.log('  Current:', src);
           console.log('  New URL:', newImageUrl);
           
-          // COMPLETELY FORCE BROWSER RELOAD OF IMAGE
-          // 1. First update state with null to unmount the image
-          setImageSrc(null);
-          // 2. Then after a small delay, update with new image URL
-          setTimeout(() => {
-            console.log('Forcing COMPLETE image refresh with timestamp:', Date.now());
-            // 3. Add a random unique cache buster to the new URL to prevent any caching
-            if (newImageUrl) {
-              // Normalize the URL by removing any existing cache busters
-              const cleanUrl = newImageUrl.split('?')[0];
-              // Create a unique cache-busting parameter
-              const uniqueBuster = `?t=${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-              const forcedNewUrl = cleanUrl + uniqueBuster;
-              
-              console.log(`Updating image src to: ${forcedNewUrl}`);
-              
-              // Update both the original ref and the state
-              originalSrcRef.current = forcedNewUrl;
-              setImageSrc(forcedNewUrl);
-            }
+          // Force browser to get fresh image without all the flickering
+          if (newImageUrl) {
+            // Normalize the URL by removing any existing cache busters
+            const cleanUrl = newImageUrl.split('?')[0];
+            // Create a unique cache-busting parameter
+            const uniqueBuster = `?t=${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+            const forcedNewUrl = cleanUrl + uniqueBuster;
             
-            // Force a complete refresh of the component
+            console.log(`Updating image src to: ${forcedNewUrl}`);
+            
+            // Update both the original ref and the state
+            originalSrcRef.current = forcedNewUrl;
+            // Update the src with cache-busting parameters
+            setImageSrc(forcedNewUrl);
+            // Force a refresh of the component's key
             setForceRefresh(Date.now());
-            
-            // Also reload with a different random cache buster after a slightly longer delay
-            // This gives browsers a second chance to fetch the new image
-            setTimeout(() => {
-              setForceRefresh(Date.now() + 1);
-            }, 100);
-          }, 300);
+          } else {
+            // Just update the refresh key to force reload
+            setForceRefresh(Date.now());
+          }
           
           return;
         }
