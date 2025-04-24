@@ -104,9 +104,25 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
       e.preventDefault();
       e.stopPropagation();
       
+      // Special case: Check for our "Comfort Socks" button or span
+      if (target.id === 'comfortSocksText' || 
+          target.id === 'comfortSocksButton' ||
+          target.closest('#comfortSocksButton')) {
+        console.log('Found comfort socks button or text - selecting it');
+        
+        // Get the button element which may be the target or its parent
+        const socksButton = target.id === 'comfortSocksButton' 
+          ? target 
+          : document.getElementById('comfortSocksButton');
+          
+        if (socksButton) {
+          target = socksButton as HTMLElement;
+          console.log('Selected the comfort socks button');
+        }
+      }
       // Special handling for SPAN elements inside buttons or links
       // If the clicked element is a SPAN inside a BUTTON or A, select the parent instead
-      if (target.tagName === 'SPAN') {
+      else if (target.tagName === 'SPAN') {
         const parentButton = target.closest('BUTTON');
         const parentLink = target.closest('A');
         
@@ -346,6 +362,28 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
         onSave={(newContent, options) => {
           updateTextContent(newContent);
           closeTextEditorDialog();
+          
+          // Special handling for Comfort Socks button
+          if (selectedElement?.element?.id === 'comfortSocksButton') {
+            console.log('Special handling for comfort socks button text update');
+            
+            try {
+              // Update specifically the span with ID comfortSocksText
+              const socksTextSpan = document.getElementById('comfortSocksText');
+              if (socksTextSpan) {
+                socksTextSpan.textContent = newContent;
+                console.log('Successfully updated comfort socks text directly by ID');
+                
+                toast({
+                  title: 'Text Updated',
+                  description: 'Comfort Socks button text has been updated',
+                });
+                return; // Exit early, we've handled this case
+              }
+            } catch (err) {
+              console.error('Error updating comfort socks text:', err);
+            }
+          }
           
           if (isCreatingNewText) {
             // Create new text element logic

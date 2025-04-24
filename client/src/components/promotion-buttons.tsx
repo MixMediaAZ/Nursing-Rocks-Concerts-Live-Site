@@ -24,9 +24,11 @@ const PromotionButtons = () => {
             <Button 
               onClick={() => setLocation("/store/category/tshirts")}
               className="flex items-center justify-center gap-3 bg-[#F61D7A] hover:bg-[#E01060] text-white px-8 py-6 rounded-lg text-lg font-semibold transition-transform hover:scale-105 shadow-md w-full max-w-sm"
+              id="tshirtButton"
+              data-editable="true"
             >
               <Shirt className="h-6 w-6 flex-shrink-0" />
-              <span className="text-center">Nursing Rocks! T-shirts</span>
+              <span className="text-center" id="tshirtText">Nursing Rocks! T-shirts</span>
             </Button>
           </div>
 
@@ -42,9 +44,11 @@ const PromotionButtons = () => {
             <Button 
               onClick={() => setLocation("/store/category/socks")}
               className="flex items-center justify-center gap-3 bg-[#00A3E0] hover:bg-[#0089BE] text-white px-8 py-6 rounded-lg text-lg font-semibold transition-transform hover:scale-105 shadow-md w-full max-w-sm"
+              id="comfortSocksButton"
+              data-editable="true"
             >
               <ShoppingBag className="h-6 w-6 flex-shrink-0" />
-              <span className="text-center">Comfort Socks for Nurses</span>
+              <span className="text-center" id="comfortSocksText">Comfort Socks for Nurses</span>
             </Button>
           </div>
         </div>
