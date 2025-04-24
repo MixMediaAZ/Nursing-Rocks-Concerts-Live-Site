@@ -117,7 +117,9 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
         target.tagName === 'H5' || 
         target.tagName === 'H6' || 
         target.tagName === 'SPAN' || 
-        target.tagName === 'DIV'
+        target.tagName === 'DIV' ||
+        target.tagName === 'BUTTON' ||
+        target.tagName === 'A'
       ) {
         elementType = 'text';
       } else if (target.tagName === 'VIDEO') {
