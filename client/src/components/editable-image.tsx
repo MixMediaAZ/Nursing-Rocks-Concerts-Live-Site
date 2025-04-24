@@ -135,6 +135,8 @@ export function EditableImage({
         className={className}
         alt={alt}
         triggerPosition={triggerPosition}
+        productId={productId}
+        elementId={`product-image-${productId || id || Date.now()}`}
         onReplaceComplete={() => {
           // Refresh the component after replacing an image
           // This is especially important for placeholder images
@@ -152,6 +154,8 @@ export function EditableImage({
       src={src}
       alt={alt}
       className={className}
+      productId={productId}
+      elementId={`product-image-${productId || id || Date.now()}`}
     />
   );
 }

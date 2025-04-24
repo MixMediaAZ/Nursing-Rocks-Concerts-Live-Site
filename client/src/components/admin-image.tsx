@@ -15,6 +15,8 @@ export interface AdminImageProps {
   alt?: string;
   triggerPosition?: "top-right" | "bottom-right" | "bottom-left" | "top-left";
   onReplaceComplete?: () => void;
+  elementId?: string | number; // Optional element ID for targeted updates
+  productId?: number; // Optional product ID for product images
 }
 
 /**
@@ -28,7 +30,9 @@ export function AdminImage({
   className = '',
   alt,
   triggerPosition = "top-right",
-  onReplaceComplete
+  onReplaceComplete,
+  elementId,
+  productId
 }: AdminImageProps) {
   const [isReplaceDialogOpen, setIsReplaceDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -121,7 +125,13 @@ export function AdminImage({
       // Force a page-level refresh after a brief delay to ensure everything is updated
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('image-replaced', {
-          detail: { imageId: imageData.id, newUrl: data.image_url }
+          detail: { 
+            imageId: imageData.id, 
+            newUrl: data.image_url,
+            originalUrl: imageData.image_url,
+            elementId: elementId || `product-image-${productId || imageData.id}`,
+            productId: productId
+          }
         }));
       }, 200);
     },
@@ -151,7 +161,9 @@ export function AdminImage({
         key={refreshKey}
         src={currentImageUrl}
         alt={alt || imageData.alt_text || "Image"}
-        className={className} 
+        className={className}
+        elementId={elementId || `product-image-${productId || imageData.id}`}
+        productId={productId}
       />
       
       {showAdminControls && (

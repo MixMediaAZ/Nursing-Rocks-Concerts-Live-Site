@@ -134,8 +134,38 @@ export function SafeImage({
         }
       }
       
-      // Don't refresh all images by default anymore - that can cause too many unnecessary refreshes
-      // Only refresh specific element ID matches as a fallback
+      // Check for a specific element ID or product ID match
+      if (detail.elementId && elementId && detail.elementId.toString() === elementId.toString()) {
+        console.log('Image replacement: Direct element ID match found');
+        setTimeout(() => {
+          setForceRefresh(Date.now());
+        }, 300);
+        return;
+      }
+      
+      // Match by product ID for product images
+      if (detail.productId && productId && detail.productId.toString() === productId.toString()) {
+        console.log('Image replacement: Product ID match found');
+        setTimeout(() => {
+          // If the new URL was provided in the event, use it directly
+          if (detail.newUrl) {
+            // Create a unique cache-busting parameter
+            const cleanUrl = detail.newUrl.split('?')[0];
+            const uniqueBuster = `?t=${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+            const forcedNewUrl = cleanUrl + uniqueBuster;
+            
+            console.log(`Updating product image src to: ${forcedNewUrl}`);
+            
+            // Update both the original ref and the state
+            originalSrcRef.current = forcedNewUrl;
+            setImageSrc(forcedNewUrl);
+          }
+          setForceRefresh(Date.now());
+        }, 300);
+        return;
+      }
+      
+      // Generic element ID fallback for backwards compatibility
       if (detail.elementId && detail.elementId.toString().includes('image')) {
         console.log('Refreshing image as element ID fallback strategy');
         setTimeout(() => {
@@ -148,7 +178,7 @@ export function SafeImage({
     return () => {
       window.removeEventListener('image-replaced', handleImageReplaced);
     };
-  }, [src]);
+  }, [src, elementId, productId]);
   
   // If no source is provided, show the fallback
   if (!imageSrc) {
@@ -178,6 +208,8 @@ export function SafeImage({
           src={imageSrc}
           alt={alt}
           className={className}
+          data-element-id={elementId || ''}
+          data-product-id={productId || ''}
           onLoad={() => setIsLoading(false)}
           onError={() => {
             setIsLoading(false);
