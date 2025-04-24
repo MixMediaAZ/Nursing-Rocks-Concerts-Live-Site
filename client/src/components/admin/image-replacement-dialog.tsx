@@ -193,25 +193,56 @@ export function ImageReplacementDialog({
       
       onSelectImage(selectedImageId);
       
-      // Trigger a custom event to refresh images using the new one
+      // Add a timestamp to ensure the URL is unique and not cached
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substring(2, 15);
+      
+      // Create a unique cache-busting URL to guarantee fresh content
+      const originalImageUrl = result.image_url; 
+      const cacheBuster = `?nocache=${timestamp}_${randomId}`;
+      const uniqueImageUrl = originalImageUrl.split('?')[0] + cacheBuster;
+      
+      console.log('Original URL from server:', originalImageUrl);
+      console.log('Cache-busting URL created:', uniqueImageUrl);
+      
+      // Trigger a custom event to refresh images using the new one with cache-busting
       const replaceEvent = new CustomEvent('image-replaced', { 
         detail: { 
           originalUrl, 
           newImageId: selectedImageId,
           elementId,
-          timestamp: Date.now(),
-          newImageUrl: result.image_url
+          timestamp: timestamp,
+          newImageUrl: uniqueImageUrl,
+          originalImageUrl: originalImageUrl
         } 
       });
       
-      // Dispatch event after a short delay to ensure all components are ready
+      // First dispatch immediately
+      console.log('Dispatching immediate image-replaced event');
+      window.dispatchEvent(replaceEvent);
+      
+      // Then dispatch again after a delay to make sure components have updated
       setTimeout(() => {
-        console.log('Dispatching image-replaced event:', replaceEvent.detail);
+        console.log('Dispatching delayed image-replaced event:', replaceEvent.detail);
         window.dispatchEvent(replaceEvent);
         
-        // Close dialog after event is dispatched
-        onClose();
-      }, 200);
+        // Try once more with a new timestamp to ensure the browser reloads the image
+        setTimeout(() => {
+          const finalEvent = new CustomEvent('image-replaced', { 
+            detail: { 
+              ...replaceEvent.detail,
+              timestamp: Date.now(),
+              newImageUrl: originalImageUrl.split('?')[0] + 
+                `?final=${Date.now()}_${Math.random().toString(36).substring(2, 15)}`
+            } 
+          });
+          console.log('Dispatching final image-replaced event');
+          window.dispatchEvent(finalEvent);
+          
+          // Close dialog after all events are dispatched
+          onClose();
+        }, 500);
+      }, 300);
       
     } catch (error) {
       console.error('Error replacing image:', error);

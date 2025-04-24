@@ -446,31 +446,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Check for artists using this image too
-          const allArtists = await db.select().from(artists);
-          
-          // Filter artists by checking if their image_url matches our original URL
-          const artistsToUpdate = allArtists.filter(artist => {
-            if (!artist.image_url) return false;
-            const artistImgUrl = stripQueryParams(artist.image_url);
-            return artistImgUrl === originalImgUrl || artistImgUrl.includes(originalImgUrl);
-          });
-          
-          if (artistsToUpdate && artistsToUpdate.length > 0) {
-            console.log(`Found ${artistsToUpdate.length} artists using this image, updating them`);
+          try {
+            const allArtists = await db.select().from(artists);
             
-            // Update each artist
-            for (const artist of artistsToUpdate) {
-              await db.update(artists)
-                .set({
-                  image_url: processedImage.original,
-                  updated_at: new Date()
-                })
-                .where(eq(artists.id, artist.id));
+            // Filter artists by checking if their image_url matches our original URL
+            const artistsToUpdate = allArtists.filter(artist => {
+              if (!artist.image_url) return false;
+              const artistImgUrl = stripQueryParams(artist.image_url);
+              return artistImgUrl === originalImgUrl || artistImgUrl.includes(originalImgUrl);
+            });
+            
+            if (artistsToUpdate && artistsToUpdate.length > 0) {
+              console.log(`Found ${artistsToUpdate.length} artists using this image, updating them`);
               
-              console.log(`Updated artist ${artist.id} with new image ${processedImage.original}`);
+              // Update each artist
+              for (const artist of artistsToUpdate) {
+                await db.update(artists)
+                  .set({
+                    image_url: processedImage.original,
+                    updated_at: new Date()
+                  })
+                  .where(eq(artists.id, artist.id));
+                
+                console.log(`Updated artist ${artist.id} with new image ${processedImage.original}`);
+              }
+            } else {
+              console.log('No artists found using this image');
             }
-          } else {
-            console.log('No artists found using this image');
+          } catch (error) {
+            console.error('Error updating artists:', error);
           }
         } catch (err) {
           console.error('Error updating records that use this image:', err);
