@@ -1073,20 +1073,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allProducts = await storage.getAllStoreProducts();
       const customCatProducts = allProducts.filter(product => product.external_source === "customcat");
       
-      // Filter the CustomCat products by category
-      const customCatInCategory = customCatProducts.filter(product => {
-        // Category might be in the title, description or category field
-        const searchFields = [
-          product.name?.toLowerCase() || "",
-          product.description?.toLowerCase() || "",
-          product.category?.toLowerCase() || ""
-        ];
-        
-        return searchFields.some(field => field.includes(category.toLowerCase()));
-      });
+      let filteredProducts;
+      
+      // Special case for t-shirts to show nursing-themed shirts
+      if (category.toLowerCase() === 't-shirts') {
+        filteredProducts = customCatProducts.filter(product => {
+          // Include all shirt-like products
+          const isShirt = 
+            product.name?.toLowerCase().includes('shirt') || 
+            product.name?.toLowerCase().includes('tee') ||
+            product.category?.toLowerCase().includes('shirt') ||
+            product.category?.toLowerCase().includes('tee');
+          
+          return isShirt;
+        });
+      } else {
+        // Regular category filtering
+        filteredProducts = customCatProducts.filter(product => {
+          // Category might be in the title, description or category field
+          const searchFields = [
+            product.name?.toLowerCase() || "",
+            product.description?.toLowerCase() || "",
+            product.category?.toLowerCase() || ""
+          ];
+          
+          return searchFields.some(field => field.includes(category.toLowerCase()));
+        });
+      }
       
       // Process products to ensure image URLs are set using the utility function
-      const processedProducts = processCustomCatProductsImages(customCatInCategory);
+      const processedProducts = processCustomCatProductsImages(filteredProducts);
       
       // Always return processed filtered CustomCat products (empty array if none match)
       res.json(processedProducts);
