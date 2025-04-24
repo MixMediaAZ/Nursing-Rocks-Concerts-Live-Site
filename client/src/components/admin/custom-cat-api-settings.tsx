@@ -82,6 +82,7 @@ export const CustomCatApiSettings = () => {
   // Check CustomCat API connection status
   const checkConnectionStatus = async () => {
     try {
+      console.log("Checking CustomCat API connection status...");
       const response = await apiRequest("GET", "/api/settings/store/customcat-status", {
         headers: {
           ...getAuthHeader()
@@ -90,12 +91,30 @@ export const CustomCatApiSettings = () => {
       
       if (response.ok) {
         const data = await response.json();
+        console.log("API status response:", data);
         
         setConnectionStatus({
           checked: true,
           configured: data.configured,
           message: data.message
         });
+
+        // If connection was successful, show a toast
+        if (data.configured && data.status === "connected") {
+          toast({
+            title: "Connection Verified",
+            description: "CustomCat API connection is working properly",
+            variant: "default",
+          });
+        }
+        // If API key is configured but connection failed, show error toast
+        else if (data.configured && data.status === "error") {
+          toast({
+            title: "Connection Failed",
+            description: data.message || "Unable to connect to CustomCat API. Please check your API key.",
+            variant: "destructive",
+          });
+        }
       } else if (response.status === 401 || response.status === 403) {
         setConnectionStatus({
           checked: true,
@@ -109,10 +128,19 @@ export const CustomCatApiSettings = () => {
           variant: "destructive",
         });
       } else {
+        const errorText = await response.text().catch(() => "Unknown error");
+        console.error("Error response:", response.status, errorText);
+        
         setConnectionStatus({
           checked: true,
           configured: false,
-          message: "Error checking connection status"
+          message: `Error checking connection status: ${response.status}`
+        });
+        
+        toast({
+          title: "Connection Check Failed",
+          description: `Error: ${response.status} - ${errorText.substring(0, 100)}`,
+          variant: "destructive",
         });
       }
     } catch (error) {
@@ -120,7 +148,13 @@ export const CustomCatApiSettings = () => {
       setConnectionStatus({
         checked: true,
         configured: false,
-        message: "Error checking connection status"
+        message: `Error checking connection status: ${error instanceof Error ? error.message : "Unknown error"}`
+      });
+      
+      toast({
+        title: "Connection Check Error",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
       });
     }
   };

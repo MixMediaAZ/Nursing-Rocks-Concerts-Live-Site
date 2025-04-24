@@ -1426,12 +1426,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const apiKeySetting = await storage.getAppSettingByKey("CUSTOMCAT_API_KEY");
       const isConfigured = !!apiKeySetting && !!apiKeySetting.value;
       
-      res.json({ 
-        configured: isConfigured,
-        message: isConfigured 
-          ? "CustomCat API is configured" 
-          : "CustomCat API key not configured"
-      });
+      // If there's no API key configured, we don't need to verify the connection
+      if (!isConfigured) {
+        return res.json({ 
+          configured: false,
+          message: "CustomCat API key not configured"
+        });
+      }
+      
+      // Attempt to verify the connection with CustomCat API
+      try {
+        // Make a simple request to CustomCat API to check if the key is valid
+        const response = await fetch("https://api.customcat.com/catalog/products", {
+          method: "GET",
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "X-API-KEY": apiKeySetting.value
+          }
+        });
+        
+        if (response.ok) {
+          return res.json({ 
+            configured: true, 
+            message: "CustomCat API connection successful",
+            status: "connected"
+          });
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          return res.json({ 
+            configured: true, 
+            message: errorData.message || "API key is configured but connection failed",
+            status: "error",
+            statusCode: response.status
+          });
+        }
+      } catch (connectionError) {
+        console.error("Error verifying CustomCat API connection:", connectionError);
+        return res.json({ 
+          configured: true, 
+          message: "API key is configured but connection test failed. Please check your API key.",
+          status: "error"
+        });
+      }
     } catch (error) {
       console.error("Error checking CustomCat API status:", error);
       res.status(500).json({ 
@@ -1496,12 +1533,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Make a simple request to CustomCat API to check if the key is valid
+      // Ensure we have a string value for the API key, not null
+      const apiKeyValue = apiKeySetting.value || "";
       const response = await fetch("https://api.customcat.com/catalog/products", {
         method: "GET",
         headers: {
           "Accept": "application/json",
           "Content-Type": "application/json",
-          "X-API-KEY": apiKeySetting.value
+          "X-API-KEY": apiKeyValue
         }
       });
       
@@ -1544,12 +1583,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Fetch products from CustomCat API
+      // Ensure we have a string value for the API key, not null
+      const apiKeyValue = apiKeySetting.value || "";
       const response = await fetch("https://api.customcat.com/catalog/products", {
         method: "GET",
         headers: {
           "Accept": "application/json",
           "Content-Type": "application/json",
-          "X-API-KEY": apiKeySetting.value
+          "X-API-KEY": apiKeyValue
         }
       });
       
