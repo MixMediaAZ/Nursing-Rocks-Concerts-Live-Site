@@ -6,6 +6,7 @@ import { StoreProductCard } from "@/components/store/product-card";
 import { FeaturedProducts } from "@/components/store/featured-products";
 import { CategoryScroller } from "@/components/store/category-scroller";
 import { PromotionsSection } from "@/components/store/promotions-section";
+import { CustomNursingShirts } from "@/components/store/custom-nursing-shirts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -94,6 +95,11 @@ export default function StorePage() {
       </div>
       
       <FeaturedProducts />
+      
+      {/* Custom Nursing Shirts Section */}
+      <div className="bg-muted/30 py-12">
+        <CustomNursingShirts />
+      </div>
       
       <PromotionsSection />
       
