@@ -7,6 +7,16 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { 
   Key, 
   KeyRound, 
@@ -21,7 +31,8 @@ import {
   FileEdit, 
   Lock,
   Edit,
-  LogOut
+  LogOut,
+  Shield
 } from "lucide-react";
 import CustomCatApiSettings from "@/components/admin/custom-cat-api-settings";
 import ProductSyncTool from "@/components/admin/product-sync-tool";
@@ -241,6 +252,13 @@ export default function AdminPage() {
   const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState("overview");
     
+    // Admin mode state - controls access to editing features
+    const [isAdminMode, setIsAdminMode] = useState(true);
+    
+    // PIN verification dialog state
+    const [showPinDialog, setShowPinDialog] = useState(false);
+    const [pinInput, setPinInput] = useState("");
+    
     // Direct navigation to gallery with admin access
     const openGalleryWithAdminAccess = () => {
       localStorage.setItem("adminPinVerified", "true");
@@ -275,39 +293,66 @@ export default function AdminPage() {
       }
     };
 
+    // Function to handle PIN verification for admin mode toggle
+    const handleVerifyPinForAdminMode = () => {
+      if (pinInput === ADMIN_PIN) {
+        setIsAdminMode(true);
+        setShowPinDialog(false);
+        setPinInput("");
+        
+        toast({
+          title: "Admin Mode Activated",
+          description: "You now have full admin editing capabilities",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Invalid PIN",
+          description: "The PIN you entered is incorrect",
+          variant: "destructive",
+        });
+        setPinInput("");
+      }
+    };
+    
     return (
       <div className="flex flex-col">
-        {/* Admin Status Alert */}
-        <Alert className="mb-4 bg-green-50 border-green-300">
-          <LayoutDashboard className="h-5 w-5 text-green-600" />
-          <AlertTitle className="text-green-800 font-bold">Admin Mode Active</AlertTitle>
-          <AlertDescription className="text-green-700">
-            You are currently signed in as an administrator. You have full access to all admin features.
-          </AlertDescription>
-        </Alert>
-        
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <LayoutDashboard className="h-7 w-7" /> Admin Dashboard
-          </h1>
+        {/* Admin Mode Toggle Bar */}
+        <div className="flex justify-between items-center mb-6 p-4 bg-slate-100 rounded-lg border border-slate-200">
+          <div className="flex items-center">
+            <Badge variant={isAdminMode ? "default" : "outline"} className="mr-2 py-1.5">
+              <Shield className="h-4 w-4 mr-1" /> ADMIN
+            </Badge>
+            
+            <span className="text-sm font-medium mr-3">
+              Mode: <span className="font-bold">{isAdminMode ? "Active" : "Inactive"}</span>
+            </span>
+          </div>
+          
           <div className="flex items-center gap-4">
-            {/* Element Editing Mode Toggle */}
-            <div className="flex items-center space-x-2 mr-2">
+            <div className="flex items-center space-x-2 mr-2 bg-white py-1 px-3 rounded-full border">
+              <Label htmlFor="admin-mode-toggle" className="text-sm whitespace-nowrap">
+                Admin Mode
+              </Label>
               <Switch
-                id="edit-mode"
-                checked={isEditModeActive}
+                id="admin-mode-toggle"
+                checked={isAdminMode}
                 onCheckedChange={(checked) => {
-                  openLiveSiteInAdminMode(checked);
-                  toast({
-                    title: checked ? "Element Edit Mode Enabled" : "Element Edit Mode Disabled",
-                    description: checked ? "You can now edit elements on the site" : "Element editing has been turned off",
-                    variant: "default",
-                  });
+                  if (!checked) {
+                    // Turning admin mode off
+                    setIsAdminMode(false);
+                    localStorage.removeItem("adminToken");
+                    toast({
+                      title: "Admin Mode Disabled",
+                      description: "You have exited admin mode. PIN will be required to re-enter.",
+                      variant: "default",
+                    });
+                  } else {
+                    // Show PIN dialog to re-enable admin mode
+                    setShowPinDialog(true);
+                  }
                 }}
               />
-              <Label htmlFor="edit-mode" className="flex items-center gap-1 text-sm font-medium">
-                <Edit className="h-4 w-4" /> Edit Mode
-              </Label>
             </div>
             
             <Button 
@@ -315,9 +360,130 @@ export default function AdminPage() {
               onClick={handleLogout}
               className="flex items-center gap-2"
             >
-              <LogOut className="h-4 w-4" /> Admin Logout
+              <LogOut className="h-4 w-4" /> Logout
             </Button>
           </div>
+        </div>
+        
+        {/* Admin Active Status Alert */}
+        {isAdminMode && (
+          <Alert className="mb-4 bg-green-50 border-green-300">
+            <LayoutDashboard className="h-5 w-5 text-green-600" />
+            <AlertTitle className="text-green-800 font-bold">Admin Mode Active</AlertTitle>
+            <AlertDescription className="text-green-700">
+              You are currently signed in as an administrator with full editing capabilities.
+              All dashboard features are available. Use the toggle above to exit admin mode.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {/* PIN Verification Dialog */}
+        <Dialog open={showPinDialog} onOpenChange={setShowPinDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Lock className="h-5 w-5 text-primary" /> Enter Admin PIN
+              </DialogTitle>
+              <DialogDescription>
+                Please enter your 7-digit admin PIN to enable admin mode
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="flex justify-center my-4">
+              <div className="flex gap-2">
+                {Array.from({ length: 7 }).map((_, i) => (
+                  <div 
+                    key={i} 
+                    className={`w-8 h-11 border-2 rounded-md flex items-center justify-center text-xl font-bold transition-all
+                      ${pinInput[i] ? "border-primary bg-primary/10" : "border-gray-300"}`}
+                  >
+                    {pinInput[i] ? "•" : ""}
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+                <Button 
+                  key={num} 
+                  variant="outline" 
+                  className="h-12 text-lg font-semibold hover:bg-primary/5 hover:border-primary/50"
+                  onClick={() => {
+                    if (pinInput.length < 7) {
+                      setPinInput(prev => prev + num.toString());
+                    }
+                  }}
+                >
+                  {num}
+                </Button>
+              ))}
+              <Button 
+                variant="outline" 
+                className="h-12 text-sm font-medium text-red-500 hover:text-red-600 hover:bg-red-50"
+                onClick={() => setPinInput("")}
+              >
+                Clear
+              </Button>
+              <Button 
+                variant="outline" 
+                className="h-12 text-lg font-semibold hover:bg-primary/5 hover:border-primary/50"
+                onClick={() => {
+                  if (pinInput.length < 7) {
+                    setPinInput(prev => prev + "0");
+                  }
+                }}
+              >
+                0
+              </Button>
+              <Button 
+                variant="outline" 
+                className="h-12 flex items-center justify-center hover:bg-primary/5 hover:border-primary/50"
+                onClick={() => setPinInput(prev => prev.slice(0, -1))}
+              >
+                <Delete className="h-5 w-5" />
+              </Button>
+            </div>
+            
+            <DialogFooter>
+              <Button
+                className="w-full bg-primary"
+                disabled={pinInput.length !== 7}
+                onClick={handleVerifyPinForAdminMode}
+              >
+                <KeyRound className="h-4 w-4 mr-2" /> Verify PIN
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <LayoutDashboard className="h-7 w-7" /> Admin Dashboard
+          </h1>
+          
+          {/* Live Editing Toggle - only shown when admin mode is active */}
+          {isAdminMode && (
+            <div className="flex items-center gap-4">
+              <div className="flex items-center space-x-2 p-2 rounded-md bg-slate-50 border border-slate-200">
+                <Switch
+                  id="edit-mode"
+                  checked={isEditModeActive}
+                  onCheckedChange={(checked) => {
+                    openLiveSiteInAdminMode(checked);
+                    toast({
+                      title: checked ? "Element Edit Mode Enabled" : "Element Edit Mode Disabled",
+                      description: checked ? "You can now edit elements on the site" : "Element editing has been turned off",
+                      variant: "default",
+                    });
+                  }}
+                />
+                <Label htmlFor="edit-mode" className="flex items-center gap-1 text-sm font-medium">
+                  <Edit className="h-4 w-4" /> Live Edit Mode
+                </Label>
+              </div>
+            </div>
+          )}
         </div>
 
         <Tabs defaultValue="overview" className="w-full" onValueChange={setActiveTab}>

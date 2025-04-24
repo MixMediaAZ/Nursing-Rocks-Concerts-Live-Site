@@ -1,13 +1,14 @@
 import { create } from 'zustand';
 
-interface SelectedElement {
+export interface SelectedElement {
   id: string | number;
-  type: 'image' | 'text' | 'video' | 'component';
+  type: 'image' | 'text' | 'video' | 'component' | 'generic';
   originalUrl?: string;
   dimensions?: {
     width?: number;
     height?: number;
   };
+  element?: HTMLElement; // Reference to the actual DOM element
   metadata?: Record<string, any>;
 }
 
@@ -16,6 +17,7 @@ interface ElementSelectionState {
   isImageReplacementDialogOpen: boolean;
   isTextEditorDialogOpen: boolean; 
   textContent: string;
+  universalSelectionEnabled: boolean; // Controls whether all elements are selectable
   setSelectedElement: (element: SelectedElement | null) => void;
   clearSelectedElement: () => void;
   openImageReplacementDialog: () => void;
@@ -23,6 +25,7 @@ interface ElementSelectionState {
   openTextEditorDialog: (content: string) => void;
   closeTextEditorDialog: () => void;
   updateTextContent: (content: string) => void;
+  setUniversalSelectionEnabled: (enabled: boolean) => void;
 }
 
 export const useElementSelection = create<ElementSelectionState>((set) => ({
@@ -30,6 +33,7 @@ export const useElementSelection = create<ElementSelectionState>((set) => ({
   isImageReplacementDialogOpen: false,
   isTextEditorDialogOpen: false,
   textContent: '',
+  universalSelectionEnabled: false,
   
   setSelectedElement: (element) => set({ selectedElement: element }),
   
@@ -47,4 +51,6 @@ export const useElementSelection = create<ElementSelectionState>((set) => ({
   closeTextEditorDialog: () => set({ isTextEditorDialogOpen: false }),
   
   updateTextContent: (content: string) => set({ textContent: content }),
+  
+  setUniversalSelectionEnabled: (enabled) => set({ universalSelectionEnabled: enabled }),
 }));
