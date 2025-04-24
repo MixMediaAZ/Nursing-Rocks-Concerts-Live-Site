@@ -92,10 +92,138 @@ function TshirtButton() {
 
 // Main component
 export default function PromotionButtons() {
+  const [_, setLocation] = useLocation();
+  
+  // States for editable elements
+  const { isAdminMode } = useAdminEditMode();
+  const { toast } = useToast();
+  
+  // For heading text
+  const savedHeadingText = localStorage.getItem('featuredProductsHeading');
+  const [headingText, setHeadingText] = useState(savedHeadingText || "Featured Products");
+  const [isHeadingEditorOpen, setIsHeadingEditorOpen] = useState(false);
+  
+  // For link text
+  const savedLinkText = localStorage.getItem('viewAllTshirtsText');
+  const [linkText, setLinkText] = useState(savedLinkText || "View All T-shirts");
+  const [isLinkEditorOpen, setIsLinkEditorOpen] = useState(false);
+  
+  // Handle saving the heading text
+  const handleSaveHeadingText = (newText: string) => {
+    setHeadingText(newText);
+    setIsHeadingEditorOpen(false);
+    localStorage.setItem('featuredProductsHeading', newText);
+    toast({
+      title: "Heading Updated",
+      description: `Successfully updated the heading to: ${newText}`
+    });
+  };
+  
+  // Handle saving the link text
+  const handleSaveLinkText = (newText: string) => {
+    setLinkText(newText);
+    setIsLinkEditorOpen(false);
+    localStorage.setItem('viewAllTshirtsText', newText);
+    toast({
+      title: "Link Text Updated",
+      description: `Successfully updated the link text to: ${newText}`
+    });
+  };
+  
   return (
     <section className="bg-background py-10">
       <div className="container mx-auto">
-        <h2 className="text-2xl font-bold mb-8 text-center">Featured Products</h2>
+        <div className="flex flex-col items-center mb-8">
+          <div className="relative">
+            <h2 
+              className="text-2xl font-bold mb-2 text-center"
+              id="featuredProductsHeading"
+            >
+              {headingText}
+            </h2>
+            
+            {isAdminMode && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setIsHeadingEditorOpen(true);
+                }}
+                className="absolute -top-3 -right-8 p-1.5 bg-primary text-white rounded-full shadow-md hover:bg-primary/80 transition-colors z-10"
+                title="Edit Heading"
+              >
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  width="16" 
+                  height="16" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                >
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+              </button>
+            )}
+            
+            <PromotionButtonEditor
+              isOpen={isHeadingEditorOpen}
+              onClose={() => setIsHeadingEditorOpen(false)}
+              initialText={headingText}
+              buttonId="featuredProductsHeading"
+              onSave={handleSaveHeadingText}
+            />
+          </div>
+          
+          <div className="relative">
+            <Button
+              variant="link"
+              className="text-primary hover:text-primary/80 font-medium underline text-lg"
+              onClick={() => setLocation("/store/category/tshirts")}
+              id="viewAllTshirtsButton"
+            >
+              {linkText}
+            </Button>
+            
+            {isAdminMode && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setIsLinkEditorOpen(true);
+                }}
+                className="absolute -top-3 -right-3 p-1.5 bg-primary text-white rounded-full shadow-md hover:bg-primary/80 transition-colors z-10"
+                title="Edit Link Text"
+              >
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  width="16" 
+                  height="16" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                >
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+              </button>
+            )}
+            
+            <PromotionButtonEditor
+              isOpen={isLinkEditorOpen}
+              onClose={() => setIsLinkEditorOpen(false)}
+              initialText={linkText}
+              buttonId="viewAllTshirtsButton"
+              onSave={handleSaveLinkText}
+            />
+          </div>
+        </div>
         
         <div className="flex justify-center items-center w-full max-w-6xl mx-auto">
           <TshirtButton />
