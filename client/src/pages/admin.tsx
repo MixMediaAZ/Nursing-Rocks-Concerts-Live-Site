@@ -537,25 +537,36 @@ export default function AdminPage() {
                   <div 
                     className="h-auto py-4 flex flex-col items-center justify-center gap-2 bg-orange-50 hover:bg-orange-100 rounded-md border border-orange-200 hover:border-orange-300 cursor-pointer shadow-sm hover:shadow transition-all"
                     onClick={() => {
-                      setActiveTab("store");
                       toast({
                         title: "CustomCat Settings",
                         description: "Opening CustomCat API configuration...",
                         variant: "default",
                       });
                       
-                      // Scroll to CustomCat API settings after tab switch completes
-                      setTimeout(() => {
-                        const element = document.getElementById('customcat-api-settings');
-                        if (element) {
-                          element.scrollIntoView({ behavior: 'smooth' });
-                          // Highlight the element briefly
-                          element.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
+                      // First update the active tab state
+                      setActiveTab("store");
+                      
+                      // Then refresh tabs component to show the correct content
+                      const tabsElement = document.querySelector('[role="tablist"]');
+                      if (tabsElement) {
+                        const storeTab = tabsElement.querySelector('[data-value="store"]');
+                        if (storeTab && storeTab instanceof HTMLElement) {
+                          storeTab.click();
+                          
+                          // Scroll to CustomCat API settings after tab switch completes
                           setTimeout(() => {
-                            element.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
-                          }, 2000);
+                            const element = document.getElementById('customcat-api-settings');
+                            if (element) {
+                              element.scrollIntoView({ behavior: 'smooth' });
+                              // Highlight the element briefly
+                              element.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
+                              setTimeout(() => {
+                                element.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
+                              }, 2000);
+                            }
+                          }, 300);
                         }
-                      }, 300);
+                      }
                     }}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"></path><path d="M8.56 2.9A7 7 0 0 1 12 12v7"></path><path d="M17.07 2.69A7 7 0 0 1 12 12v7"></path><path d="M2.42 10.9a7 7 0 0 0 9.38 7.63"></path><path d="M21.58 10.9a7 7 0 0 1-9.38 7.63"></path></svg>
@@ -565,12 +576,21 @@ export default function AdminPage() {
                   <div 
                     className="h-auto py-4 flex flex-col items-center justify-center gap-2 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground cursor-pointer shadow-sm hover:shadow transition-all"
                     onClick={() => {
-                      setActiveTab("content");
                       toast({
                         title: "Content Management",
                         description: "Opening content management interface...",
                         variant: "default",
                       });
+                      // First update the active tab state
+                      setActiveTab("content");
+                      // Then refresh tabs component to show the correct content
+                      const tabsElement = document.querySelector('[role="tablist"]');
+                      if (tabsElement) {
+                        const contentTab = tabsElement.querySelector('[data-value="content"]');
+                        if (contentTab && contentTab instanceof HTMLElement) {
+                          contentTab.click();
+                        }
+                      }
                     }}
                   >
                     <Settings className="h-6 w-6" />

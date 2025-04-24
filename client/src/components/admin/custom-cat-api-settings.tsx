@@ -229,7 +229,7 @@ export const CustomCatApiSettings = () => {
   };
 
   return (
-    <div>
+    <div id="customcat-api-settings">
       <div className="mb-6">
         <h3 className="text-lg font-medium mb-2">CustomCat API Integration</h3>
         <p className="text-sm text-muted-foreground mb-4">
