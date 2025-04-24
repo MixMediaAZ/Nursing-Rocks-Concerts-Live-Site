@@ -759,12 +759,40 @@ export default function AdminPage() {
                     </p>
                     <Button
                       onClick={() => {
-                        // Set a localStorage item to indicate we need to go to store tab
-                        localStorage.setItem("adminActiveTab", "store");
-                        localStorage.setItem("scrollToCustomCat", "true");
+                        // Set activeTab directly
+                        setActiveTab("store");
                         
-                        // Reload the admin page to ensure fresh state
-                        window.location.href = "/admin";
+                        // Wait for tab content to render, then scroll to element
+                        setTimeout(() => {
+                          const element = document.getElementById('api-settings-anchor');
+                          if (element) {
+                            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            
+                            // Highlight effect
+                            const wrapperToHighlight = document.getElementById('store-api-settings-wrapper');
+                            if (wrapperToHighlight) {
+                              wrapperToHighlight.classList.add('ring-4', 'ring-primary', 'ring-offset-2', 'transition-all', 'duration-300');
+                              
+                              // Create a pulsing effect
+                              let pulseCount = 0;
+                              const pulseInterval = setInterval(() => {
+                                if (pulseCount >= 5) {
+                                  clearInterval(pulseInterval);
+                                  wrapperToHighlight.classList.remove('ring-4', 'ring-primary', 'ring-offset-2', 'transition-all', 'duration-300');
+                                  return;
+                                }
+                                
+                                if (pulseCount % 2 === 0) {
+                                  wrapperToHighlight.classList.add('ring-opacity-50', 'scale-[1.01]');
+                                } else {
+                                  wrapperToHighlight.classList.remove('ring-opacity-50', 'scale-[1.01]');
+                                }
+                                
+                                pulseCount++;
+                              }, 400);
+                            }
+                          }
+                        }, 300);
                         
                         toast({
                           title: "CustomCat API",
