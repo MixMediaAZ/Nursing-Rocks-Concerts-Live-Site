@@ -215,8 +215,6 @@ export async function uploadGalleryImages(req: Request, res: Response) {
         );
         
         // Use a direct SQL query to avoid schema incompatibility issues
-        // Without parameters, using direct value injection for simplicity
-        // (This is safe for our specific case since we're controlling all values)
         const rawInsertQuery = `
           INSERT INTO gallery (
             image_url, thumbnail_url, alt_text, event_id, folder_id,
@@ -237,7 +235,6 @@ export async function uploadGalleryImages(req: Request, res: Response) {
         `;
         
         // Execute the raw query
-        console.log('Executing SQL query:', rawInsertQuery);
         const result = await db.execute(rawInsertQuery);
         const newImage = result.rows[0];
         uploadResults.push(newImage);
@@ -335,35 +332,36 @@ export async function updateGalleryImage(req: Request, res: Response) {
     }
     
     // Update the image using raw SQL to avoid schema issues
+    const updatedAltText = alt_text !== undefined ? `'${alt_text.replace(/'/g, "''")}'` : `'${existingImage.alt_text?.replace(/'/g, "''") || ''}'`;
+    const updatedEventId = event_id !== undefined ? event_id : (existingImage.event_id || 'NULL');
+    const updatedFolderId = folder_id !== undefined ? folder_id : (existingImage.folder_id || 'NULL');
+    const updatedSortOrder = sort_order !== undefined ? sort_order : (existingImage.sort_order || 0);
+    const updatedZIndex = z_index !== undefined ? z_index : (existingImage.z_index || 0);
+    const updatedMetadata = metadata !== undefined ? `'${JSON.stringify(metadata).replace(/'/g, "''")}'` : `'${JSON.stringify(existingImage.metadata || {}).replace(/'/g, "''")}'`;
+    const now = new Date().toISOString();
+    
     const rawUpdateQuery = `
       UPDATE gallery
       SET 
-        alt_text = $1,
-        event_id = $2,
-        folder_id = $3,
-        sort_order = $4,
-        z_index = $5,
-        metadata = $6,
-        updated_at = $7
-      WHERE id = $8
+        alt_text = ${updatedAltText},
+        event_id = ${updatedEventId === 'NULL' || updatedEventId === null ? 'NULL' : updatedEventId},
+        folder_id = ${updatedFolderId === 'NULL' || updatedFolderId === null ? 'NULL' : updatedFolderId},
+        sort_order = ${updatedSortOrder},
+        z_index = ${updatedZIndex},
+        metadata = ${updatedMetadata},
+        updated_at = '${now}'
+      WHERE id = ${imageId}
       RETURNING *
     `;
     
-    const updateValues = [
-      alt_text !== undefined ? alt_text : existingImage.alt_text,         // $1: alt_text
-      event_id !== undefined ? event_id : existingImage.event_id,         // $2: event_id
-      folder_id !== undefined ? folder_id : existingImage.folder_id,      // $3: folder_id
-      sort_order !== undefined ? sort_order : existingImage.sort_order,   // $4: sort_order
-      z_index !== undefined ? z_index : existingImage.z_index,            // $5: z_index
-      metadata !== undefined ? metadata : existingImage.metadata,         // $6: metadata
-      new Date(),                                                         // $7: updated_at
-      imageId                                                             // $8: id
-    ];
+    const result = await db.execute(rawUpdateQuery);
     
-    const result = await db.execute(rawUpdateQuery, updateValues);
-    const updatedImage = result.rows;
-    
-    res.json(updatedImage[0]);
+    // Extract the first row from the result
+    if (result && result.rows && result.rows.length > 0) {
+      res.json(result.rows[0]);
+    } else {
+      res.status(404).json({ error: 'Failed to update image, no rows returned' });
+    }
   } catch (error) {
     console.error('Error updating gallery image:', error);
     res.status(500).json({ error: 'Failed to update gallery image' });
@@ -546,7 +544,6 @@ export async function replaceGalleryImage(req: Request, res: Response) {
       ];
       
       const result = await db.execute(rawUpdateQuery, updateParams);
-      const updatedImage = result.rows;
       
       // Clean up old files (optional)
       const oldBasePath = path.join(process.cwd(), originalImage.image_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
@@ -564,7 +561,12 @@ export async function replaceGalleryImage(req: Request, res: Response) {
         // Continue even if file deletion fails
       }
       
-      res.json(updatedImage[0]);
+      // Extract the first row from the result
+      if (result && result.rows && result.rows.length > 0) {
+        res.json(result.rows[0]);
+      } else {
+        res.status(404).json({ error: 'Failed to update image, no rows returned' });
+      }
     } else {
       // API-based replacement case (using an existing image to replace another)
       const { newImageId } = req.body;
@@ -656,7 +658,6 @@ export async function replaceGalleryImage(req: Request, res: Response) {
       ];
       
       const result = await db.execute(rawUpdateQuery, updateParams);
-      const updatedImage = result.rows;
       
       // Clean up old files (optional)
       const oldBasePath = path.join(process.cwd(), targetImage.image_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
@@ -674,7 +675,12 @@ export async function replaceGalleryImage(req: Request, res: Response) {
         // Continue even if file deletion fails
       }
       
-      res.json(updatedImage[0]);
+      // Extract the first row from the result
+      if (result && result.rows && result.rows.length > 0) {
+        res.json(result.rows[0]);
+      } else {
+        res.status(404).json({ error: 'Failed to update image, no rows returned' });
+      }
     }
   } catch (error) {
     console.error('Error replacing gallery image:', error);
