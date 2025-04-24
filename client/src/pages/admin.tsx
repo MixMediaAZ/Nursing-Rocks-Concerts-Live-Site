@@ -459,7 +459,7 @@ export default function AdminPage() {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4">
                   <div 
                     className="h-auto py-4 flex flex-col items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 hover:border-gray-300 rounded-md border border-input cursor-pointer shadow-sm hover:shadow transition-all"
                     onClick={() => {
@@ -503,6 +503,33 @@ export default function AdminPage() {
                   >
                     <Store className="h-6 w-6" />
                     <span>Manage Store</span>
+                  </div>
+                  
+                  <div 
+                    className="h-auto py-4 flex flex-col items-center justify-center gap-2 bg-orange-50 hover:bg-orange-100 rounded-md border border-orange-200 hover:border-orange-300 cursor-pointer shadow-sm hover:shadow transition-all"
+                    onClick={() => {
+                      setActiveTab("store");
+                      // Scroll to CustomCat API settings
+                      setTimeout(() => {
+                        const element = document.getElementById('customcat-api-settings');
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth' });
+                          // Highlight the element briefly
+                          element.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
+                          setTimeout(() => {
+                            element.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
+                          }, 2000);
+                        }
+                      }, 100);
+                      toast({
+                        title: "CustomCat Settings",
+                        description: "Opening CustomCat API configuration...",
+                        variant: "default",
+                      });
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"></path><path d="M8.56 2.9A7 7 0 0 1 12 12v7"></path><path d="M17.07 2.69A7 7 0 0 1 12 12v7"></path><path d="M2.42 10.9a7 7 0 0 0 9.38 7.63"></path><path d="M21.58 10.9a7 7 0 0 1-9.38 7.63"></path></svg>
+                    <span>CustomCat API</span>
                   </div>
                   
                   <div 
@@ -975,7 +1002,7 @@ export default function AdminPage() {
           <TabsContent value="store">
             <div className="grid grid-cols-1 gap-6">
               {/* Store Integration Settings */}
-              <Card>
+              <Card id="customcat-api-settings">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Settings className="h-5 w-5" /> Store Integration Settings
