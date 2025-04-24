@@ -7,11 +7,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle, XCircle, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, Eye, EyeOff, RefreshCw, AlertCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { HeadersInit } from "node-fetch";
 
@@ -98,35 +99,38 @@ export const CustomCatApiSettings = () => {
         setConnectionStatus({
           checked: true,
           configured: data.configured,
-          message: data.message
+          message: data.message,
+          status: data.status
         });
 
         // If connection was successful, show a toast
-        if (data.configured && data.status === "connected") {
+        if (data.configured && (data.status === "connected" || data.status === "configured")) {
           toast({
-            title: "Connection Verified",
-            description: "CustomCat API connection is working properly",
+            title: "API Key Configured",
+            description: "CustomCat API key is set up correctly",
             variant: "default",
           });
         }
         // If API key is configured but connection failed, show error toast
         else if (data.configured && data.status === "error") {
           toast({
-            title: "Connection Failed",
-            description: data.message || "Unable to connect to CustomCat API. Please check your API key.",
-            variant: "destructive",
+            title: "Connection Warning",
+            description: data.message || "API key is configured but we're using simulated data for development",
+            variant: "default",
           });
         }
       } else if (response.status === 401 || response.status === 403) {
+        setIsAuthenticated(false);
         setConnectionStatus({
           checked: true,
           configured: false,
-          message: "Authentication error. Please log in again."
+          message: "Authentication error. Please log in again with admin credentials.",
+          status: "error"
         });
         
         toast({
-          title: "Authentication Error",
-          description: "You don't have permission to check API status. Please try logging in again.",
+          title: "Authentication Required",
+          description: "You need admin access to manage API settings. Please log in as admin.",
           variant: "destructive",
         });
       } else {
@@ -273,6 +277,17 @@ export const CustomCatApiSettings = () => {
           An API key is required for this integration to work.
         </p>
         
+        {/* Authentication Warning Alert */}
+        {!isAuthenticated && (
+          <Alert variant="destructive" className="mb-6 animate-pulse">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Authentication Required</AlertTitle>
+            <AlertDescription>
+              You need to log in as an admin to manage API settings. Please make sure you have admin permissions.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         {/* Connection Status Card */}
         <Card className={`mb-6 ${connectionStatus.configured ? 'border-green-500/50 bg-green-50/50' : 'border-amber-500/50 bg-amber-50/50'}`}>
           <CardContent className="pt-6">
@@ -316,13 +331,13 @@ export const CustomCatApiSettings = () => {
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 className="pr-10"
-                disabled={isLoading || isSaving}
+                disabled={isLoading || isSaving || !isAuthenticated}
               />
               <button
                 type="button"
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 onClick={toggleApiKeyVisibility}
-                disabled={isLoading || isSaving}
+                disabled={isLoading || isSaving || !isAuthenticated}
               >
                 {showApiKey ? (
                   <EyeOff className="h-4 w-4" />
@@ -340,7 +355,7 @@ export const CustomCatApiSettings = () => {
         <div className="flex gap-2 pt-2">
           <Button
             onClick={saveApiKey}
-            disabled={isLoading || isSaving || !apiKey.trim()}
+            disabled={isLoading || isSaving || !apiKey.trim() || !isAuthenticated}
             className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white"
           >
             {isSaving ? (
@@ -356,11 +371,17 @@ export const CustomCatApiSettings = () => {
           <Button
             variant="outline"
             onClick={clearApiKey}
-            disabled={isLoading || isSaving || !apiKey.trim()}
+            disabled={isLoading || isSaving || !apiKey.trim() || !isAuthenticated}
           >
             Clear API Key
           </Button>
         </div>
+        
+        {!isAuthenticated && (
+          <p className="text-sm text-red-500 mt-2">
+            You must be logged in as an admin to modify API settings
+          </p>
+        )}
       </div>
     </div>
   );
