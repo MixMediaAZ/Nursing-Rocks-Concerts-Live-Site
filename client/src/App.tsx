@@ -31,6 +31,7 @@ import ProductSyncPage from "@/pages/product-sync";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { AdminEditingProvider } from "@/components/admin/admin-editing-provider";
+import { FloatingAdminControl } from "@/components/admin/floating-admin-control";
 
 // We use Zustand for cart management, no provider needed
 import { AuthProvider } from "@/hooks/use-auth";
@@ -89,6 +90,7 @@ function App() {
       <AuthProvider>
         <AdminEditingProvider>
           <Router />
+          <FloatingAdminControl />
           <Toaster />
         </AdminEditingProvider>
       </AuthProvider>
