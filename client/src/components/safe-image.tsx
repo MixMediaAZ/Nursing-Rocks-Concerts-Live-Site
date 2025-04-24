@@ -109,12 +109,18 @@ export function SafeImage({
             
             console.log(`Updating image src to: ${forcedNewUrl}`);
             
-            // Update both the original ref and the state
-            originalSrcRef.current = forcedNewUrl;
-            // Update the src with cache-busting parameters
-            setImageSrc(forcedNewUrl);
-            // Force a refresh of the component's key
+            // First update just the key to avoid DOM errors
             setForceRefresh(Date.now());
+
+            // Then update the reference and source in the next tick
+            // This prevents React's "Failed to execute removeChild" errors by avoiding
+            // direct DOM manipulation during a render cycle
+            setTimeout(() => {
+              // Update both the original ref and the state
+              originalSrcRef.current = forcedNewUrl;
+              // Update the src with cache-busting parameters
+              setImageSrc(forcedNewUrl);
+            }, 0);
           } else {
             // Just update the refresh key to force reload
             setForceRefresh(Date.now());
