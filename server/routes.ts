@@ -6,7 +6,7 @@ import fs from "fs";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { storage } from "./storage";
-import { gallery, mediaFolders } from "@shared/schema";
+import { gallery, mediaFolders, events } from "@shared/schema";
 import sharp from "sharp";
 import { processImage } from "./image-utils";
 import { 
@@ -386,6 +386,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
               metadata: replacementImage.metadata || originalImage.metadata
             })
             .where(eq(gallery.id, originalImage.id));
+        }
+        
+        // Additionally, check if there are any events using this image and update them too
+        try {
+          // Get the original image URL without any cache busters
+          const originalImgUrl = originalImage.image_url.split('?')[0];
+          
+          console.log('Checking for events using image:', originalImgUrl);
+          
+          // Find events using this image
+          const eventsToUpdate = await db.select()
+            .from(events)
+            .where(eq(events.image_url, originalImgUrl));
+            
+          if (eventsToUpdate && eventsToUpdate.length > 0) {
+            console.log(`Found ${eventsToUpdate.length} events using this image, updating them`);
+            
+            // Update each event
+            for (const event of eventsToUpdate) {
+              await db.update(events)
+                .set({
+                  image_url: processedImage.original,
+                  updated_at: new Date()
+                })
+                .where(eq(events.id, event.id));
+              
+              console.log(`Updated event ${event.id} with new image ${processedImage.original}`);
+            }
+          }
+        } catch (err) {
+          console.error('Error updating events that use this image:', err);
+          // Continue with the image replacement even if event updates fail
         }
         
         // Return the processed image info
