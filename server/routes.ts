@@ -173,7 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Gallery media management endpoints
-  app.post("/api/gallery/upload", galleryUpload.array('images', 20), uploadGalleryImages);
+  app.post("/api/gallery/upload", galleryUpload.array('images', 100), uploadGalleryImages);
   app.delete("/api/gallery/:id", deleteGalleryImage);
   app.patch("/api/gallery/:id", updateGalleryImage);
   app.post("/api/gallery/:id/replace", galleryUpload.single('image'), replaceGalleryImage);
