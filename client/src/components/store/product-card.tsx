@@ -43,8 +43,8 @@ export function StoreProductCard({ product, featured = false }: ProductCardProps
   };
 
   return (
-    <Card className={`overflow-hidden transition-all duration-200 hover:shadow-md ${featured ? 'md:col-span-2' : ''}`}>
-      <Link href={`/store/product/${product.id}`}>
+    <Card className={`overflow-hidden transition-all duration-200 hover:shadow-md h-full ${featured ? 'md:col-span-2' : ''}`}>
+      <Link href={`/store/product/${product.id}`} className="flex flex-col h-full">
         <div className="relative h-60 overflow-hidden bg-muted flex items-center justify-center">
           {product.is_featured && !featured && (
             <Badge className="absolute top-2 right-2 z-10" variant="secondary">
@@ -73,7 +73,7 @@ export function StoreProductCard({ product, featured = false }: ProductCardProps
           </div>
         </div>
         
-        <CardContent className="p-4">
+        <CardContent className="p-4 flex-grow">
           <div className="flex justify-between items-start mb-2">
             <div>
               <div className="text-xs text-muted-foreground mb-1 uppercase">
