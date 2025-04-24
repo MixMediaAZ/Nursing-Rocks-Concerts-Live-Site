@@ -34,11 +34,14 @@ const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFil
   }
 };
 
-// Set up multer
+// Set up multer with improved configuration for batch uploads
 export const galleryUpload = multer({ 
   storage, 
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  limits: {
+    fileSize: 25 * 1024 * 1024, // 25MB limit per file
+    files: 100                  // Maximum 100 files per upload
+  }
 });
 
 /**

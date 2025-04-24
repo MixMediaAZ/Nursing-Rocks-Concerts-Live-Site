@@ -73,11 +73,57 @@ export function GalleryUploader({
     
     const formData = new FormData();
     
-    Array.from(files).forEach((file) => {
+    // Log to verify file types before upload
+    console.log(`Uploading ${files.length} files`);
+    Array.from(files).forEach((file, index) => {
+      console.log(`File ${index + 1}: ${file.name}, type: ${file.type}, size: ${file.size}`);
       formData.append("images", file);
     });
     
-    uploadMutation.mutate(formData);
+    // Add folder ID if present
+    if (folderId) {
+      formData.append("folder_id", folderId.toString());
+    }
+    
+    // For debugging, log FormData contents (not fully possible but can try)
+    console.log("FormData created, attempting direct fetch");
+    
+    try {
+      // Use fetch directly for more control
+      const response = await fetch(
+        `/api/gallery/upload${folderId ? `?folderId=${folderId}` : ''}`, 
+        {
+          method: 'POST',
+          body: formData
+        }
+      );
+      
+      const data = await response.json();
+      console.log("Upload response:", data);
+      
+      if (response.ok) {
+        setFiles(null);
+        queryClient.invalidateQueries({ queryKey: ["/api/gallery"] });
+        toast({
+          title: "Upload successful",
+          description: `${data.total} images have been uploaded`,
+          variant: "default",
+        });
+        
+        if (onUploadComplete) {
+          onUploadComplete();
+        }
+      } else {
+        throw new Error(data.error || "Upload failed");
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

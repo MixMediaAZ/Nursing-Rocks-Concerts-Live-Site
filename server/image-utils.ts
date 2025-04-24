@@ -10,7 +10,12 @@ export const SUPPORTED_IMAGE_TYPES = [
   'image/jpg', 
   'image/png', 
   'image/webp', 
-  'image/gif'
+  'image/gif',
+  'image/svg+xml',
+  'image/bmp',
+  'image/tiff',
+  'image/heic',
+  'image/heif'
 ];
 
 /**
