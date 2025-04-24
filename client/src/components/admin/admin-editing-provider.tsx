@@ -5,7 +5,7 @@ import { ImageReplacementDialog } from './image-replacement-dialog';
 import { TextEditorDialog } from './text-editor-dialog';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { X, Edit, Wand, Save, Type, HandIcon, Settings, MousePointer } from 'lucide-react';
+import { X, Edit, Wand, Save, Type, HandIcon, Settings, MousePointer, LayoutDashboard, LogOut } from 'lucide-react';
 
 interface AdminEditingProviderProps {
   children: ReactNode;
@@ -331,6 +331,60 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
             >
               <Save className="h-4 w-4 mr-1" />
               Save
+            </Button>
+            
+            <Button
+              data-admin-action="dashboard"
+              variant="outline"
+              size="sm"
+              className="h-9 px-3"
+              onClick={() => {
+                // Navigate to admin dashboard
+                window.location.href = '/admin';
+                toast({
+                  title: 'Returning to Dashboard',
+                  description: 'Navigating to admin dashboard...',
+                });
+              }}
+            >
+              <LayoutDashboard className="h-4 w-4 mr-1" />
+              Dashboard
+            </Button>
+            
+            <Button
+              data-admin-action="logout"
+              variant="outline"
+              size="sm"
+              className="h-9 px-3 bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
+              onClick={() => {
+                // Perform logout action
+                fetch('/api/admin/logout', { method: 'POST' })
+                  .then(() => {
+                    // Clear admin mode
+                    adminState.setAdminMode(false);
+                    clearSelectedElement();
+                    // Clear admin token
+                    localStorage.removeItem('adminToken');
+                    // Navigate home
+                    window.location.href = '/';
+                    toast({
+                      title: 'Logged Out',
+                      description: 'You have been logged out of admin mode',
+                      variant: 'destructive',
+                    });
+                  })
+                  .catch(err => {
+                    console.error('Logout error:', err);
+                    toast({
+                      title: 'Logout Failed',
+                      description: 'There was an error logging out. Please try again.',
+                      variant: 'destructive',
+                    });
+                  });
+              }}
+            >
+              <LogOut className="h-4 w-4 mr-1" />
+              Logout
             </Button>
             
             <Button
