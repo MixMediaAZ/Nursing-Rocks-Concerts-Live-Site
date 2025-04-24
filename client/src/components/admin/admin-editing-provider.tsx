@@ -147,7 +147,16 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
       if (elementType === 'image') {
         openImageReplacementDialog();
       } else if (elementType === 'text') {
-        openTextEditorDialog(target.textContent || '');
+        // Use innerHTML to preserve formatting for editing
+        // First convert <br> tags to newlines for textarea input
+        const content = target.innerHTML
+          .replace(/<br\s*\/?>/gi, '\n') // Replace <br> tags with newlines
+          .replace(/&lt;/g, '<')         // Replace &lt; with <
+          .replace(/&gt;/g, '>')         // Replace &gt; with >
+          .replace(/&nbsp;/g, ' ')       // Replace &nbsp; with spaces
+          .replace(/&amp;/g, '&');       // Replace &amp; with &
+          
+        openTextEditorDialog(content);
       } else {
         // For generic elements, show a toast indicating selection
         toast({
@@ -277,7 +286,15 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
             if (targetElement && options) {
               // Create the new element
               const newElement = document.createElement(options.elementType || 'p');
-              newElement.textContent = newContent;
+              
+              // Sanitize and format content for HTML insertion
+              const sanitizedContent = newContent
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/&lt;br&gt;/g, '<br>') // Allow <br> tags
+                .replace(/\n/g, '<br>');       // Convert newlines to <br>
+                
+              newElement.innerHTML = sanitizedContent;
               newElement.id = `editable-element-${Date.now()}`;
               
               // Apply styling if provided
@@ -304,7 +321,15 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
           } else if (selectedElement) {
             // Update existing text
             if (selectedElement.element) {
-              selectedElement.element.textContent = newContent;
+              // Use innerHTML instead of textContent to support formatted text
+              // First sanitize to prevent XSS (basic sanitization)
+              const sanitizedContent = newContent
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/&lt;br&gt;/g, '<br>') // Allow <br> tags
+                .replace(/\n/g, '<br>'); // Convert newlines to <br>
+                
+              selectedElement.element.innerHTML = sanitizedContent;
               
               // Apply styling if provided
               if (options?.styles) {
