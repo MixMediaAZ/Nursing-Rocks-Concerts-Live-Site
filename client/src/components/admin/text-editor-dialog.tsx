@@ -8,8 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Save, X, ScreenShare, Text, Plus, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, AlignJustify, Type as TypeIcon } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Slider } from '@/components/ui/slider';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 interface TextEditorDialogProps {
@@ -63,10 +61,10 @@ export function TextEditorDialog({
   // Style options
   const [textColor, setTextColor] = useState<string>('#000000');
   const [fontSize, setFontSize] = useState<string>('16px');
-  const [fontWeight, setFontWeight] = useState<string>('normal');
-  const [fontStyle, setFontStyle] = useState<string>('normal');
-  const [textDecoration, setTextDecoration] = useState<string>('none');
-  const [textAlign, setTextAlign] = useState<string>('left');
+  const [fontWeight, setFontWeight] = useState<'normal' | 'bold'>('normal');
+  const [fontStyle, setFontStyle] = useState<'normal' | 'italic'>('normal');
+  const [textDecoration, setTextDecoration] = useState<'none' | 'underline'>('none');
+  const [textAlign, setTextAlign] = useState<'left' | 'center' | 'right' | 'justify'>('left');
   
   // Reset content when dialog opens with new initial content
   useEffect(() => {
@@ -112,10 +110,10 @@ export function TextEditorDialog({
         styles: {
           color: textColor,
           fontSize,
-          fontWeight: fontWeight as TextSaveOptions['styles']['fontWeight'],
-          fontStyle: fontStyle as TextSaveOptions['styles']['fontStyle'],
-          textDecoration: textDecoration as TextSaveOptions['styles']['textDecoration'],
-          textAlign: textAlign as TextSaveOptions['styles']['textAlign']
+          fontWeight,
+          fontStyle,
+          textDecoration,
+          textAlign
         }
       });
     } else {
@@ -124,10 +122,10 @@ export function TextEditorDialog({
         styles: {
           color: textColor,
           fontSize,
-          fontWeight: fontWeight as TextSaveOptions['styles']['fontWeight'],
-          fontStyle: fontStyle as TextSaveOptions['styles']['fontStyle'],
-          textDecoration: textDecoration as TextSaveOptions['styles']['textDecoration'],
-          textAlign: textAlign as TextSaveOptions['styles']['textAlign']
+          fontWeight,
+          fontStyle,
+          textDecoration,
+          textAlign
         }
       });
     }
@@ -294,7 +292,7 @@ export function TextEditorDialog({
 
                     <div className="w-0.5 h-8 bg-gray-200 mx-1"></div>
                     
-                    <ToggleGroup type="single" value={textAlign} onValueChange={(value) => value && setTextAlign(value)}>
+                    <ToggleGroup type="single" value={textAlign} onValueChange={(value) => value && setTextAlign(value as 'left' | 'center' | 'right' | 'justify')}>
                       <ToggleGroupItem value="left" aria-label="Align left">
                         <AlignLeft className="h-4 w-4" />
                       </ToggleGroupItem>

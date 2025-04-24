@@ -266,6 +266,18 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
               newElement.textContent = newContent;
               newElement.id = `editable-element-${Date.now()}`;
               
+              // Apply styling if provided
+              if (options.styles) {
+                if (options.styles.color) newElement.style.color = options.styles.color;
+                if (options.styles.fontSize) newElement.style.fontSize = options.styles.fontSize;
+                if (options.styles.fontWeight) newElement.style.fontWeight = options.styles.fontWeight;
+                if (options.styles.fontStyle) newElement.style.fontStyle = options.styles.fontStyle;
+                if (options.styles.textDecoration) newElement.style.textDecoration = options.styles.textDecoration;
+                if (options.styles.textAlign) newElement.style.textAlign = options.styles.textAlign;
+                if (options.styles.margin) newElement.style.margin = options.styles.margin;
+                if (options.styles.padding) newElement.style.padding = options.styles.padding;
+              }
+              
               // Insert the element according to the specified location
               if (options.insertLocation === 'before') {
                 targetElement.parentNode?.insertBefore(newElement, targetElement);
