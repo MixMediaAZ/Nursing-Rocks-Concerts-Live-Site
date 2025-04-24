@@ -96,136 +96,72 @@ export function ImageReplacementDialog({
         // Create a simple placeholder result
         const placeholderUrl = "https://via.placeholder.com/600x400/4F46E5/FFFFFF?text=Placeholder";
         
-        // Invalidate any relevant query cache to force refetch
-        queryClient.invalidateQueries({queryKey: ["/api/gallery"]});
+        // Store this in localStorage to access after page reload
+        localStorage.setItem('replacedImage_elementId', elementId?.toString() || 'unknown');
+        localStorage.setItem('replacedImage_url', placeholderUrl);
+        
+        // Close dialog and show toast message
+        onClose();
         
         toast({
-          title: 'Placeholder image selected',
-          description: 'The image has been updated to use a placeholder'
+          title: 'Image replacement successful!',
+          description: 'Reloading page with new image...',
+          duration: 2000
         });
         
-        onSelectImage(selectedImageId);
-        
-        // Trigger a custom event to refresh images using the placeholder
-        const replaceEvent = new CustomEvent('image-replaced', { 
-          detail: { 
-            originalUrl, 
-            newImageId: selectedImageId,
-            elementId,
-            timestamp: Date.now(),
-            newImageUrl: placeholderUrl
-          } 
-        });
-        
-        // Dispatch event after a short delay to ensure all components are ready
+        // Simple solution: reload the page after a short delay
         setTimeout(() => {
-          console.log('Dispatching image-replaced event for placeholder:', replaceEvent.detail);
-          window.dispatchEvent(replaceEvent);
-          
-          // Close dialog after event is dispatched
-          onClose();
-        }, 200);
+          window.location.reload();
+        }, 1000);
         
         return;
       }
       
       // Normal API-based replacement flow for real gallery images
-      const payload: any = { 
-        originalUrl,
-        timestamp: Date.now() // Add timestamp to help prevent caching issues
-      };
-      
-      // Determine the appropriate API endpoint based on the element ID
       let endpoint;
       
       // Check if this is an editable element (with the special ID format)
       const isEditableElement = elementId && typeof elementId === 'string' && 
           elementId.toString().startsWith('editable-element-');
       
-      if (isEditableElement) {
-        // For editable elements, use the special editable element endpoint format
+      if (isEditableElement || elementId) {
+        // For elements with an ID
         endpoint = `/api/gallery/${elementId}/replace-with/${selectedImageId}`;
-        console.log(`Using editable element replacement endpoint: ${endpoint}`);
-        
-        // For editable elements, ensure we include the original URL in the payload
-        if (originalUrl) {
-          payload.originalUrl = originalUrl;
-        }
-      } 
-      else if (elementId) {
-        // For regular gallery images with an ID
-        endpoint = `/api/gallery/${elementId}/replace-with/${selectedImageId}`;
-      } 
-      else {
-        // Fallback for cases without an element ID (using -1 as placeholder)
+      } else {
+        // Fallback for cases without an element ID
         endpoint = `/api/gallery/-1/replace-with/${selectedImageId}`;
       }
       
       console.log(`Replacing image at endpoint: ${endpoint}`);
-      console.log(`Original URL: ${originalUrl || 'None provided'}`);
-      console.log(`Payload:`, payload);
       
-      // Send the request using direct fetch call instead of the apiRequest abstraction
-      // This ensures we have precise control over the request format
+      // Send the API request
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
-        credentials: 'include' // Important for sessions/cookies
+        body: JSON.stringify({ originalUrl }),
+        credentials: 'include'
       });
       
       if (!response.ok) {
         throw new Error('Failed to replace image');
       }
       
-      const result = await response.json();
-      console.log('Image replacement result:', result);
+      // Close dialog before doing anything else
+      onClose();
       
-      // Invalidate any relevant query cache to force refetch
-      queryClient.invalidateQueries({queryKey: ["/api/gallery"]});
-      
+      // Show a success message
       toast({
-        title: 'Image replaced',
-        description: 'The image has been successfully replaced'
+        title: 'Image replacement successful!',
+        description: 'Reloading page with new image...',
+        duration: 2000
       });
       
-      onSelectImage(selectedImageId);
-      
-      // Add a timestamp to ensure the URL is unique and not cached
-      const timestamp = Date.now();
-      const randomId = Math.random().toString(36).substring(2, 15);
-      
-      // Create a unique cache-busting URL to guarantee fresh content
-      const originalImageUrl = result.image_url; 
-      const cacheBuster = `?nocache=${timestamp}_${randomId}`;
-      const uniqueImageUrl = originalImageUrl.split('?')[0] + cacheBuster;
-      
-      console.log('Original URL from server:', originalImageUrl);
-      console.log('Cache-busting URL created:', uniqueImageUrl);
-      
-      // Trigger a custom event to refresh images using the new one with cache-busting
-      const replaceEvent = new CustomEvent('image-replaced', { 
-        detail: { 
-          originalUrl, 
-          newImageId: selectedImageId,
-          elementId,
-          timestamp: timestamp,
-          newImageUrl: uniqueImageUrl,
-          originalImageUrl: originalImageUrl
-        } 
-      });
-      
-      // Just use a single dispatch with the dialog already closed
-      // This prevents screen flashing when the cursor is in the replacement window
-      onClose(); // Close dialog first
-      
-      // Wait a brief moment to ensure dialog has fully closed
+      // Simple solution: reload the page after a short delay
       setTimeout(() => {
-        console.log('Dispatching image-replaced event with dialog closed');
-        window.dispatchEvent(replaceEvent);
-      }, 100);
+        window.location.reload();
+      }, 1000);
       
     } catch (error) {
       console.error('Error replacing image:', error);
