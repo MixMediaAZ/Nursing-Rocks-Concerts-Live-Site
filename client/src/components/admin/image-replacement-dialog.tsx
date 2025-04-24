@@ -96,23 +96,44 @@ export function ImageReplacementDialog({
         // Create a simple placeholder result
         const placeholderUrl = "https://via.placeholder.com/600x400/4F46E5/FFFFFF?text=Placeholder";
         
-        // Store this in localStorage to access after page reload
-        localStorage.setItem('replacedImage_elementId', elementId?.toString() || 'unknown');
-        localStorage.setItem('replacedImage_url', placeholderUrl);
-        
-        // Close dialog and show toast message
-        onClose();
-        
+        // Show toast message
         toast({
-          title: 'Image replacement successful!',
-          description: 'Reloading page with new image...',
-          duration: 2000
+          title: 'Image Replaced',
+          description: 'Changed to placeholder image',
+          variant: 'default',
         });
         
-        // Simple solution: reload the page after a short delay
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
+        // Close dialog first
+        onClose();
+        
+        // Create an Image object to preload the new image before replacing
+        const img = new Image();
+        img.onload = () => {
+          // Direct DOM replacement for the most reliable update
+          document.querySelectorAll('img').forEach(imgElement => {
+            // Normalize URLs for comparison
+            const imgSrc = imgElement.src.split('?')[0];
+            const origSrc = (originalUrl || '').split('?')[0];
+            
+            if (imgSrc.includes(origSrc) || origSrc.includes(imgSrc)) {
+              console.log(`Found matching image to update with placeholder:`, imgElement);
+              
+              // Create a completely new image element
+              const newImg = document.createElement('img');
+              newImg.src = placeholderUrl;
+              newImg.alt = imgElement.alt;
+              newImg.className = imgElement.className;
+              
+              // Directly replace in the DOM for guaranteed update
+              if (imgElement.parentNode) {
+                imgElement.parentNode.replaceChild(newImg, imgElement);
+              }
+            }
+          });
+        };
+        
+        // Start loading the placeholder image
+        img.src = placeholderUrl;
         
         return;
       }
@@ -148,20 +169,53 @@ export function ImageReplacementDialog({
         throw new Error('Failed to replace image');
       }
       
-      // Close dialog before doing anything else
-      onClose();
+      // Get the result with new image URL
+      const result = await response.json();
+      console.log('Image replacement result:', result);
       
-      // Show a success message
+      // Build server-generated unique URL to completely avoid caching
+      // This creates a completely new URL that browsers will treat as a new resource
+      const serverImageUrl = result.image_url || '';
+      const uniqueServerUrl = `${serverImageUrl}${serverImageUrl.includes('?') ? '&' : '?'}v=${Date.now()}`;
+      
+      // Store success message and close dialog
       toast({
-        title: 'Image replacement successful!',
-        description: 'Reloading page with new image...',
-        duration: 2000
+        title: 'Image Replaced',
+        description: 'Image has been successfully replaced',
+        variant: 'default',
       });
       
-      // Simple solution: reload the page after a short delay
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      // Close the dialog first
+      onClose();
+      
+      // Create an Image object to preload the new image before replacing
+      const img = new Image();
+      img.onload = () => {
+        // Direct DOM replacement for the most reliable update
+        document.querySelectorAll('img').forEach(imgElement => {
+          // Normalize URLs for comparison
+          const imgSrc = imgElement.src.split('?')[0];
+          const origSrc = (originalUrl || '').split('?')[0];
+          
+          if (imgSrc.includes(origSrc) || origSrc.includes(imgSrc)) {
+            console.log(`Found matching image to update:`, imgElement);
+            
+            // Create a completely new image element
+            const newImg = document.createElement('img');
+            newImg.src = uniqueServerUrl;
+            newImg.alt = imgElement.alt;
+            newImg.className = imgElement.className;
+            
+            // Directly replace in the DOM for guaranteed update
+            if (imgElement.parentNode) {
+              imgElement.parentNode.replaceChild(newImg, imgElement);
+            }
+          }
+        });
+      };
+      
+      // Start loading the new image
+      img.src = uniqueServerUrl;
       
     } catch (error) {
       console.error('Error replacing image:', error);
