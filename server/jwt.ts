@@ -99,3 +99,32 @@ export function isUserVerified(req: Request): boolean {
     return false;
   }
 }
+
+/**
+ * Check if user from request is an admin
+ * @returns true if user is an admin, false otherwise
+ */
+export function isUserAdmin(req: Request): boolean {
+  try {
+    // Get token from Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return false;
+    }
+    
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+      return false;
+    }
+    
+    // Verify and decode token
+    const payload = verifyToken(token);
+    if (!payload) {
+      return false;
+    }
+    
+    return payload.isAdmin;
+  } catch (error) {
+    return false;
+  }
+}

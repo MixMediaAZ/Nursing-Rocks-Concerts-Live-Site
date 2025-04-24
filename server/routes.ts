@@ -1484,14 +1484,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Make a simple request to CustomCat API to check if the key is valid
-      // For demonstration, we'll use a mock API instead since api.customcat.com doesn't exist
-      // In production, this would be the actual CustomCat API endpoint
-      const response = await fetch("https://httpbin.org/anything", {
+      const response = await fetch("https://api.customcat.com/catalog/products", {
         method: "GET",
         headers: {
           "Accept": "application/json",
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKeySetting.value}`
+          "X-API-KEY": apiKeySetting.value
         }
       });
       
@@ -1534,14 +1532,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Fetch products from CustomCat API
-      // For demonstration, we'll use a mock API instead since api.customcat.com doesn't exist
-      // In production, this would be the actual CustomCat API endpoint
-      const response = await fetch("https://dummyjson.com/products", {
+      const response = await fetch("https://api.customcat.com/catalog/products", {
         method: "GET",
         headers: {
           "Accept": "application/json",
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKeySetting.value}`
+          "X-API-KEY": apiKeySetting.value
         }
       });
       
@@ -1556,8 +1552,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const responseData = await response.json();
       
-      // dummyjson.com returns { products: [...] } format
-      const productsData = responseData.products || responseData;
+      // CustomCat API returns the products array directly (if not, extract it)
+      const productsData = Array.isArray(responseData) ? responseData : 
+                          (responseData.products || responseData.data || []);
       
       if (!Array.isArray(productsData)) {
         return res.status(500).json({ 
@@ -1580,21 +1577,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Check if product already exists in our database by external_id
           const existingProduct = await storage.getStoreProductByExternalId("customcat", product.id.toString());
           
-          // Map the product data from dummy JSON format to our store format
+          // Map the CustomCat product data to our store format
           const productData = {
-            name: product.title || product.name || "Product",
+            name: product.name || product.title || "CustomCat Product",
             description: product.description || "",
-            price: product.price ? product.price.toString() : "0.00",
-            image_url: product.thumbnail || product.image || product.images?.[0] || null,
-            category: product.category || "Demo Products",
+            price: product.price ? parseFloat(product.price).toFixed(2) : "29.99",
+            image_url: product.image_url || product.thumbnail || (product.images && product.images[0]) || null,
+            category: product.category || "CustomCat Products",
             is_featured: false,
             is_available: true,
-            stock_quantity: product.stock || 999,
+            stock_quantity: product.inventory || product.stock || 100,
             external_id: product.id.toString(),
             external_source: "customcat",
             metadata: {
               customcat_data: product,
-              variants: product.variants || []
+              variants: product.variants || product.options || []
             }
           };
           
