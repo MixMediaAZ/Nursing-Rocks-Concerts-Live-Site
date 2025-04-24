@@ -396,12 +396,50 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
 
                   // Check if the button contains a SPAN that holds the text - common pattern
                   const spanElements = selectedElement.element.querySelectorAll('span');
-                  if (spanElements.length === 1) {
-                    // Found exactly one span, probably the text container
-                    console.log('Found a span inside the button, updating it directly');
+                  if (spanElements.length > 0) {
+                    // Found at least one span, find the one that contains text
+                    console.log(`Found ${spanElements.length} spans inside the button`);
+                    
+                    // Try to find the specific span for "Comfort Socks for Nurses"
+                    let targetSpan = null;
+                    
+                    // First, check for an exact match with our known button text
+                    for (let i = 0; i < spanElements.length; i++) {
+                      const span = spanElements[i];
+                      if (span.textContent?.includes("Comfort Socks for Nurses")) {
+                        console.log('Found exact match for Comfort Socks text');
+                        targetSpan = span;
+                        break;
+                      }
+                    }
+                    
+                    // If no exact match, use the last span (usually contains the main text)
+                    if (!targetSpan && spanElements.length > 0) {
+                      targetSpan = spanElements[spanElements.length - 1];
+                      console.log('Using last span as fallback:', targetSpan.textContent);
+                    } else if (!targetSpan) {
+                      // Final fallback to the first span
+                      targetSpan = spanElements[0];
+                      console.log('Using first span as last resort');
+                    }
+                    
+                    console.log('Selected span to update:', targetSpan);
+                    
                     // Use requestAnimationFrame to reduce flicker
                     requestAnimationFrame(() => {
-                      spanElements[0].textContent = newContent;
+                      try {
+                        // Try to set the text content
+                        targetSpan.textContent = newContent;
+                        
+                        // Force a repaint
+                        void selectedElement.element.offsetHeight;
+                        
+                        console.log('Successfully updated span text to:', newContent);
+                      } catch (err) {
+                        console.error('Error updating span text:', err);
+                        // Fallback to the entire button if span update fails
+                        selectedElement.element.textContent = newContent;
+                      }
                     });
                     return; // Exit early, we've handled the update
                   }
@@ -428,9 +466,12 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
                     } else {
                       // Complex case: button has icons or other elements
                       
-                      // 1. Remove all current content while saving the references
-                      while (selectedElement.element.firstChild) {
-                        selectedElement.element.removeChild(selectedElement.element.firstChild);
+                      // Safely clear the element's content
+                      try {
+                        // Use a safer approach by setting innerHTML to empty first
+                        selectedElement.element.innerHTML = '';
+                      } catch (err) {
+                        console.error('Error clearing element content:', err);
                       }
                       
                       // 2. Analyze the original element structure to determine where text was
