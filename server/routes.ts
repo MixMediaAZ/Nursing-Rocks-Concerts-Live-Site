@@ -1564,10 +1564,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ADMIN_PIN = "1234567";
       
       if (!pin || pin !== ADMIN_PIN) {
+        console.warn(`Invalid admin PIN attempt: ${pin}`);
         return res.status(401).json({ message: "Invalid admin PIN" });
       }
       
-      // Create a fake admin user object for token generation
+      // Create an admin user object for token generation
       const adminUser = {
         id: 999999, // Use a reserved ID for admin
         email: "admin@nursingrocks.com",
@@ -1578,10 +1579,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate a token with admin privileges
       const token = generateToken(adminUser as any);
       
+      console.log("Admin token generated successfully");
       res.status(200).json({ token });
     } catch (error) {
-      console.error("Error generating admin token:", error);
-      res.status(500).json({ message: "Failed to generate admin token" });
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("Error generating admin token:", errorMessage);
+      res.status(500).json({ 
+        message: "Failed to generate admin token",
+        error: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      });
     }
   });
   
@@ -1590,10 +1596,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Since we're using JWT tokens, we only need to return success
       // The actual token invalidation happens client-side by removing the token
-      res.status(200).json({ message: "Admin logout successful" });
+      console.log("Admin logout request processed successfully");
+      res.status(200).json({ 
+        success: true,
+        message: "Admin logout successful" 
+      });
     } catch (error) {
-      console.error("Error in admin logout:", error);
-      res.status(500).json({ message: "Failed to process logout" });
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("Error in admin logout:", errorMessage);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to process logout",
+        error: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      });
     }
   });
 

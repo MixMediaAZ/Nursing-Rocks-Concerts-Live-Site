@@ -43,10 +43,10 @@ export function verifyToken(token: string): JwtPayload | null {
 }
 
 /**
- * Extract user ID from JWT token in request
- * @returns User ID or null if not authenticated
+ * Extract JWT payload from request
+ * @returns The decoded payload or null if invalid/missing token
  */
-export function getUserIdFromRequest(req: Request): number | null {
+export function getPayloadFromRequest(req: Request): JwtPayload | null {
   try {
     // Get token from Authorization header
     const authHeader = req.headers.authorization;
@@ -60,15 +60,19 @@ export function getUserIdFromRequest(req: Request): number | null {
     }
     
     // Verify and decode token
-    const payload = verifyToken(token);
-    if (!payload) {
-      return null;
-    }
-    
-    return payload.userId;
+    return verifyToken(token);
   } catch (error) {
     return null;
   }
+}
+
+/**
+ * Extract user ID from JWT token in request
+ * @returns User ID or null if not authenticated
+ */
+export function getUserIdFromRequest(req: Request): number | null {
+  const payload = getPayloadFromRequest(req);
+  return payload ? payload.userId : null;
 }
 
 /**
@@ -76,28 +80,8 @@ export function getUserIdFromRequest(req: Request): number | null {
  * @returns true if user is verified, false otherwise
  */
 export function isUserVerified(req: Request): boolean {
-  try {
-    // Get token from Authorization header
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return false;
-    }
-    
-    const token = authHeader.split(' ')[1];
-    if (!token) {
-      return false;
-    }
-    
-    // Verify and decode token
-    const payload = verifyToken(token);
-    if (!payload) {
-      return false;
-    }
-    
-    return payload.isVerified;
-  } catch (error) {
-    return false;
-  }
+  const payload = getPayloadFromRequest(req);
+  return payload ? payload.isVerified : false;
 }
 
 /**
@@ -105,26 +89,6 @@ export function isUserVerified(req: Request): boolean {
  * @returns true if user is an admin, false otherwise
  */
 export function isUserAdmin(req: Request): boolean {
-  try {
-    // Get token from Authorization header
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return false;
-    }
-    
-    const token = authHeader.split(' ')[1];
-    if (!token) {
-      return false;
-    }
-    
-    // Verify and decode token
-    const payload = verifyToken(token);
-    if (!payload) {
-      return false;
-    }
-    
-    return payload.isAdmin;
-  } catch (error) {
-    return false;
-  }
+  const payload = getPayloadFromRequest(req);
+  return payload ? payload.isAdmin : false;
 }
