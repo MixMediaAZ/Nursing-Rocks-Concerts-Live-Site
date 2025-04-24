@@ -50,17 +50,38 @@ export function SafeImage({
     const handleImageReplaced = (event: Event) => {
       const detail = (event as CustomEvent).detail;
       
+      console.log('SafeImage received replacement event:', detail);
+      console.log('Current image src:', src);
+      
       // Check if this image's src matches the replaced image's original URL
-      if (detail && detail.originalUrl && src && src.includes(detail.originalUrl)) {
-        console.log('Image replacement detected for:', src);
-        // Force refresh the image with a delay to ensure the server has processed the change
-        setTimeout(() => {
-          setForceRefresh(Date.now());
-        }, 200);
-      } else {
-        // Force refresh all images as a fallback strategy
-        setForceRefresh(Date.now());
+      if (detail && detail.originalUrl && src) {
+        const normalizedOriginalUrl = detail.originalUrl.replace(/^https?:\/\/[^\/]+/, '');
+        const normalizedSrc = src.replace(/^https?:\/\/[^\/]+/, '');
+        
+        console.log('Normalized URLs for comparison:');
+        console.log('  Original:', normalizedOriginalUrl);
+        console.log('  Current:', normalizedSrc);
+        
+        // Check if our src contains the original URL path
+        if (normalizedSrc.includes(normalizedOriginalUrl) || 
+            normalizedOriginalUrl.includes(normalizedSrc)) {
+          console.log('✅ Image replacement match found for:', src);
+          
+          // Force refresh the image with a delay to ensure the server has processed the change
+          setTimeout(() => {
+            console.log('Forcing image refresh with timestamp:', Date.now());
+            setForceRefresh(Date.now());
+          }, 500);
+          
+          return;
+        }
       }
+      
+      // Always refresh on image replacement events as a fallback
+      console.log('Refreshing image as fallback strategy');
+      setTimeout(() => {
+        setForceRefresh(Date.now());
+      }, 500);
     };
     
     window.addEventListener('image-replaced', handleImageReplaced);

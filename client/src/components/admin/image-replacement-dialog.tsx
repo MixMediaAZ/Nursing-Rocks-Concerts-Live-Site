@@ -165,7 +165,7 @@ export function ImageReplacementDialog({
       console.log(`Original URL: ${originalUrl || 'None provided'}`);
       console.log(`Payload:`, payload);
       
-      // For editable elements, we need to post the payload in the request body
+      // Use the correct payload format - send the payload directly as the data object
       const response = await apiRequest(
         'POST', 
         endpoint, 
