@@ -7,6 +7,8 @@ interface SafeImageProps {
   className?: string;
   fallbackClassName?: string;
   showLoadingIndicator?: boolean;
+  elementId?: string | number; // Optional element ID for targeted updates
+  productId?: number; // Optional product ID for product images
 }
 
 export function SafeImage({ 
@@ -14,7 +16,9 @@ export function SafeImage({
   alt, 
   className = '', 
   fallbackClassName = '', 
-  showLoadingIndicator = false 
+  showLoadingIndicator = false,
+  elementId,
+  productId
 }: SafeImageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);

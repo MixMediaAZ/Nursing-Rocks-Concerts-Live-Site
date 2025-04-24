@@ -12,6 +12,7 @@ interface EditableImageProps {
   id?: number;  // Optional gallery image ID if already known
   forceAdmin?: boolean; // Force admin mode even if not in edit mode
   triggerPosition?: "top-right" | "bottom-right" | "bottom-left" | "top-left";
+  productId?: number; // Optional product ID for product images to ensure unique identification
 }
 
 /**
@@ -25,7 +26,8 @@ export function EditableImage({
   className = "", 
   id,
   forceAdmin = false,
-  triggerPosition = "top-right" 
+  triggerPosition = "top-right",
+  productId
 }: EditableImageProps) {
   const isEditMode = useAdminEditMode();
   const [imageData, setImageData] = useState<Gallery | null>(null);

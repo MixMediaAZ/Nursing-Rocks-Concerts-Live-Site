@@ -63,9 +63,11 @@ export function StoreProductCard({ product, featured = false }: ProductCardProps
           
           <EditableImage 
             src={product.image_url || ''} 
-            alt={product.name} 
-            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
+            alt={product.name}
+            id={product.id} // Add product ID to make each image uniquely identifiable
+            className={`w-full h-full object-cover transition-transform duration-300 hover:scale-105 featured-product-image-${product.id}`} 
             triggerPosition="bottom-right"
+            productId={product.id} // Pass product ID as additional prop for context
           />
         </div>
         
