@@ -364,10 +364,15 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
                       // Clear admin mode
                       adminState.setAdminMode(false);
                       clearSelectedElement();
-                      // Clear admin token
+                      // Clear all admin-related local storage items
                       localStorage.removeItem('adminToken');
-                      // Navigate home
-                      window.location.href = '/';
+                      localStorage.removeItem('isAdmin');
+                      localStorage.removeItem('adminPinVerified');
+                      localStorage.removeItem('editMode');
+                      // Navigate home with a small delay to ensure logout is processed
+                      setTimeout(() => {
+                        window.location.href = '/';
+                      }, 300);
                       toast({
                         title: 'Logged Out',
                         description: 'You have been logged out of admin mode',

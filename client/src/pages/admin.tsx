@@ -48,8 +48,8 @@ export default function AdminPage() {
 
   // Check existing authentication
   useEffect(() => {
-    // For development - set to true to bypass authentication
-    const bypassAuth = true;
+    // For development - set to false to require authentication
+    const bypassAuth = false;
 
     if (bypassAuth) {
       // Set admin authentication for testing
@@ -61,12 +61,17 @@ export default function AdminPage() {
       // Check if user has already been authenticated
       const isAdmin = localStorage.getItem("isAdmin") === "true";
       const adminPinVerified = localStorage.getItem("adminPinVerified") === "true";
+      const adminToken = localStorage.getItem("adminToken");
       
-      if (isAdmin || adminPinVerified) {
+      if ((isAdmin || adminPinVerified) && adminToken) {
         setAuthenticated(true);
       } else {
         setAuthenticated(false);
         setPin("");
+        // Clear any potentially invalid auth data
+        localStorage.removeItem("isAdmin");
+        localStorage.removeItem("adminPinVerified");
+        localStorage.removeItem("adminToken");
       }
     }
   }, []);
