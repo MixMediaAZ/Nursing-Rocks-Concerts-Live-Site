@@ -57,7 +57,7 @@ export async function fetchCustomCatProducts(apiKey: string) {
           "Accept": "application/json",
           "Content-Type": "application/json"
         },
-        signal: AbortSignal.timeout(5000) // slightly longer timeout for API calls
+        signal: AbortSignal.timeout(15000) // Increased to 15 seconds timeout for more reliable API calls
       });
       
       if (response.ok) {

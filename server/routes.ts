@@ -11,6 +11,7 @@ import sharp from "sharp";
 import { processImage } from "./image-utils";
 import { customCatEndpoints } from "./customcat-endpoints";
 import { fetchCustomCatProducts } from "./customcat-api";
+import { processCustomCatProductImages, processCustomCatProductsImages } from "./product-utils";
 import { 
   galleryUpload, 
   createMediaFolder, 
@@ -971,44 +972,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Directly filter for only CustomCat products
       const customCatProducts = products.filter(product => product.external_source === "customcat");
       
-      // Process each product to ensure image URLs are set
-      const processedProducts = customCatProducts.map(product => {
-        // Make a copy of the product to avoid modifying the original
-        const processedProduct = { ...product };
-        
-        // Extract image from metadata if available
-        if (product.metadata && 
-            typeof product.metadata === 'object' && 
-            product.metadata.customcat_data &&
-            Array.isArray(product.metadata.customcat_data.product_colors) && 
-            product.metadata.customcat_data.product_colors.length > 0) {
-          
-          // Get the first available color with an image
-          const firstColorWithImage = product.metadata.customcat_data.product_colors.find(
-            color => color.product_image
-          );
-          
-          if (firstColorWithImage) {
-            // Fix image URL by adding https: if needed
-            let imageUrl = firstColorWithImage.product_image;
-            if (imageUrl.startsWith('//')) {
-              imageUrl = 'https:' + imageUrl;
-            }
-            processedProduct.image_url = imageUrl;
-            
-            // If there's a back image, save it to thumbnail_url
-            if (firstColorWithImage.back_image) {
-              let backImageUrl = firstColorWithImage.back_image;
-              if (backImageUrl.startsWith('//')) {
-                backImageUrl = 'https:' + backImageUrl;
-              }
-              processedProduct.thumbnail_url = backImageUrl;
-            }
-          }
-        }
-        
-        return processedProduct;
-      });
+      // Process products to ensure image URLs are set using the utility function
+      const processedProducts = processCustomCatProductsImages(customCatProducts);
       
       // Return processed CustomCat products with corrected image URLs
       res.json(processedProducts);
@@ -1032,44 +997,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .sort(() => Math.random() - 0.5) // Random shuffle
         .slice(0, limit || 4);
       
-      // Process each product to ensure image URLs are set
-      const processedProducts = featuredProducts.map(product => {
-        // Make a copy of the product to avoid modifying the original
-        const processedProduct = { ...product };
-        
-        // Extract image from metadata if available
-        if (product.metadata && 
-            typeof product.metadata === 'object' && 
-            product.metadata.customcat_data &&
-            Array.isArray(product.metadata.customcat_data.product_colors) && 
-            product.metadata.customcat_data.product_colors.length > 0) {
-          
-          // Get the first available color with an image
-          const firstColorWithImage = product.metadata.customcat_data.product_colors.find(
-            color => color.product_image
-          );
-          
-          if (firstColorWithImage) {
-            // Fix image URL by adding https: if needed
-            let imageUrl = firstColorWithImage.product_image;
-            if (imageUrl.startsWith('//')) {
-              imageUrl = 'https:' + imageUrl;
-            }
-            processedProduct.image_url = imageUrl;
-            
-            // If there's a back image, save it to thumbnail_url
-            if (firstColorWithImage.back_image) {
-              let backImageUrl = firstColorWithImage.back_image;
-              if (backImageUrl.startsWith('//')) {
-                backImageUrl = 'https:' + backImageUrl;
-              }
-              processedProduct.thumbnail_url = backImageUrl;
-            }
-          }
-        }
-        
-        return processedProduct;
-      });
+      // Process products to ensure image URLs are set using the utility function
+      const processedProducts = processCustomCatProductsImages(featuredProducts);
         
       res.json(processedProducts);
     } catch (error) {
@@ -1098,44 +1027,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return searchFields.some(field => field.includes(category.toLowerCase()));
       });
       
-      // Process each product to ensure image URLs are set
-      const processedProducts = customCatInCategory.map(product => {
-        // Make a copy of the product to avoid modifying the original
-        const processedProduct = { ...product };
-        
-        // Extract image from metadata if available
-        if (product.metadata && 
-            typeof product.metadata === 'object' && 
-            product.metadata.customcat_data &&
-            Array.isArray(product.metadata.customcat_data.product_colors) && 
-            product.metadata.customcat_data.product_colors.length > 0) {
-          
-          // Get the first available color with an image
-          const firstColorWithImage = product.metadata.customcat_data.product_colors.find(
-            color => color.product_image
-          );
-          
-          if (firstColorWithImage) {
-            // Fix image URL by adding https: if needed
-            let imageUrl = firstColorWithImage.product_image;
-            if (imageUrl.startsWith('//')) {
-              imageUrl = 'https:' + imageUrl;
-            }
-            processedProduct.image_url = imageUrl;
-            
-            // If there's a back image, save it to thumbnail_url
-            if (firstColorWithImage.back_image) {
-              let backImageUrl = firstColorWithImage.back_image;
-              if (backImageUrl.startsWith('//')) {
-                backImageUrl = 'https:' + backImageUrl;
-              }
-              processedProduct.thumbnail_url = backImageUrl;
-            }
-          }
-        }
-        
-        return processedProduct;
-      });
+      // Process products to ensure image URLs are set using the utility function
+      const processedProducts = processCustomCatProductsImages(customCatInCategory);
       
       // Always return processed filtered CustomCat products (empty array if none match)
       res.json(processedProducts);
@@ -1159,40 +1052,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Process product to ensure image URLs are set if it's a CustomCat product
       if (product.external_source === 'customcat') {
-        // Make a copy of the product to avoid modifying the original
-        const processedProduct = { ...product };
-        
-        // Extract image from metadata if available
-        if (product.metadata && 
-            typeof product.metadata === 'object' && 
-            product.metadata.customcat_data &&
-            Array.isArray(product.metadata.customcat_data.product_colors) && 
-            product.metadata.customcat_data.product_colors.length > 0) {
-          
-          // Get the first available color with an image
-          const firstColorWithImage = product.metadata.customcat_data.product_colors.find(
-            color => color.product_image
-          );
-          
-          if (firstColorWithImage) {
-            // Fix image URL by adding https: if needed
-            let imageUrl = firstColorWithImage.product_image;
-            if (imageUrl.startsWith('//')) {
-              imageUrl = 'https:' + imageUrl;
-            }
-            processedProduct.image_url = imageUrl;
-            
-            // If there's a back image, save it to thumbnail_url
-            if (firstColorWithImage.back_image) {
-              let backImageUrl = firstColorWithImage.back_image;
-              if (backImageUrl.startsWith('//')) {
-                backImageUrl = 'https:' + backImageUrl;
-              }
-              processedProduct.thumbnail_url = backImageUrl;
-            }
-          }
-        }
-        
+        // Use the utility function to process the product
+        const processedProduct = processCustomCatProductImages(product);
         res.json(processedProduct);
       } else {
         // For non-CustomCat products, return as is
