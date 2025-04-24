@@ -2018,11 +2018,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             external_id: productId,
             external_source: "customcat",
             metadata: {
+              // Store the COMPLETE original product data to preserve all proportions and art settings
+              customcat_original: JSON.parse(JSON.stringify(product)),
               customcat_data: {
                 id: product.id || product.catalog_product_id,
                 name: product.name || product.product_name || product.title,
                 had_back: product.had_back,
-                print_method: product.product_description_bullet5 || ""
+                print_method: product.product_description_bullet5 || "",
+                // Preserve artwork settings from CustomCat
+                preset_id: product.preset_id,
+                artwork_placement: product.artwork_placement,
+                artwork_settings: product.artwork_settings,
+                art_position: product.art_position,
+                art_size: product.art_size,
+                original_dimensions: product.original_dimensions,
+                proportions: product.proportions,
+                has_back_print: product.has_back_print || product.had_back
               },
               variants: product.variants || product.options || product.sizes || [],
               colors: product.product_colors || product.colors || [],
