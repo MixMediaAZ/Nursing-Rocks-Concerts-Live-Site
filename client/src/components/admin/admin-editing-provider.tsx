@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 import { X, Edit, Wand, Save, Type, HandIcon, Settings, MousePointer, LayoutDashboard, LogOut, Plus } from 'lucide-react';
 
 // Helper function to apply styles to HTML elements
-function applyStylesToElement(element: HTMLElement, styles: TextSaveOptions['styles']) {
-  if (!styles) return;
+function applyStylesToElement(element: HTMLElement | undefined, styles: TextSaveOptions['styles']) {
+  if (!element || !styles) return;
   
   if (styles.color) element.style.color = styles.color;
   if (styles.fontSize) element.style.fontSize = styles.fontSize;
@@ -376,47 +376,80 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
               try {
                 // Handle buttons and links differently than other elements
                 if (selectedElement.element.tagName === 'BUTTON' || selectedElement.element.tagName === 'A') {
-                  // For buttons and links, just update the innerText/textContent
-                  // This preserves any icons or other elements that might be in the button
+                  // For buttons and links, we need to carefully update the text without disrupting other elements
                   console.log(`Updating ${selectedElement.element.tagName} text to: "${newContent}"`);
+
+                  // Store a reference to all non-text nodes (icons, etc.)
+                  const nonTextNodes = [];
+                  const fragment = document.createDocumentFragment();
                   
-                  // Check if button contains only text or has child elements
-                  if (selectedElement.element.childElementCount === 0) {
-                    // Simple text button, just set the text content
+                  // First, clone all non-text nodes to preserve them
+                  for (let i = 0; i < selectedElement.element.childNodes.length; i++) {
+                    const node = selectedElement.element.childNodes[i];
+                    if (node.nodeType !== Node.TEXT_NODE) {
+                      nonTextNodes.push(node.cloneNode(true));
+                    }
+                  }
+                  
+                  // Two approaches based on complexity
+                  if (nonTextNodes.length === 0) {
+                    // Simple case: button only contains text
                     selectedElement.element.textContent = newContent;
                   } else {
-                    // Button has child elements (like icons), try to update just the text nodes
-                    let hasUpdatedTextNode = false;
+                    // Complex case: button has icons or other elements
                     
-                    // Loop through child nodes to find text nodes
-                    for (let i = 0; i < selectedElement.element.childNodes.length; i++) {
-                      const node = selectedElement.element.childNodes[i];
-                      if (node.nodeType === Node.TEXT_NODE) {
-                        node.textContent = newContent;
-                        hasUpdatedTextNode = true;
-                        break; // Update only the first text node
-                      }
+                    // 1. Remove all current content while saving the references
+                    while (selectedElement.element.firstChild) {
+                      selectedElement.element.removeChild(selectedElement.element.firstChild);
                     }
                     
-                    // If no text node found, append a new one
-                    if (!hasUpdatedTextNode) {
-                      selectedElement.element.appendChild(document.createTextNode(newContent));
-                    }
+                    // 2. Analyze the original element structure to determine where text was
+                    // For simplicity, we'll insert text at the beginning if there was no text node before
+                    fragment.appendChild(document.createTextNode(newContent));
+                    
+                    // 3. Add back all the non-text nodes in their original positions
+                    // This is a simplified approach - we're appending all non-text nodes after the text
+                    nonTextNodes.forEach(node => {
+                      fragment.appendChild(node);
+                    });
+                    
+                    // 4. Apply all changes at once to minimize reflows/repaints
+                    selectedElement.element.appendChild(fragment);
                   }
                 } else {
                   // For other elements, use innerHTML with sanitization
+                  // But apply it in a way that minimizes flicker
                   const sanitizedContent = newContent
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;')
                     .replace(/&lt;br&gt;/g, '<br>') // Allow <br> tags
                     .replace(/\n/g, '<br>'); // Convert newlines to <br>
+                  
+                  // Create a temporary container with the new content
+                  const tempContainer = document.createElement('div');
+                  tempContainer.innerHTML = sanitizedContent;
+                  
+                  // Batch updates using requestAnimationFrame to reduce flicker
+                  requestAnimationFrame(() => {
+                    // Apply the content in a single operation
+                    selectedElement.element.innerHTML = sanitizedContent;
                     
-                  selectedElement.element.innerHTML = sanitizedContent;
+                    // Force a repaint to ensure content is displayed correctly
+                    if (selectedElement && selectedElement.element) {
+                      void selectedElement.element.offsetHeight;
+                    }
+                  });
                 }
                 
                 // Apply styling if provided - for all element types
-                if (options?.styles) {
-                  applyStylesToElement(selectedElement.element, options.styles);
+                // But defer it to the next animation frame to prevent flicker
+                if (options?.styles && selectedElement?.element) {
+                  // Use a slight delay to ensure content is stable before styling
+                  requestAnimationFrame(() => {
+                    if (selectedElement?.element) {
+                      applyStylesToElement(selectedElement.element, options.styles);
+                    }
+                  });
                 }
               } catch (error) {
                 console.error("Error updating element text:", error);
