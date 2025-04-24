@@ -275,135 +275,137 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
       {adminState.isAdminMode && (
         <div 
           data-admin-toolbar="true"
-          className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white rounded-full shadow-lg border border-gray-200 p-2 z-50 flex items-center gap-2"
+          className="fixed bottom-4 left-0 right-0 mx-auto w-max max-w-[95%] overflow-auto bg-white rounded-lg shadow-lg border border-gray-200 px-3 py-2 z-50"
         >
-          <div className="bg-primary text-white text-xs px-3 py-1 rounded-full">
-            Element Edit Mode
-          </div>
-          
-          {selectedElement ? (
-            <div className="bg-slate-100 text-xs px-3 py-1 rounded-full flex items-center">
-              <span className="font-medium mr-1">Selected:</span> 
-              <span className="bg-white px-2 py-0.5 rounded border text-primary font-mono">
-                {selectedElement.type === 'image' ? 'Image' : 
-                 selectedElement.type === 'text' ? 'Text' : 
-                 selectedElement.type === 'video' ? 'Video' : 
-                 selectedElement.metadata?.tagName || 'Element'}
-              </span>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <div className="bg-primary text-white text-xs px-3 py-1 rounded-full flex-shrink-0">
+              Element Edit Mode
             </div>
-          ) : (
-            <div className="bg-slate-100 text-xs px-3 py-1 rounded-full flex items-center text-muted-foreground">
-              <MousePointer className="h-3 w-3 mr-1" /> Click any element to edit
-            </div>
-          )}
-          
-          <div className="flex items-center gap-2">
-            {selectedElement && (
+            
+            {selectedElement ? (
+              <div className="bg-slate-100 text-xs px-3 py-1 rounded-full flex items-center flex-shrink-0">
+                <span className="font-medium mr-1">Selected:</span> 
+                <span className="bg-white px-2 py-0.5 rounded border text-primary font-mono">
+                  {selectedElement.type === 'image' ? 'Image' : 
+                   selectedElement.type === 'text' ? 'Text' : 
+                   selectedElement.type === 'video' ? 'Video' : 
+                   selectedElement.metadata?.tagName || 'Element'}
+                </span>
+              </div>
+            ) : (
+              <div className="bg-slate-100 text-xs px-3 py-1 rounded-full flex items-center text-muted-foreground flex-shrink-0">
+                <MousePointer className="h-3 w-3 mr-1" /> Click any element to edit
+              </div>
+            )}
+            
+            <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
+              {selectedElement && (
+                <Button
+                  data-admin-action="clear"
+                  variant="outline"
+                  size="sm"
+                  className="h-9 w-[90px]"
+                  onClick={() => {
+                    clearSelectedElement();
+                    toast({
+                      title: 'Selection Cleared',
+                      description: 'Element selection has been cleared',
+                    });
+                  }}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Clear
+                </Button>
+              )}
+              
               <Button
-                data-admin-action="clear"
+                data-admin-action="save"
                 variant="outline"
                 size="sm"
-                className="h-9 px-3"
+                className="h-9 w-[90px]"
                 onClick={() => {
+                  toast({
+                    title: 'Changes Saved',
+                    description: 'Your edits have been saved',
+                  });
+                }}
+              >
+                <Save className="h-4 w-4 mr-1" />
+                Save
+              </Button>
+              
+              <Button
+                data-admin-action="dashboard"
+                variant="outline"
+                size="sm"
+                className="h-9 w-[120px]"
+                onClick={() => {
+                  // Navigate to admin dashboard
+                  window.location.href = '/admin';
+                  toast({
+                    title: 'Returning to Dashboard',
+                    description: 'Navigating to admin dashboard...',
+                  });
+                }}
+              >
+                <LayoutDashboard className="h-4 w-4 mr-1" />
+                Dashboard
+              </Button>
+              
+              <Button
+                data-admin-action="logout"
+                variant="outline"
+                size="sm"
+                className="h-9 w-[90px] bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
+                onClick={() => {
+                  // Perform logout action
+                  fetch('/api/admin/logout', { method: 'POST' })
+                    .then(() => {
+                      // Clear admin mode
+                      adminState.setAdminMode(false);
+                      clearSelectedElement();
+                      // Clear admin token
+                      localStorage.removeItem('adminToken');
+                      // Navigate home
+                      window.location.href = '/';
+                      toast({
+                        title: 'Logged Out',
+                        description: 'You have been logged out of admin mode',
+                        variant: 'destructive',
+                      });
+                    })
+                    .catch(err => {
+                      console.error('Logout error:', err);
+                      toast({
+                        title: 'Logout Failed',
+                        description: 'There was an error logging out. Please try again.',
+                        variant: 'destructive',
+                      });
+                    });
+                }}
+              >
+                <LogOut className="h-4 w-4 mr-1" />
+                Logout
+              </Button>
+              
+              <Button
+                data-admin-action="exit"
+                variant="destructive"
+                size="sm"
+                className="h-9 w-[90px]"
+                onClick={() => {
+                  adminState.setAdminMode(false);
                   clearSelectedElement();
                   toast({
-                    title: 'Selection Cleared',
-                    description: 'Element selection has been cleared',
+                    title: 'Admin Mode Disabled',
+                    description: 'Exited element editing mode',
                   });
                 }}
               >
                 <X className="h-4 w-4 mr-1" />
-                Clear
+                Exit
               </Button>
-            )}
-            
-            <Button
-              data-admin-action="save"
-              variant="outline"
-              size="sm"
-              className="h-9 px-3"
-              onClick={() => {
-                toast({
-                  title: 'Changes Saved',
-                  description: 'Your edits have been saved',
-                });
-              }}
-            >
-              <Save className="h-4 w-4 mr-1" />
-              Save
-            </Button>
-            
-            <Button
-              data-admin-action="dashboard"
-              variant="outline"
-              size="sm"
-              className="h-9 px-3"
-              onClick={() => {
-                // Navigate to admin dashboard
-                window.location.href = '/admin';
-                toast({
-                  title: 'Returning to Dashboard',
-                  description: 'Navigating to admin dashboard...',
-                });
-              }}
-            >
-              <LayoutDashboard className="h-4 w-4 mr-1" />
-              Dashboard
-            </Button>
-            
-            <Button
-              data-admin-action="logout"
-              variant="outline"
-              size="sm"
-              className="h-9 px-3 bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
-              onClick={() => {
-                // Perform logout action
-                fetch('/api/admin/logout', { method: 'POST' })
-                  .then(() => {
-                    // Clear admin mode
-                    adminState.setAdminMode(false);
-                    clearSelectedElement();
-                    // Clear admin token
-                    localStorage.removeItem('adminToken');
-                    // Navigate home
-                    window.location.href = '/';
-                    toast({
-                      title: 'Logged Out',
-                      description: 'You have been logged out of admin mode',
-                      variant: 'destructive',
-                    });
-                  })
-                  .catch(err => {
-                    console.error('Logout error:', err);
-                    toast({
-                      title: 'Logout Failed',
-                      description: 'There was an error logging out. Please try again.',
-                      variant: 'destructive',
-                    });
-                  });
-              }}
-            >
-              <LogOut className="h-4 w-4 mr-1" />
-              Logout
-            </Button>
-            
-            <Button
-              data-admin-action="exit"
-              variant="destructive"
-              size="sm"
-              className="h-9 px-3"
-              onClick={() => {
-                adminState.setAdminMode(false);
-                clearSelectedElement();
-                toast({
-                  title: 'Admin Mode Disabled',
-                  description: 'Exited element editing mode',
-                });
-              }}
-            >
-              <X className="h-4 w-4 mr-1" />
-              Exit
-            </Button>
+            </div>
           </div>
         </div>
       )}
