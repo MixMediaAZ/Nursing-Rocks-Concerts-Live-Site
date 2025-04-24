@@ -246,21 +246,33 @@ export async function authenticateToken(req: Request, res: Response, next: Funct
       return res.status(403).json({ message: 'Invalid or expired token' });
     }
     
-    // Fetch the complete user to get isAdmin value
+    // For admin tokens generated directly, use the token's isAdmin flag
+    if (decoded.isAdmin) {
+      (req as any).user = {
+        userId: decoded.userId,
+        email: decoded.email,
+        isVerified: decoded.isVerified,
+        isAdmin: decoded.isAdmin
+      };
+      return next();
+    }
+    
+    // For regular user tokens, fetch the complete user to get the latest isAdmin status
     const user = await storage.getUserById(decoded.userId);
     if (!user) {
       return res.status(403).json({ message: 'User not found' });
     }
     
     (req as any).user = {
-      id: decoded.userId,
-      userId: decoded.userId, // Add userId for consistency
+      userId: decoded.userId,
       email: decoded.email,
-      is_verified: decoded.isVerified,
-      isAdmin: user.is_admin // Add isAdmin flag
+      isVerified: decoded.isVerified,
+      isAdmin: user.is_admin // Set isAdmin property consistently
     };
+    
     next();
   } catch (error) {
+    console.error('Token verification error:', error);
     return res.status(403).json({ message: 'Invalid or expired token' });
   }
 }
