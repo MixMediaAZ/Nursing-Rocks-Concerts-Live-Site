@@ -185,6 +185,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id, replacementId } = req.params;
       const originalUrl = req.body.originalUrl; // Capture original URL if provided
       
+      console.log(`Replacing image: ID=${id}, ReplacementID=${replacementId}, OriginalURL=${originalUrl || 'none'}`);
+      
       // Validate the replacement ID
       if (!replacementId || isNaN(parseInt(replacementId, 10))) {
         return res.status(400).json({ error: 'Invalid replacement image ID' });
@@ -193,8 +195,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newImageId = parseInt(replacementId, 10);
       let originalImage: any = null;
       
+      // Check if we're dealing with an editable element (ID starts with "editable-element-")
+      if (id.startsWith('editable-element-')) {
+        console.log(`Handling editable element: ${id}`);
+        // Handle editable element - this is a special case for admin mode
+        originalImage = {
+          id: -1,
+          image_url: originalUrl || `/assets/placeholders/image-placeholder.png`,
+          alt_text: req.body.alt_text || 'Editable Image',
+          // Set minimal required properties
+          media_type: 'image',
+          created_at: new Date(),
+          updated_at: new Date()
+        };
+      }
       // Check if we're dealing with a placeholder image
-      if (id === '-1' && originalUrl) {
+      else if (id === '-1' && originalUrl) {
         // Handle placeholder image with provided URL
         originalImage = {
           id: -1,
