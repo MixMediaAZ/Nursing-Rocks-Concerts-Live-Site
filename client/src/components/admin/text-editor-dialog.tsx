@@ -4,17 +4,26 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Save, X, ScreenShare, Text } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Save, X, ScreenShare, Text, Plus } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface TextEditorDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (newContent: string) => void;
+  onSave: (newContent: string, options?: TextSaveOptions) => void;
   elementId?: string | number;
   initialContent?: string;
   title?: string;
   description?: string;
   multiline?: boolean;
+  isCreatingNew?: boolean;
+}
+
+export interface TextSaveOptions {
+  elementType?: 'p' | 'h1' | 'h2' | 'h3' | 'h4' | 'span' | 'div';
+  className?: string;
+  insertLocation?: 'before' | 'after' | 'append' | 'prepend';
 }
 
 export function TextEditorDialog({
@@ -25,12 +34,17 @@ export function TextEditorDialog({
   initialContent = '',
   title = 'Edit Text',
   description = 'Update the text content',
-  multiline = true
+  multiline = true,
+  isCreatingNew = false
 }: TextEditorDialogProps) {
   const [content, setContent] = useState(initialContent);
   const [isMobile, setIsMobile] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Options for new text element creation
+  const [elementType, setElementType] = useState<TextSaveOptions['elementType']>('p');
+  const [insertLocation, setInsertLocation] = useState<TextSaveOptions['insertLocation']>('after');
   
   // Reset content when dialog opens with new initial content
   useEffect(() => {
@@ -123,6 +137,65 @@ export function TextEditorDialog({
                 <div className="mt-2 flex items-center text-xs text-muted-foreground">
                   <Text className="h-3 w-3 mr-1" />
                   <span>Use the keyboard or tap buttons below to edit text</span>
+                </div>
+              )}
+              
+              {isCreatingNew && (
+                <div className="mt-4 space-y-4 border-t pt-4">
+                  <h3 className="text-sm font-medium">New Text Element Options</h3>
+                  
+                  <div className="space-y-3">
+                    {/* Element Type Selection */}
+                    <div className="space-y-1">
+                      <Label htmlFor="elementType">Element Type</Label>
+                      <Select 
+                        value={elementType} 
+                        onValueChange={(value) => setElementType(value as TextSaveOptions['elementType'])}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select element type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="p">Paragraph</SelectItem>
+                          <SelectItem value="h1">Heading 1 (Largest)</SelectItem>
+                          <SelectItem value="h2">Heading 2</SelectItem>
+                          <SelectItem value="h3">Heading 3</SelectItem>
+                          <SelectItem value="h4">Heading 4</SelectItem>
+                          <SelectItem value="span">Span (Inline Text)</SelectItem>
+                          <SelectItem value="div">Div (Container)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {/* Insert Location */}
+                    {elementId && (
+                      <div className="space-y-1">
+                        <Label>Insert Location</Label>
+                        <RadioGroup 
+                          value={insertLocation} 
+                          onValueChange={(value) => setInsertLocation(value as TextSaveOptions['insertLocation'])}
+                          className="grid grid-cols-2 gap-2"
+                        >
+                          <div className="flex items-center space-x-2 border rounded-md p-2">
+                            <RadioGroupItem value="before" id="before" />
+                            <Label htmlFor="before" className="cursor-pointer">Before selected element</Label>
+                          </div>
+                          <div className="flex items-center space-x-2 border rounded-md p-2">
+                            <RadioGroupItem value="after" id="after" />
+                            <Label htmlFor="after" className="cursor-pointer">After selected element</Label>
+                          </div>
+                          <div className="flex items-center space-x-2 border rounded-md p-2">
+                            <RadioGroupItem value="append" id="append" />
+                            <Label htmlFor="append" className="cursor-pointer">Inside (at end)</Label>
+                          </div>
+                          <div className="flex items-center space-x-2 border rounded-md p-2">
+                            <RadioGroupItem value="prepend" id="prepend" />
+                            <Label htmlFor="prepend" className="cursor-pointer">Inside (at beginning)</Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
