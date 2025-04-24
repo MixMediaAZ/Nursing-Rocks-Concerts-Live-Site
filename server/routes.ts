@@ -1761,7 +1761,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               "Accept": "application/json",
               "Content-Type": "application/json"
             },
-            signal: AbortSignal.timeout(5000) // slightly longer timeout for API calls
+            signal: AbortSignal.timeout(15000) // longer timeout for external API calls
           });
           
           if (response.ok) {
@@ -1854,9 +1854,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Map the product data - handle different formats from the API
           const productData = {
             name: product.name || product.title || product.product_name || "CustomCat Product",
-            description: product.description || product.product_description || "",
+            description: product.description || product.product_description || 
+                      [
+                        product.product_description_bullet1,
+                        product.product_description_bullet2,
+                        product.product_description_bullet3,
+                        product.product_description_bullet4,
+                        product.product_description_bullet5
+                      ].filter(Boolean).join('\n') || "",
             price: product.price ? parseFloat(product.price).toFixed(2) : "29.99",
-            image_url: product.image_url || product.thumbnail || product.product_image || 
+            image_url: product.image_url || product.thumbnail || 
+                      (product.product_image && product.product_image.startsWith('//') 
+                        ? 'https:' + product.product_image 
+                        : product.product_image) || 
+                      (product.product_colors && product.product_colors[0] && product.product_colors[0].product_image && 
+                        product.product_colors[0].product_image.startsWith('//')
+                          ? 'https:' + product.product_colors[0].product_image
+                          : product.product_colors && product.product_colors[0] && product.product_colors[0].product_image) ||
                       (product.images && product.images[0]) || null,
             category: product.category || product.subcategory || "CustomCat Products",
             is_featured: false,
@@ -1865,8 +1879,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             external_id: productId,
             external_source: "customcat",
             metadata: {
-              customcat_data: product,
-              variants: product.variants || product.options || product.sizes || []
+              customcat_data: {
+                id: product.id || product.catalog_product_id,
+                name: product.name || product.product_name || product.title,
+                had_back: product.had_back,
+                print_method: product.product_description_bullet5 || ""
+              },
+              variants: product.variants || product.options || product.sizes || [],
+              colors: product.product_colors || product.colors || [],
+              description_bullets: [
+                product.product_description_bullet1,
+                product.product_description_bullet2,
+                product.product_description_bullet3,
+                product.product_description_bullet4,
+                product.product_description_bullet5
+              ].filter(Boolean)
             }
           };
           
