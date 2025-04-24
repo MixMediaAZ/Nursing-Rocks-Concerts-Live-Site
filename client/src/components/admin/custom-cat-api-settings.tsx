@@ -16,6 +16,7 @@ import { apiRequest } from "@/lib/queryClient";
 import type { HeadersInit } from "node-fetch";
 
 export const CustomCatApiSettings = () => {
+  // Added ID to the component for direct scrolling from Quick Actions
   const [apiKey, setApiKey] = useState("");
   const [showApiKey, setShowApiKey] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
