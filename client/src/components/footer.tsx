@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Heart, Mail, Phone, MapPin, Instagram, Facebook, Twitter } from "lucide-react";
+import { Heart, Mail, Phone, MapPin, Instagram, Facebook, Twitter, Lock } from "lucide-react";
 import logoPath from "../assets/nursing-rocks-logo.png";
 
 export function Footer() {
@@ -121,8 +121,8 @@ export function Footer() {
                 </div>
               </Link>
               <Link href="/admin">
-                <div className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
-                  Admin
+                <div className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors cursor-pointer border border-primary/30 rounded-md px-2 py-1 flex items-center justify-center gap-1">
+                  <Lock className="h-3 w-3" /> Admin Login
                 </div>
               </Link>
             </div>

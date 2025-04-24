@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { 
   Key, 
   KeyRound, 
@@ -19,7 +20,8 @@ import {
   Store, 
   FileEdit, 
   Lock,
-  Edit
+  Edit,
+  LogOut
 } from "lucide-react";
 import CustomCatApiSettings from "@/components/admin/custom-cat-api-settings";
 import ProductSyncTool from "@/components/admin/product-sync-tool";
@@ -275,6 +277,15 @@ export default function AdminPage() {
 
     return (
       <div className="flex flex-col">
+        {/* Admin Status Alert */}
+        <Alert className="mb-4 bg-green-50 border-green-300">
+          <LayoutDashboard className="h-5 w-5 text-green-600" />
+          <AlertTitle className="text-green-800 font-bold">Admin Mode Active</AlertTitle>
+          <AlertDescription className="text-green-700">
+            You are currently signed in as an administrator. You have full access to all admin features.
+          </AlertDescription>
+        </Alert>
+        
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <LayoutDashboard className="h-7 w-7" /> Admin Dashboard
@@ -300,11 +311,11 @@ export default function AdminPage() {
             </div>
             
             <Button 
-              variant="outline"
+              variant="destructive"
               onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="flex items-center gap-2"
             >
-              Logout
+              <LogOut className="h-4 w-4" /> Admin Logout
             </Button>
           </div>
         </div>
