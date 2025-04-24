@@ -255,9 +255,11 @@ export default function AdminPage() {
 
   // Admin Dashboard Component
   const AdminDashboard = () => {
-    // Check if we have a stored tab to navigate to
+    // Check URL params first, then stored tab
+    const queryParams = new URLSearchParams(window.location.search);
+    const tabParam = queryParams.get("tab");
     const storedTab = localStorage.getItem("adminActiveTab");
-    const [activeTab, setActiveTab] = useState(storedTab || "overview");
+    const [activeTab, setActiveTab] = useState(tabParam || storedTab || "overview");
     
     // Admin mode state - controls access to editing features
     const [isAdminMode, setIsAdminMode] = useState(true);
@@ -266,42 +268,29 @@ export default function AdminPage() {
     const [showPinDialog, setShowPinDialog] = useState(false);
     const [pinInput, setPinInput] = useState("");
     
-    // Effect to handle the redirect to CustomCat settings if needed
+    // Effect to handle scrolling to API settings when tab=store is in URL
     useEffect(() => {
-      const shouldScrollToCustomCat = localStorage.getItem("scrollToCustomCat") === "true";
+      // Check if we should scroll to CustomCat settings
+      const queryParams = new URLSearchParams(window.location.search);
+      const shouldScrollToApiSettings = activeTab === "store" && queryParams.get("tab") === "store";
       
-      if (shouldScrollToCustomCat) {
-        // Clear the flag so it doesn't trigger again on refresh
-        localStorage.removeItem("scrollToCustomCat");
-        localStorage.removeItem("adminActiveTab");
+      if (shouldScrollToApiSettings) {
+        // Remove the tab parameter from URL to prevent re-scrolling on refresh
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
         
-        // More reliable approach - use multiple attempts with increasing delays
-        const tryToScrollToElement = (attemptCount = 1) => {
-          console.log(`Attempt ${attemptCount} to scroll to CustomCat settings`);
-          
-          // Try to find the anchor element first, then fall back to the wrapper
-          const element = document.getElementById('api-settings-anchor') || 
-                         document.getElementById('store-api-settings-wrapper');
+        // Scroll to API settings after DOM has time to render
+        setTimeout(() => {
+          const element = document.getElementById('api-settings-anchor');
           if (element) {
-            console.log('CustomCat settings element found, scrolling to it');
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
             
-            // Use window.scrollTo instead of element.scrollIntoView for more reliable behavior
-            const rect = element.getBoundingClientRect();
-            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            const targetY = rect.top + scrollTop - 100; // 100px offset from top
-            
-            window.scrollTo({
-              top: targetY,
-              behavior: 'smooth'
-            });
-            
-            // Find the wrapper to highlight (we want to highlight the card, not just the invisible anchor)
+            // Highlight the settings wrapper
             const wrapperToHighlight = document.getElementById('store-api-settings-wrapper');
             if (wrapperToHighlight) {
-              // Apply a pulsing animation to draw attention
               wrapperToHighlight.classList.add('ring-4', 'ring-primary', 'ring-offset-2', 'transition-all', 'duration-300');
               
-              // Create a pulsing effect
+              // Create pulsing effect and clean up after 5 pulses
               let pulseCount = 0;
               const pulseInterval = setInterval(() => {
                 if (pulseCount >= 5) {
@@ -310,7 +299,6 @@ export default function AdminPage() {
                   return;
                 }
                 
-                // Toggle between different states to create pulsing
                 if (pulseCount % 2 === 0) {
                   wrapperToHighlight.classList.add('ring-opacity-50', 'scale-[1.01]');
                 } else {
@@ -320,23 +308,10 @@ export default function AdminPage() {
                 pulseCount++;
               }, 400);
             }
-            
-            return true;
-          } else if (attemptCount < 5) {
-            // Try again with exponential backoff
-            console.log(`Element not found, retrying in ${attemptCount * 300}ms`);
-            setTimeout(() => tryToScrollToElement(attemptCount + 1), attemptCount * 300);
-            return false;
-          } else {
-            console.log('Failed to find CustomCat settings element after multiple attempts');
-            return false;
           }
-        };
-        
-        // Start the first attempt after the DOM has had time to render
-        setTimeout(() => tryToScrollToElement(), 800);
+        }, 500);
       }
-    }, []);
+    }, [activeTab]);
     
     // Direct navigation to gallery with admin access
     const openGalleryWithAdminAccess = () => {
@@ -759,40 +734,8 @@ export default function AdminPage() {
                     </p>
                     <Button
                       onClick={() => {
-                        // Set activeTab directly
-                        setActiveTab("store");
-                        
-                        // Wait for tab content to render, then scroll to element
-                        setTimeout(() => {
-                          const element = document.getElementById('api-settings-anchor');
-                          if (element) {
-                            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            
-                            // Highlight effect
-                            const wrapperToHighlight = document.getElementById('store-api-settings-wrapper');
-                            if (wrapperToHighlight) {
-                              wrapperToHighlight.classList.add('ring-4', 'ring-primary', 'ring-offset-2', 'transition-all', 'duration-300');
-                              
-                              // Create a pulsing effect
-                              let pulseCount = 0;
-                              const pulseInterval = setInterval(() => {
-                                if (pulseCount >= 5) {
-                                  clearInterval(pulseInterval);
-                                  wrapperToHighlight.classList.remove('ring-4', 'ring-primary', 'ring-offset-2', 'transition-all', 'duration-300');
-                                  return;
-                                }
-                                
-                                if (pulseCount % 2 === 0) {
-                                  wrapperToHighlight.classList.add('ring-opacity-50', 'scale-[1.01]');
-                                } else {
-                                  wrapperToHighlight.classList.remove('ring-opacity-50', 'scale-[1.01]');
-                                }
-                                
-                                pulseCount++;
-                              }, 400);
-                            }
-                          }
-                        }, 300);
+                        // Go directly to admin page with store tab
+                        window.location.href = "/admin?tab=store";
                         
                         toast({
                           title: "CustomCat API",
