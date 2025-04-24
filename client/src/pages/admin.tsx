@@ -431,185 +431,116 @@ export default function AdminPage() {
               </Card>
             </div>
             
-            <Card 
-              className="mt-6 cursor-pointer hover:border-primary hover:shadow-md transition-all duration-200"
-              onClick={() => {
-                toast({
-                  title: "Quick Actions",
-                  description: "Use these shortcuts to navigate through admin features",
-                  variant: "default",
-                });
-              }}
-            >
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="M11 4h10"/><path d="M11 12h10"/><path d="M11 20h10"/></svg>
-                  Quick Actions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Highlighted button for editing live site in admin mode */}
-                  <div 
-                    className="h-auto py-6 flex flex-col items-center justify-center gap-2 bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white rounded-md cursor-pointer shadow hover:shadow-md transition-all"
-                    onClick={() => {
-                      openLiveSiteInAdminMode();
-                      toast({
-                        title: "Admin Edit Mode Activated",
-                        description: "Opening live site in admin edit mode...",
-                        variant: "default",
-                      });
-                    }}
-                  >
-                    <FileEdit className="h-8 w-8" />
-                    <span className="text-lg font-bold">Open Live Site in Admin Mode</span>
-                  </div>
-                  
-                  <div 
-                    className="h-auto py-6 flex flex-col items-center justify-center gap-2 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground cursor-pointer shadow-sm hover:shadow transition-all"
-                    onClick={() => {
-                      openGalleryWithAdminAccess();
-                      toast({
-                        title: "Gallery Access",
-                        description: "Opening gallery with admin access...",
-                        variant: "default",
-                      });
-                    }}
-                  >
-                    <ImageIcon className="h-8 w-8" />
-                    <span className="text-lg font-semibold">Manage Gallery</span>
-                  </div>
-                </div>
+            {/* Admin Action Cards Section */}
+            <div className="mt-6 mb-8">
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="M11 4h10"/><path d="M11 12h10"/><path d="M11 20h10"/></svg>
+                Admin Actions
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="hover:shadow-md transition-all duration-200 border-primary/30">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <FileEdit className="h-5 w-5 text-primary" /> Edit Website Content
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Start editing website content directly on the live pages
+                    </p>
+                    <Button 
+                      className="w-full bg-primary"
+                      onClick={() => {
+                        openLiveSiteInAdminMode(true);
+                        toast({
+                          title: "Edit Mode Activated",
+                          description: "Opening live site with editing enabled...",
+                          variant: "default",
+                        });
+                      }}
+                    >
+                      Open Editor
+                    </Button>
+                  </CardContent>
+                </Card>
+              
+                <Card className="hover:shadow-md transition-all duration-200 border-primary/30">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <ImageIcon className="h-5 w-5 text-primary" /> Manage Gallery
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Upload, organize, and manage gallery images
+                    </p>
+                    <Button
+                      onClick={() => {
+                        openGalleryWithAdminAccess();
+                        toast({
+                          title: "Gallery Access",
+                          description: "Opening gallery with admin access...",
+                          variant: "default",
+                        });
+                      }}
+                      className="w-full"
+                    >
+                      Manage Gallery
+                    </Button>
+                  </CardContent>
+                </Card>
                 
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4">
-                  <div 
-                    className="h-auto py-4 flex flex-col items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 hover:border-gray-300 rounded-md border border-input cursor-pointer shadow-sm hover:shadow transition-all"
-                    onClick={() => {
-                      window.location.href = "/edit-demo";
-                      toast({
-                        title: "Edit Demo",
-                        description: "Opening element editing demo page...",
-                        variant: "default",
-                      });
-                    }}
-                  >
-                    <Edit className="h-6 w-6" />
-                    <span className="text-sm font-semibold">Edit Demo</span>
-                  </div>
-
-                  <div 
-                    className="h-auto py-4 flex flex-col items-center justify-center gap-2 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground cursor-pointer shadow-sm hover:shadow transition-all"
-                    onClick={() => {
-                      toast({
-                        title: "Event Management",
-                        description: "Opening event management interface...",
-                        variant: "default",
-                      });
-                      // First update the active tab state
-                      setActiveTab("events");
-                      // Then refresh tabs component to show the correct content
-                      const tabsElement = document.querySelector('[role="tablist"]');
-                      if (tabsElement) {
-                        const eventsTab = tabsElement.querySelector('[data-value="events"]');
-                        if (eventsTab && eventsTab instanceof HTMLElement) {
-                          eventsTab.click();
+                <Card className="hover:shadow-md transition-all duration-200 border-primary/30">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Settings className="h-5 w-5 text-primary" /> CustomCat Settings
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Configure CustomCat API integration for store products
+                    </p>
+                    <Button
+                      onClick={() => {
+                        // First update the active tab state
+                        setActiveTab("store");
+                        toast({
+                          title: "CustomCat API",
+                          description: "Opening CustomCat API configuration...",
+                          variant: "default",
+                        });
+                        
+                        // Then refresh tabs component to show the correct content
+                        const tabsElement = document.querySelector('[role="tablist"]');
+                        if (tabsElement) {
+                          const storeTab = tabsElement.querySelector('[data-value="store"]');
+                          if (storeTab && storeTab instanceof HTMLElement) {
+                            storeTab.click();
+                            
+                            // Scroll to CustomCat API settings after tab switch completes
+                            setTimeout(() => {
+                              const element = document.getElementById('customcat-api-settings');
+                              if (element) {
+                                element.scrollIntoView({ behavior: 'smooth' });
+                                // Highlight the element briefly
+                                element.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
+                                setTimeout(() => {
+                                  element.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
+                                }, 2000);
+                              }
+                            }, 300);
+                          }
                         }
-                      }
-                    }}
-                  >
-                    <Calendar className="h-6 w-6" />
-                    <span>Add New Event</span>
-                  </div>
-                  
-                  <div 
-                    className="h-auto py-4 flex flex-col items-center justify-center gap-2 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground cursor-pointer shadow-sm hover:shadow transition-all"
-                    onClick={() => {
-                      toast({
-                        title: "Store Management",
-                        description: "Opening store management interface...",
-                        variant: "default",
-                      });
-                      // First update the active tab state
-                      setActiveTab("store");
-                      // Then refresh tabs component to show the correct content
-                      const tabsElement = document.querySelector('[role="tablist"]');
-                      if (tabsElement) {
-                        const storeTab = tabsElement.querySelector('[data-value="store"]');
-                        if (storeTab && storeTab instanceof HTMLElement) {
-                          storeTab.click();
-                        }
-                      }
-                    }}
-                  >
-                    <Store className="h-6 w-6" />
-                    <span>Manage Store</span>
-                  </div>
-                  
-                  <div 
-                    className="h-auto py-4 flex flex-col items-center justify-center gap-2 bg-orange-50 hover:bg-orange-100 rounded-md border border-orange-200 hover:border-orange-300 cursor-pointer shadow-sm hover:shadow transition-all"
-                    onClick={() => {
-                      toast({
-                        title: "CustomCat Settings",
-                        description: "Opening CustomCat API configuration...",
-                        variant: "default",
-                      });
-                      
-                      // First update the active tab state
-                      setActiveTab("store");
-                      
-                      // Then refresh tabs component to show the correct content
-                      const tabsElement = document.querySelector('[role="tablist"]');
-                      if (tabsElement) {
-                        const storeTab = tabsElement.querySelector('[data-value="store"]');
-                        if (storeTab && storeTab instanceof HTMLElement) {
-                          storeTab.click();
-                          
-                          // Scroll to CustomCat API settings after tab switch completes
-                          setTimeout(() => {
-                            const element = document.getElementById('customcat-api-settings');
-                            if (element) {
-                              element.scrollIntoView({ behavior: 'smooth' });
-                              // Highlight the element briefly
-                              element.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
-                              setTimeout(() => {
-                                element.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
-                              }, 2000);
-                            }
-                          }, 300);
-                        }
-                      }
-                    }}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"></path><path d="M8.56 2.9A7 7 0 0 1 12 12v7"></path><path d="M17.07 2.69A7 7 0 0 1 12 12v7"></path><path d="M2.42 10.9a7 7 0 0 0 9.38 7.63"></path><path d="M21.58 10.9a7 7 0 0 1-9.38 7.63"></path></svg>
-                    <span>CustomCat API</span>
-                  </div>
-                  
-                  <div 
-                    className="h-auto py-4 flex flex-col items-center justify-center gap-2 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground cursor-pointer shadow-sm hover:shadow transition-all"
-                    onClick={() => {
-                      toast({
-                        title: "Content Management",
-                        description: "Opening content management interface...",
-                        variant: "default",
-                      });
-                      // First update the active tab state
-                      setActiveTab("content");
-                      // Then refresh tabs component to show the correct content
-                      const tabsElement = document.querySelector('[role="tablist"]');
-                      if (tabsElement) {
-                        const contentTab = tabsElement.querySelector('[data-value="content"]');
-                        if (contentTab && contentTab instanceof HTMLElement) {
-                          contentTab.click();
-                        }
-                      }
-                    }}
-                  >
-                    <Settings className="h-6 w-6" />
-                    <span>Site Settings</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                      }}
+                      className="w-full"
+                    >
+                      Configure API
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </TabsContent>
           
           <TabsContent value="editor">
