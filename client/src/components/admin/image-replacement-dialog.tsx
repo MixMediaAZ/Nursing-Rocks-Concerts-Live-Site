@@ -165,17 +165,16 @@ export function ImageReplacementDialog({
       console.log(`Original URL: ${originalUrl || 'None provided'}`);
       console.log(`Payload:`, payload);
       
-      // Use the correct payload format - send the payload directly as the data object
-      const response = await apiRequest(
-        'POST', 
-        endpoint, 
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload)
-        }
-      );
+      // Send the request using direct fetch call instead of the apiRequest abstraction
+      // This ensures we have precise control over the request format
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        credentials: 'include' // Important for sessions/cookies
+      });
       
       if (!response.ok) {
         throw new Error('Failed to replace image');
