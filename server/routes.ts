@@ -968,16 +968,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const products = await storage.getAllStoreProducts();
       
-      // Check if we have CustomCat products
+      // Directly filter for only CustomCat products
       const customCatProducts = products.filter(product => product.external_source === "customcat");
       
-      // If we have CustomCat products, return only them (exclude placeholders)
-      if (customCatProducts.length > 0) {
-        res.json(customCatProducts);
-      } else {
-        // If no CustomCat products, return all products (including placeholders)
-        res.json(products);
-      }
+      // Return only CustomCat products
+      res.json(customCatProducts);
     } catch (error) {
       console.error("Error fetching store products:", error);
       res.status(500).json({ message: "Failed to fetch store products" });
@@ -987,24 +982,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/store/products/featured", async (req: Request, res: Response) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
-      const products = await storage.getFeaturedStoreProducts(limit);
       
-      // Check if we have CustomCat products
+      // Get all CustomCat products
       const allProducts = await storage.getAllStoreProducts();
       const customCatProducts = allProducts.filter(product => product.external_source === "customcat");
       
-      if (customCatProducts.length > 0) {
-        // If we have CustomCat products, feature some of them
-        // Get at least 4 CustomCat products to show as featured
-        const featuredCustomCat = customCatProducts
-          .sort(() => Math.random() - 0.5) // Random shuffle
-          .slice(0, limit || 4);
-          
-        res.json(featuredCustomCat);
-      } else {
-        // If no CustomCat products, return original featured products
-        res.json(products);
-      }
+      // Always return CustomCat products
+      // Get random products to feature
+      const featuredCustomCat = customCatProducts
+        .sort(() => Math.random() - 0.5) // Random shuffle
+        .slice(0, limit || 4);
+        
+      res.json(featuredCustomCat);
     } catch (error) {
       console.error("Error fetching featured products:", error);
       res.status(500).json({ message: "Failed to fetch featured products" });
@@ -1014,36 +1003,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/store/products/category/:category", async (req: Request, res: Response) => {
     try {
       const category = req.params.category;
-      let products = await storage.getStoreProductsByCategory(category);
       
-      // Check if we have CustomCat products
+      // Get all CustomCat products
       const allProducts = await storage.getAllStoreProducts();
       const customCatProducts = allProducts.filter(product => product.external_source === "customcat");
       
-      if (customCatProducts.length > 0) {
-        // If we have CustomCat products, filter by category from CustomCat
-        const customCatInCategory = customCatProducts.filter(product => {
-          // Category might be in the title, description or category field
-          const searchFields = [
-            product.name?.toLowerCase() || "",
-            product.description?.toLowerCase() || "",
-            product.category?.toLowerCase() || ""
-          ];
-          
-          return searchFields.some(field => field.includes(category.toLowerCase()));
-        });
+      // Filter the CustomCat products by category
+      const customCatInCategory = customCatProducts.filter(product => {
+        // Category might be in the title, description or category field
+        const searchFields = [
+          product.name?.toLowerCase() || "",
+          product.description?.toLowerCase() || "",
+          product.category?.toLowerCase() || ""
+        ];
         
-        if (customCatInCategory.length > 0) {
-          // Return CustomCat products in this category
-          res.json(customCatInCategory);
-        } else {
-          // No CustomCat products in this category, return empty array
-          res.json([]);
-        }
-      } else {
-        // If no CustomCat products, return original products
-        res.json(products);
-      }
+        return searchFields.some(field => field.includes(category.toLowerCase()));
+      });
+      
+      // Always return filtered CustomCat products (empty array if none match)
+      res.json(customCatInCategory);
     } catch (error) {
       console.error("Error fetching products by category:", error);
       res.status(500).json({ message: "Failed to fetch products by category" });
