@@ -42,7 +42,7 @@ function TshirtButton() {
       </div>
       <div className="relative w-full">
         <Button 
-          onClick={() => setLocation("/store/category/tshirts")}
+          onClick={() => setLocation("/store")}
           className="flex items-center justify-center gap-4 bg-[#F61D7A] hover:bg-[#E01060] text-white px-10 py-6 rounded-lg text-xl font-semibold transition-transform hover:scale-105 shadow-md w-full"
           id="tshirtButton"
           style={{ minHeight: "72px" }}
@@ -182,7 +182,7 @@ export default function PromotionButtons() {
             <Button
               variant="link"
               className="text-primary hover:text-primary/80 font-medium underline text-lg"
-              onClick={() => setLocation("/store/category/tshirts")}
+              onClick={() => setLocation("/store")}
               id="viewAllTshirtsButton"
             >
               {linkText}

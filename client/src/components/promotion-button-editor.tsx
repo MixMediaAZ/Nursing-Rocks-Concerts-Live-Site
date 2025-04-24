@@ -1,15 +1,22 @@
-import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
+import { Label } from "@/components/ui/label";
+import { useState } from "react";
 
 interface PromotionButtonEditorProps {
   isOpen: boolean;
   onClose: () => void;
   initialText: string;
   buttonId: string;
-  onSave: (newText: string) => void;
+  onSave: (text: string) => void;
 }
 
 export function PromotionButtonEditor({
@@ -17,98 +24,42 @@ export function PromotionButtonEditor({
   onClose,
   initialText,
   buttonId,
-  onSave
+  onSave,
 }: PromotionButtonEditorProps) {
   const [text, setText] = useState(initialText);
-  const { toast } = useToast();
-
-  // Reset text when dialog opens with new initial text
-  useEffect(() => {
-    if (isOpen) {
-      setText(initialText);
-    }
-  }, [isOpen, initialText]);
 
   const handleSave = () => {
-    try {
-      // Directly update the button text by ID
-      const buttonElement = document.getElementById(buttonId);
-      const textSpanId = buttonId === 'comfortSocksButton' ? 'comfortSocksText' : 'tshirtText';
-      const textSpan = document.getElementById(textSpanId);
-      
-      if (textSpan) {
-        // Update the span text
-        textSpan.textContent = text;
-        console.log(`Successfully updated ${textSpanId} to: "${text}"`);
-      } else if (buttonElement) {
-        // Fallback to updating button directly
-        const existingSpans = buttonElement.querySelectorAll('span');
-        if (existingSpans.length > 0) {
-          existingSpans[existingSpans.length - 1].textContent = text;
-        } else {
-          // Last resort - clear and rebuild button
-          const iconElement = buttonElement.querySelector('svg');
-          buttonElement.innerHTML = '';
-          
-          if (iconElement) {
-            buttonElement.appendChild(iconElement.cloneNode(true));
-          }
-          
-          const newSpan = document.createElement('span');
-          newSpan.className = 'text-center';
-          newSpan.textContent = text;
-          buttonElement.appendChild(newSpan);
-        }
-      } else {
-        throw new Error(`Button element with ID ${buttonId} not found`);
-      }
-      
-      // Notify parent component
-      onSave(text);
-      
-      // Show success message
-      toast({
-        title: 'Button Text Updated',
-        description: `The button text has been changed to "${text}"`,
-      });
-      
-      // Close the dialog
-      onClose();
-    } catch (error) {
-      console.error('Error updating button text:', error);
-      toast({
-        title: 'Error',
-        description: 'There was a problem updating the button text.',
-        variant: 'destructive',
-      });
-    }
+    onSave(text);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Edit Button Text</DialogTitle>
           <DialogDescription>
-            Update the text displayed on the promotion button.
+            Update the text displayed on this button. The changes will be visible to all users.
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="flex flex-col space-y-4 py-4">
-          <Input
-            id="button-text-input"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Enter button text"
-            className="col-span-3"
-          />
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor={`${buttonId}-text-input`} className="text-right">
+              Text
+            </Label>
+            <Input
+              id={`${buttonId}-text-input`}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              className="col-span-3"
+              autoFocus
+            />
+          </div>
         </div>
-        
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSave}>
+          <Button type="button" onClick={handleSave}>
             Save Changes
           </Button>
         </DialogFooter>
