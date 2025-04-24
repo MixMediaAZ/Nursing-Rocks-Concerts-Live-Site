@@ -702,7 +702,7 @@ export default function AdminPage() {
                             
                             // Scroll to CustomCat API settings after tab switch completes
                             setTimeout(() => {
-                              const element = document.getElementById('customcat-api-settings');
+                              const element = document.getElementById('store-api-settings-wrapper');
                               if (element) {
                                 element.scrollIntoView({ behavior: 'smooth' });
                                 // Highlight the element briefly
@@ -1176,7 +1176,7 @@ export default function AdminPage() {
           <TabsContent value="store">
             <div className="grid grid-cols-1 gap-6">
               {/* Store Integration Settings */}
-              <div id="customcat-api-settings">
+              <div id="store-api-settings-wrapper">
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
