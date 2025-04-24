@@ -298,6 +298,18 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
             // Update existing text
             if (selectedElement.element) {
               selectedElement.element.textContent = newContent;
+              
+              // Apply styling if provided
+              if (options?.styles) {
+                if (options.styles.color) selectedElement.element.style.color = options.styles.color;
+                if (options.styles.fontSize) selectedElement.element.style.fontSize = options.styles.fontSize;
+                if (options.styles.fontWeight) selectedElement.element.style.fontWeight = options.styles.fontWeight;
+                if (options.styles.fontStyle) selectedElement.element.style.fontStyle = options.styles.fontStyle;
+                if (options.styles.textDecoration) selectedElement.element.style.textDecoration = options.styles.textDecoration;
+                if (options.styles.textAlign) selectedElement.element.style.textAlign = options.styles.textAlign;
+                if (options.styles.margin) selectedElement.element.style.margin = options.styles.margin;
+                if (options.styles.padding) selectedElement.element.style.padding = options.styles.padding;
+              }
             }
             
             toast({
