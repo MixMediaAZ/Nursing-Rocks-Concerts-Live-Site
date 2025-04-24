@@ -120,11 +120,11 @@ export function Footer() {
                   FAQ
                 </div>
               </Link>
-              <Link href="/admin">
+              <a href="/admin" className="no-underline">
                 <div className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors cursor-pointer border border-primary/30 rounded-md px-2 py-1 flex items-center justify-center gap-1">
                   <Lock className="h-3 w-3" /> Admin Login
                 </div>
-              </Link>
+              </a>
             </div>
             <div className="flex items-center gap-1 mt-2">
               <span className="text-sm text-muted-foreground">Made with</span>
