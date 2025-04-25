@@ -151,6 +151,7 @@ export interface IStorage {
   getStoreProductByExternalId(source: string, externalId: string): Promise<StoreProduct | undefined>;
   getFeaturedStoreProducts(limit?: number): Promise<StoreProduct[]>;
   getStoreProductsByCategory(category: string): Promise<StoreProduct[]>;
+  getStoreProductsBySource(source: string): Promise<StoreProduct[]>;
   createStoreProduct(product: InsertStoreProduct): Promise<StoreProduct>;
   updateStoreProduct(id: number, data: Partial<InsertStoreProduct>): Promise<StoreProduct>;
   deleteStoreProduct(id: number): Promise<void>;

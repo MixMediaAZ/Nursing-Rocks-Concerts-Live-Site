@@ -290,6 +290,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(storeProducts.category, category));
   }
   
+  async getStoreProductsBySource(source: string): Promise<StoreProduct[]> {
+    return await db
+      .select()
+      .from(storeProducts)
+      .where(eq(storeProducts.external_source, source));
+  }
+  
   async createStoreProduct(product: InsertStoreProduct): Promise<StoreProduct> {
     const [newProduct] = await db
       .insert(storeProducts)

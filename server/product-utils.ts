@@ -137,8 +137,8 @@ export function formatCustomCatProduct(customCatProduct: any): StoreProduct | nu
       name: customCatProduct.name || customCatProduct.product_name || 'CustomCat Product',
       description: customCatProduct.description || null,
       price: customCatProduct.base_cost ? 
-             `$${parseFloat(customCatProduct.base_cost).toFixed(2)}` : 
-             '$19.99',
+             parseFloat(customCatProduct.base_cost).toFixed(2) : 
+             '19.99',
       image_url: null,
       category: customCatProduct.category || customCatProduct.subcategory || 'Apparel',
       is_featured: false,
@@ -147,7 +147,8 @@ export function formatCustomCatProduct(customCatProduct: any): StoreProduct | nu
       metadata: customCatProduct, // Store the complete CustomCat data to preserve all details
       external_id: id.toString(),
       external_source: 'customcat',
-      is_available: customCatProduct.in_stock !== false
+      is_available: customCatProduct.in_stock !== false,
+      stock_quantity: customCatProduct.quantity ? parseInt(customCatProduct.quantity, 10) : null
     };
 
     // Extract the image URL based on CustomCat API format
@@ -244,8 +245,8 @@ function createProductWithId(customCatProduct: any, id: any): StoreProduct | nul
       name: customCatProduct.product_name || customCatProduct.name || 'CustomCat Product',
       description: customCatProduct.product_description_bullet1 || null,
       price: customCatProduct.base_cost ? 
-             `$${parseFloat(customCatProduct.base_cost).toFixed(2)}` : 
-             '$24.99',
+             parseFloat(customCatProduct.base_cost).toFixed(2) : 
+             '24.99',
       image_url: null,
       category: customCatProduct.subcategory || customCatProduct.category || 'Apparel',
       is_featured: false,
@@ -254,7 +255,8 @@ function createProductWithId(customCatProduct: any, id: any): StoreProduct | nul
       metadata: customCatProduct, // Store the complete CustomCat data for art placement details
       external_id: externalId,
       external_source: 'customcat',
-      is_available: true
+      is_available: true,
+      stock_quantity: customCatProduct.quantity ? parseInt(customCatProduct.quantity, 10) : null
     };
     
     // Handle special case for product_colors array
