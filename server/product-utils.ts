@@ -113,10 +113,19 @@ export function formatCustomCatProduct(customCatProduct: any): StoreProduct | nu
 
   try {
     // Extract the ID - different endpoints use different properties
+    // Some products have the ID in the root object, others embedded within
     const id = customCatProduct.catalog_product_id || 
                customCatProduct.id || 
                customCatProduct.product_id;
                
+    // Special case: If it's a product with missing ID and we're logging that, use the value from the log
+    if (!id && customCatProduct.hasOwnProperty('catalog_product_id')) {
+      // We have a valid ID field but it might be undefined or null, try to use it anyway
+      console.log(`Found product with undefined catalog_product_id, using as-is:`, 
+                 customCatProduct.product_name || customCatProduct.name || 'Unknown product');
+      return createProductWithId(customCatProduct, customCatProduct.catalog_product_id);
+    }
+    
     if (!id) {
       console.log('Skipping CustomCat product without ID');
       return null;
@@ -138,8 +147,7 @@ export function formatCustomCatProduct(customCatProduct: any): StoreProduct | nu
       metadata: customCatProduct, // Store the complete CustomCat data to preserve all details
       external_id: id.toString(),
       external_source: 'customcat',
-      stock_status: customCatProduct.in_stock === false ? 'out_of_stock' : 'in_stock',
-      external_source_url: null
+      is_available: customCatProduct.in_stock !== false
     };
 
     // Extract the image URL based on CustomCat API format
@@ -219,6 +227,63 @@ export function extractProductColors(product: StoreProduct): string[] {
   } catch (error) {
     console.error(`Error extracting colors for product ID ${product.id}:`, error);
     return [];
+  }
+}
+
+/**
+ * Helper function to create a product with a specific ID for cases where the catalog_product_id exists
+ * but might be null/undefined but we want to use it anyway for continuity
+ */
+function createProductWithId(customCatProduct: any, id: any): StoreProduct | null {
+  try {
+    const externalId = id ? id.toString() : `customcat-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    
+    // Create a store product with the CustomCat data
+    const product: StoreProduct = {
+      id: 0, // Will be assigned by database
+      name: customCatProduct.product_name || customCatProduct.name || 'CustomCat Product',
+      description: customCatProduct.product_description_bullet1 || null,
+      price: customCatProduct.base_cost ? 
+             `$${parseFloat(customCatProduct.base_cost).toFixed(2)}` : 
+             '$24.99',
+      image_url: null,
+      category: customCatProduct.subcategory || customCatProduct.category || 'Apparel',
+      is_featured: false,
+      created_at: new Date(),
+      updated_at: new Date(),
+      metadata: customCatProduct, // Store the complete CustomCat data for art placement details
+      external_id: externalId,
+      external_source: 'customcat',
+      is_available: true
+    };
+    
+    // Handle special case for product_colors array
+    if (customCatProduct.product_colors && 
+        Array.isArray(customCatProduct.product_colors) && 
+        customCatProduct.product_colors.length > 0) {
+      const firstColor = customCatProduct.product_colors[0];
+      if (firstColor && firstColor.product_image) {
+        product.image_url = ensureHttps(firstColor.product_image);
+      }
+    }
+    
+    // Combine description bullets if available
+    let fullDescription = '';
+    for (let i = 1; i <= 5; i++) {
+      const bulletKey = `product_description_bullet${i}`;
+      if (customCatProduct[bulletKey]) {
+        fullDescription += `• ${customCatProduct[bulletKey]}\n`;
+      }
+    }
+    
+    if (fullDescription) {
+      product.description = fullDescription.trim();
+    }
+    
+    return product;
+  } catch (error) {
+    console.error('Error creating product with catalog ID:', error);
+    return null;
   }
 }
 

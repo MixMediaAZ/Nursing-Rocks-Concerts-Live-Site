@@ -1559,42 +1559,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const apiKeySetting = await storage.getAppSettingByKey("CUSTOMCAT_API_KEY");
+      // First try to get the API key from the environment variable
+      let apiKeyValue = process.env.CUSTOMCAT_API_KEY || "";
       
-      if (!apiKeySetting || !apiKeySetting.value) {
+      // If not in environment, fall back to stored setting
+      if (!apiKeyValue) {
+        const apiKeySetting = await storage.getAppSettingByKey("CUSTOMCAT_API_KEY");
+        if (apiKeySetting && apiKeySetting.value) {
+          apiKeyValue = apiKeySetting.value;
+        }
+      }
+      
+      if (!apiKeyValue) {
         return res.status(400).json({ 
           success: false, 
-          message: "CustomCat API key not configured" 
+          message: "CustomCat API key not configured. Please set the CUSTOMCAT_API_KEY environment variable." 
         });
       }
       
-      // Ensure we have a string value for the API key, not null
-      const apiKeyValue = apiKeySetting.value || "";
-      
       try {
-        // Use the fetchCustomCatProducts function to test the connection
+        // Use the improved CustomCat API integration to test the connection
         console.log("Verifying CustomCat API connection with the provided key...");
         const result = await fetchCustomCatProducts(apiKeyValue);
         
-        if (result.connectionSucceeded) {
+        if (result.success) {
           return res.json({ 
             success: true, 
-            message: `Connected successfully to CustomCat API via ${result.successfulEndpoint?.name}`, 
-            productCount: result.products.length,
+            message: "Connected successfully to CustomCat API", 
+            productCount: result.products ? result.products.length : 0,
             configured: true,
             status: "connected"
           });
         } else {
-          console.error("CustomCat API verification failed:", result.errors);
+          console.error("CustomCat API verification failed:", result.message || result.errors);
           
           return res.status(400).json({ 
             success: false, 
-            message: "Failed to connect to CustomCat API. Please check your API key.",
+            message: result.message || "Failed to connect to CustomCat API. Please check your API key.",
             errors: result.errors,
             configured: false,
             status: "error",
             apiKeyProvided: !!apiKeyValue,
-            apiKeyLength: apiKeyValue ? apiKeyValue.length : 0
+            apiKeyLength: apiKeyValue.length
           });
         }
       } catch (error) {
@@ -1605,7 +1611,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Network error connecting to CustomCat API. Please check your internet connection and try again.",
           configured: false,
           status: "error",
-          error: error.message
+          error: error instanceof Error ? error.message : "Unknown error"
         });
       }
     } catch (error) {
@@ -1727,7 +1733,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 category: product.category,
                 metadata: product.metadata, // This contains all the original CustomCat data
                 is_featured: existingProduct.is_featured, // Preserve featured status
-                stock_status: product.stock_status
+                is_available: product.is_available
               });
               syncResults.updated++;
             } else {
