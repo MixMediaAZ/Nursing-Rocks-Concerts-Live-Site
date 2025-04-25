@@ -24,6 +24,7 @@ import {
   replaceGalleryImage
 } from "./gallery-media";
 import { fetchCustomCatProducts } from "./customcat-api";
+import { processCustomCatProductsImages, formatCustomCatProducts } from "./product-utils";
 
 // Initialize Stripe with the secret key if it exists
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -1648,85 +1649,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log("Making request to CustomCat API for product synchronization...");
-      console.log(`API Key exists and has length: ${apiKeyValue.length}`);
       
       try {
-        // Use the fetchCustomCatProducts function to retrieve products
-        console.log("Using CustomCat integration for product synchronization");
+        // Fetch products using the improved CustomCat API integration
+        console.log("Connecting to CustomCat API for product catalog...");
         const result = await fetchCustomCatProducts(apiKeyValue);
         
-        if (!result.connectionSucceeded) {
-          console.error("CustomCat API synchronization failed:", result.errors);
+        if (!result.success) {
+          console.error("CustomCat API connection failed:", result.errors || result.message);
           return res.status(400).json({ 
             success: false, 
-            message: "Failed to connect to CustomCat API. Please check your API key.",
+            message: result.message || "Failed to connect to CustomCat API. Please check your API key.",
             errors: result.errors,
             statusCode: 400
           });
         }
         
-        console.log(`CustomCat API response received successfully from ${result.successfulEndpoint?.name}`);
+        // Get products from the result
+        const rawProductsData = result.products || [];
         
-        // Products are already in the result object
-        const productsData = result.products;
-        
-        if (!Array.isArray(productsData)) {
-          return res.status(500).json({ 
-            success: false, 
-            message: "Invalid response format from CustomCat API" 
+        if (!Array.isArray(rawProductsData) || rawProductsData.length === 0) {
+          console.log("No products received from CustomCat API");
+          return res.status(200).json({ 
+            success: true, 
+            message: "Connected to CustomCat API successfully, but no products were found",
+            results: {
+              total: 0,
+              added: 0,
+              updated: 0,
+              skipped: 0,
+              errors: 0
+            }
           });
         }
         
+        console.log(`Received ${rawProductsData.length} products from CustomCat API`);
+        
+        // Format the raw CustomCat products using our utility function
+        // This preserves all sizing and art placement details
+        const formattedProducts = formatCustomCatProducts(rawProductsData);
+        
+        console.log(`Formatted ${formattedProducts.length} products for our database`);
+        
         // Process and insert/update products in our database
         const syncResults = {
-          total: productsData.length,
+          total: rawProductsData.length,
+          formatted: formattedProducts.length,
           added: 0,
           updated: 0,
           skipped: 0,
           errors: 0
         };
         
-        for (const product of productsData) {
+        // Process each formatted product
+        for (const product of formattedProducts) {
           try {
-            // Skip products without an ID
-            if (!product.id) {
-              console.log("Skipping product without ID:", product);
+            // Skip products without an external ID
+            if (!product.external_id) {
+              console.log("Skipping product without external_id");
               syncResults.skipped++;
               continue;
             }
             
             // Check if product already exists in our database by external_id
-            const existingProduct = await storage.getStoreProductByExternalId("customcat", product.id.toString());
-            
-            // Generate a unique external ID
-            const externalId = product.id ? product.id.toString() : `customcat-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
-            
-            // Map the CustomCat product data to our store format
-            const productData = {
-              name: product.name || product.title || "CustomCat Product",
-              description: product.description || "",
-              price: product.price ? parseFloat(product.price).toFixed(2) : "29.99",
-              image_url: product.image_url || product.thumbnail || (product.images && product.images[0]) || null,
-              category: product.category || "CustomCat Products",
-              is_featured: false,
-              is_available: true,
-              stock_quantity: product.inventory || product.stock || 100,
-              external_id: externalId,
-              external_source: "customcat",
-              metadata: {
-                customcat_data: product,
-                customcat_original: product, // Store the original complete data for proper art proportions
-                variants: product.variants || product.options || []
-              }
-            };
+            const existingProduct = await storage.getStoreProductByExternalId(
+              "customcat", 
+              product.external_id
+            );
             
             if (existingProduct) {
               // Update existing product
-              await storage.updateStoreProduct(existingProduct.id, productData);
+              await storage.updateStoreProduct(existingProduct.id, {
+                name: product.name,
+                description: product.description,
+                price: product.price,
+                image_url: product.image_url,
+                category: product.category,
+                metadata: product.metadata, // This contains all the original CustomCat data
+                is_featured: existingProduct.is_featured, // Preserve featured status
+                stock_status: product.stock_status
+              });
               syncResults.updated++;
             } else {
               // Create new product
-              await storage.createStoreProduct(productData);
+              await storage.createStoreProduct(product);
               syncResults.added++;
             }
           } catch (err) {
@@ -1735,17 +1741,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
+        // Apply image processing to all products
+        const allProducts = await storage.getStoreProductsBySource("customcat");
+        const processedProducts = processCustomCatProductsImages(allProducts);
+        
+        // Update products with processed images
+        for (const product of processedProducts) {
+          try {
+            await storage.updateStoreProduct(product.id, {
+              image_url: product.image_url
+            });
+          } catch (err) {
+            console.error(`Error updating image for product ${product.id}:`, err);
+          }
+        }
+        
         res.json({ 
           success: true, 
-          message: "Product synchronization complete",
+          message: "CustomCat product synchronization complete",
           results: syncResults
         });
       } catch (error) {
-        console.error("Error making CustomCat API request:", error);
+        console.error("Error during CustomCat API request:", error);
         return res.status(500).json({ 
           success: false, 
           message: "Failed to connect to CustomCat API. Check your network connection and try again.",
-          error: error.message || "Unknown error",
+          error: error instanceof Error ? error.message : "Unknown error",
           apiKeyConfigured: !!apiKeyValue
         });
       }
