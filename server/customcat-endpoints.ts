@@ -7,7 +7,7 @@
  * - The API key should be sent as a query parameter, not a header
  */
 export const customCatEndpoints = [
-  // Primary endpoint from the documentation - this should work
+  // Primary endpoint from the official documentation - this should work
   {
     name: "CustomCat Digisoft Category",
     url: "https://customcat-beta.mylocker.net/api/v1/catalog",
@@ -18,23 +18,31 @@ export const customCatEndpoints = [
     }
   },
   
-  // Backup endpoints if primary fails
+  // Backup endpoints with different parameters if primary fails
   {
-    name: "CustomCat Catalog Page 1",
+    name: "CustomCat Sublimation Category",
     url: "https://customcat-beta.mylocker.net/api/v1/catalog",
     useQueryParam: true,
     extraParams: {
-      limit: "25",
-      page: "1" 
+      category: "Sublimation",
+      limit: "25"
     }
   },
   
   {
-    name: "CustomCat Production API",
-    url: "https://customcat.com/api/v1/catalog",
+    name: "CustomCat Default Catalog",
+    url: "https://customcat-beta.mylocker.net/api/v1/catalog",
     useQueryParam: true,
     extraParams: {
       limit: "25"
     }
+  },
+  
+  // Using the catalogcategory endpoint as fallback
+  {
+    name: "CustomCat Category Listing",
+    url: "https://customcat-beta.mylocker.net/api/v1/catalogcategory",
+    useQueryParam: true,
+    extraParams: {}
   }
 ];

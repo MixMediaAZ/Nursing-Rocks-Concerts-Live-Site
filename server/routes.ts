@@ -6,12 +6,9 @@ import fs from "fs";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { storage } from "./storage";
-import { gallery, mediaFolders, events, artists } from "@shared/schema";
+import { gallery, mediaFolders, events } from "@shared/schema";
 import sharp from "sharp";
 import { processImage } from "./image-utils";
-import { customCatEndpoints } from "./customcat-endpoints";
-import { fetchCustomCatProducts } from "./customcat-api";
-import { processCustomCatProductImages, processCustomCatProductsImages } from "./product-utils";
 import { 
   galleryUpload, 
   createMediaFolder, 
@@ -173,7 +170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Gallery media management endpoints
-  app.post("/api/gallery/upload", galleryUpload.array('images', 100), uploadGalleryImages);
+  app.post("/api/gallery/upload", galleryUpload.array('images', 20), uploadGalleryImages);
   app.delete("/api/gallery/:id", deleteGalleryImage);
   app.patch("/api/gallery/:id", updateGalleryImage);
   app.post("/api/gallery/:id/replace", galleryUpload.single('image'), replaceGalleryImage);
@@ -185,8 +182,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id, replacementId } = req.params;
       const originalUrl = req.body.originalUrl; // Capture original URL if provided
       
-      console.log(`Replacing image: ID=${id}, ReplacementID=${replacementId}, OriginalURL=${originalUrl || 'none'}`);
-      
       // Validate the replacement ID
       if (!replacementId || isNaN(parseInt(replacementId, 10))) {
         return res.status(400).json({ error: 'Invalid replacement image ID' });
@@ -195,22 +190,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newImageId = parseInt(replacementId, 10);
       let originalImage: any = null;
       
-      // Check if we're dealing with an editable element (ID starts with "editable-element-")
-      if (id.startsWith('editable-element-')) {
-        console.log(`Handling editable element: ${id}`);
-        // Handle editable element - this is a special case for admin mode
-        originalImage = {
-          id: -1,
-          image_url: originalUrl || `/assets/placeholders/image-placeholder.png`,
-          alt_text: req.body.alt_text || 'Editable Image',
-          // Set minimal required properties
-          media_type: 'image',
-          created_at: new Date(),
-          updated_at: new Date()
-        };
-      }
       // Check if we're dealing with a placeholder image
-      else if (id === '-1' && originalUrl) {
+      if (id === '-1' && originalUrl) {
         // Handle placeholder image with provided URL
         originalImage = {
           id: -1,
@@ -409,23 +390,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Additionally, check if there are any events using this image and update them too
         try {
-          // Get the original image URL without any cache busters or query parameters
-          const stripQueryParams = (url: string) => url.split('?')[0];
-          const originalImgUrl = stripQueryParams(originalImage.image_url);
+          // Get the original image URL without any cache busters
+          const originalImgUrl = originalImage.image_url.split('?')[0];
           
           console.log('Checking for events using image:', originalImgUrl);
           
-          // Find events using this image - need to use a more flexible approach since URLs might have query parameters
-          const allEvents = await db.select().from(events);
-          
-          // Filter events by checking if their image_url matches our original URL (ignoring query parameters)
-          const eventsToUpdate = allEvents.filter(event => {
-            if (!event.image_url) return false;
-            
-            // Strip query parameters for comparison
-            const eventImgUrl = stripQueryParams(event.image_url);
-            return eventImgUrl === originalImgUrl || eventImgUrl.includes(originalImgUrl);
-          });
+          // Find events using this image
+          const eventsToUpdate = await db.select()
+            .from(events)
+            .where(eq(events.image_url, originalImgUrl));
             
           if (eventsToUpdate && eventsToUpdate.length > 0) {
             console.log(`Found ${eventsToUpdate.length} events using this image, updating them`);
@@ -441,44 +414,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               console.log(`Updated event ${event.id} with new image ${processedImage.original}`);
             }
-          } else {
-            console.log('No events found using this image');
-          }
-          
-          // Check for artists using this image too
-          try {
-            const allArtists = await db.select().from(artists);
-            
-            // Filter artists by checking if their image_url matches our original URL
-            const artistsToUpdate = allArtists.filter(artist => {
-              if (!artist.image_url) return false;
-              const artistImgUrl = stripQueryParams(artist.image_url);
-              return artistImgUrl === originalImgUrl || artistImgUrl.includes(originalImgUrl);
-            });
-            
-            if (artistsToUpdate && artistsToUpdate.length > 0) {
-              console.log(`Found ${artistsToUpdate.length} artists using this image, updating them`);
-              
-              // Update each artist
-              for (const artist of artistsToUpdate) {
-                await db.update(artists)
-                  .set({
-                    image_url: processedImage.original,
-                    updated_at: new Date()
-                  })
-                  .where(eq(artists.id, artist.id));
-                
-                console.log(`Updated artist ${artist.id} with new image ${processedImage.original}`);
-              }
-            } else {
-              console.log('No artists found using this image');
-            }
-          } catch (error) {
-            console.error('Error updating artists:', error);
           }
         } catch (err) {
-          console.error('Error updating records that use this image:', err);
-          // Continue with the image replacement even if updates fail
+          console.error('Error updating events that use this image:', err);
+          // Continue with the image replacement even if event updates fail
         }
         
         // Return the processed image info
@@ -1026,15 +965,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/store/products", async (_req: Request, res: Response) => {
     try {
       const products = await storage.getAllStoreProducts();
-      
-      // Directly filter for only CustomCat products
-      const customCatProducts = products.filter(product => product.external_source === "customcat");
-      
-      // Process products to ensure image URLs are set using the utility function
-      const processedProducts = processCustomCatProductsImages(customCatProducts);
-      
-      // Return processed CustomCat products with corrected image URLs
-      res.json(processedProducts);
+      res.json(products);
     } catch (error) {
       console.error("Error fetching store products:", error);
       res.status(500).json({ message: "Failed to fetch store products" });
@@ -1044,21 +975,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/store/products/featured", async (req: Request, res: Response) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
-      
-      // Get all CustomCat products
-      const allProducts = await storage.getAllStoreProducts();
-      const customCatProducts = allProducts.filter(product => product.external_source === "customcat");
-      
-      // Always return CustomCat products
-      // Get random products to feature
-      const featuredProducts = customCatProducts
-        .sort(() => Math.random() - 0.5) // Random shuffle
-        .slice(0, limit || 4);
-      
-      // Process products to ensure image URLs are set using the utility function
-      const processedProducts = processCustomCatProductsImages(featuredProducts);
-        
-      res.json(processedProducts);
+      const products = await storage.getFeaturedStoreProducts(limit);
+      res.json(products);
     } catch (error) {
       console.error("Error fetching featured products:", error);
       res.status(500).json({ message: "Failed to fetch featured products" });
@@ -1068,44 +986,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/store/products/category/:category", async (req: Request, res: Response) => {
     try {
       const category = req.params.category;
-      
-      // Get all CustomCat products
-      const allProducts = await storage.getAllStoreProducts();
-      const customCatProducts = allProducts.filter(product => product.external_source === "customcat");
-      
-      let filteredProducts;
-      
-      // Special case for t-shirts to show nursing-themed shirts
-      if (category.toLowerCase() === 't-shirts') {
-        filteredProducts = customCatProducts.filter(product => {
-          // Include all shirt-like products
-          const isShirt = 
-            product.name?.toLowerCase().includes('shirt') || 
-            product.name?.toLowerCase().includes('tee') ||
-            product.category?.toLowerCase().includes('shirt') ||
-            product.category?.toLowerCase().includes('tee');
-          
-          return isShirt;
-        });
-      } else {
-        // Regular category filtering
-        filteredProducts = customCatProducts.filter(product => {
-          // Category might be in the title, description or category field
-          const searchFields = [
-            product.name?.toLowerCase() || "",
-            product.description?.toLowerCase() || "",
-            product.category?.toLowerCase() || ""
-          ];
-          
-          return searchFields.some(field => field.includes(category.toLowerCase()));
-        });
-      }
-      
-      // Process products to ensure image URLs are set using the utility function
-      const processedProducts = processCustomCatProductsImages(filteredProducts);
-      
-      // Always return processed filtered CustomCat products (empty array if none match)
-      res.json(processedProducts);
+      const products = await storage.getStoreProductsByCategory(category);
+      res.json(products);
     } catch (error) {
       console.error("Error fetching products by category:", error);
       res.status(500).json({ message: "Failed to fetch products by category" });
@@ -1124,15 +1006,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Product not found" });
       }
       
-      // Process product to ensure image URLs are set if it's a CustomCat product
-      if (product.external_source === 'customcat') {
-        // Use the utility function to process the product
-        const processedProduct = processCustomCatProductImages(product);
-        res.json(processedProduct);
-      } else {
-        // For non-CustomCat products, return as is
-        res.json(product);
-      }
+      res.json(product);
     } catch (error) {
       console.error("Error fetching product:", error);
       res.status(500).json({ message: "Failed to fetch product" });
@@ -1638,11 +1512,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ADMIN_PIN = "1234567";
       
       if (!pin || pin !== ADMIN_PIN) {
-        console.warn(`Invalid admin PIN attempt: ${pin}`);
         return res.status(401).json({ message: "Invalid admin PIN" });
       }
       
-      // Create an admin user object for token generation
+      // Create a fake admin user object for token generation
       const adminUser = {
         id: 999999, // Use a reserved ID for admin
         email: "admin@nursingrocks.com",
@@ -1653,15 +1526,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate a token with admin privileges
       const token = generateToken(adminUser as any);
       
-      console.log("Admin token generated successfully");
       res.status(200).json({ token });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error("Error generating admin token:", errorMessage);
-      res.status(500).json({ 
-        message: "Failed to generate admin token",
-        error: process.env.NODE_ENV === 'development' ? errorMessage : undefined
-      });
+      console.error("Error generating admin token:", error);
+      res.status(500).json({ message: "Failed to generate admin token" });
     }
   });
   
@@ -1670,26 +1538,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Since we're using JWT tokens, we only need to return success
       // The actual token invalidation happens client-side by removing the token
-      console.log("Admin logout request processed successfully");
-      res.status(200).json({ 
-        success: true,
-        message: "Admin logout successful" 
-      });
+      res.status(200).json({ message: "Admin logout successful" });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error("Error in admin logout:", errorMessage);
-      res.status(500).json({ 
-        success: false,
-        message: "Failed to process logout",
-        error: process.env.NODE_ENV === 'development' ? errorMessage : undefined
-      });
+      console.error("Error in admin logout:", error);
+      res.status(500).json({ message: "Failed to process logout" });
     }
   });
 
-  // Check if the CustomCat API connection is valid
+  // Check if the CustomCat API connection is valid by making a test request
   app.get("/api/store/customcat/verify-connection", async (req: Request, res: Response) => {
     try {
-      // Check if this is an admin request
+      // Check if this is an admin request - only admins should be able to check API keys
       const isAdmin = isUserAdmin(req);
       if (!isAdmin) {
         return res.status(403).json({ 
@@ -1698,7 +1557,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Get API key from settings
       const apiKeySetting = await storage.getAppSettingByKey("CUSTOMCAT_API_KEY");
       
       if (!apiKeySetting || !apiKeySetting.value) {
@@ -1708,109 +1566,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Ensure we have a string value for the API key, not null
       const apiKeyValue = apiKeySetting.value || "";
       
       try {
-        // Test multiple possible API endpoints
-        const possibleEndpoints = [
-          {
-            name: "api.customcat.com",
-            url: "https://api.customcat.com/v1/products"
-          },
-          {
-            name: "api.customcat.io",
-            url: "https://api.customcat.io/v1/products"
-          },
-          {
-            name: "app.customcat.com",
-            url: "https://app.customcat.com/api/v1/products"
-          },
-          {
-            name: "customcat.com API v2",
-            url: "https://api.customcat.com/v2/products"
+        // Make a request to CustomCat API to check if the key is valid
+        console.log("Verifying CustomCat API connection with the provided key...");
+        const response = await fetch("https://api.customcat.com/v1/products", {
+          method: "GET",
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "X-Api-Key": apiKeyValue // Note: API uses X-Api-Key format (check documentation)
           }
-        ];
-        
-        // Log that we're starting multiple endpoint testing
-        console.log(`Testing ${possibleEndpoints.length} possible CustomCat API endpoints...`);
-        
-        const errors = {};
-        let connectionSucceeded = false;
-        let successfulEndpoint = null;
-        
-        // Try each endpoint sequentially
-        for (const endpoint of possibleEndpoints) {
-          try {
-            console.log(`Attempting to connect to ${endpoint.name}: ${endpoint.url}`);
-            
-            const response = await fetch(endpoint.url, {
-              method: "GET",
-              headers: {
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "X-Api-Key": apiKeyValue
-              },
-              signal: AbortSignal.timeout(3000) // shorter timeout for multiple attempts
-            });
-            
-            // If we got an OK response, we've found our endpoint
-            if (response.ok) {
-              console.log(`✓ Connection successful to ${endpoint.name}`);
-              successfulEndpoint = endpoint;
-              connectionSucceeded = true;
-              
-              return res.json({ 
-                success: true, 
-                message: `CustomCat API connection successful (${endpoint.name})`, 
-                configured: true,
-                status: "connected",
-                domain: endpoint.name,
-                endpoint: endpoint.url
-              });
-            } else {
-              // We got a response, but it wasn't OK
-              console.log(`✗ ${endpoint.name} responded with status ${response.status}`);
-              const errorData = await response.json().catch(() => ({}));
-              const errorMessage = errorData.message || `API Error (${response.status})`;
-              errors[endpoint.name] = errorMessage;
-            }
-          } catch (error) {
-            // This endpoint failed completely
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            console.error(`✗ Error with ${endpoint.name}:`, errorMessage);
-            errors[endpoint.name] = errorMessage;
-          }
-        }
-        
-        // If we got here, all endpoints failed
-        console.error("All CustomCat API endpoints failed");
-        return res.status(502).json({
-          success: false,
-          message: "Unable to connect to any CustomCat API servers. Please check your API key and network connection.",
-          configured: false,
-          status: "error",
-          errors: errors,
-          apiKeyProvided: !!apiKeyValue,
-          apiKeyLength: apiKeyValue ? apiKeyValue.length : 0
         });
+        
+        if (response.ok) {
+          return res.json({ 
+            success: true, 
+            message: "CustomCat API connection successful", 
+            configured: true,
+            status: "connected"
+          });
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          const errorMessage = errorData.message || `API Error (${response.status}): Invalid API key or connection error`;
+          console.error("CustomCat API verification failed:", errorMessage);
+          
+          return res.status(response.status).json({ 
+            success: false, 
+            message: errorMessage,
+            statusCode: response.status,
+            configured: false,
+            status: "error"
+          });
+        }
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error("Error connecting to CustomCat API:", errorMessage);
+        console.error("Error connecting to CustomCat API:", error);
         
         return res.status(500).json({
           success: false,
-          message: "Connection error: " + errorMessage,
+          message: "Network error connecting to CustomCat API. Please check your internet connection and try again.",
           configured: false,
-          status: "error"
+          status: "error",
+          error: error.message
         });
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error("Error verifying CustomCat API connection:", errorMessage);
-      
-      return res.status(500).json({ 
+      console.error("Error verifying CustomCat API connection:", error);
+      res.status(500).json({ 
         success: false, 
-        message: "Error connecting to CustomCat API: " + errorMessage
+        message: "Error connecting to CustomCat API" 
       });
     }
   });
@@ -1818,7 +1624,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Sync products from CustomCat to our store database
   app.post("/api/store/customcat/sync-products", async (req: Request, res: Response) => {
     try {
-      // Check admin permissions
+      // Check if this is an admin request using proper JWT validation
       const isAdmin = isUserAdmin(req);
       if (!isAdmin) {
         return res.status(403).json({ 
@@ -1827,8 +1633,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Get API key
       const apiKeySetting = await storage.getAppSettingByKey("CUSTOMCAT_API_KEY");
+      
       if (!apiKeySetting || !apiKeySetting.value) {
         return res.status(400).json({ 
           success: false, 
@@ -1836,240 +1642,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Ensure we have a string value for the API key, not null
       const apiKeyValue = apiKeySetting.value || "";
+      
       console.log("Making request to CustomCat API for product synchronization...");
       
-      // Create placeholder data so app development can continue
-      // This allows the app to function while API connectivity is being resolved
-      const sampleProducts = [
-        {
-          id: "NR-001",
-          name: "Nursing Rocks T-Shirt",
-          description: "A comfortable t-shirt celebrating nursing professionals",
-          price: "24.99", 
-          category: "T-Shirts",
-          image_url: "/uploads/nursing-rocks-tshirt.jpg",
-          stock: 100
-        },
-        {
-          id: "NR-002",
-          name: "Healthcare Heroes Mug",
-          description: "A special mug for healthcare heroes",
-          price: "14.99", 
-          category: "Drinkware",
-          image_url: "/uploads/healthcare-mug.jpg",
-          stock: 50
-        },
-        {
-          id: "NR-003",
-          name: "Nursing Tote Bag",
-          description: "A practical tote bag for nurses on the go",
-          price: "19.99", 
-          category: "Bags",
-          image_url: "/uploads/nursing-tote.jpg",
-          stock: 75
-        }
-      ];
-      
-      // Try each endpoint in our list
-      let responseData: any = null;
-      let usingRealApi = false;
-      
-      for (const endpoint of customCatEndpoints) {
-        try {
-          console.log(`Attempting to connect to ${endpoint.name}: ${endpoint.url}`);
-          
-          // Build the URL with query parameters as specified in the CustomCat API docs
-          const url = new URL(endpoint.url);
-          
-          // Add API key as query parameter (not header)
-          url.searchParams.append('api_key', apiKeyValue);
-          
-          // Add any extra parameters if specified
-          if (endpoint.extraParams) {
-            Object.entries(endpoint.extraParams).forEach(([key, value]) => {
-              url.searchParams.append(key, String(value));
-            });
-          }
-          
-          console.log(`Sending request to: ${url.toString()}`);
-          
-          const response = await fetch(url.toString(), {
-            method: "GET",
-            headers: {
-              "Accept": "application/json",
-              "Content-Type": "application/json"
-            },
-            signal: AbortSignal.timeout(15000) // longer timeout for external API calls
-          });
-          
-          if (response.ok) {
-            console.log(`✓ Connection to ${endpoint.name} successful`);
-            
-            // Try to parse the response
-            const jsonResponse = await response.json();
-            console.log(`Got response from CustomCat API with ${Array.isArray(jsonResponse) ? jsonResponse.length : 'unknown'} items`);
-            
-            // Check if we have a valid response with products
-            if (jsonResponse && (Array.isArray(jsonResponse) || jsonResponse.data)) {
-              responseData = jsonResponse;
-              usingRealApi = true;
-              console.log(`Successfully connected to CustomCat API via ${endpoint.name}`);
-              break; // Success! Exit the loop
-            } else {
-              console.log(`Response from ${endpoint.name} didn't contain product data, trying next endpoint`);
-            }
-          } else {
-            console.error(`✗ ${endpoint.name} API request failed with status ${response.status}`);
-            if (response.status === 401 || response.status === 403) {
-              console.error(`Authentication error with ${endpoint.name} - API key may be invalid`);
-            }
-          }
-        } catch (endpointError) {
-          console.error(`Error connecting to ${endpoint.name}:`, endpointError);
-        }
-      }
-      
-      // If all API endpoints failed, use sample data
-      if (!responseData) {
-        console.log("All CustomCat API endpoints failed. Using sample data for development.");
-        responseData = sampleProducts;
-        
-        return res.status(207).json({
-          success: true,
-          partial: true,
-          message: "All API endpoint attempts failed. Using sample data for development.",
-          apiKeyProvided: !!apiKeyValue,
-          apiKeyLength: apiKeyValue ? apiKeyValue.length : 0,
-          results: {
-            total: sampleProducts.length,
-            added: sampleProducts.length,
-            updated: 0,
-            errors: 0,
-            fromApi: false
+      try {
+        // Make the API request with the real API key
+        console.log("Using the real CustomCat API key for product synchronization");
+        const response = await fetch("https://api.customcat.com/v1/products", {
+          method: "GET",
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "X-Api-Key": apiKeyValue  // Updated to match CustomCat API requirements
           }
         });
-      }
-      
-      // Process the API response - handle different response formats
-      const productsData = Array.isArray(responseData) ? responseData : 
-                          (responseData.products || responseData.data || []);
-      
-      if (!Array.isArray(productsData)) {
+        
+        if (!response.ok) {
+          console.error(`CustomCat API request failed: ${response.status}`);
+          const errorData = await response.json().catch(() => ({}));
+          return res.status(response.status).json({ 
+            success: false, 
+            message: errorData.message || "Failed to fetch products from CustomCat",
+            statusCode: response.status
+          });
+        }
+        
+        const responseData = await response.json();
+        console.log("CustomCat API response received successfully");
+        
+        // CustomCat API returns the products array directly (if not, extract it)
+        const productsData = Array.isArray(responseData) ? responseData : 
+                           (responseData.products || responseData.data || []);
+        
+        if (!Array.isArray(productsData)) {
+          return res.status(500).json({ 
+            success: false, 
+            message: "Invalid response format from CustomCat API" 
+          });
+        }
+        
+        // Process and insert/update products in our database
+        const syncResults = {
+          total: productsData.length,
+          added: 0,
+          updated: 0,
+          skipped: 0,
+          errors: 0
+        };
+        
+        for (const product of productsData) {
+          try {
+            // Check if product already exists in our database by external_id
+            const existingProduct = await storage.getStoreProductByExternalId("customcat", product.id.toString());
+            
+            // Map the CustomCat product data to our store format
+            const productData = {
+              name: product.name || product.title || "CustomCat Product",
+              description: product.description || "",
+              price: product.price ? parseFloat(product.price).toFixed(2) : "29.99",
+              image_url: product.image_url || product.thumbnail || (product.images && product.images[0]) || null,
+              category: product.category || "CustomCat Products",
+              is_featured: false,
+              is_available: true,
+              stock_quantity: product.inventory || product.stock || 100,
+              external_id: product.id.toString(),
+              external_source: "customcat",
+              metadata: {
+                customcat_data: product,
+                variants: product.variants || product.options || []
+              }
+            };
+            
+            if (existingProduct) {
+              // Update existing product
+              await storage.updateStoreProduct(existingProduct.id, productData);
+              syncResults.updated++;
+            } else {
+              // Create new product
+              await storage.createStoreProduct(productData);
+              syncResults.added++;
+            }
+          } catch (err) {
+            console.error("Error processing product:", err);
+            syncResults.errors++;
+          }
+        }
+        
+        res.json({ 
+          success: true, 
+          message: "Product synchronization complete",
+          results: syncResults
+        });
+      } catch (error) {
+        console.error("Error making CustomCat API request:", error);
         return res.status(500).json({ 
           success: false, 
-          message: "Invalid response format from CustomCat API" 
+          message: "Failed to connect to CustomCat API. Check your network connection and try again.",
+          error: error.message || "Unknown error",
+          apiKeyConfigured: !!apiKeyValue
         });
       }
-      
-      console.log(`Processing ${productsData.length} products from CustomCat API`);
-      
-      // Process and insert/update products
-      const syncResults = {
-        total: productsData.length,
-        added: 0,
-        updated: 0,
-        skipped: 0,
-        errors: 0,
-        fromApi: usingRealApi
-      };
-      
-      for (const product of productsData) {
-        try {
-          // Extract the ID from the product - handle different formats
-          const productId = product.id?.toString() || 
-                           product.product_id?.toString() || 
-                           product.catalog_product_id?.toString();
-          
-          if (!productId) {
-            console.error("Product missing ID, skipping:", product);
-            syncResults.skipped++;
-            continue;
-          }
-          
-          // Check if product exists
-          const existingProduct = await storage.getStoreProductByExternalId("customcat", productId);
-          
-          // Map the product data - handle different formats from the API
-          const productData = {
-            name: product.name || product.title || product.product_name || "CustomCat Product",
-            description: product.description || product.product_description || 
-                      [
-                        product.product_description_bullet1,
-                        product.product_description_bullet2,
-                        product.product_description_bullet3,
-                        product.product_description_bullet4,
-                        product.product_description_bullet5
-                      ].filter(Boolean).join('\n') || "",
-            price: product.price ? parseFloat(product.price).toFixed(2) : "29.99",
-            image_url: product.image_url || product.thumbnail || 
-                      (product.product_image && product.product_image.startsWith('//') 
-                        ? 'https:' + product.product_image 
-                        : product.product_image) || 
-                      (product.product_colors && product.product_colors[0] && product.product_colors[0].product_image && 
-                        product.product_colors[0].product_image.startsWith('//')
-                          ? 'https:' + product.product_colors[0].product_image
-                          : product.product_colors && product.product_colors[0] && product.product_colors[0].product_image) ||
-                      (product.images && product.images[0]) || null,
-            category: product.category || product.subcategory || "CustomCat Products",
-            is_featured: false,
-            is_available: true,
-            stock_quantity: product.inventory || product.stock || product.quantity || 100,
-            external_id: productId,
-            external_source: "customcat",
-            metadata: {
-              // Store the COMPLETE original product data to preserve all proportions and art settings
-              customcat_original: JSON.parse(JSON.stringify(product)),
-              customcat_data: {
-                id: product.id || product.catalog_product_id,
-                name: product.name || product.product_name || product.title,
-                had_back: product.had_back,
-                print_method: product.product_description_bullet5 || "",
-                // Preserve artwork settings from CustomCat
-                preset_id: product.preset_id,
-                artwork_placement: product.artwork_placement,
-                artwork_settings: product.artwork_settings,
-                art_position: product.art_position,
-                art_size: product.art_size,
-                original_dimensions: product.original_dimensions,
-                proportions: product.proportions,
-                has_back_print: product.has_back_print || product.had_back
-              },
-              variants: product.variants || product.options || product.sizes || [],
-              colors: product.product_colors || product.colors || [],
-              description_bullets: [
-                product.product_description_bullet1,
-                product.product_description_bullet2,
-                product.product_description_bullet3,
-                product.product_description_bullet4,
-                product.product_description_bullet5
-              ].filter(Boolean)
-            }
-          };
-          
-          if (existingProduct) {
-            await storage.updateStoreProduct(existingProduct.id, productData);
-            syncResults.updated++;
-          } else {
-            await storage.createStoreProduct(productData);
-            syncResults.added++;
-          }
-        } catch (productError) {
-          console.error("Error processing product:", productError);
-          syncResults.errors++;
-        }
-      }
-      
-      return res.json({ 
-        success: true, 
-        message: usingRealApi ? 
-          "Product synchronization complete with real API data" : 
-          "Product synchronization complete with sample data",
-        results: syncResults
-      });
     } catch (error) {
       console.error("Error syncing CustomCat products:", error);
-      return res.status(500).json({ 
+      res.status(500).json({ 
         success: false, 
         message: "Error syncing products from CustomCat" 
       });
