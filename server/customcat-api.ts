@@ -7,8 +7,18 @@
 
 /**
  * Core CustomCat API configuration
+ * 
+ * CustomCat has multiple possible API URLs:
+ * - Production: https://api.customcat.com/api/v1/
+ * - Beta: https://customcat-beta.mylocker.net/api/v1/
+ * - Partner API: https://api.customcat.com/v1/
  */
-const API_BASE_URL = 'https://customcat-beta.mylocker.net/api/v1';
+// Try multiple base URLs to ensure we connect to the right one
+const API_BASE_URLS = [
+  'https://api.customcat.com/api/v1',
+  'https://customcat-beta.mylocker.net/api/v1',
+  'https://api.customcat.com/v1'
+];
 
 /**
  * Fetch products from CustomCat API using the catalog endpoint
@@ -34,40 +44,61 @@ export async function fetchCustomCatProducts(apiKey: string) {
     connectionSucceeded: false,
     successfulEndpoint: null as any,
     products: [] as any[],
+    productsById: {} as Record<string, any>,
     errors: {} as Record<string, string>
   };
 
   console.log(`📝 CustomCat API key length: ${apiKey.length} characters`);
   console.log(`📝 CustomCat API key first/last few chars: ${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`);
 
-  // Try multiple endpoints from our configuration
-  const endpointsToTry = [
-    // Main endpoint with default category
+  // Create endpoints with multiple base URLs and parameters
+  const endpointsToTry = [];
+  
+  // For each API base URL
+  for (const baseUrl of API_BASE_URLS) {
+    // Add different API endpoints with different parameters
+    endpointsToTry.push(
+      // Main catalog endpoint with Apparel category
+      {
+        url: `${baseUrl}/catalog`,
+        params: { category: 'Apparel', limit: '50' }
+      },
+      // Try T-Shirts category
+      {
+        url: `${baseUrl}/catalog`,
+        params: { category: 'T-Shirts', limit: '50' }
+      },
+      // Try with no category filter (get all products)
+      {
+        url: `${baseUrl}/catalog`,
+        params: { limit: '50' }
+      },
+      // Try with catalog category endpoint
+      {
+        url: `${baseUrl}/catalogcategory`,
+        params: {}
+      }
+    );
+  }
+  
+  // Add v2 endpoints if they exist
+  endpointsToTry.push(
     {
-      url: `${API_BASE_URL}/catalog`,
-      params: { category: 'Apparel', limit: '50' }
-    },
-    // Backup with a different category
-    {
-      url: `${API_BASE_URL}/catalog`,
-      params: { category: 'T-Shirts', limit: '50' }
-    },
-    // Try without category filter
-    {
-      url: `${API_BASE_URL}/catalog`,
+      url: `https://api.customcat.com/v2/catalog`,
       params: { limit: '50' }
     },
-    // Last resort - just try category list
     {
-      url: `${API_BASE_URL}/catalogcategory`,
-      params: {}
+      url: `https://api.customcat.com/v2/products`,
+      params: { limit: '50' }
     }
-  ];
+  );
 
   // Try each endpoint until we get a successful response
   for (const endpoint of endpointsToTry) {
     try {
       const url = new URL(endpoint.url);
+      // API key placement can vary between versions
+      // Try adding it as a query parameter (the most common approach)
       url.searchParams.append('api_key', apiKey);
       
       // Add any additional params
@@ -75,15 +106,20 @@ export async function fetchCustomCatProducts(apiKey: string) {
         url.searchParams.append(key, value);
       }
       
+      // Also prepare to send it as a header in case that's needed
+      const headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "X-API-Key": apiKey,
+        "Authorization": `Bearer ${apiKey}`
+      };
+      
       const maskedUrl = url.toString().replace(apiKey, '***API_KEY***');
       console.log(`🔄 Trying CustomCat endpoint: ${maskedUrl}`);
       
       const response = await fetch(url.toString(), {
         method: "GET",
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json"
-        },
+        headers: headers,
         signal: AbortSignal.timeout(30000) // 30 second timeout
       });
       
