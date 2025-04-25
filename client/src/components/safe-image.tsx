@@ -203,20 +203,22 @@ export function SafeImage({
           <span className="sr-only">Image failed to load</span>
         </div>
       ) : (
-        <img
-          key={`safe-img-${forceRefresh}`}
-          src={imageSrc}
-          alt={alt}
-          className={className}
-          data-element-id={elementId || ''}
-          data-product-id={productId || ''}
-          onLoad={() => setIsLoading(false)}
-          onError={() => {
-            setIsLoading(false);
-            setHasError(true);
-            console.error(`Failed to load image: ${imageSrc}`);
-          }}
-        />
+        <div className={`flex items-center justify-center ${productId ? 'bg-white' : ''}`}>
+          <img
+            key={`safe-img-${forceRefresh}`}
+            src={imageSrc}
+            alt={alt}
+            className={`${className} ${productId ? 'object-contain max-h-full' : ''}`}
+            data-element-id={elementId || ''}
+            data-product-id={productId || ''}
+            onLoad={() => setIsLoading(false)}
+            onError={() => {
+              setIsLoading(false);
+              setHasError(true);
+              console.error(`Failed to load image: ${imageSrc}`);
+            }}
+          />
+        </div>
       )}
     </>
   );

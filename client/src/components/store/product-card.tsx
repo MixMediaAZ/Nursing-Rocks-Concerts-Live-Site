@@ -61,12 +61,12 @@ export function StoreProductCard({ product, featured = false }: ProductCardProps
             </Badge>
           )}
           
-          <div className="flex items-center justify-center w-full h-full">
+          <div className="flex items-center justify-center w-full h-full bg-white">
             <EditableImage 
               src={product.image_url || ''} 
               alt={product.name}
               id={product.id} // Add product ID to make each image uniquely identifiable
-              className={`max-w-full max-h-full object-contain transition-transform duration-300 hover:scale-105 featured-product-image-${product.id}`} 
+              className={`w-auto h-auto max-w-[90%] max-h-[90%] object-contain transition-transform duration-300 hover:scale-105 featured-product-image-${product.id}`} 
               triggerPosition="bottom-right"
               productId={product.id} // Pass product ID as additional prop for context
             />
