@@ -1680,8 +1680,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         for (const product of productsData) {
           try {
+            // Skip products without an ID
+            if (!product.id) {
+              console.log("Skipping product without ID:", product);
+              syncResults.skipped++;
+              continue;
+            }
+            
             // Check if product already exists in our database by external_id
             const existingProduct = await storage.getStoreProductByExternalId("customcat", product.id.toString());
+            
+            // Generate a unique external ID
+            const externalId = product.id ? product.id.toString() : `customcat-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
             
             // Map the CustomCat product data to our store format
             const productData = {
@@ -1693,7 +1703,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               is_featured: false,
               is_available: true,
               stock_quantity: product.inventory || product.stock || 100,
-              external_id: product.id.toString(),
+              external_id: externalId,
               external_source: "customcat",
               metadata: {
                 customcat_data: product,
