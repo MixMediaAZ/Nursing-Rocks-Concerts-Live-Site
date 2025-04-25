@@ -23,6 +23,7 @@ import {
   getAllGalleryImages,
   replaceGalleryImage
 } from "./gallery-media";
+import { fetchCustomCatProducts } from "./customcat-api";
 
 // Initialize Stripe with the secret key if it exists
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -1570,35 +1571,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const apiKeyValue = apiKeySetting.value || "";
       
       try {
-        // Make a request to CustomCat API to check if the key is valid
+        // Use the fetchCustomCatProducts function to test the connection
         console.log("Verifying CustomCat API connection with the provided key...");
-        const response = await fetch("https://api.customcat.com/v1/products", {
-          method: "GET",
-          headers: {
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-            "X-Api-Key": apiKeyValue // Note: API uses X-Api-Key format (check documentation)
-          }
-        });
+        const result = await fetchCustomCatProducts(apiKeyValue);
         
-        if (response.ok) {
+        if (result.connectionSucceeded) {
           return res.json({ 
             success: true, 
-            message: "CustomCat API connection successful", 
+            message: `Connected successfully to CustomCat API via ${result.successfulEndpoint?.name}`, 
+            productCount: result.products.length,
             configured: true,
             status: "connected"
           });
         } else {
-          const errorData = await response.json().catch(() => ({}));
-          const errorMessage = errorData.message || `API Error (${response.status}): Invalid API key or connection error`;
-          console.error("CustomCat API verification failed:", errorMessage);
+          console.error("CustomCat API verification failed:", result.errors);
           
-          return res.status(response.status).json({ 
+          return res.status(400).json({ 
             success: false, 
-            message: errorMessage,
-            statusCode: response.status,
+            message: "Failed to connect to CustomCat API. Please check your API key.",
+            errors: result.errors,
             configured: false,
-            status: "error"
+            status: "error",
+            apiKeyProvided: !!apiKeyValue,
+            apiKeyLength: apiKeyValue ? apiKeyValue.length : 0
           });
         }
       } catch (error) {
@@ -1648,33 +1643,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Making request to CustomCat API for product synchronization...");
       
       try {
-        // Make the API request with the real API key
-        console.log("Using the real CustomCat API key for product synchronization");
-        const response = await fetch("https://api.customcat.com/v1/products", {
-          method: "GET",
-          headers: {
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-            "X-Api-Key": apiKeyValue  // Updated to match CustomCat API requirements
-          }
-        });
+        // Use the fetchCustomCatProducts function to retrieve products
+        console.log("Using CustomCat integration for product synchronization");
+        const result = await fetchCustomCatProducts(apiKeyValue);
         
-        if (!response.ok) {
-          console.error(`CustomCat API request failed: ${response.status}`);
-          const errorData = await response.json().catch(() => ({}));
-          return res.status(response.status).json({ 
+        if (!result.connectionSucceeded) {
+          console.error("CustomCat API synchronization failed:", result.errors);
+          return res.status(400).json({ 
             success: false, 
-            message: errorData.message || "Failed to fetch products from CustomCat",
-            statusCode: response.status
+            message: "Failed to connect to CustomCat API. Please check your API key.",
+            errors: result.errors,
+            statusCode: 400
           });
         }
         
-        const responseData = await response.json();
-        console.log("CustomCat API response received successfully");
+        console.log(`CustomCat API response received successfully from ${result.successfulEndpoint?.name}`);
         
-        // CustomCat API returns the products array directly (if not, extract it)
-        const productsData = Array.isArray(responseData) ? responseData : 
-                           (responseData.products || responseData.data || []);
+        // Products are already in the result object
+        const productsData = result.products;
         
         if (!Array.isArray(productsData)) {
           return res.status(500).json({ 
@@ -1711,6 +1697,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               external_source: "customcat",
               metadata: {
                 customcat_data: product,
+                customcat_original: product, // Store the original complete data for proper art proportions
                 variants: product.variants || product.options || []
               }
             };
