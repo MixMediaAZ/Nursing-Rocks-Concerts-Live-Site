@@ -45,7 +45,7 @@ export function StoreProductCard({ product, featured = false }: ProductCardProps
   return (
     <Card className={`overflow-hidden transition-all duration-200 hover:shadow-md h-full ${featured ? 'md:col-span-2' : ''}`}>
       <Link href={`/store/product/${product.id}`} className="flex flex-col h-full">
-        <div className="relative h-60 overflow-hidden bg-muted flex items-center justify-center">
+        <div className="relative h-[240px] overflow-hidden bg-muted flex items-center justify-center">
           {product.is_featured && !featured && (
             <Badge className="absolute top-2 right-2 z-10" variant="secondary">
               Featured
@@ -61,12 +61,12 @@ export function StoreProductCard({ product, featured = false }: ProductCardProps
             </Badge>
           )}
           
-          <div className="flex items-center justify-center w-full h-full bg-white">
+          <div className="flex items-center justify-center w-full h-full bg-white p-4">
             <EditableImage 
               src={product.image_url || ''} 
               alt={product.name}
               id={product.id} // Add product ID to make each image uniquely identifiable
-              className={`w-auto h-auto max-w-[90%] max-h-[90%] object-contain transition-transform duration-300 hover:scale-105 featured-product-image-${product.id}`} 
+              className={`w-auto h-auto max-h-[200px] object-contain transition-transform duration-300 hover:scale-105 featured-product-image-${product.id}`} 
               triggerPosition="bottom-right"
               productId={product.id} // Pass product ID as additional prop for context
             />

@@ -238,7 +238,9 @@ export default function StorePage() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {sortedProducts.map((product) => (
-                  <StoreProductCard key={product.id} product={product} />
+                  <div key={product.id} className="h-full flex">
+                    <StoreProductCard key={product.id} product={product} />
+                  </div>
                 ))}
               </div>
             )}
