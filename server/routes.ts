@@ -1628,19 +1628,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const apiKeySetting = await storage.getAppSettingByKey("CUSTOMCAT_API_KEY");
+      // First try to get the API key from the environment variable
+      let apiKeyValue = process.env.CUSTOMCAT_API_KEY || "";
       
-      if (!apiKeySetting || !apiKeySetting.value) {
+      // If not in environment, fall back to stored setting
+      if (!apiKeyValue) {
+        const apiKeySetting = await storage.getAppSettingByKey("CUSTOMCAT_API_KEY");
+        if (apiKeySetting && apiKeySetting.value) {
+          apiKeyValue = apiKeySetting.value;
+        }
+      }
+      
+      // Check if we have an API key
+      if (!apiKeyValue) {
         return res.status(400).json({ 
           success: false, 
-          message: "CustomCat API key not configured" 
+          message: "CustomCat API key not configured. Please set the CUSTOMCAT_API_KEY environment variable." 
         });
       }
       
-      // Ensure we have a string value for the API key, not null
-      const apiKeyValue = apiKeySetting.value || "";
-      
       console.log("Making request to CustomCat API for product synchronization...");
+      console.log(`API Key exists and has length: ${apiKeyValue.length}`);
       
       try {
         // Use the fetchCustomCatProducts function to retrieve products
