@@ -1,12 +1,14 @@
 /**
  * Utility functions for product data processing
+ * 
+ * CustomCat API integration - Preserves sizing and art placement details
  */
 
 import { StoreProduct } from '@shared/schema';
 
 /**
  * Process a CustomCat product to ensure image URLs are properly set
- * Extracts image URLs from metadata.customcat_data.product_colors
+ * Extracts image URLs from the CustomCat API response
  * 
  * @param product The CustomCat product to process
  * @returns A new product object with image URLs set
@@ -21,31 +23,32 @@ export function processCustomCatProductImages(product: StoreProduct): StoreProdu
   }
   
   // Extract image from metadata if available
-  if (product.metadata && 
-      typeof product.metadata === 'object') {
+  if (product.metadata && typeof product.metadata === 'object') {
+    const metadata = product.metadata;
     
-    // Check for the original complete data first - this ensures all art proportions are preserved
-    if (product.metadata.customcat_original) {
-      // If we have the full original object, use those image URLs directly
-      // This preserves all artwork settings, proportions, and positions
-      const originalData = product.metadata.customcat_original;
+    // First, try to get images directly from the CustomCat API response format
+    if (metadata.colors && Array.isArray(metadata.colors) && metadata.colors.length > 0) {
+      const firstColor = metadata.colors[0];
+      if (firstColor && firstColor.image) {
+        processedProduct.image_url = ensureHttps(firstColor.image);
+      }
+    }
+    
+    // If we still don't have an image, check if there's a direct image property
+    if (!processedProduct.image_url && metadata.image) {
+      processedProduct.image_url = ensureHttps(metadata.image);
+    }
+    
+    // Legacy check for customcat_original (old API format)
+    if (!processedProduct.image_url && metadata.customcat_original) {
+      const originalData = metadata.customcat_original;
       
-      // Set the main image
       if (originalData.product_image) {
-        let imageUrl = originalData.product_image;
-        if (imageUrl.startsWith('//')) {
-          imageUrl = 'https:' + imageUrl;
-        }
-        processedProduct.image_url = imageUrl;
+        processedProduct.image_url = ensureHttps(originalData.product_image);
       }
       
-      // Set the back image if available
       if (originalData.back_image) {
-        let backImageUrl = originalData.back_image;
-        if (backImageUrl.startsWith('//')) {
-          backImageUrl = 'https:' + backImageUrl;
-        }
-        processedProduct.thumbnail_url = backImageUrl;
+        processedProduct.thumbnail_url = ensureHttps(originalData.back_image);
       }
       
       // Try to get images from product_colors in the original data
@@ -57,47 +60,28 @@ export function processCustomCatProductImages(product: StoreProduct): StoreProdu
         );
         
         if (firstColorWithImage) {
-          let imageUrl = firstColorWithImage.product_image;
-          if (imageUrl.startsWith('//')) {
-            imageUrl = 'https:' + imageUrl;
-          }
-          processedProduct.image_url = imageUrl;
+          processedProduct.image_url = ensureHttps(firstColorWithImage.product_image);
           
           if (firstColorWithImage.back_image) {
-            let backImageUrl = firstColorWithImage.back_image;
-            if (backImageUrl.startsWith('//')) {
-              backImageUrl = 'https:' + backImageUrl;
-            }
-            processedProduct.thumbnail_url = backImageUrl;
+            processedProduct.thumbnail_url = ensureHttps(firstColorWithImage.back_image);
           }
         }
       }
     } 
-    // Fall back to using customcat_data if original data isn't available
-    else if (product.metadata.customcat_data &&
-        Array.isArray(product.metadata.customcat_data.product_colors) && 
-        product.metadata.customcat_data.product_colors.length > 0) {
+    // Legacy check for customcat_data (old API format)
+    else if (!processedProduct.image_url && metadata.customcat_data &&
+        Array.isArray(metadata.customcat_data.product_colors) && 
+        metadata.customcat_data.product_colors.length > 0) {
       
-      // Get the first available color with an image
-      const firstColorWithImage = product.metadata.customcat_data.product_colors.find(
-        color => color.product_image
+      const firstColorWithImage = metadata.customcat_data.product_colors.find(
+        (color: any) => color.product_image
       );
       
       if (firstColorWithImage) {
-        // Fix image URL by adding https: if needed
-        let imageUrl = firstColorWithImage.product_image;
-        if (imageUrl.startsWith('//')) {
-          imageUrl = 'https:' + imageUrl;
-        }
-        processedProduct.image_url = imageUrl;
+        processedProduct.image_url = ensureHttps(firstColorWithImage.product_image);
         
-        // If there's a back image, save it to thumbnail_url
         if (firstColorWithImage.back_image) {
-          let backImageUrl = firstColorWithImage.back_image;
-          if (backImageUrl.startsWith('//')) {
-            backImageUrl = 'https:' + backImageUrl;
-          }
-          processedProduct.thumbnail_url = backImageUrl;
+          processedProduct.thumbnail_url = ensureHttps(firstColorWithImage.back_image);
         }
       }
     }
@@ -113,5 +97,138 @@ export function processCustomCatProductImages(product: StoreProduct): StoreProdu
  * @returns A new array of products with image URLs set
  */
 export function processCustomCatProductsImages(products: StoreProduct[]): StoreProduct[] {
+  if (!Array.isArray(products)) return [];
   return products.map(product => processCustomCatProductImages(product));
+}
+
+/**
+ * Format a raw CustomCat API product to match our database schema
+ * Preserves all CustomCat data including sizing and art placement details
+ * 
+ * @param customCatProduct Raw product data from CustomCat API
+ * @returns Formatted store product ready for database storage
+ */
+export function formatCustomCatProduct(customCatProduct: any): StoreProduct | null {
+  if (!customCatProduct) return null;
+
+  try {
+    // Extract the ID - different endpoints use different properties
+    const id = customCatProduct.catalog_product_id || 
+               customCatProduct.id || 
+               customCatProduct.product_id;
+               
+    if (!id) {
+      console.log('Skipping CustomCat product without ID');
+      return null;
+    }
+
+    // Create a new product based on our StoreProduct schema
+    const product: StoreProduct = {
+      id: 0, // Will be assigned by database
+      name: customCatProduct.name || customCatProduct.product_name || 'CustomCat Product',
+      description: customCatProduct.description || null,
+      price: customCatProduct.base_cost ? 
+             `$${parseFloat(customCatProduct.base_cost).toFixed(2)}` : 
+             '$19.99',
+      image_url: null,
+      category: customCatProduct.category || customCatProduct.subcategory || 'Apparel',
+      is_featured: false,
+      created_at: new Date(),
+      updated_at: new Date(),
+      metadata: customCatProduct, // Store the complete CustomCat data to preserve all details
+      external_id: id.toString(),
+      external_source: 'customcat',
+      stock_status: customCatProduct.in_stock === false ? 'out_of_stock' : 'in_stock',
+      external_source_url: null
+    };
+
+    // Extract the image URL based on CustomCat API format
+    if (customCatProduct.colors && 
+        Array.isArray(customCatProduct.colors) && 
+        customCatProduct.colors.length > 0) {
+      const firstColor = customCatProduct.colors[0];
+      if (firstColor && firstColor.image) {
+        product.image_url = ensureHttps(firstColor.image);
+      }
+    }
+    
+    // Fallback for direct image property
+    if (!product.image_url && customCatProduct.image) {
+      product.image_url = ensureHttps(customCatProduct.image);
+    }
+
+    return product;
+  } catch (error) {
+    console.error(`Error formatting CustomCat product:`, error);
+    return null;
+  }
+}
+
+/**
+ * Format an array of raw CustomCat API products
+ * 
+ * @param customCatProducts Array of raw products from CustomCat API
+ * @returns Array of formatted store products ready for database storage
+ */
+export function formatCustomCatProducts(customCatProducts: any[]): StoreProduct[] {
+  if (!Array.isArray(customCatProducts)) {
+    console.warn('CustomCat products is not an array:', typeof customCatProducts);
+    return [];
+  }
+  
+  const formattedProducts = customCatProducts
+    .map(product => formatCustomCatProduct(product))
+    .filter(Boolean) as StoreProduct[];
+  
+  console.log(`Formatted ${formattedProducts.length} of ${customCatProducts.length} CustomCat products`);
+  
+  return formattedProducts;
+}
+
+/**
+ * Extract color options from CustomCat product metadata
+ * 
+ * @param product Store product with CustomCat metadata
+ * @returns Array of available color names
+ */
+export function extractProductColors(product: StoreProduct): string[] {
+  if (!product || !product.metadata) return [];
+  
+  try {
+    const metadata = typeof product.metadata === 'string' 
+      ? JSON.parse(product.metadata) 
+      : product.metadata;
+    
+    // Check for colors in new API format
+    if (metadata.colors && Array.isArray(metadata.colors)) {
+      return metadata.colors
+        .map((color: any) => color.color_name || color.name || '')
+        .filter(Boolean);
+    }
+    
+    // Legacy check for customcat_data format
+    if (metadata.customcat_data && 
+        metadata.customcat_data.product_colors && 
+        Array.isArray(metadata.customcat_data.product_colors)) {
+      return metadata.customcat_data.product_colors
+        .map((color: any) => color.color_name || '')
+        .filter(Boolean);
+    }
+    
+    return [];
+  } catch (error) {
+    console.error(`Error extracting colors for product ID ${product.id}:`, error);
+    return [];
+  }
+}
+
+/**
+ * Ensure URL starts with https:// instead of // for consistent image loading
+ */
+function ensureHttps(url: string): string {
+  if (!url) return url;
+  if (url.startsWith('//')) {
+    return 'https:' + url;
+  }
+  return url;
 }
