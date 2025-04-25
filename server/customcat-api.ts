@@ -37,93 +37,117 @@ export async function fetchCustomCatProducts(apiKey: string) {
     errors: {} as Record<string, string>
   };
 
-  try {
-    // Configure the main catalog endpoint with query parameters
-    // According to the API documentation, this should be sent as query parameters
-    const url = new URL(`${API_BASE_URL}/catalog`);
-    url.searchParams.append('api_key', apiKey);
-    url.searchParams.append('category', 'Digisoft'); // Default category
-    url.searchParams.append('limit', '100'); // Increased limit for more products
-    
-    console.log(`Connecting to CustomCat catalog API: ${url.toString().replace(apiKey, '***API_KEY***')}`);
-    
-    const response = await fetch(url.toString(), {
-      method: "GET",
-      headers: {
-        "Accept": "application/json"
-      },
-      signal: AbortSignal.timeout(20000) // 20 second timeout
-    });
-    
-    if (response.ok) {
-      const responseData = await response.json();
-      result.products = Array.isArray(responseData) ? responseData : [];
-      
-      // Store the total count if available in headers
-      const totalCount = response.headers.get('X-Total-Count');
-      if (totalCount) {
-        console.log(`Total products available: ${totalCount}`);
-      }
-      
-      result.connectionSucceeded = true;
-      result.success = true;
-      result.successfulEndpoint = { name: 'CustomCat Catalog', url: API_BASE_URL + '/catalog' };
-      
-      console.log(`✅ Successfully retrieved ${result.products.length} products from CustomCat`);
-    } else {
-      // Handle error response
-      let errorMessage = `API Error (${response.status})`;
-      
-      try {
-        const errorData = await response.json();
-        if (errorData.message || errorData.error) {
-          errorMessage = errorData.message || errorData.error || errorMessage;
-        }
-      } catch {
-        // If we can't parse the error JSON, use the HTTP status message
-        errorMessage = `HTTP Error: ${response.statusText || response.status}`;
-      }
-      
-      result.errors['catalog'] = errorMessage;
-      console.error(`❌ CustomCat API error: ${errorMessage}`);
-      
-      // Try the catalog category endpoint as fallback
-      try {
-        const categoryUrl = new URL(`${API_BASE_URL}/catalogcategory`);
-        categoryUrl.searchParams.append('api_key', apiKey);
-        
-        console.log(`Trying fallback endpoint: catalogcategory`);
-        
-        const categoryResponse = await fetch(categoryUrl.toString(), {
-          method: "GET",
-          headers: {
-            "Accept": "application/json"
-          },
-          signal: AbortSignal.timeout(10000)
-        });
-        
-        if (categoryResponse.ok) {
-          const categoryData = await categoryResponse.json();
-          console.log(`✅ Connected to CustomCat category API successfully`);
-          
-          // We connected, but we don't have products yet
-          result.connectionSucceeded = true;
-          result.success = true;
-          result.successfulEndpoint = { name: 'CustomCat Category', url: API_BASE_URL + '/catalogcategory' };
-          
-          // We can't get products directly from this endpoint
-          result.products = [];
-        }
-      } catch (fallbackError) {
-        const fallbackErrorMessage = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
-        result.errors['catalogcategory'] = fallbackErrorMessage;
-      }
+  console.log(`📝 CustomCat API key length: ${apiKey.length} characters`);
+  console.log(`📝 CustomCat API key first/last few chars: ${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`);
+
+  // Try multiple endpoints from our configuration
+  const endpointsToTry = [
+    // Main endpoint with default category
+    {
+      url: `${API_BASE_URL}/catalog`,
+      params: { category: 'Apparel', limit: '50' }
+    },
+    // Backup with a different category
+    {
+      url: `${API_BASE_URL}/catalog`,
+      params: { category: 'T-Shirts', limit: '50' }
+    },
+    // Try without category filter
+    {
+      url: `${API_BASE_URL}/catalog`,
+      params: { limit: '50' }
+    },
+    // Last resort - just try category list
+    {
+      url: `${API_BASE_URL}/catalogcategory`,
+      params: {}
     }
-  } catch (error) {
-    // Network or other errors
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`❌ Error connecting to CustomCat API:`, errorMessage);
-    result.errors['network'] = errorMessage;
+  ];
+
+  // Try each endpoint until we get a successful response
+  for (const endpoint of endpointsToTry) {
+    try {
+      const url = new URL(endpoint.url);
+      url.searchParams.append('api_key', apiKey);
+      
+      // Add any additional params
+      for (const [key, value] of Object.entries(endpoint.params)) {
+        url.searchParams.append(key, value);
+      }
+      
+      const maskedUrl = url.toString().replace(apiKey, '***API_KEY***');
+      console.log(`🔄 Trying CustomCat endpoint: ${maskedUrl}`);
+      
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        signal: AbortSignal.timeout(30000) // 30 second timeout
+      });
+      
+      console.log(`📊 CustomCat API response status: ${response.status} ${response.statusText}`);
+      
+      if (response.ok) {
+        const responseText = await response.text();
+        console.log(`📄 CustomCat API response (first 200 chars): ${responseText.substring(0, 200)}...`);
+        
+        const responseData = JSON.parse(responseText);
+        result.products = Array.isArray(responseData) ? responseData : [];
+        
+        // Store the total count if available in headers
+        const totalCount = response.headers.get('X-Total-Count');
+        if (totalCount) {
+          console.log(`📈 Total products available: ${totalCount}`);
+        }
+        
+        result.connectionSucceeded = true;
+        result.success = true;
+        result.successfulEndpoint = { 
+          name: 'CustomCat API', 
+          url: endpoint.url,
+          params: endpoint.params
+        };
+        
+        console.log(`✅ Successfully retrieved ${result.products.length} products from CustomCat`);
+        
+        // We got a successful response, no need to try other endpoints
+        break;
+      } else {
+        // Handle error response
+        let errorMessage = `API Error (${response.status})`;
+        let errorData = {};
+        
+        try {
+          const errorText = await response.text();
+          console.log(`❌ CustomCat API error response: ${errorText}`);
+          
+          try {
+            errorData = JSON.parse(errorText);
+            if (errorData.message || errorData.error) {
+              errorMessage = errorData.message || errorData.error || errorMessage;
+            }
+          } catch {
+            // If we can't parse as JSON, use the raw text
+            errorMessage = errorText || errorMessage;
+          }
+        } catch {
+          // If we can't get response text, use the HTTP status
+          errorMessage = `HTTP Error: ${response.statusText || response.status}`;
+        }
+        
+        const endpointKey = new URL(endpoint.url).pathname.split('/').pop() || 'endpoint';
+        result.errors[endpointKey] = errorMessage;
+        console.error(`❌ CustomCat API error: ${errorMessage}`);
+      }
+    } catch (error) {
+      // Network or other errors for this endpoint
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const endpointKey = new URL(endpoint.url).pathname.split('/').pop() || 'endpoint';
+      result.errors[endpointKey] = errorMessage;
+      console.error(`❌ Error with CustomCat endpoint ${endpoint.url}:`, errorMessage);
+    }
   }
 
   return result;
