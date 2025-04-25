@@ -133,7 +133,6 @@ export function formatCustomCatProduct(customCatProduct: any): StoreProduct | nu
 
     // Create a new product based on our StoreProduct schema
     const product: StoreProduct = {
-      id: 0, // Will be assigned by database
       name: customCatProduct.name || customCatProduct.product_name || 'CustomCat Product',
       description: customCatProduct.description || null,
       price: customCatProduct.base_cost ? 
@@ -149,7 +148,7 @@ export function formatCustomCatProduct(customCatProduct: any): StoreProduct | nu
       external_source: 'customcat',
       is_available: customCatProduct.in_stock !== false,
       stock_quantity: customCatProduct.quantity ? parseInt(customCatProduct.quantity, 10) : null
-    };
+    } as StoreProduct;
 
     // Extract the image URL based on CustomCat API format
     if (customCatProduct.colors && 
@@ -241,7 +240,6 @@ function createProductWithId(customCatProduct: any, id: any): StoreProduct | nul
     
     // Create a store product with the CustomCat data
     const product: StoreProduct = {
-      id: 0, // Will be assigned by database
       name: customCatProduct.product_name || customCatProduct.name || 'CustomCat Product',
       description: customCatProduct.product_description_bullet1 || null,
       price: customCatProduct.base_cost ? 
@@ -257,7 +255,7 @@ function createProductWithId(customCatProduct: any, id: any): StoreProduct | nul
       external_source: 'customcat',
       is_available: true,
       stock_quantity: customCatProduct.quantity ? parseInt(customCatProduct.quantity, 10) : null
-    };
+    } as StoreProduct;
     
     // Handle special case for product_colors array
     if (customCatProduct.product_colors && 
