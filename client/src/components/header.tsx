@@ -55,7 +55,6 @@ export function Header() {
   // Navigation links - some links are only for authenticated users
   const publicNavLinks: NavLink[] = [
     { href: "/", label: "Home", icon: <HeartPulse size={18} /> },
-    { href: "/cities", label: "Concert Cities", icon: <Map size={18} /> },
     { href: "/videos", label: "Videos", icon: <PlayCircle size={18} /> },
     { href: "/sponsors", label: "Sponsors", icon: <HeartPulse size={18} /> },
     { href: "https://rgwrvu-sq.myshopify.com/", label: "Store", icon: <ShoppingBag size={18} />, isExternal: true },

@@ -162,9 +162,9 @@ export default function CitySelector() {
     cities: CITIES.filter(city => city.region === region)
   }));
 
-  // Handle city selection
+  // Handle city selection - now just redirects to main cities page
   const handleCitySelect = (cityId: string) => {
-    setLocation(`/cities/${cityId}`);
+    setLocation('/cities');
   };
 
   return (
@@ -256,6 +256,11 @@ export default function CitySelector() {
                       <p className="text-white text-lg mt-1 font-medium drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
                         {city.state}
                       </p>
+                      
+                      {/* Note indicating these are informational only */}
+                      <div className="mt-3 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full">
+                        <p className="text-white text-xs">View all cities</p>
+                      </div>
                     </div>
                     
                     {/* Event indicator */}
