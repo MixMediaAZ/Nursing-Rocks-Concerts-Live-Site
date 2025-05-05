@@ -74,8 +74,7 @@ export default function RegisterPage() {
       const { confirm_password, ...registerData } = values;
       
       // Create the user account
-      const userResponse = await apiRequest("/api/auth/register", {
-        method: "POST",
+      const userResponse = await apiRequest("POST", "/api/auth/register", {
         headers: {
           "Content-Type": "application/json",
         },
