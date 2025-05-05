@@ -181,13 +181,13 @@ const HeroSection = () => {
               <i className="fas fa-shopping-bag ml-1 sm:ml-2"></i>
             </Button>
             
-            {/* New Button - Same style as Visit Our Store */}
+            {/* Video Upload Button */}
             <Button
               className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full"
-              onClick={() => window.open('https://nurse-appreciation-platform-mixmediaaz.replit.app/', '_blank', 'noopener noreferrer')}
+              onClick={() => window.open('https://nursingrocksconcerts3.replit.app/thanks', '_blank', 'noopener noreferrer')}
             >
-              Visit NursingRocks.org
-              <i className="fas fa-external-link-alt ml-1 sm:ml-2"></i>
+              Upload your video of appreciation here
+              <i className="fas fa-video ml-1 sm:ml-2"></i>
             </Button>
             
             {/* Cloudinary Video for Mobile Only - Under buttons */}
