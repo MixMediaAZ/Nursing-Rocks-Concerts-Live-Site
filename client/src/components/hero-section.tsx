@@ -8,6 +8,7 @@ import { useNavigation } from "@/hooks/use-navigation";
 import YouTube from 'react-youtube';
 import { EditableElement } from "@/components/admin/editable-element";
 import { useState } from "react";
+import { CloudinaryVideo } from "@/components/cloudinary-video";
 
 const HeroSection = () => {
   const { navigateTo } = useNavigation();
