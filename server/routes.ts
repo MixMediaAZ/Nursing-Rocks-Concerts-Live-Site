@@ -901,7 +901,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/jobs/saved", authenticateToken, async (req: Request, res: Response) => {
+  app.get("/api/jobs/saved", requireAuth, async (req: Request, res: Response) => {
     try {
       const savedJobs = await storage.getSavedJobsByUserId(req.user!.userId);
       res.json(savedJobs);
@@ -911,7 +911,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Job Alerts
-  app.post("/api/jobs/alerts", authenticateToken, async (req: Request, res: Response) => {
+  app.post("/api/jobs/alerts", requireAuth, async (req: Request, res: Response) => {
     try {
       // Validate alert data
       const validationResult = insertJobAlertSchema.safeParse(req.body);
@@ -933,7 +933,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/jobs/alerts", authenticateToken, async (req: Request, res: Response) => {
+  app.get("/api/jobs/alerts", requireAuth, async (req: Request, res: Response) => {
     try {
       const alerts = await storage.getJobAlertsByUserId(req.user!.userId);
       res.json(alerts);
@@ -942,7 +942,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.delete("/api/jobs/alerts/:id", authenticateToken, async (req: Request, res: Response) => {
+  app.delete("/api/jobs/alerts/:id", requireAuth, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -1036,12 +1036,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/store/products", authenticateToken, async (req: Request, res: Response) => {
+  app.post("/api/store/products", requireAdmin, async (req: Request, res: Response) => {
     try {
-      // Only admins can create products
-      if (!req.user?.isAdmin) {
-        return res.status(403).json({ message: "Unauthorized: Admin privileges required" });
-      }
       
       // Validate product data
       const validationResult = insertStoreProductSchema.safeParse(req.body);
@@ -1063,12 +1059,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.patch("/api/store/products/:id", authenticateToken, async (req: Request, res: Response) => {
+  app.patch("/api/store/products/:id", requireAdmin, async (req: Request, res: Response) => {
     try {
-      // Only admins can update products
-      if (!req.user?.isAdmin) {
-        return res.status(403).json({ message: "Unauthorized: Admin privileges required" });
-      }
       
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -1101,12 +1093,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.delete("/api/store/products/:id", authenticateToken, async (req: Request, res: Response) => {
+  app.delete("/api/store/products/:id", requireAdmin, async (req: Request, res: Response) => {
     try {
-      // Only admins can delete products
-      if (!req.user?.isAdmin) {
-        return res.status(403).json({ message: "Unauthorized: Admin privileges required" });
-      }
       
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -1128,7 +1116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Orders
-  app.post("/api/store/orders", authenticateToken, async (req: Request, res: Response) => {
+  app.post("/api/store/orders", requireAuth, async (req: Request, res: Response) => {
     try {
       const { order, items } = req.body;
       
@@ -1190,7 +1178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/store/orders/user/:userId", authenticateToken, async (req: Request, res: Response) => {
+  app.get("/api/store/orders/user/:userId", requireAuth, async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.userId);
       if (isNaN(userId)) {
