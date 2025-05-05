@@ -47,7 +47,7 @@ const CITIES: City[] = [
     state: "IL", 
     region: "Midwest", 
     coordinates: { lat: 41.8781, lng: -87.6298 },
-    imageUrl: "@assets/NRCS Shirt_NurseBlue.jpeg"
+    imageUrl: nurseBlueShirt
   },
   { 
     id: "washington-dc", 
@@ -55,7 +55,7 @@ const CITIES: City[] = [
     state: "DC", 
     region: "East", 
     coordinates: { lat: 38.9072, lng: -77.0369 },
-    imageUrl: "@assets/NRCS Shirt_White.jpeg"
+    imageUrl: whiteShirt
   },
   { 
     id: "san-francisco", 
@@ -63,7 +63,7 @@ const CITIES: City[] = [
     state: "CA", 
     region: "West", 
     coordinates: { lat: 37.7749, lng: -122.4194 },
-    imageUrl: "@assets/NRCS Shirt_NurseBlue.jpeg"
+    imageUrl: nurseBlueShirt
   },
   { 
     id: "boston", 
@@ -71,7 +71,7 @@ const CITIES: City[] = [
     state: "MA", 
     region: "East", 
     coordinates: { lat: 42.3601, lng: -71.0589 },
-    imageUrl: "@assets/NRCS Shirt_White.jpeg"
+    imageUrl: whiteShirt
   },
   { 
     id: "new-york", 
@@ -79,7 +79,7 @@ const CITIES: City[] = [
     state: "NY", 
     region: "East", 
     coordinates: { lat: 40.7128, lng: -74.0060 },
-    imageUrl: "@assets/NRCS Shirt_NurseBlue.jpeg"
+    imageUrl: nurseBlueShirt
   },
   { 
     id: "houston", 
@@ -87,7 +87,7 @@ const CITIES: City[] = [
     state: "TX", 
     region: "South", 
     coordinates: { lat: 29.7604, lng: -95.3698 },
-    imageUrl: "@assets/NRCS Shirt_White.jpeg"
+    imageUrl: whiteShirt
   },
   { 
     id: "denver", 
@@ -95,7 +95,7 @@ const CITIES: City[] = [
     state: "CO", 
     region: "West", 
     coordinates: { lat: 39.7392, lng: -104.9903 },
-    imageUrl: "@assets/NRCS Shirt_NurseBlue.jpeg"
+    imageUrl: nurseBlueShirt
   },
   { 
     id: "atlanta", 
@@ -103,7 +103,7 @@ const CITIES: City[] = [
     state: "GA", 
     region: "South", 
     coordinates: { lat: 33.7490, lng: -84.3880 },
-    imageUrl: "@assets/NRCS Shirt_White.jpeg"
+    imageUrl: whiteShirt
   },
   { 
     id: "los-angeles", 
@@ -111,7 +111,7 @@ const CITIES: City[] = [
     state: "CA", 
     region: "West", 
     coordinates: { lat: 34.0522, lng: -118.2437 },
-    imageUrl: "@assets/NRCS Shirt_NurseBlue.jpeg"
+    imageUrl: nurseBlueShirt
   },
   { 
     id: "nashville", 
@@ -119,7 +119,7 @@ const CITIES: City[] = [
     state: "TN", 
     region: "South", 
     coordinates: { lat: 36.1627, lng: -86.7816 },
-    imageUrl: "@assets/NRCS Shirt_White.jpeg"
+    imageUrl: whiteShirt
   },
   { 
     id: "dallas", 
@@ -127,7 +127,7 @@ const CITIES: City[] = [
     state: "TX", 
     region: "South", 
     coordinates: { lat: 32.7767, lng: -96.7970 },
-    imageUrl: "@assets/NRCS Shirt_NurseBlue.jpeg"
+    imageUrl: nurseBlueShirt
   }
 ];
 
@@ -216,14 +216,28 @@ export default function CitySelector() {
                     className={`h-48 flex flex-col items-center justify-center relative overflow-hidden ${cityColors[city.id] || DEFAULT_BG}`}
                   >
                     {/* Pattern overlay for visual interest */}
-                    <div className="absolute inset-0 opacity-10">
+                    <div className="absolute inset-0 opacity-10 z-[1]">
                       <div className="w-full h-full bg-repeat" 
                            style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
                       </div>
                     </div>
                     
+                    {/* City image positioned between background and text */}
+                    {city.imageUrl && (
+                      <div className="absolute inset-0 z-[2] flex items-center justify-center">
+                        <img 
+                          src={city.imageUrl} 
+                          alt={`${city.name} image`}
+                          className="w-auto h-36 object-contain opacity-90 mix-blend-multiply"
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Semi-transparent overlay for better text contrast */}
+                    <div className="absolute inset-0 bg-black/30 z-[2.5]"></div>
+                    
                     {/* City name with text shadow for better visibility - improved centering */}
-                    <div className="flex flex-col items-center justify-center text-center z-10">
+                    <div className="flex flex-col items-center justify-center text-center z-[3]">
                       <h3 className="text-3xl text-white font-extrabold drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
                         {city.name}
                       </h3>
@@ -236,7 +250,7 @@ export default function CitySelector() {
                     
                     {/* Event indicator */}
                     {city.upcomingEvent && (
-                      <div className="absolute top-3 left-3 bg-white text-xs font-semibold px-2 py-1 rounded-full text-black/80">
+                      <div className="absolute top-3 left-3 bg-white text-xs font-semibold px-2 py-1 rounded-full text-black/80 z-[4]">
                         Upcoming Event
                       </div>
                     )}
