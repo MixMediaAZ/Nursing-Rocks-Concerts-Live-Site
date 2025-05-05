@@ -6,19 +6,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
-// Using direct URL paths since the import syntax isn't working with the assets folder
+// Using direct URL paths to the assets folder
 // Each image has been selected to best represent the city
-const chicagoImage = "/assets/city_backgrounds/6AEA04AA-A9A3-4F6E-9C15-CCAFE3BC50F8.PNG"; // Chicago skyline
-const washingtonImage = "/assets/city_backgrounds/6D6FD547-7B8E-4871-B7D1-8CD2BDD76E98.PNG"; // Washington DC monuments
-const sanFranciscoImage = "/assets/city_backgrounds/FF6856D4-8B81-49FE-BB14-D4E99A44F9B6.PNG"; // San Francisco Golden Gate
-const bostonImage = "/assets/city_backgrounds/3B39719F-9D81-4397-9EFB-74CA91F16E2C.PNG"; // Boston cityscape
-const newYorkImage = "/assets/city_backgrounds/9AF7FDEB-8BB4-4BCE-9E9F-560BCABE7572.PNG"; // NYC skyline
-const houstonImage = "/assets/city_backgrounds/CA566C49-0E82-4288-9CF4-328CD8F61EC6.PNG"; // Houston 
-const denverImage = "/assets/city_backgrounds/4A5B3B48-E885-44BF-9FD2-93927C35FDC8.PNG"; // Denver mountains
-const atlantaImage = "/assets/city_backgrounds/3B80F8ED-69E6-4337-BEBC-12A3402C5653.PNG"; // Atlanta
-const losAngelesImage = "/assets/city_backgrounds/1DFDF38A-CC77-42B3-803D-336853030512.PNG"; // LA skyline
-const nashvilleImage = "/assets/city_backgrounds/E236F46B-0F0C-4BBF-936D-7F1918647585.PNG"; // Nashville music scene
-const dallasImage = "/assets/city_backgrounds/2CA4A9EC-7F93-43A0-A9E2-1834A4BA1A84.PNG"; // Dallas cityscape
+const chicagoImage = "./assets/city_backgrounds/6AEA04AA-A9A3-4F6E-9C15-CCAFE3BC50F8.PNG"; // Chicago skyline
+const washingtonImage = "./assets/city_backgrounds/6D6FD547-7B8E-4871-B7D1-8CD2BDD76E98.PNG"; // Washington DC monuments
+const sanFranciscoImage = "./assets/city_backgrounds/FF6856D4-8B81-49FE-BB14-D4E99A44F9B6.PNG"; // San Francisco Golden Gate
+const bostonImage = "./assets/city_backgrounds/3B39719F-9D81-4397-9EFB-74CA91F16E2C.PNG"; // Boston cityscape
+const newYorkImage = "./assets/city_backgrounds/9AF7FDEB-8BB4-4BCE-9E9F-560BCABE7572.PNG"; // NYC skyline
+const houstonImage = "./assets/city_backgrounds/CA566C49-0E82-4288-9CF4-328CD8F61EC6.PNG"; // Houston 
+const denverImage = "./assets/city_backgrounds/4A5B3B48-E885-44BF-9FD2-93927C35FDC8.PNG"; // Denver mountains
+const atlantaImage = "./assets/city_backgrounds/3B80F8ED-69E6-4337-BEBC-12A3402C5653.PNG"; // Atlanta
+const losAngelesImage = "./assets/city_backgrounds/1DFDF38A-CC77-42B3-803D-336853030512.PNG"; // LA skyline
+const nashvilleImage = "./assets/city_backgrounds/E236F46B-0F0C-4BBF-936D-7F1918647585.PNG"; // Nashville music scene
+const dallasImage = "./assets/city_backgrounds/2CA4A9EC-7F93-43A0-A9E2-1834A4BA1A84.PNG"; // Dallas cityscape
 
 // City background colors and patterns
 const cityColors: Record<string, string> = {
@@ -234,12 +234,14 @@ export default function CitySelector() {
                     
                     {/* City image positioned between background and text */}
                     {city.imageUrl && (
-                      <div className="absolute inset-0 z-[2] flex items-center justify-center">
-                        <img 
-                          src={city.imageUrl} 
-                          alt={`${city.name} background`}
-                          className="w-64 h-36 object-contain opacity-100 mix-blend-normal"
-                          style={{ border: '1px solid red' }}
+                      <div className="absolute inset-0 z-[2] flex items-center justify-center" 
+                           style={{ border: '1px solid yellow' }}>
+                        <div 
+                          className="w-full h-36 bg-center bg-no-repeat bg-contain opacity-90"
+                          style={{ 
+                            backgroundImage: `url(${city.imageUrl})`,
+                            border: '1px dashed red' 
+                          }}
                         />
                       </div>
                     )}
