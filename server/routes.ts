@@ -666,7 +666,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/jobs", authenticateToken, async (req: Request, res: Response) => {
+  app.post("/api/jobs", requireAuth, async (req: Request, res: Response) => {
     try {
       if (!req.user?.isVerified) {
         return res.status(403).json({ message: "You must be verified to post jobs" });
@@ -726,7 +726,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/employers", authenticateToken, async (req: Request, res: Response) => {
+  app.post("/api/employers", requireAuth, async (req: Request, res: Response) => {
     try {
       if (!req.user?.isVerified) {
         return res.status(403).json({ message: "You must be verified to register as an employer" });
@@ -759,7 +759,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Nurse Profiles
-  app.get("/api/profile", authenticateToken, async (req: Request, res: Response) => {
+  app.get("/api/profile", requireAuth, async (req: Request, res: Response) => {
     try {
       const profile = await storage.getNurseProfileByUserId(req.user!.userId);
       if (!profile) {
@@ -772,7 +772,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/profile", authenticateToken, async (req: Request, res: Response) => {
+  app.post("/api/profile", requireAuth, async (req: Request, res: Response) => {
     try {
       if (!req.user?.isVerified) {
         return res.status(403).json({ message: "You must be verified to create a profile" });
@@ -809,7 +809,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Job Applications
-  app.post("/api/jobs/apply", authenticateToken, async (req: Request, res: Response) => {
+  app.post("/api/jobs/apply", requireAuth, async (req: Request, res: Response) => {
     try {
       if (!req.user?.isVerified) {
         return res.status(403).json({ message: "You must be verified to apply for jobs" });
@@ -857,7 +857,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/jobs/applications", authenticateToken, async (req: Request, res: Response) => {
+  app.get("/api/jobs/applications", requireAuth, async (req: Request, res: Response) => {
     try {
       const applications = await storage.getJobApplicationsByUserId(req.user!.userId);
       res.json(applications);
@@ -867,7 +867,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Saved Jobs
-  app.post("/api/jobs/save", authenticateToken, async (req: Request, res: Response) => {
+  app.post("/api/jobs/save", requireAuth, async (req: Request, res: Response) => {
     try {
       const { jobId, notes } = req.body;
       if (!jobId) {
