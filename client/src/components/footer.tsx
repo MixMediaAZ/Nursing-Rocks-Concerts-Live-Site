@@ -75,7 +75,7 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/events">
+                <Link href="/">
                   <div className="inline-block text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">Concerts</div>
                 </Link>
               </li>
