@@ -5,17 +5,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
 import { useNavigation } from "@/hooks/use-navigation";
-import YouTube from 'react-youtube';
 import { EditableElement } from "@/components/admin/editable-element";
 import { useState } from "react";
-import { CloudinaryVideo } from "@/components/cloudinary-video";
+import { CloudinaryVideoPlaylist } from "@/components/cloudinary-video-playlist";
 
 const HeroSection = () => {
   const { navigateTo } = useNavigation();
   const [refreshKey, setRefreshKey] = useState(Date.now());
-  // State for the featured video (Cloudinary public ID with folder path)
-  // Using the folder path from the URL: cb3d4ab33a890ee80495dc141b4e7f8640
-  const [featuredVideo, setFeaturedVideo] = useState("cb3d4ab33a890ee80495dc141b4e7f8640/Nursing_Rocks_Concerts");
   
   const { data: featuredEvent, isLoading: isLoadingEvent } = useQuery<Event>({
     queryKey: ["/api/events/featured"],
@@ -33,11 +29,6 @@ const HeroSection = () => {
   const handleContentUpdate = (data: any) => {
     // Refresh the component when content is updated
     setRefreshKey(Date.now());
-  };
-  
-  // Function to change the featured video
-  const changeFeaturedVideo = (publicId: string) => {
-    setFeaturedVideo(publicId);
   };
 
   if (isLoading) {
@@ -159,19 +150,19 @@ const HeroSection = () => {
               <i className="fas fa-shopping-bag ml-1 sm:ml-2"></i>
             </Button>
             
-            {/* Cloudinary Video for Mobile Only - Under buttons */}
+            {/* Cloudinary Video Playlist for Mobile Only - Under buttons */}
             <div className="block xs:hidden mt-6 w-full">
-              <h4 className="text-center font-semibold mb-2 text-white/90">Featured Video</h4>
+              <h4 className="text-center font-semibold mb-2 text-white/90">Featured Videos</h4>
               <div className="aspect-video w-full mx-auto bg-black rounded-xl overflow-hidden shadow-xl border-2 border-white/30 transform transition-transform duration-300">
                 <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-[#5D3FD3]/80 to-[#FF3366]/80 opacity-50 blur-sm"></div>
                 <div className="relative z-10">
-                  <CloudinaryVideo 
-                    publicId={featuredVideo} 
+                  <CloudinaryVideoPlaylist 
                     className="w-full h-full"
                     controls={true}
                     autoPlay={false}
-                    loop={false}
                     muted={false}
+                    loop={true}
+                    showPlaylistIndicator={true}
                   />
                 </div>
               </div>
@@ -179,18 +170,18 @@ const HeroSection = () => {
           </div>
         </div>
         
-        {/* Cloudinary Video - Desktop and Tablet Only - Positioned absolutely on the right */}
+        {/* Cloudinary Video Playlist - Desktop and Tablet Only - Positioned absolutely on the right */}
         <div className="hidden xs:block absolute bottom-20 xs:bottom-6 right-6 md:bottom-12 md:right-12 lg:bottom-16 lg:right-16 z-20">
           <div className="aspect-video w-[120px] xs:w-[180px] sm:w-[220px] md:w-[320px] lg:w-[380px] bg-black rounded-xl overflow-hidden shadow-xl border-4 border-white/30 transform hover:scale-105 transition-transform duration-300">
             <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 opacity-75 blur-sm"></div>
             <div className="relative z-10">
-              <CloudinaryVideo 
-                publicId={featuredVideo} 
+              <CloudinaryVideoPlaylist 
                 className="w-full h-full"
                 controls={true}
                 autoPlay={false}
-                loop={false}
+                loop={true}
                 muted={false}
+                showPlaylistIndicator={true}
               />
             </div>
           </div>
