@@ -234,13 +234,11 @@ export default function CitySelector() {
                     
                     {/* City image positioned between background and text */}
                     {city.imageUrl && (
-                      <div className="absolute inset-0 z-[2] flex items-center justify-center" 
-                           style={{ border: '1px solid yellow' }}>
+                      <div className="absolute inset-0 z-[2] flex items-center justify-center">
                         <div 
                           className="w-full h-36 bg-center bg-no-repeat bg-contain opacity-90"
                           style={{ 
-                            backgroundImage: `url(${city.imageUrl})`,
-                            border: '1px dashed red' 
+                            backgroundImage: `url(${city.imageUrl})`
                           }}
                         />
                       </div>
