@@ -238,7 +238,8 @@ export default function CitySelector() {
                         <img 
                           src={city.imageUrl} 
                           alt={`${city.name} background`}
-                          className="w-auto h-36 object-contain opacity-90"
+                          className="w-64 h-36 object-contain opacity-100 mix-blend-normal"
+                          style={{ border: '1px solid red' }}
                         />
                       </div>
                     )}
