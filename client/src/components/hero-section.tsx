@@ -13,8 +13,9 @@ import { CloudinaryVideo } from "@/components/cloudinary-video";
 const HeroSection = () => {
   const { navigateTo } = useNavigation();
   const [refreshKey, setRefreshKey] = useState(Date.now());
-  // State for the featured video (Cloudinary public ID)
-  const [featuredVideo, setFeaturedVideo] = useState("Nursing_Rocks_Concerts");
+  // State for the featured video (Cloudinary public ID with folder path)
+  // Using the folder path from the URL: cb3d4ab33a890ee80495dc141b4e7f8640
+  const [featuredVideo, setFeaturedVideo] = useState("cb3d4ab33a890ee80495dc141b4e7f8640/Nursing_Rocks_Concerts");
   
   const { data: featuredEvent, isLoading: isLoadingEvent } = useQuery<Event>({
     queryKey: ["/api/events/featured"],

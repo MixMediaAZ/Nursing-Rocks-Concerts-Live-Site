@@ -12,10 +12,20 @@ const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || import.meta.env.
 
 // Helper function to get a full Cloudinary video URL
 export function getCloudinaryVideoUrl(publicId: string): string {
-  return `https://res.cloudinary.com/${cloudName}/video/upload/${publicId}`;
+  // Handle folder paths by ensuring publicId is properly formatted
+  const formattedPublicId = publicId.replace(/^\//, ''); // Remove leading slash if present
+  return `https://res.cloudinary.com/${cloudName}/video/upload/v1/${formattedPublicId}`;
 }
 
 // Helper to generate a Cloudinary video thumbnail URL
 export function getCloudinaryVideoThumbnail(publicId: string): string {
-  return `https://res.cloudinary.com/${cloudName}/video/upload/c_scale,h_600,q_auto,w_1000/${publicId}.jpg`;
+  // Handle folder paths by ensuring publicId is properly formatted
+  const formattedPublicId = publicId.replace(/^\//, ''); // Remove leading slash if present
+  return `https://res.cloudinary.com/${cloudName}/video/upload/c_scale,h_600,q_auto,w_1000/v1/${formattedPublicId}.jpg`;
+}
+
+// Helper to build a folder path if needed
+export function getCloudinaryFolderPath(folder: string, fileName: string): string {
+  const cleanFolder = folder.replace(/^\/|\/$/g, ''); // Remove leading and trailing slashes
+  return `${cleanFolder}/${fileName}`;
 }
