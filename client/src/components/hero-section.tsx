@@ -7,8 +7,8 @@ import { formatDate } from "@/lib/utils";
 import { useNavigation } from "@/hooks/use-navigation";
 import { EditableElement } from "@/components/admin/editable-element";
 import { useState } from "react";
-// Import the reliable iframe-based Cloudinary player
-import { CloudinaryIframeVideo } from "@/components/cloudinary-iframe-video";
+// Import YouTube embed for reliable video playback
+import { YouTubeEmbed } from "@/components/youtube-embed";
 
 const HeroSection = () => {
   const { navigateTo } = useNavigation();
@@ -151,17 +151,17 @@ const HeroSection = () => {
               <i className="fas fa-shopping-bag ml-1 sm:ml-2"></i>
             </Button>
             
-            {/* Cloudinary Video for Mobile Only - Under buttons */}
+            {/* YouTube Video for Mobile Only - Under buttons */}
             <div className="block xs:hidden mt-6 w-full">
               <h4 className="text-center font-semibold mb-2 text-white/90">Featured Video</h4>
               <div className="aspect-video w-full mx-auto bg-black rounded-xl overflow-hidden shadow-xl border-2 border-white/30 transform transition-transform duration-300">
                 <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-[#5D3FD3]/80 to-[#FF3366]/80 opacity-50 blur-sm"></div>
                 <div className="relative z-10">
-                  <CloudinaryIframeVideo 
-                    className="w-full h-full"
-                    publicId="cb3d4ab33a890ee80495dc141b4e7f8640/Nursing_Rocks_Concerts"
+                  <YouTubeEmbed 
+                    className="w-full h-full" 
+                    videoId="6T4MS8gI3P8"
                     autoPlay={true}
-                    muted={true} 
+                    muted={true}
                     controls={true}
                   />
                 </div>
@@ -170,14 +170,14 @@ const HeroSection = () => {
           </div>
         </div>
         
-        {/* Cloudinary Video - Desktop and Tablet Only - Positioned absolutely on the right */}
+        {/* YouTube Video - Desktop and Tablet Only - Positioned absolutely on the right */}
         <div className="hidden xs:block absolute bottom-20 xs:bottom-6 right-6 md:bottom-12 md:right-12 lg:bottom-16 lg:right-16 z-20">
           <div className="aspect-video w-[120px] xs:w-[180px] sm:w-[220px] md:w-[320px] lg:w-[380px] bg-black rounded-xl overflow-hidden shadow-xl border-4 border-white/30 transform hover:scale-105 transition-transform duration-300">
             <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 opacity-75 blur-sm"></div>
             <div className="relative z-10">
-              <CloudinaryIframeVideo 
+              <YouTubeEmbed 
                 className="w-full h-full"
-                publicId="cb3d4ab33a890ee80495dc141b4e7f8640/Nursing_Rocks_Concerts"
+                videoId="6T4MS8gI3P8"
                 autoPlay={true}
                 muted={true}
                 controls={true}
