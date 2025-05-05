@@ -16,8 +16,8 @@ const HeroSection = () => {
   const { navigateTo } = useNavigation();
   const [refreshKey, setRefreshKey] = useState(Date.now());
   const [cloudinaryConnected, setCloudinaryConnected] = useState(true);
-  const [cloudinaryFolder] = useState("cb3d4ab33a890ee80495dc141b4e7f8640");
-  const [videoPublicId, setVideoPublicId] = useState("cb3d4ab33a890ee80495dc141b4e7f8640/Nursing_Rocks_Concerts");
+  const [cloudinaryFolder] = useState("Nursing Rocks! Concerts- video");
+  const [videoPublicId, setVideoPublicId] = useState("Nursing Rocks! Concerts- video/d9wtyh03k0tpfsvflagg");
   const [cloudinaryCloudName, setCloudinaryCloudName] = useState<string | null>(null);
   
   // Check Cloudinary connection when component mounts
