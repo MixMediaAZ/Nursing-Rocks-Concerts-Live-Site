@@ -88,9 +88,9 @@ export function Header() {
                 <img
                   src={newLogoPath}
                   alt="Nursing Rocks!"
-                  className="h-14 md:h-16 w-auto"
+                  className="h-12 md:h-14 w-auto"
                 />
-                <span className="heartbeat-animation text-lg font-semibold hidden md:inline-block">
+                <span className="heartbeat-animation text-lg font-semibold hidden lg:inline-block">
                   Concert Series
                 </span>
               </div>
@@ -99,8 +99,8 @@ export function Header() {
           
           {/* Navigation in center - centered and justified content */}
           {!isMobile ? (
-            <nav className="flex items-center justify-center space-x-4 md:space-x-8 flex-grow mx-auto">
-              <div className="flex items-center justify-center space-x-4 md:space-x-8">
+            <nav className="flex items-center justify-center md:ml-4 lg:ml-8 flex-grow">
+              <div className="flex items-center justify-start flex-wrap gap-x-3 md:gap-x-4 lg:gap-x-6">
                 {navLinks.map((link) => (
                   link.isExternal ? (
                     <a 
@@ -108,20 +108,20 @@ export function Header() {
                       href={link.href} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className={`text-sm font-medium cursor-pointer flex items-center gap-2 transition-colors hover:text-primary text-muted-foreground`}
+                      className={`text-xs md:text-sm font-medium cursor-pointer flex items-center gap-1 transition-colors hover:text-primary text-muted-foreground py-1`}
                     >
                       {link.icon}
-                      {link.label}
+                      <span className="hidden md:inline">{link.label}</span>
                     </a>
                   ) : (
                     <Link key={link.href} href={link.href}>
                       <div
-                        className={`text-sm font-medium cursor-pointer flex items-center gap-2 transition-colors hover:text-primary ${
+                        className={`text-xs md:text-sm font-medium cursor-pointer flex items-center gap-1 transition-colors hover:text-primary py-1 ${
                           isActive(link.href) ? "text-primary" : "text-muted-foreground"
                         }`}
                       >
                         {link.icon}
-                        {link.label}
+                        <span className="hidden md:inline">{link.label}</span>
                       </div>
                     </Link>
                   )
