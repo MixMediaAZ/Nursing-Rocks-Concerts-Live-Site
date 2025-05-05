@@ -6,20 +6,33 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
-// City background colors - using simple gradient backgrounds instead of images
-// This ensures consistent appearance across all cards
+// City background images from public directory
+// These images will be displayed behind the city text
+const chicagoImage = "/assets/city_backgrounds/file-1746415499933-642613458.JPG"; // Chicago nurse shirt
+const washingtonImage = "/assets/city_backgrounds/6D6FD547-7B8E-4871-B7D1-8CD2BDD76E98.PNG"; // Washington DC monuments
+const sanFranciscoImage = "/assets/city_backgrounds/files-1746415256343-783805015.jpeg"; // San Francisco white shirt
+const bostonImage = "/assets/city_backgrounds/3B39719F-9D81-4397-9EFB-74CA91F16E2C.PNG"; // Boston cityscape
+const newYorkImage = "/assets/city_backgrounds/9AF7FDEB-8BB4-4BCE-9E9F-560BCABE7572.PNG"; // NYC skyline
+const houstonImage = "/assets/city_backgrounds/CA566C49-0E82-4288-9CF4-328CD8F61EC6.PNG"; // Houston 
+const denverImage = "/assets/city_backgrounds/4A5B3B48-E885-44BF-9FD2-93927C35FDC8.PNG"; // Denver mountains
+const atlantaImage = "/assets/city_backgrounds/3B80F8ED-69E6-4337-BEBC-12A3402C5653.PNG"; // Atlanta
+const losAngelesImage = "/assets/city_backgrounds/1DFDF38A-CC77-42B3-803D-336853030512.PNG"; // LA skyline
+const nashvilleImage = "/assets/city_backgrounds/E236F46B-0F0C-4BBF-936D-7F1918647585.PNG"; // Nashville music scene
+const dallasImage = "/assets/city_backgrounds/file-1746415423548-947578775.JPG"; // Dallas shirt image
+
+// City background colors as fallbacks or additional styling
 const cityColors: Record<string, string> = {
-  "chicago": "bg-gradient-to-r from-blue-500 to-blue-600",
-  "washington-dc": "bg-gradient-to-r from-purple-500 to-purple-600",
-  "san-francisco": "bg-gradient-to-r from-cyan-500 to-cyan-600",
-  "boston": "bg-gradient-to-r from-red-500 to-red-600",
-  "new-york": "bg-gradient-to-r from-slate-600 to-slate-700",
-  "houston": "bg-gradient-to-r from-orange-500 to-orange-600",
-  "denver": "bg-gradient-to-r from-green-500 to-green-600",
-  "atlanta": "bg-gradient-to-r from-amber-500 to-amber-600",
-  "los-angeles": "bg-gradient-to-r from-yellow-400 to-yellow-500",
-  "nashville": "bg-gradient-to-r from-indigo-500 to-indigo-600",
-  "dallas": "bg-gradient-to-r from-emerald-500 to-emerald-600"
+  "chicago": "bg-blue-600",
+  "washington-dc": "bg-purple-600",
+  "san-francisco": "bg-cyan-600",
+  "boston": "bg-red-600",
+  "new-york": "bg-slate-700",
+  "houston": "bg-orange-600",
+  "denver": "bg-green-600",
+  "atlanta": "bg-amber-600",
+  "los-angeles": "bg-yellow-500",
+  "nashville": "bg-indigo-600",
+  "dallas": "bg-emerald-600"
 };
 
 // Defined city types with all required information
@@ -29,6 +42,7 @@ interface City {
   state: string;
   region: string;
   coordinates: { lat: number; lng: number };
+  imageUrl: string; // Image URL for the city card background
   upcomingEvent?: {
     date: string;
     artist: string;
@@ -42,77 +56,88 @@ const CITIES: City[] = [
     name: "Chicago", 
     state: "IL", 
     region: "Midwest", 
-    coordinates: { lat: 41.8781, lng: -87.6298 }
+    coordinates: { lat: 41.8781, lng: -87.6298 },
+    imageUrl: chicagoImage
   },
   { 
     id: "washington-dc", 
     name: "Washington", 
     state: "DC", 
     region: "East", 
-    coordinates: { lat: 38.9072, lng: -77.0369 }
+    coordinates: { lat: 38.9072, lng: -77.0369 },
+    imageUrl: washingtonImage
   },
   { 
     id: "san-francisco", 
     name: "San Francisco", 
     state: "CA", 
     region: "West", 
-    coordinates: { lat: 37.7749, lng: -122.4194 }
+    coordinates: { lat: 37.7749, lng: -122.4194 },
+    imageUrl: sanFranciscoImage
   },
   { 
     id: "boston", 
     name: "Boston", 
     state: "MA", 
     region: "East", 
-    coordinates: { lat: 42.3601, lng: -71.0589 }
+    coordinates: { lat: 42.3601, lng: -71.0589 },
+    imageUrl: bostonImage
   },
   { 
     id: "new-york", 
     name: "New York", 
     state: "NY", 
     region: "East", 
-    coordinates: { lat: 40.7128, lng: -74.0060 }
+    coordinates: { lat: 40.7128, lng: -74.0060 },
+    imageUrl: newYorkImage
   },
   { 
     id: "houston", 
     name: "Houston", 
     state: "TX", 
     region: "South", 
-    coordinates: { lat: 29.7604, lng: -95.3698 }
+    coordinates: { lat: 29.7604, lng: -95.3698 },
+    imageUrl: houstonImage
   },
   { 
     id: "denver", 
     name: "Denver", 
     state: "CO", 
     region: "West", 
-    coordinates: { lat: 39.7392, lng: -104.9903 }
+    coordinates: { lat: 39.7392, lng: -104.9903 },
+    imageUrl: denverImage
   },
   { 
     id: "atlanta", 
     name: "Atlanta", 
     state: "GA", 
     region: "South", 
-    coordinates: { lat: 33.7490, lng: -84.3880 }
+    coordinates: { lat: 33.7490, lng: -84.3880 },
+    imageUrl: atlantaImage
   },
   { 
     id: "los-angeles", 
     name: "Los Angeles", 
     state: "CA", 
     region: "West", 
-    coordinates: { lat: 34.0522, lng: -118.2437 }
+    coordinates: { lat: 34.0522, lng: -118.2437 },
+    imageUrl: losAngelesImage
   },
   { 
     id: "nashville", 
     name: "Nashville", 
     state: "TN", 
     region: "South", 
-    coordinates: { lat: 36.1627, lng: -86.7816 }
+    coordinates: { lat: 36.1627, lng: -86.7816 },
+    imageUrl: nashvilleImage
   },
   { 
     id: "dallas", 
     name: "Dallas", 
     state: "TX", 
     region: "South", 
-    coordinates: { lat: 32.7767, lng: -96.7970 }
+    coordinates: { lat: 32.7767, lng: -96.7970 },
+    imageUrl: dallasImage
   }
 ];
 
@@ -200,22 +225,21 @@ export default function CitySelector() {
                   <div 
                     className={`h-48 flex flex-col items-center justify-center relative overflow-hidden ${cityColors[city.id] || DEFAULT_BG}`}
                   >
+                    {/* City image as background */}
+                    <div 
+                      className="absolute inset-0 z-[1] bg-center bg-cover bg-no-repeat"
+                      style={{ backgroundImage: `url(${city.imageUrl})` }}
+                    />
+                    
                     {/* Pattern overlay for visual interest */}
-                    <div className="absolute inset-0 opacity-10 z-[1]">
+                    <div className="absolute inset-0 opacity-10 z-[2]">
                       <div className="w-full h-full bg-repeat" 
                            style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
                       </div>
                     </div>
                     
-                    {/* Pattern overlay with dots */}
-                    <div className="absolute inset-0 z-[2] opacity-20">
-                      <div className="w-full h-full bg-center bg-repeat"
-                           style={{ backgroundImage: 'radial-gradient(circle, white 2px, transparent 2px)', backgroundSize: '16px 16px' }}>
-                      </div>
-                    </div>
-                    
                     {/* Semi-transparent overlay for better text contrast */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/30 z-[2.5]"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/40 z-[2.5]"></div>
                     
                     {/* City name with text shadow for better visibility - improved centering */}
                     <div className="flex flex-col items-center justify-center text-center z-[3]">
