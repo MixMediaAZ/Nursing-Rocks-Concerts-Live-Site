@@ -1,5 +1,5 @@
 import { eq, and } from "drizzle-orm";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { 
   Event, InsertEvent, 
   Artist, InsertArtist, 
@@ -26,8 +26,20 @@ import {
   appSettings
 } from "@shared/schema";
 import { IStorage } from "./storage";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
 
 export class DatabaseStorage implements IStorage {
+  sessionStore: any; // Using 'any' to avoid type conflicts between libraries
+
+  constructor() {
+    const PostgresSessionStore = connectPg(session);
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      createTableIfMissing: true,
+      tableName: 'session'
+    });
+  }
   // Events
   async getAllEvents(): Promise<Event[]> {
     return await db.select().from(events);

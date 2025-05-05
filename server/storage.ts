@@ -24,8 +24,10 @@ import {
   appSettings
 } from "@shared/schema";
 import { DatabaseStorage } from "./storage-db";
+import session from "express-session";
 
 export interface IStorage {
+  sessionStore: any; // Using 'any' to avoid type conflicts between libraries
   // Events
   getAllEvents(): Promise<Event[]>;
   getEvent(id: number): Promise<Event | undefined>;
@@ -176,6 +178,8 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
+  sessionStore: any; // Using 'any' to avoid type conflicts between libraries
+  
   private events: Map<number, Event>;
   private artists: Map<number, Artist>;
   private gallery: Map<number, Gallery>;
@@ -212,6 +216,13 @@ export class MemStorage implements IStorage {
   private storeOrderItemId: number;
   
   constructor() {
+    // Initialize memory session store
+    const createMemoryStore = require('memorystore');
+    const MemoryStore = createMemoryStore(session);
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000 // prune expired entries every 24h
+    });
+    
     this.events = new Map();
     this.artists = new Map();
     this.gallery = new Map();
