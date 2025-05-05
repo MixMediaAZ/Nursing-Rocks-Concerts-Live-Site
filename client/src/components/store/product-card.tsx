@@ -44,7 +44,7 @@ export function StoreProductCard({ product, featured = false }: ProductCardProps
 
   return (
     <Card className={`overflow-hidden transition-all duration-200 hover:shadow-md h-full ${featured ? 'md:col-span-2' : ''}`}>
-      <div className="flex flex-col h-full" onClick={() => window.open("https://www.bonfire.com/store/nursing-rocks-concert-series", "_blank")}>
+      <div className="flex flex-col h-full" onClick={() => window.open("https://rgwrvu-sq.myshopify.com/", "_blank")}>
         <div className="relative h-[240px] overflow-hidden bg-muted flex items-center justify-center">
           {product.is_featured && !featured && (
             <Badge className="absolute top-2 right-2 z-10" variant="secondary">
@@ -99,11 +99,11 @@ export function StoreProductCard({ product, featured = false }: ProductCardProps
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              window.open("https://www.bonfire.com/store/nursing-rocks-concert-series", "_blank");
+              window.open("https://rgwrvu-sq.myshopify.com/", "_blank");
             }}
           >
             <Eye className="mr-2 h-4 w-4" />
-            View on Bonfire
+            View on Shopify
           </Button>
           
           <Button 
@@ -112,11 +112,11 @@ export function StoreProductCard({ product, featured = false }: ProductCardProps
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              window.open("https://www.bonfire.com/store/nursing-rocks-concert-series", "_blank");
+              window.open("https://rgwrvu-sq.myshopify.com/", "_blank");
             }}
           >
             <ShoppingCart className="mr-2 h-4 w-4" />
-            Shop on Bonfire
+            Shop on Shopify
           </Button>
         </CardFooter>
       </div>
