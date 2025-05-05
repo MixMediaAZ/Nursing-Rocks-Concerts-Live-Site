@@ -234,11 +234,11 @@ export default function CitySelector() {
                     
                     {/* City image positioned between background and text */}
                     {city.imageUrl && (
-                      <div className="absolute inset-0 z-[2]">
+                      <div className="absolute inset-0 z-[2] flex items-center justify-center">
                         <img 
                           src={city.imageUrl} 
                           alt={`${city.name} background`}
-                          className="w-full h-full object-cover"
+                          className="w-auto h-36 object-contain opacity-90"
                         />
                       </div>
                     )}
