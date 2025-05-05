@@ -14,7 +14,7 @@ const HeroSection = () => {
   const { navigateTo } = useNavigation();
   const [refreshKey, setRefreshKey] = useState(Date.now());
   // State for the featured video (Cloudinary public ID)
-  const [featuredVideo, setFeaturedVideo] = useState("nursing_rocks_promo");
+  const [featuredVideo, setFeaturedVideo] = useState("Nursing_Rocks_Concerts");
   
   const { data: featuredEvent, isLoading: isLoadingEvent } = useQuery<Event>({
     queryKey: ["/api/events/featured"],
