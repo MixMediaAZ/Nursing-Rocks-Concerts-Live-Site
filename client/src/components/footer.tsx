@@ -108,7 +108,7 @@ export function Footer() {
           
           {/* Newsletter */}
           <div className="text-center">
-            <h3 className="text-base font-bold mb-3">Newsletter</h3>
+            <h3 className="text-base font-bold mb-3">Newsletter coming soon</h3>
             <p className="text-sm text-muted-foreground mb-3 mx-auto">
               Updates on upcoming concerts
             </p>
