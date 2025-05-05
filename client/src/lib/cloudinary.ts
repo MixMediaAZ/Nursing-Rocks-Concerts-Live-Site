@@ -45,9 +45,19 @@ export async function fetchVideosFromFolder(folderPath: string): Promise<string[
     
     const data = await response.json();
     
-    if (!data.success || !data.resources) {
-      console.warn('Cloudinary API returned no videos, using fallbacks:', data);
+    if (!data.success) {
+      console.warn('Cloudinary API error, using fallbacks:', data);
       // Return default videos as fallback
+      return [
+        "Nursing_Rocks_Concerts",
+        "NR_Promo_Video", 
+        "NR_Highlights"
+      ];
+    }
+    
+    // If there are no videos in the folder, use our defaults
+    if (!data.resources || data.resources.length === 0) {
+      console.log('Cloudinary API returned no videos, using defaults');
       return [
         "Nursing_Rocks_Concerts",
         "NR_Promo_Video", 

@@ -6,13 +6,38 @@ import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
 import { useNavigation } from "@/hooks/use-navigation";
 import { EditableElement } from "@/components/admin/editable-element";
-import { useState } from "react";
-// Import YouTube embed for reliable video playback
-import { YouTubeEmbed } from "@/components/youtube-embed";
+import { useState, useEffect } from "react";
+// Import Cloudinary components
+import { CloudinaryIframeVideo } from "@/components/cloudinary-iframe-video";
+// Import Cloudinary helpers
+import { checkCloudinaryConnection } from "@/lib/cloudinary";
 
 const HeroSection = () => {
   const { navigateTo } = useNavigation();
   const [refreshKey, setRefreshKey] = useState(Date.now());
+  const [cloudinaryConnected, setCloudinaryConnected] = useState(true);
+  const [cloudinaryFolder] = useState("cb3d4ab33a890ee80495dc141b4e7f8640");
+  const [videoPublicId, setVideoPublicId] = useState("cb3d4ab33a890ee80495dc141b4e7f8640/Nursing_Rocks_Concerts");
+  
+  // Check Cloudinary connection when component mounts
+  useEffect(() => {
+    async function checkConnection() {
+      try {
+        const result = await checkCloudinaryConnection();
+        console.log("Cloudinary connection check:", result);
+        setCloudinaryConnected(result.connected);
+        
+        if (!result.connected) {
+          console.warn("Cloudinary connection failed:", result.message);
+        }
+      } catch (error) {
+        console.error("Error checking Cloudinary connection:", error);
+        setCloudinaryConnected(false);
+      }
+    }
+    
+    checkConnection();
+  }, []);
   
   const { data: featuredEvent, isLoading: isLoadingEvent } = useQuery<Event>({
     queryKey: ["/api/events/featured"],
@@ -151,15 +176,15 @@ const HeroSection = () => {
               <i className="fas fa-shopping-bag ml-1 sm:ml-2"></i>
             </Button>
             
-            {/* YouTube Video for Mobile Only - Under buttons */}
+            {/* Cloudinary Video for Mobile Only - Under buttons */}
             <div className="block xs:hidden mt-6 w-full">
               <h4 className="text-center font-semibold mb-2 text-white/90">Featured Video</h4>
               <div className="aspect-video w-full mx-auto bg-black rounded-xl overflow-hidden shadow-xl border-2 border-white/30 transform transition-transform duration-300">
                 <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-[#5D3FD3]/80 to-[#FF3366]/80 opacity-50 blur-sm"></div>
                 <div className="relative z-10">
-                  <YouTubeEmbed 
-                    className="w-full h-full" 
-                    videoId="dQw4w9WgXcQ"
+                  <CloudinaryIframeVideo
+                    publicId={videoPublicId}
+                    className="w-full h-full"
                     autoPlay={true}
                     muted={true}
                     controls={true}
@@ -170,14 +195,14 @@ const HeroSection = () => {
           </div>
         </div>
         
-        {/* YouTube Video - Desktop and Tablet Only - Positioned absolutely on the right */}
+        {/* Cloudinary Video - Desktop and Tablet Only - Positioned absolutely on the right */}
         <div className="hidden xs:block absolute bottom-20 xs:bottom-6 right-6 md:bottom-12 md:right-12 lg:bottom-16 lg:right-16 z-20">
           <div className="aspect-video w-[120px] xs:w-[180px] sm:w-[220px] md:w-[320px] lg:w-[380px] bg-black rounded-xl overflow-hidden shadow-xl border-4 border-white/30 transform hover:scale-105 transition-transform duration-300">
             <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 opacity-75 blur-sm"></div>
             <div className="relative z-10">
-              <YouTubeEmbed 
+              <CloudinaryIframeVideo
+                publicId={videoPublicId}
                 className="w-full h-full"
-                videoId="dQw4w9WgXcQ"
                 autoPlay={true}
                 muted={true}
                 controls={true}

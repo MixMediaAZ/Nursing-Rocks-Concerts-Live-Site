@@ -10,91 +10,122 @@ cloudinary.config({
 });
 
 /**
- * Fetch videos from a Cloudinary folder
- * GET /api/cloudinary/videos?folder=folder_name
+ * Get videos from a Cloudinary folder
+ * This endpoint handles the API keys securely on the server
  */
 export async function getCloudinaryVideos(req: Request, res: Response) {
   try {
-    const { folder = '' } = req.query;
+    const folder = req.query.folder as string || '';
     
-    if (!folder) {
-      return res.status(400).json({ error: 'Folder parameter is required' });
+    // Verify Cloudinary credentials are set
+    if (!process.env.CLOUDINARY_CLOUD_NAME || 
+        !process.env.CLOUDINARY_API_KEY || 
+        !process.env.CLOUDINARY_API_SECRET) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Cloudinary credentials are not configured' 
+      });
     }
-
-    const folderPath = String(folder).trim();
     
-    // Use Cloudinary SDK to search for videos in the specified folder
-    const result = await cloudinary.search
-      .expression(`folder=${folderPath} AND resource_type:video`)
-      .sort_by('created_at', 'desc')
-      .max_results(100)
-      .execute();
-
+    // Fetch videos from Cloudinary
+    const result = await cloudinary.api.resources({
+      type: 'upload',
+      prefix: folder ? `${folder}/` : '',
+      resource_type: 'video',
+      max_results: 100
+    });
+    
     return res.json({
       success: true,
-      resources: result.resources,
-      total: result.total_count
+      resources: result.resources || [],
+      total: (result.resources || []).length,
+      nextCursor: result.next_cursor
     });
   } catch (error) {
-    console.error('Cloudinary API error:', error);
+    console.error('Error getting Cloudinary videos:', error);
     return res.status(500).json({ 
-      error: 'Error fetching videos from Cloudinary',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      success: false, 
+      message: error instanceof Error ? error.message : 'Unknown error' 
     });
   }
 }
 
 /**
- * Get Cloudinary signature for direct uploads (client-side)
- * POST /api/cloudinary/signature
+ * Generate a Cloudinary upload signature for secure direct uploads
  */
 export async function getCloudinarySignature(req: Request, res: Response) {
   try {
-    const { timestamp = Math.round(new Date().getTime() / 1000) } = req.body;
+    // Verify Cloudinary credentials are set
+    if (!process.env.CLOUDINARY_CLOUD_NAME || 
+        !process.env.CLOUDINARY_API_KEY || 
+        !process.env.CLOUDINARY_API_SECRET) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Cloudinary credentials are not configured' 
+      });
+    }
     
-    // Generate the signature
+    const timestamp = Math.round(new Date().getTime() / 1000);
+    const folder = req.body.folder || 'nursing-rocks';
+    
+    // Generate signature with additional parameters
     const signature = cloudinary.utils.api_sign_request({
       timestamp,
-      // Add any other parameters you want to include in the signature
-    }, process.env.CLOUDINARY_API_SECRET || '');
+      folder,
+      // You can add additional parameters here as needed
+      // resource_type: 'video',
+      // ...etc
+    }, process.env.CLOUDINARY_API_SECRET as string);
     
     return res.json({
       signature,
       timestamp,
       cloudName: process.env.CLOUDINARY_CLOUD_NAME,
-      apiKey: process.env.CLOUDINARY_API_KEY
+      apiKey: process.env.CLOUDINARY_API_KEY,
+      folder
     });
   } catch (error) {
-    console.error('Cloudinary signature error:', error);
+    console.error('Error generating Cloudinary signature:', error);
     return res.status(500).json({ 
-      error: 'Error generating Cloudinary signature',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      success: false, 
+      message: error instanceof Error ? error.message : 'Unknown error' 
     });
   }
 }
 
 /**
- * Check Cloudinary connection and credentials
- * GET /api/cloudinary/status
+ * Check if Cloudinary connection is working
  */
 export async function checkCloudinaryConnection(req: Request, res: Response) {
   try {
-    // Try to ping the Cloudinary API
-    const result = await cloudinary.api.ping();
+    // Verify Cloudinary credentials are set
+    if (!process.env.CLOUDINARY_CLOUD_NAME || 
+        !process.env.CLOUDINARY_API_KEY || 
+        !process.env.CLOUDINARY_API_SECRET) {
+      return res.json({ 
+        success: false, 
+        connected: false,
+        status: 'error',
+        message: 'Cloudinary credentials are not configured' 
+      });
+    }
+    
+    // Make a simple API request to check connectivity
+    await cloudinary.api.ping();
     
     return res.json({
       success: true,
       connected: true,
-      status: result.status,
+      status: 'online',
       message: 'Connected to Cloudinary API successfully'
     });
   } catch (error) {
-    console.error('Cloudinary connection error:', error);
-    return res.status(500).json({ 
-      success: false,
+    console.error('Error checking Cloudinary connection:', error);
+    return res.json({ 
+      success: false, 
       connected: false,
-      error: 'Failed to connect to Cloudinary API',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      status: 'error',
+      message: error instanceof Error ? error.message : 'Unknown error' 
     });
   }
 }
