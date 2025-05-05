@@ -9,7 +9,7 @@ import { Search } from "lucide-react";
 // Direct paths to the city background image files 
 // Images from public directory are served at the root path
 // New uploaded JPEG files are used alongside existing PNGs
-const chicagoImage = "/assets/city_backgrounds/file-1746415252600-107696087.jpeg"; // Updated Chicago with nurse blue shirt
+const chicagoImage = "/assets/city_backgrounds/file-1746415499933-642613458.JPG"; // Updated Chicago image as requested
 const washingtonImage = "/assets/city_backgrounds/6D6FD547-7B8E-4871-B7D1-8CD2BDD76E98.PNG"; // Washington DC monuments
 const sanFranciscoImage = "/assets/city_backgrounds/files-1746415256343-783805015.jpeg"; // Updated San Francisco with white shirt
 const bostonImage = "/assets/city_backgrounds/3B39719F-9D81-4397-9EFB-74CA91F16E2C.PNG"; // Boston cityscape
