@@ -1,18 +1,16 @@
 import { Cloudinary } from "@cloudinary/url-gen";
 
-// Create a Cloudinary instance with your cloud name from environment variables
+// Consistent access to Cloudinary credentials from environment variables
+const cloudName = import.meta.env.CLOUDINARY_CLOUD_NAME as string;
+const apiKey = import.meta.env.CLOUDINARY_API_KEY as string;
+const apiSecret = import.meta.env.CLOUDINARY_API_SECRET as string;
+
+// Create a Cloudinary instance with cloud name
 export const cld = new Cloudinary({
   cloud: {
-    cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || import.meta.env.CLOUDINARY_CLOUD_NAME
+    cloudName
   }
 });
-
-// Get the cloud name from environment variables
-const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || import.meta.env.CLOUDINARY_CLOUD_NAME;
-
-// Get Cloudinary API key and secret from environment variables
-const apiKey = import.meta.env.VITE_CLOUDINARY_API_KEY || import.meta.env.CLOUDINARY_API_KEY;
-const apiSecret = import.meta.env.VITE_CLOUDINARY_API_SECRET || import.meta.env.CLOUDINARY_API_SECRET;
 
 // Helper function to get a full Cloudinary video URL
 export function getCloudinaryVideoUrl(publicId: string): string {
@@ -35,26 +33,60 @@ export function getCloudinaryFolderPath(folder: string, fileName: string): strin
 }
 
 // Fetch videos from a specific Cloudinary folder
-// Note: This requires server-side implementation to protect API credentials
-// For now, we'll use a simulated list
+// Uses the server-side API to protect credentials
 export async function fetchVideosFromFolder(folderPath: string): Promise<string[]> {
-  // This is a client-side function that should make a request to your backend
-  // Your backend would then make an authenticated request to Cloudinary's API
   try {
-    // For development/prototyping, return known videos
+    // Call our server-side API endpoint
+    const response = await fetch(`/api/cloudinary/videos?folder=${encodeURIComponent(folderPath)}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch videos: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data.success || !data.resources) {
+      console.warn('Cloudinary API returned no videos, using fallbacks:', data);
+      // Return default videos as fallback
+      return [
+        "Nursing_Rocks_Concerts",
+        "NR_Promo_Video", 
+        "NR_Highlights"
+      ];
+    }
+    
+    // Extract file names from the resources array
+    return data.resources.map((resource: any) => {
+      // Extract just the filename from the public_id path
+      const fullPublicId = resource.public_id;
+      return fullPublicId.replace(`${folderPath}/`, '');
+    });
+  } catch (error) {
+    console.error('Error fetching videos from Cloudinary folder:', error);
+    // Return default videos as fallback in case of error
     return [
       "Nursing_Rocks_Concerts",
       "NR_Promo_Video", 
       "NR_Highlights"
     ];
+  }
+}
+
+// Check Cloudinary connection status
+export async function checkCloudinaryConnection(): Promise<{connected: boolean, message: string}> {
+  try {
+    const response = await fetch('/api/cloudinary/status');
+    const data = await response.json();
     
-    // In production, you would uncomment this code and implement a backend endpoint
-    // const response = await fetch(`/api/cloudinary/videos?folder=${folderPath}`);
-    // if (!response.ok) throw new Error('Failed to fetch videos');
-    // const data = await response.json();
-    // return data.resources.map((resource: any) => resource.public_id.replace(`${folderPath}/`, ''));
+    return {
+      connected: data.connected || false,
+      message: data.message || 'Cloudinary connection check completed'
+    };
   } catch (error) {
-    console.error('Error fetching videos from Cloudinary folder:', error);
-    return []; // Return empty array if error
+    console.error('Error checking Cloudinary connection:', error);
+    return {
+      connected: false,
+      message: error instanceof Error ? error.message : 'Unknown error'
+    };
   }
 }

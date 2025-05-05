@@ -25,6 +25,7 @@ import {
 } from "./gallery-media";
 import { fetchCustomCatProducts } from "./customcat-api";
 import { processCustomCatProductsImages, formatCustomCatProducts } from "./product-utils";
+import { getCloudinaryVideos, getCloudinarySignature, checkCloudinaryConnection } from "./cloudinary-api";
 
 // Initialize Stripe with the secret key if it exists
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -960,6 +961,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } : null
     });
   });
+
+  // ========== CLOUDINARY API ==========
+  
+  // Get videos from a Cloudinary folder
+  app.get("/api/cloudinary/videos", getCloudinaryVideos);
+  
+  // Get Cloudinary signature for direct uploads
+  app.post("/api/cloudinary/signature", getCloudinarySignature);
+  
+  // Check Cloudinary connection status
+  app.get("/api/cloudinary/status", checkCloudinaryConnection);
 
   // ========== STORE API ==========
   

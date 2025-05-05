@@ -15,7 +15,7 @@ interface CloudinaryIframeVideoProps {
  * than direct video tag usage
  */
 export function CloudinaryIframeVideo({
-  cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || import.meta.env.CLOUDINARY_CLOUD_NAME,
+  cloudName = import.meta.env.CLOUDINARY_CLOUD_NAME as string,
   publicId,
   className = "",
   autoPlay = true,
