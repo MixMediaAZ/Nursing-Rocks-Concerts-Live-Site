@@ -105,7 +105,10 @@ export function FeaturedProducts() {
       <div className="mt-16">
         <h3 className="text-xl font-bold mb-8">Shop by Category</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Link href="/store/category/apparel">
+          <div 
+            onClick={() => window.open("https://www.bonfire.com/store/nursing-rocks-concert-series", "_blank")}
+            className="cursor-pointer"
+          >
             <div className="group relative h-64 rounded-lg overflow-hidden bg-muted border">
               <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60 z-10" />
               <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity z-10" />
@@ -114,7 +117,7 @@ export function FeaturedProducts() {
                 <p className="text-white/80 text-sm">T-shirts, hoodies, and more</p>
               </div>
             </div>
-          </Link>
+          </div>
           
           <Link href="/store/category/accessories">
             <div className="group relative h-64 rounded-lg overflow-hidden bg-muted border">

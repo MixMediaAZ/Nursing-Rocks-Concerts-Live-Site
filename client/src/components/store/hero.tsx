@@ -16,17 +16,13 @@ export function StoreHero() {
             healthcare scholarships.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Button asChild size="lg">
-              <Link href="#featured-products">
-                <ShoppingBag className="mr-2 h-5 w-5" />
-                Shop Now
-              </Link>
+            <Button size="lg" onClick={() => window.open("https://www.bonfire.com/store/nursing-rocks-concert-series", "_blank")}>
+              <ShoppingBag className="mr-2 h-5 w-5" />
+              Shop Nursing T-Shirts
             </Button>
-            <Button variant="outline" asChild size="lg">
-              <Link href="/store/category/new-arrivals">
-                <TagIcon className="mr-2 h-5 w-5" />
-                New Arrivals
-              </Link>
+            <Button variant="outline" size="lg" onClick={() => window.open("https://www.bonfire.com/store/nursing-rocks-concert-series", "_blank")}>
+              <TagIcon className="mr-2 h-5 w-5" />
+              View T-Shirt Designs
             </Button>
           </div>
         </div>

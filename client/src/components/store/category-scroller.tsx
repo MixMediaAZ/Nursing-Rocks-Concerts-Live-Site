@@ -80,6 +80,16 @@ export function CategoryScroller() {
     const index = category.charCodeAt(0) % colors.length;
     return colors[index];
   };
+  
+  // Check if a category is apparel-related (should link to Bonfire)
+  const isApparelCategory = (category: string): boolean => {
+    const lowerCategory = category.toLowerCase();
+    return category === "T-shirts" 
+      || category === "Apparel" 
+      || category === "Shirts"
+      || lowerCategory.includes("shirt") 
+      || lowerCategory.includes("tee");
+  };
 
   return (
     <div className="relative">
@@ -118,26 +128,48 @@ export function CategoryScroller() {
           ref={scrollRef}
           className="flex pb-3 space-x-2 min-w-full"
         >
-          {categories.map((category, i) => (
-            <Link 
-              key={i} 
-              href={category === "All Products" ? "/store" : `/store/category/${encodeURIComponent(category)}`}
-            >
-              <div 
-                className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md cursor-pointer transition-colors text-center ${getCategoryColor(category)}`}
-              >
-                <ShoppingBag className="h-4 w-4 flex-shrink-0" />
-                <span className="font-medium whitespace-nowrap">{category}</span>
-                {products && (
-                  <span className="inline-flex items-center justify-center rounded-full bg-white/80 px-1.5 py-0.5 text-xs font-medium text-gray-700 flex-shrink-0">
-                    {category === "All Products" 
-                      ? products.length 
-                      : products.filter(p => p.category === category).length}
-                  </span>
-                )}
-              </div>
-            </Link>
-          ))}
+          {categories.map((category, i) => {
+            if (isApparelCategory(category)) {
+              // Apparel categories redirect to Bonfire
+              return (
+                <div
+                  key={i}
+                  onClick={() => window.open("https://www.bonfire.com/store/nursing-rocks-concert-series", "_blank")}
+                  className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md cursor-pointer transition-colors text-center ${getCategoryColor(category)}`}
+                >
+                  <ShoppingBag className="h-4 w-4 flex-shrink-0" />
+                  <span className="font-medium whitespace-nowrap">{category}</span>
+                  {products && (
+                    <span className="inline-flex items-center justify-center rounded-full bg-white/80 px-1.5 py-0.5 text-xs font-medium text-gray-700 flex-shrink-0">
+                      {products.filter(p => p.category === category).length}
+                    </span>
+                  )}
+                </div>
+              );
+            } else {
+              // Non-apparel categories use internal store links
+              return (
+                <Link 
+                  key={i} 
+                  href={category === "All Products" ? "/store" : `/store/category/${encodeURIComponent(category)}`}
+                >
+                  <div 
+                    className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md cursor-pointer transition-colors text-center ${getCategoryColor(category)}`}
+                  >
+                    <ShoppingBag className="h-4 w-4 flex-shrink-0" />
+                    <span className="font-medium whitespace-nowrap">{category}</span>
+                    {products && (
+                      <span className="inline-flex items-center justify-center rounded-full bg-white/80 px-1.5 py-0.5 text-xs font-medium text-gray-700 flex-shrink-0">
+                        {category === "All Products" 
+                          ? products.length 
+                          : products.filter(p => p.category === category).length}
+                      </span>
+                    )}
+                  </div>
+                </Link>
+              );
+            }
+          })}
         </div>
         <ScrollBar orientation="horizontal" />
       </ScrollArea>
