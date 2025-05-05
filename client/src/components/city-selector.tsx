@@ -6,21 +6,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
-// City background images from public directory
-// These images will be displayed behind the city text
-const chicagoImage = "/assets/city_backgrounds/file-1746415494151-726751177.JPG"; // Chicago skyline - as requested
-const washingtonImage = "/assets/city_backgrounds/6D6FD547-7B8E-4871-B7D1-8CD2BDD76E98.PNG"; // Washington DC
-const sanFranciscoImage = "/assets/city_backgrounds/9AF7FDEB-8BB4-4BCE-9E9F-560BCABE7572.PNG"; // San Francisco
-const bostonImage = "/assets/city_backgrounds/3B39719F-9D81-4397-9EFB-74CA91F16E2C.PNG"; // Boston
-const newYorkImage = "/assets/city_backgrounds/9AF7FDEB-8BB4-4BCE-9E9F-560BCABE7572.PNG"; // NYC
-const houstonImage = "/assets/city_backgrounds/CA566C49-0E82-4288-9CF4-328CD8F61EC6.PNG"; // Houston
-const denverImage = "/assets/city_backgrounds/4A5B3B48-E885-44BF-9FD2-93927C35FDC8.PNG"; // Denver
-const atlantaImage = "/assets/city_backgrounds/3B80F8ED-69E6-4337-BEBC-12A3402C5653.PNG"; // Atlanta
-const losAngelesImage = "/assets/city_backgrounds/1DFDF38A-CC77-42B3-803D-336853030512.PNG"; // LA
-const nashvilleImage = "/assets/city_backgrounds/E236F46B-0F0C-4BBF-936D-7F1918647585.PNG"; // Nashville
-const dallasImage = "/assets/city_backgrounds/CA566C49-0E82-4288-9CF4-328CD8F61EC6.PNG"; // Dallas
+// Define city background images - using actual images from the filesystem
+// Each city will have its own distinct background image
+const CITY_IMAGES: Record<string, string> = {
+  "chicago": "/assets/city_backgrounds/file-1746415494151-726751177.JPG",
+  "washington-dc": "/assets/city_backgrounds/file-1746415494698-946281521.JPG",
+  "san-francisco": "/assets/city_backgrounds/file-1746415495033-742864723.JPG",
+  "boston": "/assets/city_backgrounds/file-1746415495378-648838152.JPG",
+  "new-york": "/assets/city_backgrounds/file-1746415495662-3100884.JPG",
+  "houston": "/assets/city_backgrounds/file-1746415496002-392173619.JPG",
+  "denver": "/assets/city_backgrounds/file-1746415496326-554994931.JPG",
+  "atlanta": "/assets/city_backgrounds/file-1746415496592-877506142.JPG",
+  "los-angeles": "/assets/city_backgrounds/file-1746415496935-480732093.JPG",
+  "nashville": "/assets/city_backgrounds/file-1746415497286-970010446.JPG",
+  "dallas": "/assets/city_backgrounds/file-1746415497592-153489308.JPG"
+};
 
-// City background colors as fallbacks or additional styling
+// City background colors as fallbacks - in case images fail to load
 const cityColors: Record<string, string> = {
   "chicago": "bg-blue-600",
   "washington-dc": "bg-purple-600",
@@ -42,7 +44,6 @@ interface City {
   state: string;
   region: string;
   coordinates: { lat: number; lng: number };
-  imageUrl: string; // Image URL for the city card background
   upcomingEvent?: {
     date: string;
     artist: string;
@@ -56,88 +57,77 @@ const CITIES: City[] = [
     name: "Chicago", 
     state: "IL", 
     region: "Midwest", 
-    coordinates: { lat: 41.8781, lng: -87.6298 },
-    imageUrl: chicagoImage
+    coordinates: { lat: 41.8781, lng: -87.6298 }
   },
   { 
     id: "washington-dc", 
     name: "Washington", 
     state: "DC", 
     region: "East", 
-    coordinates: { lat: 38.9072, lng: -77.0369 },
-    imageUrl: washingtonImage
+    coordinates: { lat: 38.9072, lng: -77.0369 }
   },
   { 
     id: "san-francisco", 
     name: "San Francisco", 
     state: "CA", 
     region: "West", 
-    coordinates: { lat: 37.7749, lng: -122.4194 },
-    imageUrl: sanFranciscoImage
+    coordinates: { lat: 37.7749, lng: -122.4194 }
   },
   { 
     id: "boston", 
     name: "Boston", 
     state: "MA", 
     region: "East", 
-    coordinates: { lat: 42.3601, lng: -71.0589 },
-    imageUrl: bostonImage
+    coordinates: { lat: 42.3601, lng: -71.0589 }
   },
   { 
     id: "new-york", 
     name: "New York", 
     state: "NY", 
     region: "East", 
-    coordinates: { lat: 40.7128, lng: -74.0060 },
-    imageUrl: newYorkImage
+    coordinates: { lat: 40.7128, lng: -74.0060 }
   },
   { 
     id: "houston", 
     name: "Houston", 
     state: "TX", 
     region: "South", 
-    coordinates: { lat: 29.7604, lng: -95.3698 },
-    imageUrl: houstonImage
+    coordinates: { lat: 29.7604, lng: -95.3698 }
   },
   { 
     id: "denver", 
     name: "Denver", 
     state: "CO", 
     region: "West", 
-    coordinates: { lat: 39.7392, lng: -104.9903 },
-    imageUrl: denverImage
+    coordinates: { lat: 39.7392, lng: -104.9903 }
   },
   { 
     id: "atlanta", 
     name: "Atlanta", 
     state: "GA", 
     region: "South", 
-    coordinates: { lat: 33.7490, lng: -84.3880 },
-    imageUrl: atlantaImage
+    coordinates: { lat: 33.7490, lng: -84.3880 }
   },
   { 
     id: "los-angeles", 
     name: "Los Angeles", 
     state: "CA", 
     region: "West", 
-    coordinates: { lat: 34.0522, lng: -118.2437 },
-    imageUrl: losAngelesImage
+    coordinates: { lat: 34.0522, lng: -118.2437 }
   },
   { 
     id: "nashville", 
     name: "Nashville", 
     state: "TN", 
     region: "South", 
-    coordinates: { lat: 36.1627, lng: -86.7816 },
-    imageUrl: nashvilleImage
+    coordinates: { lat: 36.1627, lng: -86.7816 }
   },
   { 
     id: "dallas", 
     name: "Dallas", 
     state: "TX", 
     region: "South", 
-    coordinates: { lat: 32.7767, lng: -96.7970 },
-    imageUrl: dallasImage
+    coordinates: { lat: 32.7767, lng: -96.7970 }
   }
 ];
 
@@ -225,14 +215,12 @@ export default function CitySelector() {
                   <div 
                     className={`h-48 flex flex-col items-center justify-center relative overflow-hidden ${cityColors[city.id] || DEFAULT_BG}`}
                   >
-                    {/* City image as background with specific object fit settings */}
+                    {/* City image as background with proper styling */}
                     <div 
-                      className="absolute inset-0 z-[1] bg-center bg-cover"
+                      className="absolute inset-0 z-[1] bg-center bg-cover bg-no-repeat"
                       style={{ 
-                        backgroundImage: `url(${city.imageUrl})`,
-                        backgroundPosition: 'center',
-                        backgroundSize: 'cover',
-                        backgroundRepeat: 'no-repeat'
+                        backgroundImage: `url(${CITY_IMAGES[city.id]})`,
+                        backgroundPosition: 'center'
                       }}
                     />
                     
