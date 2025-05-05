@@ -58,7 +58,7 @@ export function Header() {
     { href: "/cities", label: "Concert Cities", icon: <Map size={18} /> },
     { href: "/videos", label: "Videos", icon: <PlayCircle size={18} /> },
     { href: "/sponsors", label: "Sponsors", icon: <HeartPulse size={18} /> },
-    { href: "https://www.bonfire.com/store/nursing-rocks-concert-series", label: "Store", icon: <ShoppingBag size={18} />, isExternal: true },
+    { href: "https://rgwrvu-sq.myshopify.com/", label: "Store", icon: <ShoppingBag size={18} />, isExternal: true },
   ];
   
   const authenticatedNavLinks: NavLink[] = [
