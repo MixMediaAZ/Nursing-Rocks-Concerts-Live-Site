@@ -6,9 +6,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
-// Import city card images
-import nurseBlueShirt from "@assets/NRCS Shirt_NurseBlue.jpeg";
-import whiteShirt from "@assets/NRCS Shirt_White.jpeg";
+// Define city background image URLs (using full paths)
+const chicagoImage = "/assets/city_backgrounds/6AEA04AA-A9A3-4F6E-9C15-CCAFE3BC50F8.PNG";
+const washingtonImage = "/assets/city_backgrounds/6D6FD547-7B8E-4871-B7D1-8CD2BDD76E98.PNG";
+const sanFranciscoImage = "/assets/city_backgrounds/FF6856D4-8B81-49FE-BB14-D4E99A44F9B6.PNG";
+const bostonImage = "/assets/city_backgrounds/3B39719F-9D81-4397-9EFB-74CA91F16E2C.PNG";
+const newYorkImage = "/assets/city_backgrounds/9AF7FDEB-8BB4-4BCE-9E9F-560BCABE7572.PNG";
+const houstonImage = "/assets/city_backgrounds/CA566C49-0E82-4288-9CF4-328CD8F61EC6.PNG";
+const denverImage = "/assets/city_backgrounds/4A5B3B48-E885-44BF-9FD2-93927C35FDC8.PNG";
+const atlantaImage = "/assets/city_backgrounds/3B80F8ED-69E6-4337-BEBC-12A3402C5653.PNG";
+const losAngelesImage = "/assets/city_backgrounds/1DFDF38A-CC77-42B3-803D-336853030512.PNG";
+const nashvilleImage = "/assets/city_backgrounds/E236F46B-0F0C-4BBF-936D-7F1918647585.PNG";
+const dallasImage = "/assets/city_backgrounds/2CA4A9EC-7F93-43A0-A9E2-1834A4BA1A84.PNG";
 
 // City background colors and patterns
 const cityColors: Record<string, string> = {
@@ -47,7 +56,7 @@ const CITIES: City[] = [
     state: "IL", 
     region: "Midwest", 
     coordinates: { lat: 41.8781, lng: -87.6298 },
-    imageUrl: nurseBlueShirt
+    imageUrl: chicagoImage
   },
   { 
     id: "washington-dc", 
@@ -55,7 +64,7 @@ const CITIES: City[] = [
     state: "DC", 
     region: "East", 
     coordinates: { lat: 38.9072, lng: -77.0369 },
-    imageUrl: whiteShirt
+    imageUrl: washingtonImage
   },
   { 
     id: "san-francisco", 
@@ -63,7 +72,7 @@ const CITIES: City[] = [
     state: "CA", 
     region: "West", 
     coordinates: { lat: 37.7749, lng: -122.4194 },
-    imageUrl: nurseBlueShirt
+    imageUrl: sanFranciscoImage
   },
   { 
     id: "boston", 
@@ -71,7 +80,7 @@ const CITIES: City[] = [
     state: "MA", 
     region: "East", 
     coordinates: { lat: 42.3601, lng: -71.0589 },
-    imageUrl: whiteShirt
+    imageUrl: bostonImage
   },
   { 
     id: "new-york", 
@@ -79,7 +88,7 @@ const CITIES: City[] = [
     state: "NY", 
     region: "East", 
     coordinates: { lat: 40.7128, lng: -74.0060 },
-    imageUrl: nurseBlueShirt
+    imageUrl: newYorkImage
   },
   { 
     id: "houston", 
@@ -87,7 +96,7 @@ const CITIES: City[] = [
     state: "TX", 
     region: "South", 
     coordinates: { lat: 29.7604, lng: -95.3698 },
-    imageUrl: whiteShirt
+    imageUrl: houstonImage
   },
   { 
     id: "denver", 
@@ -95,7 +104,7 @@ const CITIES: City[] = [
     state: "CO", 
     region: "West", 
     coordinates: { lat: 39.7392, lng: -104.9903 },
-    imageUrl: nurseBlueShirt
+    imageUrl: denverImage
   },
   { 
     id: "atlanta", 
@@ -103,7 +112,7 @@ const CITIES: City[] = [
     state: "GA", 
     region: "South", 
     coordinates: { lat: 33.7490, lng: -84.3880 },
-    imageUrl: whiteShirt
+    imageUrl: atlantaImage
   },
   { 
     id: "los-angeles", 
@@ -111,7 +120,7 @@ const CITIES: City[] = [
     state: "CA", 
     region: "West", 
     coordinates: { lat: 34.0522, lng: -118.2437 },
-    imageUrl: nurseBlueShirt
+    imageUrl: losAngelesImage
   },
   { 
     id: "nashville", 
@@ -119,7 +128,7 @@ const CITIES: City[] = [
     state: "TN", 
     region: "South", 
     coordinates: { lat: 36.1627, lng: -86.7816 },
-    imageUrl: whiteShirt
+    imageUrl: nashvilleImage
   },
   { 
     id: "dallas", 
@@ -127,7 +136,7 @@ const CITIES: City[] = [
     state: "TX", 
     region: "South", 
     coordinates: { lat: 32.7767, lng: -96.7970 },
-    imageUrl: nurseBlueShirt
+    imageUrl: dallasImage
   }
 ];
 
@@ -228,13 +237,13 @@ export default function CitySelector() {
                         <img 
                           src={city.imageUrl} 
                           alt={`${city.name} image`}
-                          className="w-auto h-36 object-contain opacity-90 mix-blend-multiply"
+                          className="w-full h-full object-cover opacity-80"
                         />
                       </div>
                     )}
                     
                     {/* Semi-transparent overlay for better text contrast */}
-                    <div className="absolute inset-0 bg-black/30 z-[2.5]"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/30 z-[2.5]"></div>
                     
                     {/* City name with text shadow for better visibility - improved centering */}
                     <div className="flex flex-col items-center justify-center text-center z-[3]">
