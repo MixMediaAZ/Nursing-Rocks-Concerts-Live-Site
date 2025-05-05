@@ -54,7 +54,7 @@ const PromotionButtons = () => {
               </div>
               <div className="relative w-full max-w-sm">
                 <Button 
-                  onClick={() => setLocation("/store/category/tshirts")}
+                  onClick={() => window.open("https://www.bonfire.com/store/nursing-rocks-concert-series", "_blank")}
                   className="flex items-center justify-center gap-3 bg-[#F61D7A] hover:bg-[#E01060] text-white px-8 py-6 rounded-lg text-lg font-semibold transition-transform hover:scale-105 shadow-md w-full"
                   id="tshirtButton"
                   data-editable="true"
