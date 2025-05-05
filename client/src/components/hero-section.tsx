@@ -157,7 +157,7 @@ const HeroSection = () => {
                 <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-[#5D3FD3]/80 to-[#FF3366]/80 opacity-50 blur-sm"></div>
                 <div className="relative z-10">
                   <YouTube 
-                    videoId="dQw4w9WgXcQ" 
+                    videoId="12345abcde" 
                     opts={{
                       width: '100%',
                       height: '100%',
@@ -198,7 +198,7 @@ const HeroSection = () => {
             <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 opacity-75 blur-sm"></div>
             <div className="relative z-10">
               <YouTube 
-                videoId="dQw4w9WgXcQ" 
+                videoId="12345abcde" 
                 opts={{
                   width: '100%',
                   height: '100%',
