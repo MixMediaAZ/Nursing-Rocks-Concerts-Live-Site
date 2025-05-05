@@ -1198,7 +1198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/store/orders/:id", requireAuth, async (req: Request, res: Response) => {
+  app.get("/api/store/orders/:id", authenticateToken, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -1222,7 +1222,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/store/orders/:id/items", requireAuth, async (req: Request, res: Response) => {
+  app.get("/api/store/orders/:id/items", authenticateToken, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -1247,8 +1247,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.patch("/api/store/orders/:id/status", requireAdmin, async (req: Request, res: Response) => {
+  app.patch("/api/store/orders/:id/status", authenticateToken, async (req: Request, res: Response) => {
     try {
+      // Only admins can update order status
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized: Admin privileges required" });
+      }
       
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -1285,8 +1289,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.patch("/api/store/orders/:id/payment", requireAdmin, async (req: Request, res: Response) => {
+  app.patch("/api/store/orders/:id/payment", authenticateToken, async (req: Request, res: Response) => {
     try {
+      // Only admins can update payment status
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized: Admin privileges required" });
+      }
       
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -1326,7 +1334,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ========== APP SETTINGS ENDPOINTS ==========
   
   // Get all app settings (non-sensitive ones for public, all for admin)
-  app.get("/api/settings", requireAuth, async (req: Request, res: Response) => {
+  app.get("/api/settings", authenticateToken, async (req: Request, res: Response) => {
     try {
       const allSettings = await storage.getAllAppSettings();
       
@@ -1372,8 +1380,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Create or update a setting (admin only)
-  app.post("/api/settings", requireAdmin, async (req: Request, res: Response) => {
+  app.post("/api/settings", authenticateToken, async (req: Request, res: Response) => {
     try {
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ message: "Only admins can manage settings" });
+      }
       
       const settingSchema = z.object({
         key: z.string().min(1).max(100),
@@ -1402,8 +1413,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Delete a setting (admin only)
-  app.delete("/api/settings/:key", requireAdmin, async (req: Request, res: Response) => {
+  app.delete("/api/settings/:key", authenticateToken, async (req: Request, res: Response) => {
     try {
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ message: "Only admins can delete settings" });
+      }
       
       const { key } = req.params;
       
@@ -1422,8 +1436,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Endpoint to get CustomCat API key status (used by client to check if store integration is configured)
-  app.get("/api/settings/store/customcat-status", requireAdmin, async (req: Request, res: Response) => {
+  app.get("/api/settings/store/customcat-status", async (req: Request, res: Response) => {
     try {
+      // Check if this is an admin request - only admins should be able to check API keys
+      const isAdmin = isUserAdmin(req);
+      if (!isAdmin) {
+        return res.status(403).json({ 
+          message: "You don't have permission to check API status",
+          configured: false
+        });
+      }
 
       const apiKeySetting = await storage.getAppSettingByKey("CUSTOMCAT_API_KEY");
       const isConfigured = !!apiKeySetting && !!apiKeySetting.value;
@@ -1535,8 +1557,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Check if the CustomCat API connection is valid by making a test request
-  app.get("/api/store/customcat/verify-connection", requireAdmin, async (req: Request, res: Response) => {
+  app.get("/api/store/customcat/verify-connection", async (req: Request, res: Response) => {
     try {
+      // Check if this is an admin request - only admins should be able to check API keys
+      const isAdmin = isUserAdmin(req);
+      if (!isAdmin) {
+        return res.status(403).json({ 
+          success: false,
+          message: "You don't have permission to check API connections"
+        });
+      }
       
       // First try to get the API key from the environment variable
       let apiKeyValue = process.env.CUSTOMCAT_API_KEY || "";
@@ -1603,8 +1633,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Sync products from CustomCat to our store database
-  app.post("/api/store/customcat/sync-products", requireAdmin, async (req: Request, res: Response) => {
+  app.post("/api/store/customcat/sync-products", async (req: Request, res: Response) => {
     try {
+      // Check if this is an admin request using proper JWT validation
+      const isAdmin = isUserAdmin(req);
+      if (!isAdmin) {
+        return res.status(403).json({ 
+          success: false,
+          message: "Not authorized to sync products. Admin privileges required" 
+        });
+      }
       
       // First try to get the API key from the environment variable
       let apiKeyValue = process.env.CUSTOMCAT_API_KEY || "";
