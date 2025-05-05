@@ -94,7 +94,7 @@ const UploadUtilityPage = () => {
     
     const formData = new FormData();
     for (let i = 0; i < files.length; i++) {
-      formData.append('files', files[i]);
+      formData.append('file', files[i]); // Changed from 'files' to 'file' to match server expectation
     }
     formData.append('destination', 'city_backgrounds');
     

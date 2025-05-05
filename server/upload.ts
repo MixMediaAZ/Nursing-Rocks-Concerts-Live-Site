@@ -81,7 +81,7 @@ export async function uploadCityBackground(req: Request, res: Response) {
  * Handle bulk city background image uploads
  */
 export async function uploadMultipleCityBackgrounds(req: Request, res: Response) {
-  const upload = cityBackgroundsUpload.array('files', 20); // Allow up to 20 files
+  const upload = cityBackgroundsUpload.array('file', 20); // Allow up to 20 files with field name 'file'
   
   upload(req, res, (err) => {
     if (err) {
