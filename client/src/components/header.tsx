@@ -8,10 +8,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Menu, X, User, HeartPulse, Map, ShoppingBag, ShoppingCart, Image, PlayCircle } from "lucide-react";
+import { Menu, X, User, HeartPulse, Map, ShoppingBag, Image, PlayCircle } from "lucide-react";
 import newLogoPath from "../assets/NursingRocks_NewLogo.png";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useCart } from "@/hooks/use-cart";
 
 // Define the type for navigation links
 interface NavLink {
@@ -27,7 +26,7 @@ export function Header() {
   const [user, setUser] = useState<any>(null);
   const isMobile = useIsMobile();
   const [location] = useLocation();
-  const { totalItems } = useCart();
+  // Cart functionality removed as store is non-functioning
 
   useEffect(() => {
     // Check if user is logged in
@@ -133,16 +132,6 @@ export function Header() {
           
           {/* Right side controls - always visible */}
           <div className="flex items-center space-x-3">
-            <Link href="/cart">
-              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                <ShoppingCart size={18} />
-                {totalItems > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
-                    {totalItems > 99 ? '99+' : totalItems}
-                  </Badge>
-                )}
-              </Button>
-            </Link>
             
             {isLoggedIn ? (
               <DropdownMenu>
@@ -236,21 +225,7 @@ export function Header() {
               ))}
             </div>
             
-            {/* Cart link */}
-            <Link href="/cart">
-              <div
-                className="flex items-center justify-center gap-2 p-3 rounded-md text-muted-foreground hover:bg-muted transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <ShoppingCart size={18} />
-                Shopping Cart
-                {totalItems > 0 && (
-                  <Badge variant="secondary" className="ml-1">
-                    {totalItems}
-                  </Badge>
-                )}
-              </div>
-            </Link>
+            {/* Cart link removed as store is non-functioning */}
             
             {/* Account related links */}
             <div className="border-t pt-3 mt-2">
