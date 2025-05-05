@@ -524,6 +524,11 @@ export class MemStorage implements IStorage {
       .filter(product => product.category === category);
   }
   
+  async getStoreProductsBySource(source: string): Promise<StoreProduct[]> {
+    return Array.from(this.storeProducts.values())
+      .filter(product => product.external_source === source);
+  }
+  
   async createStoreProduct(product: InsertStoreProduct): Promise<StoreProduct> {
     const id = this.storeProductId++;
     const created_at = new Date();

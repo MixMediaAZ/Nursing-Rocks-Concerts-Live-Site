@@ -50,17 +50,18 @@ import {
 import { uploadCityBackground, uploadMultipleCityBackgrounds } from "./upload";
 import { z } from "zod";
 import {
-  register,
-  login,
-  registerValidation,
-  loginValidation,
   licenseValidation,
   submitNurseLicense,
   getNurseLicenses,
   purchaseTicket,
   getUserTickets,
-  authenticateToken
+  authenticateToken,
+  registerValidation,
+  loginValidation,
+  register,
+  login
 } from "./auth";
+import { setupAuth, requireAuth, requireVerifiedUser, requireAdmin } from "./session-auth";
 import { generateToken, isUserAdmin } from './jwt';
 import {
   upload,
@@ -72,6 +73,8 @@ import {
 } from "./media";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup session-based authentication
+  setupAuth(app);
   // Events
   app.get("/api/events", async (_req: Request, res: Response) => {
     try {
@@ -483,28 +486,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Authentication and License Verification
+  // Authentication routes are now handled by setupAuth
+  // We'll keep these routes for backward compatibility
   app.post("/api/auth/register", registerValidation, register);
   app.post("/api/auth/login", loginValidation, login);
 
   // Protected routes (require authentication)
-  app.post("/api/license/submit", authenticateToken, licenseValidation, submitNurseLicense);
-  app.get("/api/license", authenticateToken, getNurseLicenses);
-  app.post("/api/tickets/purchase", authenticateToken, purchaseTicket);
-  app.get("/api/tickets", authenticateToken, getUserTickets);
+  app.post("/api/license/submit", requireAuth, licenseValidation, submitNurseLicense);
+  app.get("/api/license", requireAuth, getNurseLicenses);
+  app.post("/api/tickets/purchase", requireAuth, purchaseTicket);
+  app.get("/api/tickets", requireAuth, getUserTickets);
 
   // Media Management API
   app.get("/api/media", getMediaList);
   app.get("/api/media/:id", getMediaById);
   app.post("/api/media/upload", upload.array('files'), uploadMediaFiles);
-  app.patch("/api/media/:id", authenticateToken, updateMedia);
-  app.delete("/api/media/:id", authenticateToken, deleteMedia);
+  app.patch("/api/media/:id", requireAuth, updateMedia);
+  app.delete("/api/media/:id", requireAuth, deleteMedia);
 
   // Nurse License API Routes
-  app.get("/api/licenses", authenticateToken, async (req: Request, res: Response) => {
+  app.get("/api/licenses", requireAuth, async (req: Request, res: Response) => {
     try {
-      // Get the user id from the request (could be id or userId depending on the source)
-      const userId = (req as any).user?.id || (req as any).user?.userId;
+      // Get the user id from the request
+      const userId = (req.user as any)?.id;
       if (!userId) {
         return res.status(401).json({ message: 'Unauthorized' });
       }
@@ -517,7 +521,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/licenses", authenticateToken, licenseValidation, submitNurseLicense);
+  app.post("/api/licenses", requireAuth, licenseValidation, submitNurseLicense);
 
   // Stripe Payment Integration
   app.post("/api/create-payment-intent", async (req: Request, res: Response) => {
@@ -952,18 +956,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Authentication status
+  // Authentication status - should now be handled by session-auth
+  // This route is kept for backward compatibility
   app.get("/api/auth/status", (req: Request, res: Response) => {
-    const isAuthenticated = !!req.user;
-    const isVerified = !!req.user?.isVerified;
+    const isAuthenticated = req.isAuthenticated();
+    const isVerified = req.isAuthenticated() && (req.user as any)?.is_verified;
+    const isAdmin = req.isAuthenticated() && (req.user as any)?.is_admin;
     
     res.json({
       isAuthenticated,
       isVerified,
-      user: req.user ? {
-        id: req.user.userId,
-        email: req.user.email
-      } : null
+      isAdmin,
+      user: req.user || null
     });
   });
 
