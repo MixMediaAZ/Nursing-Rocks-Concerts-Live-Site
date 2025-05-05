@@ -10,6 +10,7 @@ export interface CloudinaryIframeVideoProps {
   controls?: boolean;
   loop?: boolean;
   title?: string;
+  cloudName?: string | null;
 }
 
 /**
@@ -25,15 +26,22 @@ export function CloudinaryIframeVideo({
   muted = false,
   controls = true,
   loop = false,
-  title = "Nursing Rocks video"
+  title = "Nursing Rocks video",
+  cloudName: propCloudName
 }: CloudinaryIframeVideoProps) {
   const [cloudName, setCloudName] = useState<string | null>(null);
   
   // Fetch cloud name from server if needed
   useEffect(() => {
     async function getCloudName() {
+      // Use the prop cloudName if provided
+      if (propCloudName) {
+        setCloudName(propCloudName);
+        return;
+      }
+      
       try {
-        // Try to use the environment variable first
+        // Try to use the environment variable next
         const envCloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
         
         if (envCloudName) {
@@ -41,7 +49,7 @@ export function CloudinaryIframeVideo({
           return;
         }
         
-        // Fallback to server API if env variable not available
+        // Finally fallback to server API
         const response = await fetch('/api/cloudinary/status');
         const data = await response.json();
         
@@ -58,7 +66,7 @@ export function CloudinaryIframeVideo({
     }
     
     getCloudName();
-  }, []);
+  }, [propCloudName]);
   
   // Build iframe options
   const options = [];

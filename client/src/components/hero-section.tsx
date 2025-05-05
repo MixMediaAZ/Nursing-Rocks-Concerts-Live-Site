@@ -193,6 +193,7 @@ const HeroSection = () => {
                     autoPlay={true}
                     muted={true}
                     controls={true}
+                    cloudName={cloudinaryCloudName}
                   />
                 </div>
               </div>
@@ -211,6 +212,7 @@ const HeroSection = () => {
                 autoPlay={true}
                 muted={true}
                 controls={true}
+                cloudName={cloudinaryCloudName}
               />
             </div>
           </div>
