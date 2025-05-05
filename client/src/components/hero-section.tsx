@@ -159,8 +159,8 @@ const HeroSection = () => {
                   <CloudinaryVideoPlaylist 
                     className="w-full h-full"
                     controls={true}
-                    autoPlay={false}
-                    muted={false}
+                    autoPlay={true}
+                    muted={true} 
                     loop={true}
                     showPlaylistIndicator={true}
                   />
@@ -178,9 +178,9 @@ const HeroSection = () => {
               <CloudinaryVideoPlaylist 
                 className="w-full h-full"
                 controls={true}
-                autoPlay={false}
+                autoPlay={true}
                 loop={true}
-                muted={false}
+                muted={true}
                 showPlaylistIndicator={true}
               />
             </div>

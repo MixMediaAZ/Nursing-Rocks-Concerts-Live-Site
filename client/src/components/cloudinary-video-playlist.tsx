@@ -24,7 +24,7 @@ export function CloudinaryVideoPlaylist({
   // State for video list and current position
   const [videos, setVideos] = useState<string[]>([]);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(autoPlay);
+  const [isPlaying, setIsPlaying] = useState(true); // Always start playing
   const [isError, setIsError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -147,15 +147,27 @@ export function CloudinaryVideoPlaylist({
     // When video source changes, reset error state
     setIsError(false);
     
-    // If auto-play is enabled and the player was playing, play the new video
-    if (autoPlay && isPlaying) {
+    // Force video to load and play for all videos
+    setTimeout(() => {
       video.load();
       video.play().catch(err => {
         console.error("Error auto-playing video after source change:", err);
         setIsError(true);
       });
-    }
-  }, [currentVideoIndex, autoPlay]);
+    }, 100); // Small delay to ensure DOM updates
+  }, [currentVideoIndex]);
+  
+  // Force initial video playback when component mounts
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    
+    setTimeout(() => {
+      video.play().catch(err => {
+        console.error("Error with initial video auto-play:", err);
+      });
+    }, 500);
+  }, []);
 
   if (isError) {
     return (
