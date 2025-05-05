@@ -99,9 +99,8 @@ const HeroSection = () => {
     );
   }
 
-  if (!featuredEvent) {
-    return null;
-  }
+  // Always render the hero section even if no featured event is found
+  // This ensures the hero section is always displayed
 
   return (
     <section className="relative overflow-hidden bg-[#333333] text-white min-h-[600px]">
@@ -148,8 +147,8 @@ const HeroSection = () => {
 
           <div className="border-t border-white/20 my-8 pt-6"></div>
           
-          {/* Location information if needed */}
-          {featuredEvent.location && (
+          {/* Location information if there's a featured event */}
+          {featuredEvent?.location && (
             <div className="flex items-center mb-8">
               <i className="fas fa-map-marker-alt mr-2"></i>
               <span>{featuredEvent.location}</span>
