@@ -173,7 +173,7 @@ export function Header() {
                   <Link href="/login">Login</Link>
                 </Button>
                 <Button asChild size="sm">
-                  <Link href="/register">Register</Link>
+                  <Link href="/profile">Dashboard</Link>
                 </Button>
               </div>
             )}
@@ -305,12 +305,12 @@ export function Header() {
                     </Link>
                   </Button>
                   <Button asChild className="w-full">
-                    <Link href="/register">
+                    <Link href="/profile">
                       <div 
                         className="flex items-center justify-center"
                         onClick={() => setIsMenuOpen(false)}
                       >
-                        Register
+                        Dashboard
                       </div>
                     </Link>
                   </Button>
