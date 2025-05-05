@@ -1,5 +1,4 @@
 import HeroSection from "@/components/hero-section";
-import UpcomingEvents from "@/components/upcoming-events";
 import FeaturedArtist from "@/components/featured-artist";
 import ConcertCalendar from "@/components/concert-calendar";
 import Newsletter from "@/components/newsletter";
@@ -16,7 +15,6 @@ const Home = () => {
       
       <HeroSection />
       <PromotionButtons />
-      <UpcomingEvents />
       <FeaturedArtist />
       <ConcertCalendar />
       <Newsletter />
