@@ -44,8 +44,8 @@ export default function RegisterPage() {
       try {
         // Parse user data to validate it (catches corrupted data)
         JSON.parse(user);
-        // User is already logged in, redirect to profile or specified redirect path
-        window.location.href = redirectPath || "/profile";
+        // User is already logged in, redirect to dashboard or specified redirect path
+        window.location.href = redirectPath || "/dashboard";
       } catch (error) {
         console.error("Error parsing user data during auth check:", error);
         // Clear invalid data
@@ -119,8 +119,8 @@ export default function RegisterPage() {
           const urlParams = new URLSearchParams(window.location.search);
           const redirectPath = urlParams.get('redirect');
           
-          // Force a full page navigation to ensure auth state is refreshed
-          window.location.href = redirectPath || '/profile';
+          // Force a full page navigation to the dashboard after registration
+          window.location.href = redirectPath || '/dashboard';
         }, 500);
       } else {
         toast({
@@ -240,12 +240,6 @@ export default function RegisterPage() {
                 type="submit" 
                 className="w-full"
                 disabled={registerMutation.isPending}
-                onClick={(e) => {
-                  if (!registerMutation.isPending) {
-                    e.preventDefault();
-                    window.location.href = "https://nursingrocks-rn-ver.replit.app/";
-                  }
-                }}
               >
                 {registerMutation.isPending ? "Processing..." : "Register"}
               </Button>
