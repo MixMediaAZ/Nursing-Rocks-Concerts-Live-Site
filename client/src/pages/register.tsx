@@ -241,6 +241,12 @@ export default function RegisterPage() {
                 type="submit" 
                 className="w-full"
                 disabled={registerMutation.isPending}
+                onClick={(e) => {
+                  if (!registerMutation.isPending) {
+                    e.preventDefault();
+                    window.location.href = "https://nursingrocks-rn-ver.replit.app/";
+                  }
+                }}
               >
                 {registerMutation.isPending ? "Processing..." : "Register"}
               </Button>
