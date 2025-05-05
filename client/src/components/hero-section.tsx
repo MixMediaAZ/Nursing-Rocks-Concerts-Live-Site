@@ -172,10 +172,10 @@ const HeroSection = () => {
               </Link>
             </Button>
             
-            {/* Store Button - Redirects to Bonfire store */}
+            {/* Store Button - Redirects to Shopify store */}
             <Button
               className="bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full"
-              onClick={() => window.open('https://www.bonfire.com/store/nursing-rocks-concert-series', '_blank', 'noopener noreferrer')}
+              onClick={() => window.open('https://rgwrvu-sq.myshopify.com/', '_blank', 'noopener noreferrer')}
             >
               Visit Our Store
               <i className="fas fa-shopping-bag ml-1 sm:ml-2"></i>

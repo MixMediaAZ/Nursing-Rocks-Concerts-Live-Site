@@ -81,7 +81,7 @@ export function CategoryScroller() {
     return colors[index];
   };
   
-  // Check if a category is apparel-related (should link to Bonfire)
+  // Check if a category is apparel-related (should link to Shopify)
   const isApparelCategory = (category: string): boolean => {
     const lowerCategory = category.toLowerCase();
     return category === "T-shirts" 
@@ -130,11 +130,11 @@ export function CategoryScroller() {
         >
           {categories.map((category, i) => {
             if (isApparelCategory(category)) {
-              // Apparel categories redirect to Bonfire
+              // Apparel categories redirect to Shopify
               return (
                 <div
                   key={i}
-                  onClick={() => window.open("https://www.bonfire.com/store/nursing-rocks-concert-series", "_blank")}
+                  onClick={() => window.open("https://rgwrvu-sq.myshopify.com/", "_blank")}
                   className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md cursor-pointer transition-colors text-center ${getCategoryColor(category)}`}
                 >
                   <ShoppingBag className="h-4 w-4 flex-shrink-0" />

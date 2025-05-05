@@ -54,7 +54,7 @@ const PromotionButtons = () => {
               </div>
               <div className="relative w-full max-w-sm">
                 <Button 
-                  onClick={() => window.open("https://www.bonfire.com/store/nursing-rocks-concert-series", "_blank")}
+                  onClick={() => window.open("https://rgwrvu-sq.myshopify.com/", "_blank")}
                   className="flex items-center justify-center gap-3 bg-[#F61D7A] hover:bg-[#E01060] text-white px-8 py-6 rounded-lg text-lg font-semibold transition-transform hover:scale-105 shadow-md w-full"
                   id="tshirtButton"
                   data-editable="true"
@@ -91,7 +91,7 @@ const PromotionButtons = () => {
               </div>
               <div className="relative w-full max-w-sm">
                 <Button 
-                  onClick={() => window.open("https://www.bonfire.com/store/nursing-rocks-concert-series", "_blank", "noopener noreferrer")}
+                  onClick={() => window.open("https://rgwrvu-sq.myshopify.com/", "_blank", "noopener noreferrer")}
                   className="flex items-center justify-center gap-3 bg-[#00A3E0] hover:bg-[#0089BE] text-white px-8 py-6 rounded-lg text-lg font-semibold transition-transform hover:scale-105 shadow-md w-full"
                   id="comfortSocksButton"
                   data-editable="true"
