@@ -18,6 +18,7 @@ import AdminPage from "@/pages/admin";
 import JobsPage from "@/pages/jobs";
 import JobDetailsPage from "@/pages/job-details";
 import GalleryPage from "@/pages/gallery";
+import VideosPage from "@/pages/videos";
 import StorePage from "@/pages/store";
 import ProductDetailsPage from "@/pages/product-details";
 import StoreCategoryPage from "@/pages/store-category";
@@ -66,6 +67,7 @@ function Router() {
             <Route path="/jobs" component={JobsPage} />
             <Route path="/jobs/:id" component={JobDetailsPage} />
             <Route path="/gallery" component={GalleryPage} />
+            <Route path="/videos" component={VideosPage} />
             <Route path="/store" component={StorePage} />
             <Route path="/store/products/:id" component={ProductDetailsPage} />
             <Route path="/store/category/:category" component={StoreCategoryPage} />
