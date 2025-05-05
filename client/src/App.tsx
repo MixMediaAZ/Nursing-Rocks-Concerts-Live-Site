@@ -8,6 +8,7 @@ import EventDetails from "@/pages/event-details";
 import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
 import ProfilePage from "@/pages/profile";
+import DashboardPage from "@/pages/dashboard";
 import TicketsPage from "@/pages/tickets";
 import FreeTicketsPage from "@/pages/free-tickets";
 import LicenseVerificationPage from "@/pages/license-verification";
@@ -58,6 +59,7 @@ function Router() {
               {() => <Redirect to="/register" />}
             </Route>
             <Route path="/profile" component={ProfilePage} />
+            <Route path="/dashboard" component={DashboardPage} />
             <Route path="/tickets" component={TicketsPage} />
             <Route path="/free-tickets" component={FreeTicketsPage} />
             <Route path="/license-verification" component={LicenseVerificationPage} />

@@ -76,34 +76,16 @@ export default function LoginPage() {
     const urlParams = new URLSearchParams(window.location.search);
     const redirectPath = urlParams.get('redirect');
     
-    // Check if user is verified
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      try {
-        const user = JSON.parse(userData);
-        
-        // Add a short timeout to ensure token is properly saved first
-        setTimeout(() => {
-          if (redirectPath) {
-            // Honor the redirect parameter if present
-            window.location.href = redirectPath;
-          } else if (user.is_verified) {
-            // If already verified, direct them to tickets page
-            window.location.href = "/tickets";
-          } else {
-            // If not verified, direct to profile dashboard
-            window.location.href = "/profile";
-          }
-        }, 100);
-      } catch (error) {
-        console.error("Error parsing user data:", error);
-        // Default to profile page if we can't determine verification status
-        window.location.href = redirectPath || "/profile";
+    // Add a short timeout to ensure token is properly saved first
+    setTimeout(() => {
+      if (redirectPath) {
+        // Honor the redirect parameter if present
+        window.location.href = redirectPath;
+      } else {
+        // Direct all successful logins to the dashboard
+        window.location.href = "/dashboard";
       }
-    } else {
-      // Default to redirect or profile page
-      window.location.href = redirectPath || "/profile";
-    }
+    }, 100);
   }
   
   // Form submission handler

@@ -154,6 +154,9 @@ export function Header() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem asChild>
+                    <Link href="/dashboard">My Dashboard</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link href="/profile">My Profile</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => window.location.href = "/license-verification"}>
@@ -254,6 +257,15 @@ export function Header() {
             <div className="border-t pt-3 mt-2">
               {isLoggedIn ? (
                 <div className="space-y-2">
+                  <Link href="/dashboard">
+                    <div
+                      className="flex items-center justify-center gap-2 p-3 rounded-md text-muted-foreground hover:bg-muted transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <User size={18} />
+                      My Dashboard
+                    </div>
+                  </Link>
                   <Link href="/profile">
                     <div
                       className="flex items-center justify-center gap-2 p-3 rounded-md text-muted-foreground hover:bg-muted transition-colors"
