@@ -43,14 +43,14 @@ const VideosPage = () => {
   return (
     <>
       <Helmet>
-        <title>Videos | Nursing Rocks Concert Series</title>
+        <title>Nursing Rocks! Videos | Concert Series</title>
         <meta name="description" content="Watch exclusive videos from the Nursing Rocks Concert Series. Experience the power of music and support for nurses." />
       </Helmet>
       
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold">Concert Videos</h1>
+            <h1 className="text-3xl md:text-4xl font-bold">Nursing Rocks! Videos</h1>
             <p className="text-gray-500 dark:text-gray-400 mt-2">
               Experience the magic of our concerts supporting nurses across the country
             </p>
@@ -146,7 +146,7 @@ const VideosPage = () => {
           
           <TabsContent value="all" className="space-y-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <h2 className="text-2xl font-semibold">All Concert Videos</h2>
+              <h2 className="text-2xl font-semibold">All Nursing Rocks! Videos</h2>
               
               {/* Connection status */}
               {!isConnected && (
