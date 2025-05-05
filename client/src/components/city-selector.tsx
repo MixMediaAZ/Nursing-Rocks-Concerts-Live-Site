@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
-// Import city background images
+// Using direct URL paths since the import syntax isn't working with the assets folder
 // Each image has been selected to best represent the city
 const chicagoImage = "/assets/city_backgrounds/6AEA04AA-A9A3-4F6E-9C15-CCAFE3BC50F8.PNG"; // Chicago skyline
 const washingtonImage = "/assets/city_backgrounds/6D6FD547-7B8E-4871-B7D1-8CD2BDD76E98.PNG"; // Washington DC monuments
