@@ -91,13 +91,13 @@ const PromotionButtons = () => {
               </div>
               <div className="relative w-full max-w-sm">
                 <Button 
-                  onClick={() => setLocation("/store/category/socks")}
+                  onClick={() => window.open("https://www.bonfire.com/store/nursing-rocks-concert-series", "_blank", "noopener noreferrer")}
                   className="flex items-center justify-center gap-3 bg-[#00A3E0] hover:bg-[#0089BE] text-white px-8 py-6 rounded-lg text-lg font-semibold transition-transform hover:scale-105 shadow-md w-full"
                   id="comfortSocksButton"
                   data-editable="true"
                 >
                   <ShoppingBag className="h-6 w-6 flex-shrink-0" />
-                  <span className="text-center" id="comfortSocksText">Comfort Socks for Nurses</span>
+                  <span className="text-center" id="comfortSocksText">Shop Nursing Merchandise</span>
                 </Button>
                 
                 {isAdminMode && (
