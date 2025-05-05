@@ -83,14 +83,15 @@ export async function fetchVideosFromFolder(folderPath: string): Promise<string[
 }
 
 // Check Cloudinary connection status
-export async function checkCloudinaryConnection(): Promise<{connected: boolean, message: string}> {
+export async function checkCloudinaryConnection(): Promise<{connected: boolean, message: string, cloudName?: string}> {
   try {
     const response = await fetch('/api/cloudinary/status');
     const data = await response.json();
     
     return {
       connected: data.connected || false,
-      message: data.message || 'Cloudinary connection check completed'
+      message: data.message || 'Cloudinary connection check completed',
+      cloudName: data.cloudName
     };
   } catch (error) {
     console.error('Error checking Cloudinary connection:', error);

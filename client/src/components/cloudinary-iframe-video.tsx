@@ -1,43 +1,93 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
-interface CloudinaryIframeVideoProps {
-  cloudName?: string;
+export interface CloudinaryIframeVideoProps {
   publicId: string;
   className?: string;
+  width?: number | string;
+  height?: number | string;
   autoPlay?: boolean;
   muted?: boolean;
   controls?: boolean;
+  loop?: boolean;
+  title?: string;
 }
 
 /**
- * CloudinaryIframeVideo component
- * Uses Cloudinary's iframe embedding which is more reliable across browsers
- * than direct video tag usage
+ * CloudinaryIframeVideo - A reliable Cloudinary video component using iframes
+ * This approach provides better compatibility and reliability than direct video elements
  */
 export function CloudinaryIframeVideo({
-  cloudName = import.meta.env.CLOUDINARY_CLOUD_NAME as string,
   publicId,
   className = "",
-  autoPlay = true,
-  muted = true,
+  width = "100%",
+  height = "100%",
+  autoPlay = false,
+  muted = false,
   controls = true,
+  loop = false,
+  title = "Nursing Rocks video"
 }: CloudinaryIframeVideoProps) {
-  // Format publicId to handle folder paths correctly
-  const formattedPublicId = publicId.replace(/^\//, '');
+  const [cloudName, setCloudName] = useState<string | null>(null);
   
-  // Build the embed URL with parameters
-  const embedUrl = `https://player.cloudinary.com/embed/?cloud_name=${cloudName}&public_id=${formattedPublicId}&player[autoplay]=${autoPlay ? 'true' : 'false'}&player[muted]=${muted ? 'true' : 'false'}&player[controls]=${controls ? 'true' : 'false'}&player[fluid]=true&player[colors][accent]=%23ff3366`;
-
+  // Fetch cloud name from server if needed
+  useEffect(() => {
+    async function getCloudName() {
+      try {
+        // Try to use the environment variable first
+        const envCloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+        
+        if (envCloudName) {
+          setCloudName(envCloudName as string);
+          return;
+        }
+        
+        // Fallback to server API if env variable not available
+        const response = await fetch('/api/cloudinary/status');
+        const data = await response.json();
+        
+        if (data.success && data.cloudName) {
+          setCloudName(data.cloudName);
+        } else {
+          console.warn('Could not get Cloudinary cloud name from server, using fallback');
+          setCloudName('demo');
+        }
+      } catch (error) {
+        console.error('Error getting Cloudinary cloud name:', error);
+        setCloudName('demo');
+      }
+    }
+    
+    getCloudName();
+  }, []);
+  
+  // Build iframe options
+  const options = [];
+  
+  if (autoPlay) options.push('autoplay=1');
+  if (muted) options.push('muted=1');
+  if (controls) options.push('controls=1');
+  if (loop) options.push('loop=1');
+  
+  // Wait for cloud name to be set
+  if (!cloudName) {
+    return <div className="flex items-center justify-center w-full h-full bg-black/50">
+      <div className="animate-pulse text-white">Loading video...</div>
+    </div>;
+  }
+  
+  // Create URL with Cloudinary domain + video options
+  const iframeSrc = `https://player.cloudinary.com/embed/?public_id=${encodeURIComponent(publicId)}&cloud_name=${cloudName}&${options.join('&')}`;
+  
   return (
-    <div className={`cloudinary-iframe-container ${className}`}>
-      <iframe
-        src={embedUrl}
-        className="w-full h-full"
-        allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-        allowFullScreen
-        frameBorder="0"
-        title="Nursing Rocks Video"
-      ></iframe>
-    </div>
+    <iframe
+      src={iframeSrc}
+      className={className}
+      width={width}
+      height={height}
+      title={title}
+      allow="autoplay; encrypted-media"
+      frameBorder="0"
+      allowFullScreen
+    />
   );
 }

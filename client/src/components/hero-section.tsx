@@ -18,6 +18,7 @@ const HeroSection = () => {
   const [cloudinaryConnected, setCloudinaryConnected] = useState(true);
   const [cloudinaryFolder] = useState("cb3d4ab33a890ee80495dc141b4e7f8640");
   const [videoPublicId, setVideoPublicId] = useState("cb3d4ab33a890ee80495dc141b4e7f8640/Nursing_Rocks_Concerts");
+  const [cloudinaryCloudName, setCloudinaryCloudName] = useState<string | null>(null);
   
   // Check Cloudinary connection when component mounts
   useEffect(() => {
@@ -26,6 +27,10 @@ const HeroSection = () => {
         const result = await checkCloudinaryConnection();
         console.log("Cloudinary connection check:", result);
         setCloudinaryConnected(result.connected);
+        
+        if (result.cloudName) {
+          setCloudinaryCloudName(result.cloudName);
+        }
         
         if (!result.connected) {
           console.warn("Cloudinary connection failed:", result.message);

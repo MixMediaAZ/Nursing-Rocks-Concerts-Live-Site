@@ -117,6 +117,7 @@ export async function checkCloudinaryConnection(req: Request, res: Response) {
       success: true,
       connected: true,
       status: 'online',
+      cloudName: process.env.CLOUDINARY_CLOUD_NAME,
       message: 'Connected to Cloudinary API successfully'
     });
   } catch (error) {
@@ -125,6 +126,7 @@ export async function checkCloudinaryConnection(req: Request, res: Response) {
       success: false, 
       connected: false,
       status: 'error',
+      cloudName: process.env.CLOUDINARY_CLOUD_NAME || null,
       message: error instanceof Error ? error.message : 'Unknown error' 
     });
   }
