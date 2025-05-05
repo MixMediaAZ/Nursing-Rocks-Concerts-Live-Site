@@ -215,12 +215,18 @@ export default function CitySelector() {
                   <div 
                     className={`h-48 flex flex-col items-center justify-center relative overflow-hidden ${cityColors[city.id] || DEFAULT_BG}`}
                   >
-                    {/* City image as background with proper styling */}
-                    <div 
-                      className="absolute inset-0 z-[1] bg-center bg-cover bg-no-repeat"
-                      style={{ 
-                        backgroundImage: `url(${CITY_IMAGES[city.id]})`,
-                        backgroundPosition: 'center'
+                    {/* Colored background as fallback */}
+                    <div className="absolute inset-0 z-0"></div>
+                    
+                    {/* City image as direct <img> element with object-fit for better control */}
+                    <img 
+                      src={CITY_IMAGES[city.id]} 
+                      alt={`${city.name}, ${city.state}`}
+                      className="absolute inset-0 w-full h-full object-cover z-[1]"
+                      loading="lazy"
+                      onError={(e) => {
+                        // Remove the broken image if it fails to load
+                        e.currentTarget.style.display = 'none';
                       }}
                     />
                     
