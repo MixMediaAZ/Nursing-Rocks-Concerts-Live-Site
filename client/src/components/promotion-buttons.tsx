@@ -44,7 +44,7 @@ function TshirtButton() {
       </div>
       <div className="relative w-full">
         <Button 
-          onClick={() => window.open("https://www.bonfire.com/store/nursing-rocks-concert-series", "_blank")}
+          onClick={() => window.open("https://rgwrvu-sq.myshopify.com/", "_blank")}
           className="flex items-center justify-center gap-4 bg-[#F61D7A] hover:bg-[#E01060] text-white px-10 py-6 rounded-lg text-xl font-semibold transition-transform hover:scale-105 shadow-md w-full"
           id="tshirtButton"
           style={{ minHeight: "72px" }}
@@ -184,7 +184,7 @@ export default function PromotionButtons() {
             <Button
               variant="link"
               className="text-primary hover:text-primary/80 font-medium underline text-lg"
-              onClick={() => window.open("https://www.bonfire.com/store/nursing-rocks-concert-series", "_blank")}
+              onClick={() => window.open("https://rgwrvu-sq.myshopify.com/", "_blank")}
               id="viewAllTshirtsButton"
             >
               {linkText}

@@ -55,7 +55,7 @@ export function CustomNursingShirts() {
           </p>
         </div>
         
-        <Button variant="outline" onClick={() => window.open("https://www.bonfire.com/store/nursing-rocks-concert-series", "_blank")}>
+        <Button variant="outline" onClick={() => window.open("https://rgwrvu-sq.myshopify.com/", "_blank")}>
           <Shirt className="mr-2 h-4 w-4" />
           View All T-Shirts
         </Button>
@@ -89,7 +89,7 @@ export function CustomNursingShirts() {
       )}
       
       <div className="flex justify-center mt-8">
-        <Button onClick={() => window.open("https://www.bonfire.com/store/nursing-rocks-concert-series", "_blank")}>
+        <Button onClick={() => window.open("https://rgwrvu-sq.myshopify.com/", "_blank")}>
           Browse All Nursing T-Shirts
         </Button>
       </div>
