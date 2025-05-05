@@ -13,6 +13,14 @@ import newLogoPath from "../assets/NursingRocks_NewLogo.png";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useCart } from "@/hooks/use-cart";
 
+// Define the type for navigation links
+interface NavLink {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  isExternal?: boolean;
+}
+
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -45,19 +53,19 @@ export function Header() {
   };
 
   // Navigation links - some links are only for authenticated users
-  const publicNavLinks = [
+  const publicNavLinks: NavLink[] = [
     { href: "/", label: "Home", icon: <HeartPulse size={18} /> },
     { href: "/cities", label: "Concert Cities", icon: <Map size={18} /> },
     { href: "/sponsors", label: "Sponsors", icon: <HeartPulse size={18} /> },
-    { href: "/store", label: "Store", icon: <ShoppingBag size={18} /> },
+    { href: "https://www.bonfire.com/store/nursing-rocks-concert-series", label: "Store", icon: <ShoppingBag size={18} />, isExternal: true },
   ];
   
-  const authenticatedNavLinks = [
+  const authenticatedNavLinks: NavLink[] = [
     { href: "/gallery", label: "Gallery", icon: <Image size={18} /> },
   ];
   
   // Combine links based on authentication status
-  const navLinks = [
+  const navLinks: NavLink[] = [
     ...publicNavLinks,
     ...(isLoggedIn ? authenticatedNavLinks : []),
   ];
@@ -93,16 +101,29 @@ export function Header() {
             <nav className="flex items-center justify-center space-x-4 md:space-x-8 flex-grow mx-auto">
               <div className="flex items-center justify-center space-x-4 md:space-x-8">
                 {navLinks.map((link) => (
-                  <Link key={link.href} href={link.href}>
-                    <div
-                      className={`text-sm font-medium cursor-pointer flex items-center gap-2 transition-colors hover:text-primary ${
-                        isActive(link.href) ? "text-primary" : "text-muted-foreground"
-                      }`}
+                  link.isExternal ? (
+                    <a 
+                      key={link.href} 
+                      href={link.href} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className={`text-sm font-medium cursor-pointer flex items-center gap-2 transition-colors hover:text-primary text-muted-foreground`}
                     >
                       {link.icon}
                       {link.label}
-                    </div>
-                  </Link>
+                    </a>
+                  ) : (
+                    <Link key={link.href} href={link.href}>
+                      <div
+                        className={`text-sm font-medium cursor-pointer flex items-center gap-2 transition-colors hover:text-primary ${
+                          isActive(link.href) ? "text-primary" : "text-muted-foreground"
+                        }`}
+                      >
+                        {link.icon}
+                        {link.label}
+                      </div>
+                    </Link>
+                  )
                 ))}
               </div>
             </nav>
@@ -182,19 +203,33 @@ export function Header() {
             {/* Navigation links */}
             <div className="grid grid-cols-2 gap-2">
               {navLinks.map((link) => (
-                <Link key={link.href} href={link.href}>
-                  <div 
-                    className={`flex items-center justify-center gap-2 p-3 rounded-md transition-colors ${
-                      isActive(link.href) 
-                        ? "bg-primary/10 text-primary font-medium" 
-                        : "text-muted-foreground hover:bg-muted"
-                    }`}
+                link.isExternal ? (
+                  <a 
+                    key={link.href} 
+                    href={link.href} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 p-3 rounded-md transition-colors text-muted-foreground hover:bg-muted"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     {link.icon}
                     {link.label}
-                  </div>
-                </Link>
+                  </a>
+                ) : (
+                  <Link key={link.href} href={link.href}>
+                    <div 
+                      className={`flex items-center justify-center gap-2 p-3 rounded-md transition-colors ${
+                        isActive(link.href) 
+                          ? "bg-primary/10 text-primary font-medium" 
+                          : "text-muted-foreground hover:bg-muted"
+                      }`}
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {link.icon}
+                      {link.label}
+                    </div>
+                  </Link>
+                )
               ))}
             </div>
             
