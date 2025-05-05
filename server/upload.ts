@@ -44,7 +44,7 @@ const cityBackgroundsUpload = multer({
 });
 
 /**
- * Handle city background image uploads
+ * Handle single city background image upload
  */
 export async function uploadCityBackground(req: Request, res: Response) {
   const upload = cityBackgroundsUpload.single('file');
@@ -73,6 +73,44 @@ export async function uploadCityBackground(req: Request, res: Response) {
       path: `/assets/city_backgrounds/${req.file.filename}`,
       originalName: req.file.originalname,
       size: req.file.size
+    });
+  });
+}
+
+/**
+ * Handle bulk city background image uploads
+ */
+export async function uploadMultipleCityBackgrounds(req: Request, res: Response) {
+  const upload = cityBackgroundsUpload.array('files', 20); // Allow up to 20 files
+  
+  upload(req, res, (err) => {
+    if (err) {
+      console.error('Bulk upload error:', err);
+      return res.status(400).json({ 
+        success: false, 
+        message: err.message || 'Error uploading files' 
+      });
+    }
+    
+    if (!req.files || (Array.isArray(req.files) && req.files.length === 0)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'No files uploaded' 
+      });
+    }
+    
+    const files = req.files as Express.Multer.File[];
+    
+    // Return success response with file details
+    res.status(200).json({
+      success: true,
+      message: `${files.length} files uploaded successfully`,
+      files: files.map(file => ({
+        filename: file.filename,
+        path: `/assets/city_backgrounds/${file.filename}`,
+        originalName: file.originalname,
+        size: file.size
+      }))
     });
   });
 }
