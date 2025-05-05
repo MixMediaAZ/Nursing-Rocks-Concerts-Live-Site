@@ -71,10 +71,14 @@ export function CloudinaryIframeVideo({
   // Build iframe options
   const options = [];
   
-  if (autoPlay) options.push('autoplay=1');
+  // Always include these options for consistent behavior
+  options.push('player.muted=true'); // Ensure videos are muted to allow autoplay
+  
+  // Add remaining options based on props
+  if (autoPlay) options.push('player.autoplay=true');
   if (muted) options.push('muted=1');
   if (controls) options.push('controls=1');
-  if (loop) options.push('loop=1');
+  if (loop) options.push('player.loop=true');
   
   // Wait for cloud name to be set
   if (!cloudName) {
@@ -93,7 +97,7 @@ export function CloudinaryIframeVideo({
       width={width}
       height={height}
       title={title}
-      allow="autoplay; encrypted-media"
+      allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
       frameBorder="0"
       allowFullScreen
     />

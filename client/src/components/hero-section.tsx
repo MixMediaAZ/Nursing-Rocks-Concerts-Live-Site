@@ -192,7 +192,8 @@ const HeroSection = () => {
                     className="w-full h-full"
                     autoPlay={true}
                     muted={true}
-                    controls={true}
+                    controls={false}
+                    loop={true}
                     cloudName={cloudinaryCloudName}
                   />
                 </div>
@@ -211,7 +212,8 @@ const HeroSection = () => {
                 className="w-full h-full"
                 autoPlay={true}
                 muted={true}
-                controls={true}
+                controls={false}
+                loop={true}
                 cloudName={cloudinaryCloudName}
               />
             </div>
