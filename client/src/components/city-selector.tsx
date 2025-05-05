@@ -6,20 +6,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
-// Define city background images - using actual images from the filesystem
-// Each city will have its own distinct background image
+// Using t-shirt images as requested
+const SHIRT_IMAGES = {
+  white: "/assets/NRCS Shirt_White.jpeg",
+  blue: "/assets/NRCS Shirt_NurseBlue.jpeg"
+};
+
+// Define city background images - using t-shirts as background
+// Each city alternates between white and blue shirts
 const CITY_IMAGES: Record<string, string> = {
-  "chicago": "/assets/city_backgrounds/file-1746415494151-726751177.JPG",
-  "washington-dc": "/assets/city_backgrounds/file-1746415494698-946281521.JPG",
-  "san-francisco": "/assets/city_backgrounds/file-1746415495033-742864723.JPG",
-  "boston": "/assets/city_backgrounds/file-1746415495378-648838152.JPG",
-  "new-york": "/assets/city_backgrounds/file-1746415495662-3100884.JPG",
-  "houston": "/assets/city_backgrounds/file-1746415496002-392173619.JPG",
-  "denver": "/assets/city_backgrounds/file-1746415496326-554994931.JPG",
-  "atlanta": "/assets/city_backgrounds/file-1746415496592-877506142.JPG",
-  "los-angeles": "/assets/city_backgrounds/file-1746415496935-480732093.JPG",
-  "nashville": "/assets/city_backgrounds/file-1746415497286-970010446.JPG",
-  "dallas": "/assets/city_backgrounds/file-1746415497592-153489308.JPG"
+  "chicago": SHIRT_IMAGES.blue,
+  "washington-dc": SHIRT_IMAGES.white,
+  "san-francisco": SHIRT_IMAGES.blue,
+  "boston": SHIRT_IMAGES.white,
+  "new-york": SHIRT_IMAGES.blue,
+  "houston": SHIRT_IMAGES.white,
+  "denver": SHIRT_IMAGES.blue,
+  "atlanta": SHIRT_IMAGES.white,
+  "los-angeles": SHIRT_IMAGES.blue,
+  "nashville": SHIRT_IMAGES.white,
+  "dallas": SHIRT_IMAGES.blue
 };
 
 // City background colors as fallbacks - in case images fail to load
@@ -222,7 +228,7 @@ export default function CitySelector() {
                     <img 
                       src={CITY_IMAGES[city.id]} 
                       alt={`${city.name}, ${city.state}`}
-                      className="absolute inset-0 w-full h-full object-cover z-[1]"
+                      className="absolute inset-0 w-full h-full object-contain z-[1]"
                       loading="lazy"
                       onError={(e) => {
                         // Remove the broken image if it fails to load
