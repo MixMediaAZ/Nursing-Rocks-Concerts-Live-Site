@@ -92,37 +92,59 @@ const UploadUtilityPage = () => {
       return;
     }
     
-    const formData = new FormData();
-    for (let i = 0; i < files.length; i++) {
-      formData.append('file', files[i]); // Changed from 'files' to 'file' to match server expectation
-    }
-    formData.append('destination', 'city_backgrounds');
-    
     setUploading(true);
     
+    // Instead of using bulk endpoint, upload files individually to avoid multer issues
     try {
-      const response = await fetch('/api/upload/city-backgrounds/bulk', {
-        method: 'POST',
-        body: formData,
-      });
+      const uploadedPaths: string[] = [];
+      let successCount = 0;
+      let errorCount = 0;
       
-      const data = await response.json();
+      // Process each file individually
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const singleFormData = new FormData();
+        singleFormData.append('file', file);
+        singleFormData.append('destination', 'city_backgrounds');
+        
+        try {
+          // Use the single file upload endpoint which is working
+          const response = await fetch('/api/upload/city-background', {
+            method: 'POST',
+            body: singleFormData,
+          });
+          
+          const result = await response.json();
+          
+          if (response.ok) {
+            successCount++;
+            uploadedPaths.push(result.path);
+          } else {
+            errorCount++;
+            console.error(`Error uploading file ${file.name}: ${result.message}`);
+          }
+        } catch (fileError) {
+          errorCount++;
+          console.error(`Error uploading file ${file.name}:`, fileError);
+        }
+      }
       
-      if (response.ok) {
+      // Update UI based on overall results
+      if (successCount > 0) {
         toast({
-          title: "Bulk upload successful",
-          description: `${data.files.length} files have been uploaded successfully!`,
+          title: "Upload completed",
+          description: `Successfully uploaded ${successCount} files${errorCount > 0 ? `, failed to upload ${errorCount} files` : ''}`,
+          variant: errorCount > 0 ? "warning" : "default",
         });
         
-        // Add all uploaded paths to the list
-        const newPaths = data.files.map((file: any) => file.path);
-        setUploadedFiles(prev => [...prev, ...newPaths]);
+        // Add all successful paths to the list
+        setUploadedFiles(prev => [...prev, ...uploadedPaths]);
         setFiles(null);
         // Reset the file input
         const fileInput = document.getElementById('files-upload') as HTMLInputElement;
         if (fileInput) fileInput.value = '';
       } else {
-        throw new Error(data.message || 'Upload failed');
+        throw new Error("All file uploads failed");
       }
     } catch (error) {
       toast({
