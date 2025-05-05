@@ -47,6 +47,7 @@ import {
   insertStoreOrderSchema,
   insertStoreOrderItemSchema
 } from "@shared/schema";
+import { uploadCityBackground } from "./upload";
 import { z } from "zod";
 import {
   register,
@@ -178,6 +179,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/gallery/:id", updateGalleryImage);
   app.post("/api/gallery/:id/replace", galleryUpload.single('image'), replaceGalleryImage);
   app.post("/api/gallery/replace/:id", replaceGalleryImage);
+  
+  // City backgrounds upload
+  app.post("/api/upload/city-background", uploadCityBackground);
   
   // Replace one gallery image with another
   app.post("/api/gallery/:id/replace-with/:replacementId", async (req: Request, res: Response) => {
