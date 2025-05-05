@@ -141,15 +141,13 @@ const HeroSection = () => {
               </Link>
             </Button>
             
-            {/* Store Button */}
+            {/* Store Button - Redirects to Bonfire store */}
             <Button
-              asChild
               className="bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full"
+              onClick={() => window.open('https://www.bonfire.com/store/nursing-rocks-concert-series', '_blank', 'noopener noreferrer')}
             >
-              <Link href="/store">
-                Visit Our Store
-                <i className="fas fa-shopping-bag ml-1 sm:ml-2"></i>
-              </Link>
+              Visit Our Store
+              <i className="fas fa-shopping-bag ml-1 sm:ml-2"></i>
             </Button>
             
             {/* YouTube Video for Mobile Only - Under buttons */}
