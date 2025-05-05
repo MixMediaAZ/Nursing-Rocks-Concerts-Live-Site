@@ -80,7 +80,7 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="https://nursingrocks.org" target="_blank" rel="noopener noreferrer">
+                <a href="https://nurse-appreciation-platform-mixmediaaz.replit.app/" target="_blank" rel="noopener noreferrer">
                   <div className="inline-block text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">NursingRocks.org</div>
                 </a>
               </li>
