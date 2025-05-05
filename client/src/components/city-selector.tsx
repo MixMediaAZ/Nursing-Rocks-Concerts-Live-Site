@@ -182,8 +182,8 @@ export default function CitySelector() {
         {/* List View Content */}
         <TabsContent value="list">
           <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between gap-4">
-              {/* Search Input */}
+            <div className="flex flex-col sm:flex-row justify-between gap-4 mb-2">
+              {/* Search Input - fixed width on mobile */}
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -194,15 +194,15 @@ export default function CitySelector() {
                 />
               </div>
               
-              {/* Region Filter */}
-              <div className="flex gap-2 overflow-auto pb-2 sm:pb-0">
+              {/* Region Filter - improved scrollable on mobile */}
+              <div className="flex gap-2 overflow-x-auto py-1 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-primary/20">
                 {REGIONS.map(region => (
                   <Button
                     key={region}
                     variant={selectedRegion === region ? "default" : "outline"}
                     size="sm"
                     onClick={() => setSelectedRegion(region)}
-                    className="whitespace-nowrap"
+                    className="whitespace-nowrap flex-shrink-0"
                   >
                     {region}
                   </Button>
@@ -210,8 +210,8 @@ export default function CitySelector() {
               </div>
             </div>
             
-            {/* City Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* City Grid - adjusted for better mobile spacing */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-4">
               {filteredCities.map(city => (
                 <Card 
                   key={city.id} 
@@ -257,9 +257,9 @@ export default function CitySelector() {
                         {city.state}
                       </p>
                       
-                      {/* Note indicating these are informational only */}
-                      <div className="mt-3 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full">
-                        <p className="text-white text-xs">View all cities</p>
+                      {/* Note indicating these are informational only - improved for mobile visibility */}
+                      <div className="mt-3 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full shadow-sm">
+                        <p className="text-white text-xs font-medium">View all cities</p>
                       </div>
                     </div>
                     
@@ -354,7 +354,7 @@ export default function CitySelector() {
               {citiesByRegion.map(regionGroup => (
                 <div key={regionGroup.region}>
                   <h3 className="text-xl font-bold mb-4">{regionGroup.region}</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                     {regionGroup.cities.map(city => (
                       <Button 
                         key={city.id} 

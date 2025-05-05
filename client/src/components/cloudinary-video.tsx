@@ -22,8 +22,11 @@ export function CloudinaryVideo({
   const [isPlaying, setIsPlaying] = useState(autoPlay);
   const [isError, setIsError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const thumbnailUrl = getCloudinaryVideoThumbnail(publicId);
-  const videoUrl = getCloudinaryVideoUrl(publicId);
+  const DEFAULT_CLOUD_NAME = "don4sipdk"; // Default cloud name used throughout the site
+  
+  // Adding empty options object as third parameter to fix typing errors
+  const thumbnailUrl = getCloudinaryVideoThumbnail(publicId, DEFAULT_CLOUD_NAME, {});
+  const videoUrl = getCloudinaryVideoUrl(publicId, DEFAULT_CLOUD_NAME, {});
 
   // Toggle play/pause
   const togglePlay = () => {
