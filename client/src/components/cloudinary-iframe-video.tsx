@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { checkCloudinaryConnection, detectResourceType } from '@/lib/cloudinary';
 
 export interface CloudinaryIframeVideoProps {
   publicId: string;
@@ -11,8 +12,8 @@ export interface CloudinaryIframeVideoProps {
   loop?: boolean;
   title?: string;
   cloudName?: string | null;
-  resourceType?: 'video' | 'image' | 'auto'; // Add support for different resource types
-  fallbackContent?: React.ReactNode; // Fallback UI if media fails to load
+  resourceType?: 'video' | 'image' | 'auto'; 
+  fallbackContent?: React.ReactNode;
 }
 
 /**
@@ -37,7 +38,7 @@ export function CloudinaryIframeVideo({
   const [cloudName, setCloudName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const [mediaFormat, setMediaFormat] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'video' | 'image' | 'auto'>(resourceType);
   
   // Fetch cloud name from server if needed
   useEffect(() => {
@@ -58,11 +59,10 @@ export function CloudinaryIframeVideo({
         }
         
         // Finally fallback to server API
-        const response = await fetch('/api/cloudinary/status');
-        const data = await response.json();
+        const result = await checkCloudinaryConnection();
         
-        if (data.success && data.cloudName) {
-          setCloudName(data.cloudName);
+        if (result.connected && result.cloudName) {
+          setCloudName(result.cloudName);
         } else {
           console.warn('Could not get Cloudinary cloud name from server, using fallback');
           setCloudName('demo');
@@ -76,21 +76,13 @@ export function CloudinaryIframeVideo({
     getCloudName();
   }, [propCloudName]);
   
-  // Detect media format from publicId if needed
+  // Detect media type from publicId if needed
   useEffect(() => {
     if (resourceType === 'auto' && publicId) {
-      // Try to detect format from the publicId (some have extensions)
-      const formatMatch = publicId.match(/\.(mp4|mov|avi|webm|jpg|jpeg|png|gif|webp)$/i);
-      if (formatMatch) {
-        const detectedFormat = formatMatch[1].toLowerCase();
-        const isVideo = ['mp4', 'mov', 'avi', 'webm'].includes(detectedFormat);
-        setMediaFormat(isVideo ? 'video' : 'image');
-      } else {
-        // Default to video if we can't detect
-        setMediaFormat('video');
-      }
+      const detectedType = detectResourceType(publicId);
+      setMediaType(detectedType);
     } else {
-      setMediaFormat(resourceType);
+      setMediaType(resourceType);
     }
   }, [publicId, resourceType]);
   
@@ -107,8 +99,10 @@ export function CloudinaryIframeVideo({
   if (loop) options.push('player.loop=true');
   
   // Handle formats that might need different parameters
-  if (mediaFormat === 'image') {
+  if (mediaType === 'image') {
     options.push('resource_type=image');
+  } else if (mediaType === 'video') {
+    options.push('resource_type=video');
   }
   
   // Handle loading state
@@ -119,7 +113,7 @@ export function CloudinaryIframeVideo({
   const handleError = () => {
     setIsLoading(false);
     setHasError(true);
-    console.error(`Failed to load Cloudinary media: ${publicId}`);
+    console.error(`Failed to load Cloudinary media: ${publicId} (${mediaType})`);
   };
   
   // Wait for cloud name to be set
