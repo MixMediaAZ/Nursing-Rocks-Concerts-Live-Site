@@ -134,7 +134,7 @@ const UploadUtilityPage = () => {
         toast({
           title: "Upload completed",
           description: `Successfully uploaded ${successCount} files${errorCount > 0 ? `, failed to upload ${errorCount} files` : ''}`,
-          variant: errorCount > 0 ? "warning" : "default",
+          variant: errorCount > 0 ? "destructive" : "default",
         });
         
         // Add all successful paths to the list
