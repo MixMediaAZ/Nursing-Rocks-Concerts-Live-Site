@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { Shirt, ShoppingBag, Edit } from "lucide-react";
 import nursingRocksLogo from "@assets/NursingRocks_NewLogo.png";
+import nursingRocksWhiteTshirt from "@assets/tshirts/nursing-rocks-white-tshirt.jpeg";
 import { useState } from "react";
 import { PromotionButtonEditor } from "./promotion-button-editor";
 import { useAdminEditMode } from "@/hooks/use-admin-edit-mode";
@@ -46,7 +47,7 @@ const PromotionButtons = () => {
             <div className="flex flex-col items-center w-full sm:w-1/2">
               <div className="mb-4 bg-white p-3 rounded-lg shadow-md w-full max-w-sm">
                 <img 
-                  src={nursingRocksLogo} 
+                  src={nursingRocksWhiteTshirt} 
                   alt="Nursing Rocks! T-shirts" 
                   className="w-full h-56 object-contain"
                 />
