@@ -8,17 +8,17 @@ import { Search } from "lucide-react";
 
 // City background images from public directory
 // These images will be displayed behind the city text
-const chicagoImage = "/assets/city_backgrounds/file-1746415499933-642613458.JPG"; // Chicago nurse shirt
-const washingtonImage = "/assets/city_backgrounds/6D6FD547-7B8E-4871-B7D1-8CD2BDD76E98.PNG"; // Washington DC monuments
-const sanFranciscoImage = "/assets/city_backgrounds/files-1746415256343-783805015.jpeg"; // San Francisco white shirt
-const bostonImage = "/assets/city_backgrounds/3B39719F-9D81-4397-9EFB-74CA91F16E2C.PNG"; // Boston cityscape
-const newYorkImage = "/assets/city_backgrounds/9AF7FDEB-8BB4-4BCE-9E9F-560BCABE7572.PNG"; // NYC skyline
-const houstonImage = "/assets/city_backgrounds/CA566C49-0E82-4288-9CF4-328CD8F61EC6.PNG"; // Houston 
-const denverImage = "/assets/city_backgrounds/4A5B3B48-E885-44BF-9FD2-93927C35FDC8.PNG"; // Denver mountains
+const chicagoImage = "/assets/city_backgrounds/file-1746415494151-726751177.JPG"; // Chicago skyline - as requested
+const washingtonImage = "/assets/city_backgrounds/6D6FD547-7B8E-4871-B7D1-8CD2BDD76E98.PNG"; // Washington DC
+const sanFranciscoImage = "/assets/city_backgrounds/9AF7FDEB-8BB4-4BCE-9E9F-560BCABE7572.PNG"; // San Francisco
+const bostonImage = "/assets/city_backgrounds/3B39719F-9D81-4397-9EFB-74CA91F16E2C.PNG"; // Boston
+const newYorkImage = "/assets/city_backgrounds/9AF7FDEB-8BB4-4BCE-9E9F-560BCABE7572.PNG"; // NYC
+const houstonImage = "/assets/city_backgrounds/CA566C49-0E82-4288-9CF4-328CD8F61EC6.PNG"; // Houston
+const denverImage = "/assets/city_backgrounds/4A5B3B48-E885-44BF-9FD2-93927C35FDC8.PNG"; // Denver
 const atlantaImage = "/assets/city_backgrounds/3B80F8ED-69E6-4337-BEBC-12A3402C5653.PNG"; // Atlanta
-const losAngelesImage = "/assets/city_backgrounds/1DFDF38A-CC77-42B3-803D-336853030512.PNG"; // LA skyline
-const nashvilleImage = "/assets/city_backgrounds/E236F46B-0F0C-4BBF-936D-7F1918647585.PNG"; // Nashville music scene
-const dallasImage = "/assets/city_backgrounds/file-1746415423548-947578775.JPG"; // Dallas shirt image
+const losAngelesImage = "/assets/city_backgrounds/1DFDF38A-CC77-42B3-803D-336853030512.PNG"; // LA
+const nashvilleImage = "/assets/city_backgrounds/E236F46B-0F0C-4BBF-936D-7F1918647585.PNG"; // Nashville
+const dallasImage = "/assets/city_backgrounds/CA566C49-0E82-4288-9CF4-328CD8F61EC6.PNG"; // Dallas
 
 // City background colors as fallbacks or additional styling
 const cityColors: Record<string, string> = {
@@ -225,10 +225,15 @@ export default function CitySelector() {
                   <div 
                     className={`h-48 flex flex-col items-center justify-center relative overflow-hidden ${cityColors[city.id] || DEFAULT_BG}`}
                   >
-                    {/* City image as background */}
+                    {/* City image as background with specific object fit settings */}
                     <div 
-                      className="absolute inset-0 z-[1] bg-center bg-cover bg-no-repeat"
-                      style={{ backgroundImage: `url(${city.imageUrl})` }}
+                      className="absolute inset-0 z-[1] bg-center bg-cover"
+                      style={{ 
+                        backgroundImage: `url(${city.imageUrl})`,
+                        backgroundPosition: 'center',
+                        backgroundSize: 'cover',
+                        backgroundRepeat: 'no-repeat'
+                      }}
                     />
                     
                     {/* Pattern overlay for visual interest */}
