@@ -6,6 +6,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
+// Import city card images
+import nurseBlueShirt from "@assets/NRCS Shirt_NurseBlue.jpeg";
+import whiteShirt from "@assets/NRCS Shirt_White.jpeg";
+
 // City background colors and patterns
 const cityColors: Record<string, string> = {
   "chicago": "bg-[#0088ff]", // Bright blue matching Nursing Rocks logo
@@ -28,6 +32,7 @@ interface City {
   state: string;
   region: string;
   coordinates: { lat: number; lng: number };
+  imageUrl?: string; // Optional image URL for the city card
   upcomingEvent?: {
     date: string;
     artist: string;
@@ -41,77 +46,88 @@ const CITIES: City[] = [
     name: "Chicago", 
     state: "IL", 
     region: "Midwest", 
-    coordinates: { lat: 41.8781, lng: -87.6298 }
+    coordinates: { lat: 41.8781, lng: -87.6298 },
+    imageUrl: "@assets/NRCS Shirt_NurseBlue.jpeg"
   },
   { 
     id: "washington-dc", 
     name: "Washington", 
     state: "DC", 
     region: "East", 
-    coordinates: { lat: 38.9072, lng: -77.0369 }
+    coordinates: { lat: 38.9072, lng: -77.0369 },
+    imageUrl: "@assets/NRCS Shirt_White.jpeg"
   },
   { 
     id: "san-francisco", 
     name: "San Francisco", 
     state: "CA", 
     region: "West", 
-    coordinates: { lat: 37.7749, lng: -122.4194 }
+    coordinates: { lat: 37.7749, lng: -122.4194 },
+    imageUrl: "@assets/NRCS Shirt_NurseBlue.jpeg"
   },
   { 
     id: "boston", 
     name: "Boston", 
     state: "MA", 
     region: "East", 
-    coordinates: { lat: 42.3601, lng: -71.0589 }
+    coordinates: { lat: 42.3601, lng: -71.0589 },
+    imageUrl: "@assets/NRCS Shirt_White.jpeg"
   },
   { 
     id: "new-york", 
     name: "New York", 
     state: "NY", 
     region: "East", 
-    coordinates: { lat: 40.7128, lng: -74.0060 }
+    coordinates: { lat: 40.7128, lng: -74.0060 },
+    imageUrl: "@assets/NRCS Shirt_NurseBlue.jpeg"
   },
   { 
     id: "houston", 
     name: "Houston", 
     state: "TX", 
     region: "South", 
-    coordinates: { lat: 29.7604, lng: -95.3698 }
+    coordinates: { lat: 29.7604, lng: -95.3698 },
+    imageUrl: "@assets/NRCS Shirt_White.jpeg"
   },
   { 
     id: "denver", 
     name: "Denver", 
     state: "CO", 
     region: "West", 
-    coordinates: { lat: 39.7392, lng: -104.9903 }
+    coordinates: { lat: 39.7392, lng: -104.9903 },
+    imageUrl: "@assets/NRCS Shirt_NurseBlue.jpeg"
   },
   { 
     id: "atlanta", 
     name: "Atlanta", 
     state: "GA", 
     region: "South", 
-    coordinates: { lat: 33.7490, lng: -84.3880 }
+    coordinates: { lat: 33.7490, lng: -84.3880 },
+    imageUrl: "@assets/NRCS Shirt_White.jpeg"
   },
   { 
     id: "los-angeles", 
     name: "Los Angeles", 
     state: "CA", 
     region: "West", 
-    coordinates: { lat: 34.0522, lng: -118.2437 }
+    coordinates: { lat: 34.0522, lng: -118.2437 },
+    imageUrl: "@assets/NRCS Shirt_NurseBlue.jpeg"
   },
   { 
     id: "nashville", 
     name: "Nashville", 
     state: "TN", 
     region: "South", 
-    coordinates: { lat: 36.1627, lng: -86.7816 }
+    coordinates: { lat: 36.1627, lng: -86.7816 },
+    imageUrl: "@assets/NRCS Shirt_White.jpeg"
   },
   { 
     id: "dallas", 
     name: "Dallas", 
     state: "TX", 
     region: "South", 
-    coordinates: { lat: 32.7767, lng: -96.7970 }
+    coordinates: { lat: 32.7767, lng: -96.7970 },
+    imageUrl: "@assets/NRCS Shirt_NurseBlue.jpeg"
   }
 ];
 
