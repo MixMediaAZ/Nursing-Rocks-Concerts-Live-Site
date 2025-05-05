@@ -159,7 +159,7 @@ const HeroSection = () => {
                 <div className="relative z-10">
                   <YouTubeEmbed 
                     className="w-full h-full" 
-                    videoId="6T4MS8gI3P8"
+                    videoId="dQw4w9WgXcQ"
                     autoPlay={true}
                     muted={true}
                     controls={true}
@@ -177,7 +177,7 @@ const HeroSection = () => {
             <div className="relative z-10">
               <YouTubeEmbed 
                 className="w-full h-full"
-                videoId="6T4MS8gI3P8"
+                videoId="dQw4w9WgXcQ"
                 autoPlay={true}
                 muted={true}
                 controls={true}
