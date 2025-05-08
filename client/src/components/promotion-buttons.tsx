@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { Shirt } from "lucide-react";
 import nursingRocksLogo from "@assets/NursingRocks_NewLogo.png";
-// Image is directly in the public folder, using direct path
 import { useState } from "react";
 import { PromotionButtonEditor } from "./promotion-button-editor";
 import { useAdminEditMode } from "@/hooks/use-admin-edit-mode";
@@ -34,15 +33,14 @@ function TshirtButton() {
   
   return (
     <div className="flex flex-col items-center w-full max-w-xl">
-      <div className="mb-2 md:mb-6 bg-white p-4 rounded-lg shadow-md w-full aspect-square relative" style={{ maxHeight: "300px" }}>
+      <div className="mb-2 md:mb-6 w-full flex justify-center">
         {/* T-shirt image */}
-        <div className="w-full h-full flex items-center justify-center">
-          <img 
-            src="/assets/city_backgrounds/file-1746415252600-107696087.jpeg" 
-            alt={text} 
-            className="max-w-full max-h-full object-contain"
-          />
-        </div>
+        <img 
+          src="/assets/tshirts/NRCS Shirt_White.jpeg" 
+          alt={text} 
+          className="max-w-full object-contain"
+          style={{ maxHeight: "300px" }}
+        />
       </div>
       <div className="relative w-full">
         <Button 
