@@ -26,10 +26,10 @@ export default function PromotionButtonsSimple() {
           View All T-shirts
         </a>
         
-        {/* T-shirt image - just the image with no container */}
+        {/* T-shirt image - directly on the blue background */}
         <div className="flex justify-center mb-4">
           <img 
-            src="/assets/tshirts/nursing-rocks-white-tshirt.jpeg"
+            src="/assets/NRCS Shirt_White.jpeg"
             alt="Nursing Rocks! T-shirts"
             className="max-w-[200px]"
           />
