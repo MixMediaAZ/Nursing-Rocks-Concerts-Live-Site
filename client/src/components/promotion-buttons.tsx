@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { Shirt } from "lucide-react";
 import nursingRocksLogo from "@assets/NursingRocks_NewLogo.png";
+// Image is directly in the public folder, using direct path
 import { useState } from "react";
 import { PromotionButtonEditor } from "./promotion-button-editor";
 import { useAdminEditMode } from "@/hooks/use-admin-edit-mode";
