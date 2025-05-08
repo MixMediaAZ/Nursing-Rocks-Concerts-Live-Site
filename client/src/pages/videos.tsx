@@ -92,7 +92,7 @@ const VideosPage = () => {
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold">Nursing Rocks! Videos</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-2">
+            <p className="text-gray-800 dark:text-gray-200 font-medium mt-2">
               We love you nurses....thanks for all you do....we see you. You rock and Nursing Rocks!
             </p>
           </div>
