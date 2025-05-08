@@ -1,49 +1,54 @@
 import React from 'react';
+import { Gift } from 'lucide-react';
 
 /**
  * Exact replica of the t-shirt promotional section
- * This component aims to match the screenshot precisely
+ * Centered design with t-shirt image and button
  */
 export function FeaturedTshirt() {
   return (
-    <section style={{ backgroundColor: '#80d8f7', paddingTop: '40px', paddingBottom: '40px' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto', textAlign: 'center' }}>
+    <section style={{ backgroundColor: '#80d8f7', padding: '40px 0' }}>
+      <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
+        {/* Section header */}
         <h2 style={{ 
-          fontSize: '24px', 
-          fontWeight: 'bold', 
+          fontSize: '24px',
+          fontWeight: 'bold',
           marginBottom: '8px',
           color: 'black'
         }}>
           Featured Products
         </h2>
         
+        {/* View all link */}
         <a 
-          href="https://rgwrvu-sq.myshopify.com/" 
+          href="https://rgwrvu-sq.myshopify.com/"
           target="_blank"
           rel="noopener noreferrer"
           style={{ 
-            color: '#0000EE', 
-            textDecoration: 'underline', 
             display: 'inline-block',
-            marginBottom: '24px',
-            fontSize: '16px'
+            color: '#0062cc',
+            textDecoration: 'underline',
+            fontSize: '16px',
+            marginBottom: '20px'
           }}
         >
           View All T-shirts
         </a>
         
+        {/* T-shirt image - centered, no box */}
         <div style={{ textAlign: 'center', marginBottom: '16px' }}>
           <img 
             src="/assets/tshirts/nursing-rocks-white-tshirt.jpeg"
             alt="Nursing Rocks! T-shirts"
             style={{ 
-              maxWidth: '200px',
+              maxWidth: '180px',
               display: 'inline-block'
             }}
           />
         </div>
         
-        <div style={{ maxWidth: '580px', margin: '0 auto' }}>
+        {/* Pink button with gift icon - centered, fixed width */}
+        <div style={{ maxWidth: '300px', margin: '0 auto' }}>
           <a
             href="https://rgwrvu-sq.myshopify.com/"
             target="_blank"
@@ -54,15 +59,15 @@ export function FeaturedTshirt() {
               justifyContent: 'center',
               backgroundColor: '#F61D7A',
               color: 'white',
-              padding: '16px',
+              padding: '12px 20px',
               borderRadius: '8px',
               textDecoration: 'none',
-              fontSize: '18px',
+              fontSize: '16px',
               fontWeight: '500',
-              gap: '8px'
+              width: '100%'
             }}
           >
-            <span style={{ display: 'inline-flex', marginRight: '8px' }}>🎁</span>
+            <span role="img" aria-label="gift" style={{ marginRight: '8px', fontSize: '18px' }}>🎁</span>
             Nursing Rocks! T-shirts
           </a>
         </div>
