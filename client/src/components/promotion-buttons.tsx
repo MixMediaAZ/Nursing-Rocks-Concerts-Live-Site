@@ -34,20 +34,12 @@ function TshirtButton() {
   return (
     <div className="flex flex-col items-center w-full max-w-xl">
       <div className="mb-2 md:mb-6 bg-white p-4 rounded-lg shadow-md w-full aspect-square relative" style={{ maxHeight: "300px" }}>
-        {/* Logo positioned as background */}
+        {/* Only city background image displayed */}
         <div className="w-full h-full flex items-center justify-center">
           <img 
-            src={nursingRocksLogo} 
-            alt={text} 
-            className="max-w-full max-h-full object-contain"
-          />
-        </div>
-        {/* City background image positioned on top with transparency */}
-        <div className="absolute inset-0 flex items-center justify-center overflow-hidden z-10">
-          <img 
             src="/assets/city_backgrounds/file-1746415252600-107696087.jpeg" 
-            alt="Overlay"
-            className="w-full h-full object-cover opacity-50"
+            alt="Background"
+            className="w-full h-full object-cover"
           />
         </div>
       </div>
