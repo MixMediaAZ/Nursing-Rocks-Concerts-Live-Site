@@ -2,7 +2,6 @@ import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import { Suspense, lazy } from "react";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import EventDetails from "@/pages/event-details";
@@ -32,6 +31,11 @@ import SponsorshipsPage from "@/pages/sponsorships";
 import EditDemoPage from "@/pages/edit-demo-page";
 import ProductSyncPage from "@/pages/product-sync";
 import UploadUtilityPage from "@/pages/upload-utility";
+
+// Import the pages that were previously lazy loaded
+import TermsPage from "@/pages/terms";
+import PrivacyPage from "@/pages/privacy";
+import FAQPage from "@/pages/faq";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { AdminEditingProvider } from "@/components/admin/admin-editing-provider";
@@ -83,9 +87,9 @@ function Router() {
             <Route path="/admin/product-sync" component={ProductSyncPage} />
             <Route path="/upload-utility" component={UploadUtilityPage} />
             {/* Legal and information pages */}
-            <Route path="/terms" component={lazy(() => import("@/pages/terms"))} />
-            <Route path="/privacy" component={lazy(() => import("@/pages/privacy"))} />
-            <Route path="/faq" component={lazy(() => import("@/pages/faq"))} />
+            <Route path="/terms" component={TermsPage} />
+            <Route path="/privacy" component={PrivacyPage} />
+            <Route path="/faq" component={FAQPage} />
             <Route component={NotFound} />
           </Switch>
         </div>
