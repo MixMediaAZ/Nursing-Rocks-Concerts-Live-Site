@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { CloudinaryVideoPlaylist } from '@/components/cloudinary-video-playlist';
 import { CloudinaryIframeVideo } from '@/components/cloudinary-iframe-video';
+import { VideoSlideshow } from '@/components/video-slideshow';
 import { checkCloudinaryConnection, detectResourceType } from '@/lib/cloudinary';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
@@ -14,6 +15,18 @@ const VideosPage = () => {
   const [featuredVideoId, setFeaturedVideoId] = useState('Nursing Rocks! Concerts- video/d9wtyh03k0tpfsvflagg');
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
   const [isConnected, setIsConnected] = useState(false);
+  const [allVideoIds, setAllVideoIds] = useState<string[]>([]);
+  
+  // These are the Cloudinary video IDs we know are available in our folder
+  const slideshowVideoIds = [
+    'Nursing Rocks! Concerts- video/d9wtyh03k0tpfsvflagg',
+    'Nursing Rocks! Concerts- video/rygxsrfyzub8ysnp798w',
+    'Nursing Rocks! Concerts- video/sm0weaqm6rewlyzno8wa',
+    'Nursing Rocks! Concerts- video/b2phln1ktvh0e9waporw',
+    'Nursing Rocks! Concerts- video/inlchnlka08qhk5yx8za',
+    'Nursing Rocks! Concerts- video/iwwg6nxnyvrahjjweuxr',
+    'Nursing Rocks! Concerts- video/vgmpo4tmfrofccfttmna'
+  ];
   
   // Check Cloudinary connection when component mounts
   useEffect(() => {
@@ -158,28 +171,59 @@ const VideosPage = () => {
               )}
             </div>
             <Separator />
-            <CloudinaryVideoPlaylist
-              folder="Nursing Rocks! Concerts- video"
-              limit={12}
-              cloudName={cloudinaryCloudName}
-              controls={true}
-              autoPlay={false}
-              muted={true}
-              layout={layout}
-              showDuration={true}
-              emptyMessage={
-                <div className="flex flex-col items-center justify-center p-8 text-center space-y-4">
-                  <div className="rounded-full bg-gray-200 dark:bg-gray-800 p-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <p className="text-gray-500 dark:text-gray-400">Video gallery is currently being updated</p>
-                  <p className="text-sm text-gray-400 dark:text-gray-500">Check back soon for new concert videos!</p>
+            
+            {/* Video Slideshow Section */}
+            <div className="space-y-4 mb-8">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold">Video Slideshow</h3>
+                <p className="text-sm text-muted-foreground">
+                  Auto-advancing slideshow of Nursing Rocks videos
+                </p>
+              </div>
+              {slideshowVideoIds.length > 0 ? (
+                <VideoSlideshow 
+                  videos={slideshowVideoIds}
+                  cloudName={cloudinaryCloudName}
+                  autoPlay={true}
+                  muted={true}
+                  controls={true}
+                  interval={15000} // 15 seconds per video
+                  className="rounded-xl overflow-hidden shadow-xl border border-muted"
+                />
+              ) : (
+                <div className="bg-muted/20 rounded-lg p-8 text-center">
+                  <p>Loading videos for slideshow...</p>
                 </div>
-              }
-            />
+              )}
+            </div>
+            
+            {/* Individual Videos */}
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold">Browse All Videos</h3>
+              <CloudinaryVideoPlaylist
+                folder="Nursing Rocks! Concerts- video"
+                limit={12}
+                cloudName={cloudinaryCloudName}
+                controls={true}
+                autoPlay={false}
+                muted={true}
+                loop={true}
+                layout={layout}
+                showDuration={true}
+                emptyMessage={
+                  <div className="flex flex-col items-center justify-center p-8 text-center space-y-4">
+                    <div className="rounded-full bg-gray-200 dark:bg-gray-800 p-4">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-500 dark:text-gray-400">Video gallery is currently being updated</p>
+                    <p className="text-sm text-gray-400 dark:text-gray-500">Check back soon for new concert videos!</p>
+                  </div>
+                }
+              />
+            </div>
           </TabsContent>
         </Tabs>
       </div>
