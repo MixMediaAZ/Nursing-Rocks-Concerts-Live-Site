@@ -182,7 +182,7 @@ const HeroSection = () => {
             
             {/* Video Upload Button */}
             <Button
-              className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full"
+              className="bg-[#FF8C00] hover:bg-[#FF6B00] text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full shadow-lg border-2 border-white/30"
               onClick={() => window.open('https://nursingrocksconcerts3.replit.app/thanks', '_blank', 'noopener noreferrer')}
             >
               Upload your video of appreciation here
