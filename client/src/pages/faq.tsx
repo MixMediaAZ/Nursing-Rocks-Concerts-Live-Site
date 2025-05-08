@@ -21,7 +21,7 @@ export default function FAQPage() {
         
         <p className="text-center text-muted-foreground mb-8">
           Find answers to common questions about Nursing Rocks! Concert Series.
-          If you don't see your question here, please <a href="mailto:info@nursingrocks.com" className="text-primary hover:underline">contact us</a>.
+          If you don't see your question here, please <a href="mailto:NursingRocksConcerts@gmail.com" className="text-primary hover:underline">contact us</a>.
         </p>
         
         <Accordion type="single" collapsible className="w-full">
@@ -94,7 +94,7 @@ export default function FAQPage() {
               We offer various sponsorship opportunities for organizations that want to support and connect with healthcare professionals. 
               Sponsorship packages include brand visibility at events, digital promotion, and VIP experiences. 
               Visit our <Link href="/sponsorships"><span className="text-primary hover:underline">sponsorships page</span></Link> or contact us at 
-              <a href="mailto:sponsors@nursingrocks.com" className="text-primary hover:underline ml-1">sponsors@nursingrocks.com</a> for more information.
+              <a href="mailto:NursingRocksConcerts@gmail.com" className="text-primary hover:underline ml-1">NursingRocksConcerts@gmail.com</a> for more information.
             </AccordionContent>
           </AccordionItem>
           
@@ -112,7 +112,7 @@ export default function FAQPage() {
             <AccordionContent>
               We're always looking for talented artists who are passionate about supporting healthcare heroes through music. 
               Please send your information, including links to your music and performance history, to 
-              <a href="mailto:booking@nursingrocks.com" className="text-primary hover:underline ml-1">booking@nursingrocks.com</a>.
+              <a href="mailto:NursingRocksConcerts@gmail.com" className="text-primary hover:underline ml-1">NursingRocksConcerts@gmail.com</a>.
             </AccordionContent>
           </AccordionItem>
         </Accordion>
@@ -123,7 +123,7 @@ export default function FAQPage() {
             We're here to help. Contact our support team for assistance.
           </p>
           <Button asChild>
-            <a href="mailto:info@nursingrocks.com">Contact Support</a>
+            <a href="mailto:NursingRocksConcerts@gmail.com">Contact Support</a>
           </Button>
         </div>
       </div>

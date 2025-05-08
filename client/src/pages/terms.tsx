@@ -85,7 +85,7 @@ export default function TermsPage() {
           <p>
             If you have any questions about these Terms of Service, please contact us at:
             <br />
-            <a href="mailto:info@nursingrocks.com" className="text-primary hover:underline">info@nursingrocks.com</a>
+            <a href="mailto:NursingRocksConcerts@gmail.com" className="text-primary hover:underline">NursingRocksConcerts@gmail.com</a>
             <br />
             732 S 6th St, Las Vegas, NV
           </p>

@@ -91,10 +91,10 @@ export function Footer() {
           <div className="text-center">
             <h3 className="text-base font-bold mb-3">Contact Us</h3>
             <div className="space-y-2 flex flex-col items-center">
-              <a href="mailto:info@nursingrocks.com" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+              <a href="mailto:NursingRocksConcerts@gmail.com" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
                 <Mail className="h-4 w-4" />
                 <span className="text-sm">
-                  info@nursingrocks.com
+                  NursingRocksConcerts@gmail.com
                 </span>
               </a>
               <div className="flex items-center gap-2">
