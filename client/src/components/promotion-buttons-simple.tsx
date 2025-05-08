@@ -1,50 +1,48 @@
 import { Button } from "@/components/ui/button";
-import { Shirt } from "lucide-react";
+import { Gift } from "lucide-react";
 
 /**
  * Simple promotion component that displays:
  * 1. A t-shirt image with no container/background
  * 2. A button directly underneath
+ * 
+ * This matches exactly the layout in the screenshot
  */
 export default function PromotionButtonsSimple() {
-  // T-shirt image and button text
-  const shirtImage = "/assets/tshirts/nursing-rocks-white-tshirt.jpeg";
-  const buttonText = "Nursing Rocks! T-shirts";
-  
   return (
-    <section className="bg-background py-10">
-      <div className="container mx-auto">
-        {/* Heading and "View All" link */}
-        <div className="flex flex-col items-center mb-8">
-          <h2 className="text-2xl font-bold mb-2 text-center">
-            Featured Products
-          </h2>
-          <Button
-            variant="link"
-            className="text-primary hover:text-primary/80 font-medium underline text-lg"
-            onClick={() => window.open("https://rgwrvu-sq.myshopify.com/", "_blank")}
-          >
-            View All T-shirts
-          </Button>
+    <section className="bg-[#80d8f7] py-12">
+      <div className="container mx-auto text-center">
+        {/* Heading */}
+        <h2 className="text-2xl font-bold mb-2 text-center text-black">
+          Featured Products
+        </h2>
+        
+        {/* View All link */}
+        <a 
+          href="https://rgwrvu-sq.myshopify.com/" 
+          target="_blank" 
+          className="text-primary hover:text-primary/80 font-medium underline text-lg inline-block mb-6"
+        >
+          View All T-shirts
+        </a>
+        
+        {/* T-shirt image - just the image with no container */}
+        <div className="flex justify-center mb-4">
+          <img 
+            src="/assets/tshirts/nursing-rocks-white-tshirt.jpeg"
+            alt="Nursing Rocks! T-shirts"
+            className="max-w-[200px]"
+          />
         </div>
         
-        {/* T-shirt image and button */}
-        <div className="flex flex-col items-center gap-4 max-w-xs mx-auto">
-          {/* Image with no container */}
-          <img 
-            src={shirtImage}
-            alt={buttonText}
-            className="w-full object-contain"
-            style={{ maxHeight: "300px" }}
-          />
-          
-          {/* Button */}
+        {/* Pink button - full width within container */}
+        <div className="max-w-[580px] mx-auto">
           <Button 
             onClick={() => window.open("https://rgwrvu-sq.myshopify.com/", "_blank")}
-            className="flex items-center justify-center gap-3 bg-[#F61D7A] hover:bg-[#E01060] text-white px-8 py-4 rounded-lg text-lg font-semibold transition-transform hover:scale-105 shadow-md w-full"
+            className="w-full bg-[#F61D7A] hover:bg-[#E01060] text-white py-4 rounded-lg text-lg font-medium"
           >
-            <Shirt className="h-5 w-5 flex-shrink-0" />
-            <span>{buttonText}</span>
+            <Gift className="h-5 w-5 mr-2" />
+            Nursing Rocks! T-shirts
           </Button>
         </div>
       </div>
