@@ -39,7 +39,7 @@ function TshirtButton() {
           <img 
             src="/assets/city_backgrounds/file-1746415252600-107696087.jpeg" 
             alt="Background"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover opacity-10"
           />
         </div>
       </div>
