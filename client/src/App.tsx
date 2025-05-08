@@ -2,6 +2,7 @@ import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
+import { Suspense, lazy } from "react";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import EventDetails from "@/pages/event-details";
@@ -81,6 +82,10 @@ function Router() {
             <Route path="/edit-demo" component={EditDemoPage} />
             <Route path="/admin/product-sync" component={ProductSyncPage} />
             <Route path="/upload-utility" component={UploadUtilityPage} />
+            {/* Legal and information pages */}
+            <Route path="/terms" component={lazy(() => import("@/pages/terms"))} />
+            <Route path="/privacy" component={lazy(() => import("@/pages/privacy"))} />
+            <Route path="/faq" component={lazy(() => import("@/pages/faq"))} />
             <Route component={NotFound} />
           </Switch>
         </div>
