@@ -34,9 +34,13 @@ function TshirtButton() {
   return (
     <div className="flex flex-col items-center w-full max-w-xl">
       <div className="mb-2 md:mb-6 bg-white p-4 rounded-lg shadow-md w-full aspect-square relative" style={{ maxHeight: "300px" }}>
-        {/* Empty space - image removed but space maintained */}
+        {/* Empty space with invisible image overlay */}
         <div className="w-full h-full flex items-center justify-center">
-          {/* Space kept as requested */}
+          <img 
+            src="/assets/city_backgrounds/file-1746415252600-107696087.jpeg" 
+            alt="Background"
+            className="w-full h-full object-cover opacity-0"
+          />
         </div>
       </div>
       <div className="relative w-full">
