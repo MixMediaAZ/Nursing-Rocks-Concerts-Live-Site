@@ -2,7 +2,7 @@ import HeroSection from "@/components/hero-section";
 import FeaturedArtist from "@/components/featured-artist";
 import ConcertCalendar from "@/components/concert-calendar";
 import Newsletter from "@/components/newsletter";
-import PromotionButtons from "@/components/promotion-buttons";
+import PromotionButtonsSimple from "@/components/promotion-buttons-simple";
 import { Helmet } from "react-helmet";
 
 const Home = () => {
@@ -14,7 +14,7 @@ const Home = () => {
       </Helmet>
       
       <HeroSection />
-      <PromotionButtons />
+      <PromotionButtonsSimple />
       <FeaturedArtist />
       <ConcertCalendar />
       <Newsletter />
