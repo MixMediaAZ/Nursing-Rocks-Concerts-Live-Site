@@ -93,7 +93,7 @@ const VideosPage = () => {
           <div>
             <h1 className="text-3xl md:text-4xl font-bold">Nursing Rocks! Videos</h1>
             <p className="text-gray-500 dark:text-gray-400 mt-2">
-              Experience the magic of our concerts supporting nurses across the country
+              We love you nurses....thanks for all you do....we see you. You rock and Nursing Rocks!
             </p>
           </div>
           
@@ -127,12 +127,18 @@ const VideosPage = () => {
           <TabsContent value="featured" className="space-y-8">
             {/* Featured Video */}
             <Card className="overflow-hidden border-0 shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-purple-600 to-pink-500 text-white">
-                <CardTitle>Featured Performance</CardTitle>
-                <CardDescription className="text-white text-opacity-80">
-                  Highlights from our recent Nursing Rocks concert
-                </CardDescription>
-              </CardHeader>
+              <div className="bg-gradient-to-r from-purple-600 to-pink-500 overflow-hidden whitespace-nowrap relative p-4">
+                <div className="animate-marquee inline-block">
+                  <span className="text-white font-bold text-xl">
+                    We love nurses one and all! Nursing Rocks! &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                  </span>
+                </div>
+                <div className="animate-marquee2 inline-block absolute top-4">
+                  <span className="text-white font-bold text-xl">
+                    We love nurses one and all! Nursing Rocks! &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                  </span>
+                </div>
+              </div>
               <CardContent className="p-0">
                 <div className="aspect-video w-full">
                   <CloudinaryIframeVideo 
