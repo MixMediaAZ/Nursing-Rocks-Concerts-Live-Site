@@ -5,28 +5,19 @@ import { CloudinaryVideoPlaylist } from '@/components/cloudinary-video-playlist'
 import { CloudinaryIframeVideo } from '@/components/cloudinary-iframe-video';
 import { VideoSlideshow } from '@/components/video-slideshow';
 import { checkCloudinaryConnection, detectResourceType } from '@/lib/cloudinary';
+import { fetchCloudinaryVideos, type CloudinaryResource } from '@/lib/api';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { Grid3X3, List } from 'lucide-react';
+import { Grid3X3, List, Loader2 } from 'lucide-react';
 
 const VideosPage = () => {
-  const [cloudinaryCloudName, setCloudinaryCloudName] = useState<string | null>(null);
+  const [cloudinaryCloudName, setCloudinaryCloudName] = useState<string | undefined>(undefined);
   const [featuredVideoId, setFeaturedVideoId] = useState('Nursing Rocks! Concerts- video/d9wtyh03k0tpfsvflagg');
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
   const [isConnected, setIsConnected] = useState(false);
   const [allVideoIds, setAllVideoIds] = useState<string[]>([]);
-  
-  // These are the Cloudinary video IDs we know are available in our folder
-  const slideshowVideoIds = [
-    'Nursing Rocks! Concerts- video/d9wtyh03k0tpfsvflagg',
-    'Nursing Rocks! Concerts- video/rygxsrfyzub8ysnp798w',
-    'Nursing Rocks! Concerts- video/sm0weaqm6rewlyzno8wa',
-    'Nursing Rocks! Concerts- video/b2phln1ktvh0e9waporw',
-    'Nursing Rocks! Concerts- video/inlchnlka08qhk5yx8za',
-    'Nursing Rocks! Concerts- video/iwwg6nxnyvrahjjweuxr',
-    'Nursing Rocks! Concerts- video/vgmpo4tmfrofccfttmna'
-  ];
+  const [isLoadingVideos, setIsLoadingVideos] = useState(true);
   
   // Check Cloudinary connection when component mounts
   useEffect(() => {
@@ -49,6 +40,43 @@ const VideosPage = () => {
     
     checkConnection();
   }, []);
+  
+  // Fetch all videos from Cloudinary when component mounts or connection status changes
+  useEffect(() => {
+    if (!isConnected) return;
+    
+    async function fetchVideos() {
+      setIsLoadingVideos(true);
+      try {
+        // Fetch videos from the Nursing Rocks Cloudinary folder
+        const videos = await fetchCloudinaryVideos('Nursing Rocks! Concerts- video');
+        
+        // Extract public_ids for the video slideshow
+        const videoIds = videos.map((video) => video.public_id);
+        
+        console.log(`Fetched ${videoIds.length} videos from Cloudinary`);
+        setAllVideoIds(videoIds);
+        
+        // Update the featured video if videos are available
+        if (videoIds.length > 0) {
+          // Find a high-quality video for the feature spot
+          const featuredVideo = videos.find((v) => 
+            v.width && v.width >= 1280 && v.format === 'mp4'
+          ) || videos[0];
+          
+          if (featuredVideo) {
+            setFeaturedVideoId(featuredVideo.public_id);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching videos:', error);
+      } finally {
+        setIsLoadingVideos(false);
+      }
+    }
+    
+    fetchVideos();
+  }, [isConnected]);
   
   // Use resource type detection to verify video format
   const videoResourceType = detectResourceType(featuredVideoId);
@@ -180,10 +208,15 @@ const VideosPage = () => {
                   Auto-advancing slideshow of Nursing Rocks videos
                 </p>
               </div>
-              {slideshowVideoIds.length > 0 ? (
+              {isLoadingVideos ? (
+                <div className="bg-muted/20 rounded-lg p-8 text-center flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 mr-2 animate-spin text-primary" />
+                  <p>Loading videos for slideshow...</p>
+                </div>
+              ) : allVideoIds.length > 0 ? (
                 <VideoSlideshow 
-                  videos={slideshowVideoIds}
-                  cloudName={cloudinaryCloudName}
+                  videos={allVideoIds}
+                  cloudName={cloudinaryCloudName || undefined}
                   autoPlay={true}
                   muted={true}
                   controls={true}
@@ -192,7 +225,7 @@ const VideosPage = () => {
                 />
               ) : (
                 <div className="bg-muted/20 rounded-lg p-8 text-center">
-                  <p>Loading videos for slideshow...</p>
+                  <p>No videos available for slideshow</p>
                 </div>
               )}
             </div>
