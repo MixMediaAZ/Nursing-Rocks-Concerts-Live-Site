@@ -100,7 +100,7 @@ const VideosPage = () => {
                     autoPlay={true}
                     muted={true}
                     controls={true}
-                    loop={false}
+                    loop={true}
                     cloudName={cloudinaryCloudName}
                     resourceType={videoResourceType}
                     fallbackContent={
@@ -133,6 +133,7 @@ const VideosPage = () => {
                 controls={true}
                 autoPlay={false}
                 muted={true}
+                loop={true}
                 layout={layout}
                 showDuration={true}
                 emptyMessage={
