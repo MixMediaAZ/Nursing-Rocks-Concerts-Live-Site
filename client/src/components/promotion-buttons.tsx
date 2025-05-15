@@ -15,7 +15,7 @@ function TshirtButton() {
   
   // Initialize text from localStorage or default text
   const savedText = localStorage.getItem('tshirtButtonText');
-  const [text, setText] = useState(savedText || "Nursing Rocks! T-shirts");
+  const [text, setText] = useState(savedText || "Nursing Rocks! T-Shirts & Merch");
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   
   const handleSaveButtonText = (newText: string) => {
@@ -107,7 +107,7 @@ export default function PromotionButtons() {
   
   // For link text
   const savedLinkText = localStorage.getItem('viewAllTshirtsText');
-  const [linkText, setLinkText] = useState(savedLinkText || "View All T-shirts");
+  const [linkText, setLinkText] = useState(savedLinkText || "View T-Shirts and Merch");
   const [isLinkEditorOpen, setIsLinkEditorOpen] = useState(false);
   
   // Handle saving the heading text
