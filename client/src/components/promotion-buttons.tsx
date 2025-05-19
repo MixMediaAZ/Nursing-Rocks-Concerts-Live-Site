@@ -12,28 +12,28 @@ function TshirtButton() {
   const [_, setLocation] = useLocation();
   const { isAdminMode } = useAdminEditMode();
   const { toast } = useToast();
-  
+
   // Initialize text from localStorage or default text
   const savedText = localStorage.getItem('tshirtButtonText');
   const [text, setText] = useState(savedText || "Nursing Rocks! T-Shirts & Merch");
   const [isEditorOpen, setIsEditorOpen] = useState(false);
-  
+
   const handleSaveButtonText = (newText: string) => {
     setText(newText);
     setIsEditorOpen(false);
-    
+
     // Save to localStorage for persistence across page reloads
     localStorage.setItem('tshirtButtonText', newText);
-    
+
     toast({
       title: "Button Text Updated",
       description: `Successfully updated the button text to: ${newText}`
     });
   };
-  
+
   return (
     <div className="flex flex-col items-center w-full max-w-xl">
-      <div className="mb-2 md:mb-6 bg-white p-4 rounded-lg shadow-md w-full aspect-square" style={{ maxHeight: "300px" }}>
+      <div className="mb-2 md:mb-6 bg-white p-3 sm:p-4 rounded-lg shadow-md w-full aspect-square" style={{ maxHeight: "250px", maxWidth: "250px", margin: "0 auto" }}>
         <div className="w-full h-full flex items-center justify-center">
           <img 
             src={nursingRocksLogo} 
@@ -45,14 +45,14 @@ function TshirtButton() {
       <div className="relative w-full">
         <Button 
           onClick={() => window.open("https://rgwrvu-sq.myshopify.com/", "_blank")}
-          className="flex items-center justify-center gap-4 bg-[#F61D7A] hover:bg-[#E01060] text-white px-10 py-6 rounded-lg text-xl font-semibold transition-transform hover:scale-105 shadow-md w-full"
+          className="flex items-center justify-center gap-2 sm:gap-4 bg-[#F61D7A] hover:bg-[#E01060] text-white px-4 sm:px-10 py-4 sm:py-6 rounded-lg text-base sm:text-xl font-semibold transition-transform hover:scale-105 shadow-md w-full"
           id="tshirtButton"
-          style={{ minHeight: "72px" }}
+          style={{ minHeight: "60px" }}
         >
-          <Shirt className="h-7 w-7 flex-shrink-0" />
+          <Shirt className="h-5 w-5 sm:h-7 sm:w-7 flex-shrink-0" />
           <span className="text-center" id="tshirtText">{text}</span>
         </Button>
-        
+
         {isAdminMode && (
           <button
             onClick={(e) => {
@@ -79,7 +79,7 @@ function TshirtButton() {
             </svg>
           </button>
         )}
-        
+
         <PromotionButtonEditor
           isOpen={isEditorOpen}
           onClose={() => setIsEditorOpen(false)}
@@ -95,21 +95,21 @@ function TshirtButton() {
 // Main component
 export default function PromotionButtons() {
   const [_, setLocation] = useLocation();
-  
+
   // States for editable elements
   const { isAdminMode } = useAdminEditMode();
   const { toast } = useToast();
-  
+
   // For heading text
   const savedHeadingText = localStorage.getItem('featuredProductsHeading');
   const [headingText, setHeadingText] = useState(savedHeadingText || "Featured Products");
   const [isHeadingEditorOpen, setIsHeadingEditorOpen] = useState(false);
-  
+
   // For link text
   const savedLinkText = localStorage.getItem('viewAllTshirtsText');
   const [linkText, setLinkText] = useState(savedLinkText || "View T-Shirts and Merch");
   const [isLinkEditorOpen, setIsLinkEditorOpen] = useState(false);
-  
+
   // Handle saving the heading text
   const handleSaveHeadingText = (newText: string) => {
     setHeadingText(newText);
@@ -120,7 +120,7 @@ export default function PromotionButtons() {
       description: `Successfully updated the heading to: ${newText}`
     });
   };
-  
+
   // Handle saving the link text
   const handleSaveLinkText = (newText: string) => {
     setLinkText(newText);
@@ -131,19 +131,19 @@ export default function PromotionButtons() {
       description: `Successfully updated the link text to: ${newText}`
     });
   };
-  
+
   return (
-    <section className="bg-background py-10">
-      <div className="container mx-auto">
+    <section className="bg-background py-6 sm:py-10">
+      <div className="container mx-auto px-4">
         <div className="flex flex-col items-center mb-8">
           <div className="relative">
             <h2 
-              className="text-2xl font-bold mb-2 text-center"
+              className="text-xl sm:text-2xl font-bold mb-2 text-center"
               id="featuredProductsHeading"
             >
               {headingText}
             </h2>
-            
+
             {isAdminMode && (
               <button
                 onClick={(e) => {
@@ -170,7 +170,7 @@ export default function PromotionButtons() {
                 </svg>
               </button>
             )}
-            
+
             <PromotionButtonEditor
               isOpen={isHeadingEditorOpen}
               onClose={() => setIsHeadingEditorOpen(false)}
@@ -179,7 +179,7 @@ export default function PromotionButtons() {
               onSave={handleSaveHeadingText}
             />
           </div>
-          
+
           <div className="relative">
             <Button
               variant="link"
@@ -189,7 +189,7 @@ export default function PromotionButtons() {
             >
               {linkText}
             </Button>
-            
+
             {isAdminMode && (
               <button
                 onClick={(e) => {
@@ -216,7 +216,7 @@ export default function PromotionButtons() {
                 </svg>
               </button>
             )}
-            
+
             <PromotionButtonEditor
               isOpen={isLinkEditorOpen}
               onClose={() => setIsLinkEditorOpen(false)}
@@ -226,7 +226,7 @@ export default function PromotionButtons() {
             />
           </div>
         </div>
-        
+
         <div className="flex justify-center items-center w-full max-w-6xl mx-auto">
           <TshirtButton />
         </div>
