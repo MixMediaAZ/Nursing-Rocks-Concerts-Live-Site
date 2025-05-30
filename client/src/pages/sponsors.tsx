@@ -1,6 +1,7 @@
 import SponsorsSection from "@/components/sponsors-section";
 import { Button } from "@/components/ui/button";
 import { Helmet } from "react-helmet";
+import sponsorshipOverview from "@assets/NRCS Sponsorship Overview.png";
 
 export default function SponsorsPage() {
   return (
@@ -16,6 +17,17 @@ export default function SponsorsPage() {
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             We celebrate the organizations that make our concerts free for nurses through their generous support.
           </p>
+        </div>
+      </div>
+      
+      {/* NRCS Sponsorship Overview */}
+      <div className="container px-6 md:px-8 py-12">
+        <div className="max-w-5xl mx-auto text-center">
+          <img 
+            src={sponsorshipOverview} 
+            alt="NRCS Sponsorship Overview - Event, Regional, and National sponsorship opportunities with pricing tiers" 
+            className="w-full h-auto rounded-lg shadow-lg"
+          />
         </div>
       </div>
       
