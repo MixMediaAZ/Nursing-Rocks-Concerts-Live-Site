@@ -120,7 +120,7 @@ const HeroSection = () => {
       </div>
 
       <div className="mobile-container pt-24 pb-8 sm:py-16 md:py-28 relative z-10">
-        <div className="max-w-2xl">
+        <div className="max-w-2xl sm:absolute sm:left-1/3 sm:transform sm:-translate-x-1/2 sm:top-16 md:top-20 lg:top-24">
           {/* Editable title */}
           <EditableElement
             type="text"
@@ -210,9 +210,9 @@ const HeroSection = () => {
           </div>
         </div>
         
-        {/* Cloudinary Video - Desktop and Tablet Only - Positioned in top right corner, completely separate from buttons */}
-        <div className="hidden sm:block absolute top-16 right-4 md:top-20 md:right-8 lg:top-24 lg:right-12 xl:top-28 xl:right-16 z-20">
-          <div className="aspect-video w-[160px] sm:w-[200px] md:w-[280px] lg:w-[320px] xl:w-[360px] bg-black rounded-xl overflow-hidden shadow-xl border-4 border-white/30 transform hover:scale-105 transition-transform duration-300">
+        {/* Cloudinary Video - Desktop and Tablet Only - Positioned on 2/3 vertical line, aligned with buttons */}
+        <div className="hidden sm:block absolute left-2/3 transform -translate-x-1/2 top-16 md:top-20 lg:top-24 z-20">
+          <div className="aspect-video w-[200px] md:w-[280px] lg:w-[320px] xl:w-[360px] bg-black rounded-xl overflow-hidden shadow-xl border-4 border-white/30 transform hover:scale-105 transition-transform duration-300">
             <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 opacity-75 blur-sm"></div>
             <div className="relative z-10">
               <CloudinaryIframeVideo
