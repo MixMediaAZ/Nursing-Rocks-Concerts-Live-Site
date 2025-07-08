@@ -156,7 +156,11 @@ const HeroSection = () => {
           )}
           
           {/* Desktop Layout - Side by side */}
-          <div className="hidden md:flex items-start justify-between gap-8 mt-8">
+          <div className="hidden lg:flex items-start justify-between gap-8 mt-8">
+            {/* Debug indicator */}
+            <div className="fixed top-4 right-4 bg-green-500 text-white px-2 py-1 rounded text-xs z-50">
+              DESKTOP VIEW
+            </div>
             {/* Buttons Column - Left side (1/3 position) */}
             <div className="flex flex-col gap-4 flex-1 max-w-md">
               {/* Free Ticket Button */}
@@ -212,7 +216,11 @@ const HeroSection = () => {
           </div>
 
           {/* Mobile Layout - Vertical stack */}
-          <div className="block md:hidden">
+          <div className="block lg:hidden">
+            {/* Debug indicator */}
+            <div className="fixed top-4 right-4 bg-red-500 text-white px-2 py-1 rounded text-xs z-50">
+              MOBILE VIEW
+            </div>
             {/* Buttons Column */}
             <div className="flex flex-col gap-4 max-w-sm">
               {/* Free Ticket Button */}
