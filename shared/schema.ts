@@ -658,6 +658,31 @@ export type InsertStoreProduct = z.infer<typeof insertStoreProductSchema>;
 export type StoreOrder = typeof storeOrders.$inferSelect;
 export type InsertStoreOrder = z.infer<typeof insertStoreOrderSchema>;
 
+// Medical Terminology model
+export const medicalTerminology = pgTable("medical_terminology", {
+  id: serial("id").primaryKey(),
+  term: text("term").notNull(),
+  definition: text("definition").notNull(),
+  pronunciation: text("pronunciation").notNull(), // Phonetic spelling
+  audio_url: text("audio_url"), // Optional audio file URL
+  category: text("category").notNull(), // anatomy, procedures, medications, etc.
+  difficulty_level: text("difficulty_level").notNull(), // beginner, intermediate, advanced
+  etymology: text("etymology"), // Word origin/history
+  usage_example: text("usage_example"), // Example sentence
+  related_terms: text("related_terms").array().default([]), // Related terminology
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertMedicalTerminologySchema = createInsertSchema(medicalTerminology).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+export type MedicalTerminology = typeof medicalTerminology.$inferSelect;
+export type InsertMedicalTerminology = z.infer<typeof insertMedicalTerminologySchema>;
+
 export type StoreOrderItem = typeof storeOrderItems.$inferSelect;
 export type InsertStoreOrderItem = z.infer<typeof insertStoreOrderItemSchema>;
 
