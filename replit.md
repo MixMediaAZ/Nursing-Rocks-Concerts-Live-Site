@@ -108,6 +108,7 @@ This is a full-stack web application for the Nursing Rocks! Concert Series, a mu
 Changelog:
 - July 08, 2025. Initial setup
 - July 08, 2025. Enhanced mobile responsiveness across all pages: improved button sizing, text scaling, container padding, grid layouts, and table responsiveness for mobile devices
+- July 08, 2025. Optimized mobile hero section to display concert crowd with hands raised above content: improved image positioning (object-[center_20%]), reduced gradient opacity on mobile (60% vs 80%), increased mobile section height (800px), and adjusted content padding to reveal background image
 
 ## User Preferences
 
