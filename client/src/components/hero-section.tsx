@@ -210,8 +210,8 @@ const HeroSection = () => {
           </div>
         </div>
         
-        {/* Cloudinary Video - Desktop and Tablet Only - Positioned absolutely on the right with proper spacing */}
-        <div className="hidden xs:block absolute bottom-40 xs:bottom-36 right-6 md:bottom-48 md:right-12 lg:bottom-56 lg:right-16 xl:bottom-64 xl:right-20 z-20">
+        {/* Cloudinary Video - Desktop and Tablet Only - Positioned in top right corner, completely separate from buttons */}
+        <div className="hidden xs:block absolute top-20 right-6 md:top-24 md:right-12 lg:top-28 lg:right-16 xl:top-32 xl:right-20 z-20">
           <div className="aspect-video w-[140px] xs:w-[200px] sm:w-[240px] md:w-[320px] lg:w-[360px] xl:w-[400px] bg-black rounded-xl overflow-hidden shadow-xl border-4 border-white/30 transform hover:scale-105 transition-transform duration-300">
             <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 opacity-75 blur-sm"></div>
             <div className="relative z-10">
