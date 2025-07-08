@@ -120,7 +120,7 @@ const HeroSection = () => {
       </div>
 
       <div className="mobile-container pt-24 pb-8 sm:py-16 md:py-28 relative z-10">
-        <div className="max-w-2xl sm:absolute sm:left-1/3 sm:transform sm:-translate-x-1/2 sm:top-16 md:top-20 lg:top-24">
+        <div className="max-w-2xl">
           {/* Editable title */}
           <EditableElement
             type="text"
@@ -155,45 +155,47 @@ const HeroSection = () => {
             </div>
           )}
           
-          {/* Buttons Column */}
-          <div className="flex flex-col gap-4 max-w-sm">
-            {/* Free Ticket Button */}
-            <Button
-              asChild
-              size="lg"
-              className="bg-gradient-to-r from-[#F61D7A] to-[#FF3366] hover:from-[#FF3366] hover:to-[#F61D7A] text-white font-accent font-bold text-xs sm:text-sm md:text-base py-4 px-4 sm:px-6 rounded-full shadow-lg transform transition-transform hover:scale-105 animate-pulse"
-            >
-              <Link href="/register">
-                <span className="uppercase">Nurses, Get Your Free Tickets Here!</span>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 ml-1 sm:ml-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </Link>
-            </Button>
-            
-            {/* Store Button - Redirects to Shopify store */}
-            <Button
-              className="bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full"
-              onClick={() => window.open('https://rgwrvu-sq.myshopify.com/', '_blank', 'noopener noreferrer')}
-            >
-              Visit Our Store
-              <i className="fas fa-shopping-bag ml-1 sm:ml-2"></i>
-            </Button>
-            
-            {/* Video Upload Button */}
-            <Button
-              className="bg-[#FF8C00] hover:bg-[#FF6B00] text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full shadow-lg border-2 border-white/30"
-              onClick={() => window.open('https://nursingrocksconcerts3.replit.app/thanks', '_blank', 'noopener noreferrer')}
-            >
-              Upload your video of appreciation here
-              <i className="fas fa-video ml-1 sm:ml-2"></i>
-            </Button>
-            
-            {/* Cloudinary Video for Mobile Only - Under buttons */}
-            <div className="block xs:hidden mt-6 w-full">
-              <h4 className="text-center font-semibold mb-2 text-white/90">Featured Video</h4>
-              <div className="aspect-video w-full mx-auto bg-black rounded-xl overflow-hidden shadow-xl border-2 border-white/30 transform transition-transform duration-300">
-                <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-[#5D3FD3]/80 to-[#FF3366]/80 opacity-50 blur-sm"></div>
+          {/* Desktop Layout - Side by side */}
+          <div className="hidden sm:flex items-start justify-between gap-8 mt-8">
+            {/* Buttons Column - Left side (1/3 position) */}
+            <div className="flex flex-col gap-4 flex-1 max-w-md">
+              {/* Free Ticket Button */}
+              <Button
+                asChild
+                size="lg"
+                className="bg-gradient-to-r from-[#F61D7A] to-[#FF3366] hover:from-[#FF3366] hover:to-[#F61D7A] text-white font-accent font-bold text-xs sm:text-sm md:text-base py-4 px-4 sm:px-6 rounded-full shadow-lg transform transition-transform hover:scale-105 animate-pulse"
+              >
+                <Link href="/register">
+                  <span className="uppercase">Nurses, Get Your Free Tickets Here!</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 ml-1 sm:ml-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </Link>
+              </Button>
+              
+              {/* Store Button - Redirects to Shopify store */}
+              <Button
+                className="bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full"
+                onClick={() => window.open('https://rgwrvu-sq.myshopify.com/', '_blank', 'noopener noreferrer')}
+              >
+                Visit Our Store
+                <i className="fas fa-shopping-bag ml-1 sm:ml-2"></i>
+              </Button>
+              
+              {/* Video Upload Button */}
+              <Button
+                className="bg-[#FF8C00] hover:bg-[#FF6B00] text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full shadow-lg border-2 border-white/30"
+                onClick={() => window.open('https://nursingrocksconcerts3.replit.app/thanks', '_blank', 'noopener noreferrer')}
+              >
+                Upload your video of appreciation here
+                <i className="fas fa-video ml-1 sm:ml-2"></i>
+              </Button>
+            </div>
+
+            {/* Video Column - Right side (2/3 position) */}
+            <div className="flex-1 max-w-sm">
+              <div className="aspect-video w-full bg-black rounded-xl overflow-hidden shadow-xl border-4 border-white/30 transform hover:scale-105 transition-transform duration-300">
+                <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 opacity-75 blur-sm"></div>
                 <div className="relative z-10">
                   <CloudinaryIframeVideo
                     publicId={videoPublicId}
@@ -208,25 +210,66 @@ const HeroSection = () => {
               </div>
             </div>
           </div>
-        </div>
-        
-        {/* Cloudinary Video - Desktop and Tablet Only - Positioned on 2/3 vertical line, aligned with buttons */}
-        <div className="hidden sm:block absolute left-2/3 transform -translate-x-1/2 top-16 md:top-20 lg:top-24 z-20">
-          <div className="aspect-video w-[200px] md:w-[280px] lg:w-[320px] xl:w-[360px] bg-black rounded-xl overflow-hidden shadow-xl border-4 border-white/30 transform hover:scale-105 transition-transform duration-300">
-            <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 opacity-75 blur-sm"></div>
-            <div className="relative z-10">
-              <CloudinaryIframeVideo
-                publicId={videoPublicId}
-                className="w-full h-full"
-                autoPlay={true}
-                muted={true}
-                controls={false}
-                loop={true}
-                cloudName={cloudinaryCloudName}
-              />
+
+          {/* Mobile Layout - Vertical stack */}
+          <div className="block sm:hidden">
+            {/* Buttons Column */}
+            <div className="flex flex-col gap-4 max-w-sm">
+              {/* Free Ticket Button */}
+              <Button
+                asChild
+                size="lg"
+                className="bg-gradient-to-r from-[#F61D7A] to-[#FF3366] hover:from-[#FF3366] hover:to-[#F61D7A] text-white font-accent font-bold text-xs sm:text-sm md:text-base py-4 px-4 sm:px-6 rounded-full shadow-lg transform transition-transform hover:scale-105 animate-pulse"
+              >
+                <Link href="/register">
+                  <span className="uppercase">Nurses, Get Your Free Tickets Here!</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 ml-1 sm:ml-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </Link>
+              </Button>
+              
+              {/* Store Button - Redirects to Shopify store */}
+              <Button
+                className="bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full"
+                onClick={() => window.open('https://rgwrvu-sq.myshopify.com/', '_blank', 'noopener noreferrer')}
+              >
+                Visit Our Store
+                <i className="fas fa-shopping-bag ml-1 sm:ml-2"></i>
+              </Button>
+              
+              {/* Video Upload Button */}
+              <Button
+                className="bg-[#FF8C00] hover:bg-[#FF6B00] text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full shadow-lg border-2 border-white/30"
+                onClick={() => window.open('https://nursingrocksconcerts3.replit.app/thanks', '_blank', 'noopener noreferrer')}
+              >
+                Upload your video of appreciation here
+                <i className="fas fa-video ml-1 sm:ml-2"></i>
+              </Button>
+              
+              {/* Cloudinary Video for Mobile Only - Under buttons */}
+              <div className="mt-6 w-full">
+                <h4 className="text-center font-semibold mb-2 text-white/90">Featured Video</h4>
+                <div className="aspect-video w-full mx-auto bg-black rounded-xl overflow-hidden shadow-xl border-2 border-white/30 transform transition-transform duration-300">
+                  <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-[#5D3FD3]/80 to-[#FF3366]/80 opacity-50 blur-sm"></div>
+                  <div className="relative z-10">
+                    <CloudinaryIframeVideo
+                      publicId={videoPublicId}
+                      className="w-full h-full"
+                      autoPlay={true}
+                      muted={true}
+                      controls={false}
+                      loop={true}
+                      cloudName={cloudinaryCloudName}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+        
+
       </div>
     </section>
   );
