@@ -103,7 +103,7 @@ const HeroSection = () => {
   // This ensures the hero section is always displayed
 
   return (
-    <section className="relative overflow-hidden bg-[#333333] text-white min-h-[600px]">
+    <section className="relative overflow-hidden bg-[#333333] text-white min-h-[700px] sm:min-h-[600px]">
       <div className="absolute inset-0 z-0">
         {/* Editable background image - layer 1 */}
         <EditableElement
@@ -111,7 +111,7 @@ const HeroSection = () => {
           id="hero-background"
           src="https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&h=800&q=80"
           alt="Concert crowd"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover object-top sm:object-center"
           onUpdate={handleContentUpdate}
         />
         
@@ -119,14 +119,14 @@ const HeroSection = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-[#5D3FD3]/80 to-[#FF3366]/80 mix-blend-multiply"></div>
       </div>
 
-      <div className="mobile-container py-12 sm:py-16 md:py-28 relative z-10">
+      <div className="mobile-container py-8 sm:py-16 md:py-28 relative z-10">
         <div className="max-w-2xl">
           {/* Editable title */}
           <EditableElement
             type="text"
             id="hero-title"
           >
-            <div className="inline-block bg-[#FF3366] text-white px-4 py-2 sm:px-6 sm:py-3 rounded-full mb-6 font-accent text-lg sm:text-2xl md:text-3xl font-bold">
+            <div className="inline-block bg-[#FF3366] text-white px-4 py-2 sm:px-6 sm:py-3 rounded-full mb-4 sm:mb-6 font-accent text-lg sm:text-2xl md:text-3xl font-bold">
               NURSING ROCKS! CONCERT SERIES
             </div>
           </EditableElement>
@@ -140,7 +140,7 @@ const HeroSection = () => {
             type="text"
             id="hero-mission"
           >
-            <p className="text-sm sm:text-base md:text-lg mb-8 text-left">
+            <p className="text-sm sm:text-base md:text-lg mb-6 sm:mb-8 text-left">
               Empowering and honoring nurses through the uplifting power of live music, our mission is to foster a positive impact within the nursing community at nationwide events. We strive to elevate awareness of the nursing profession and support its advancement through scholarship opportunities for further education.
             </p>
           </EditableElement>
