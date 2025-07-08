@@ -156,7 +156,7 @@ const HeroSection = () => {
           )}
           
           {/* Desktop Layout - Side by side */}
-          <div className="hidden sm:flex items-start justify-between gap-8 mt-8">
+          <div className="hidden md:flex items-start justify-between gap-8 mt-8">
             {/* Buttons Column - Left side (1/3 position) */}
             <div className="flex flex-col gap-4 flex-1 max-w-md">
               {/* Free Ticket Button */}
@@ -212,7 +212,7 @@ const HeroSection = () => {
           </div>
 
           {/* Mobile Layout - Vertical stack */}
-          <div className="block sm:hidden">
+          <div className="block md:hidden">
             {/* Buttons Column */}
             <div className="flex flex-col gap-4 max-w-sm">
               {/* Free Ticket Button */}
