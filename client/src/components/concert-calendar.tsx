@@ -14,12 +14,12 @@ const CalendarEvents = ({ events }: { events: Event[] }) => {
     <Table>
       <TableHeader>
         <TableRow className="border-b border-[#333333]/10">
-          <TableHead className="py-3 px-2 text-left font-heading">Date</TableHead>
-          <TableHead className="py-3 px-2 text-left font-heading">Artist</TableHead>
-          <TableHead className="py-3 px-2 text-left font-heading">Location</TableHead>
-          <TableHead className="py-3 px-2 text-left font-heading">Time</TableHead>
-          <TableHead className="py-3 px-2 text-left font-heading">Genre</TableHead>
-          <TableHead className="py-3 px-2 text-right font-heading">Tickets</TableHead>
+          <TableHead className="py-2 px-1 sm:py-3 sm:px-2 text-left font-heading text-xs sm:text-sm">Date</TableHead>
+          <TableHead className="py-2 px-1 sm:py-3 sm:px-2 text-left font-heading text-xs sm:text-sm">Artist</TableHead>
+          <TableHead className="py-2 px-1 sm:py-3 sm:px-2 text-left font-heading text-xs sm:text-sm hidden md:table-cell">Location</TableHead>
+          <TableHead className="py-2 px-1 sm:py-3 sm:px-2 text-left font-heading text-xs sm:text-sm hidden sm:table-cell">Time</TableHead>
+          <TableHead className="py-2 px-1 sm:py-3 sm:px-2 text-left font-heading text-xs sm:text-sm hidden lg:table-cell">Genre</TableHead>
+          <TableHead className="py-2 px-1 sm:py-3 sm:px-2 text-right font-heading text-xs sm:text-sm">Tickets</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -37,27 +37,29 @@ const CalendarEvents = ({ events }: { events: Event[] }) => {
               key={event.id} 
               className="border-b border-[#333333]/10 hover:bg-[#333333]/5 transition-colors"
             >
-              <TableCell className="py-4 px-2">
-                <div className="font-bold">{`${month} ${day}`}</div>
-                <div className="text-[#333333]/70 text-sm">{dayName}</div>
+              <TableCell className="py-3 px-1 sm:py-4 sm:px-2">
+                <div className="font-bold text-sm sm:text-base">{`${month} ${day}`}</div>
+                <div className="text-[#333333]/70 text-xs sm:text-sm">{dayName}</div>
               </TableCell>
-              <TableCell className="py-4 px-2">
-                <div className="font-bold">{event.title}</div>
-                <div className="text-[#333333]/70 text-sm">{event.subtitle}</div>
+              <TableCell className="py-3 px-1 sm:py-4 sm:px-2">
+                <div className="font-bold text-sm sm:text-base">{event.title}</div>
+                <div className="text-[#333333]/70 text-xs sm:text-sm">{event.subtitle}</div>
               </TableCell>
-              <TableCell className="py-4 px-2">
-                <div>{event.location || "TBA"}</div>
+              <TableCell className="py-3 px-1 sm:py-4 sm:px-2 hidden md:table-cell">
+                <div className="text-sm sm:text-base">{event.location || "TBA"}</div>
               </TableCell>
-              <TableCell className="py-4 px-2">{event.start_time}</TableCell>
-              <TableCell className="py-4 px-2">
+              <TableCell className="py-3 px-1 sm:py-4 sm:px-2 hidden sm:table-cell">
+                <div className="text-sm sm:text-base">{event.start_time}</div>
+              </TableCell>
+              <TableCell className="py-3 px-1 sm:py-4 sm:px-2 hidden lg:table-cell">
                 <span className={`${genreStyle.bg} ${genreStyle.text} text-xs px-2 py-1 rounded-full`}>
                   {event.genre}
                 </span>
               </TableCell>
-              <TableCell className="py-4 px-2 text-right">
+              <TableCell className="py-3 px-1 sm:py-4 sm:px-2 text-right">
                 <Link 
                   href={event.tickets_url || "#"} 
-                  className="text-[#5D3FD3] hover:text-[#FF3366] font-accent font-semibold"
+                  className="text-[#5D3FD3] hover:text-[#FF3366] font-accent font-semibold text-xs sm:text-sm"
                 >
                   Buy Now
                 </Link>

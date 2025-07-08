@@ -11,17 +11,17 @@ export default function SponsorsPage() {
         <meta name="description" content="Meet the generous sponsors who make the Nursing Rocks! Concert Series possible by providing free tickets for nursing professionals across America." />
       </Helmet>
       
-      <div className="py-10 bg-gradient-to-r from-[#5D3FD3]/5 to-[#FF3366]/5">
-        <div className="container px-6 md:px-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Our Sponsors</h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+      <div className="py-8 sm:py-10 bg-gradient-to-r from-[#5D3FD3]/5 to-[#FF3366]/5">
+        <div className="mobile-container text-center">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">Our Sponsors</h1>
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
             We celebrate the organizations that make our concerts free for nurses through their generous support.
           </p>
         </div>
       </div>
       
       {/* NRCS Sponsorship Overview */}
-      <div className="container px-6 md:px-8 py-12">
+      <div className="mobile-container py-8 sm:py-12">
         <div className="max-w-5xl mx-auto text-center">
           <img 
             src={sponsorshipOverview} 

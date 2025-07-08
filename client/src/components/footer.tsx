@@ -32,7 +32,7 @@ export function Footer() {
   
   return (
     <footer className="border-t bg-background mt-auto">
-      <div className="page-container content-wrapper py-6 md:py-10 mx-auto">
+      <div className="mobile-container py-6 md:py-10">
         {/* Logo and Tagline Section */}
         <div className="mb-8 flex flex-col md:flex-row items-center justify-center gap-4">
           <Link href="/" className="flex-shrink-0">

@@ -33,7 +33,7 @@ function TshirtButton() {
 
   return (
     <div className="flex flex-col items-center w-full max-w-xl">
-      <div className="mb-2 md:mb-6 bg-white p-3 sm:p-4 rounded-lg shadow-md w-full aspect-square" style={{ maxHeight: "250px", maxWidth: "250px", margin: "0 auto" }}>
+      <div className="mb-4 md:mb-6 bg-white p-3 sm:p-4 rounded-lg shadow-md w-full max-w-xs mx-auto" style={{ aspectRatio: "1", maxHeight: "280px" }}>
         <div className="w-full h-full flex items-center justify-center">
           <img 
             src={nursingRocksLogo} 
@@ -45,7 +45,7 @@ function TshirtButton() {
       <div className="relative w-full">
         <Button 
           onClick={() => window.open("https://rgwrvu-sq.myshopify.com/", "_blank")}
-          className="flex items-center justify-center gap-2 sm:gap-4 bg-[#F61D7A] hover:bg-[#E01060] text-white px-4 sm:px-10 py-4 sm:py-6 rounded-lg text-base sm:text-xl font-semibold transition-transform hover:scale-105 shadow-md w-full"
+          className="flex items-center justify-center gap-2 sm:gap-4 bg-[#F61D7A] hover:bg-[#E01060] text-white px-6 sm:px-10 py-4 sm:py-6 rounded-lg text-sm sm:text-lg md:text-xl font-semibold transition-transform hover:scale-105 shadow-md w-full"
           id="tshirtButton"
           style={{ minHeight: "60px" }}
         >

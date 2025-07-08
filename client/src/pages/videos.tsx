@@ -88,11 +88,11 @@ const VideosPage = () => {
         <meta name="description" content="Watch exclusive videos from the Nursing Rocks Concert Series. Experience the power of music and support for nurses." />
       </Helmet>
       
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold">Nursing Rocks! Videos</h1>
-            <p className="text-gray-800 dark:text-gray-200 font-medium mt-2">
+      <div className="mobile-container py-6 sm:py-8">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6 sm:mb-8">
+          <div className="text-center md:text-left">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">Nursing Rocks! Videos</h1>
+            <p className="text-gray-800 dark:text-gray-200 font-medium mt-2 text-sm sm:text-base">
               We love you nurses....thanks for all you do....we see you. You rock and Nursing Rocks!
             </p>
           </div>

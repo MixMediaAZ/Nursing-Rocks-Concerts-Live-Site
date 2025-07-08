@@ -101,7 +101,7 @@
   
   /* Center layout components */
   .page-container {
-    @apply container mx-auto w-full max-w-none;
+    @apply container mx-auto w-full max-w-none px-4 sm:px-6 lg:px-8;
   }
   
   .content-section {
@@ -147,6 +147,34 @@
   /* Additional utility classes for alignment and centering */
   .center-absolute {
     @apply absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2;
+  }
+  
+  /* Mobile-specific improvements */
+  .mobile-text-responsive {
+    @apply text-xs sm:text-sm md:text-base;
+  }
+  
+  .mobile-heading-responsive {
+    @apply text-lg sm:text-xl md:text-2xl lg:text-3xl;
+  }
+  
+  .mobile-button-responsive {
+    @apply px-4 py-3 text-sm sm:px-6 sm:py-4 sm:text-base;
+  }
+  
+  /* Ensure proper mobile spacing */
+  .mobile-container {
+    @apply px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto;
+  }
+  
+  /* Video component mobile fixes */
+  .video-container-mobile {
+    @apply w-full aspect-video max-w-full;
+  }
+  
+  /* Grid improvements for mobile */
+  .mobile-grid-responsive {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6;
   }
   
   .center-flex {
