@@ -211,8 +211,8 @@ const HeroSection = () => {
         </div>
         
         {/* Cloudinary Video - Desktop and Tablet Only - Positioned in top right corner, completely separate from buttons */}
-        <div className="hidden xs:block absolute top-20 right-6 md:top-24 md:right-12 lg:top-28 lg:right-16 xl:top-32 xl:right-20 z-20">
-          <div className="aspect-video w-[140px] xs:w-[200px] sm:w-[240px] md:w-[320px] lg:w-[360px] xl:w-[400px] bg-black rounded-xl overflow-hidden shadow-xl border-4 border-white/30 transform hover:scale-105 transition-transform duration-300">
+        <div className="hidden sm:block absolute top-16 right-4 md:top-20 md:right-8 lg:top-24 lg:right-12 xl:top-28 xl:right-16 z-20">
+          <div className="aspect-video w-[160px] sm:w-[200px] md:w-[280px] lg:w-[320px] xl:w-[360px] bg-black rounded-xl overflow-hidden shadow-xl border-4 border-white/30 transform hover:scale-105 transition-transform duration-300">
             <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 opacity-75 blur-sm"></div>
             <div className="relative z-10">
               <CloudinaryIframeVideo
