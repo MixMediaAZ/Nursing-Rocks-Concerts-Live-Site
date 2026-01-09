@@ -68,11 +68,31 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(import.meta.dirname, "public");
+  // In Vercel/serverless, the dist folder is at the project root
+  // In local production, it's relative to server directory
+  // Try multiple possible paths to find the dist/public directory
+  const possiblePaths = [
+    // Vercel serverless environment
+    process.env.VERCEL ? path.resolve(process.cwd(), "dist", "public") : null,
+    // Local production (relative to server directory)
+    path.resolve(import.meta.dirname, "..", "dist", "public"),
+    // Alternative: absolute from project root
+    path.resolve(process.cwd(), "dist", "public"),
+    // Fallback: relative to current working directory
+    path.join(process.cwd(), "dist", "public"),
+  ].filter(Boolean) as string[];
 
-  if (!fs.existsSync(distPath)) {
+  let distPath: string | null = null;
+  for (const possiblePath of possiblePaths) {
+    if (fs.existsSync(possiblePath)) {
+      distPath = possiblePath;
+      break;
+    }
+  }
+
+  if (!distPath) {
     throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
+      `Could not find the build directory. Tried: ${possiblePaths.join(", ")}. Make sure to build the client first.`,
     );
   }
 
@@ -80,6 +100,6 @@ export function serveStatic(app: Express) {
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+    res.sendFile(path.resolve(distPath!, "index.html"));
   });
 }

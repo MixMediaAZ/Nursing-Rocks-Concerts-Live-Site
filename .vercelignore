@@ -1,0 +1,30 @@
+# Development
+node_modules
+.git
+
+# Env files
+.env
+.env.*
+
+# Build output (built on Vercel)
+dist
+
+# Local data / caches
+products.json
+response.json
+
+# User-generated media (ephemeral on Vercel)
+uploads/
+
+# Optional notes kept alongside assets
+attached_assets/Pasted-*.txt
+attached_assets/*.zip
+archive/
+
+# IDE
+.vscode
+.idea
+*.swp
+.DS_Store
+
+

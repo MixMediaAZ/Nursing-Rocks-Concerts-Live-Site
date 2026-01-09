@@ -1,0 +1,20 @@
+
+keyID:
+004e01cd126154a0000000001
+keyName:
+nursing-rocks-uploader
+applicationKey:
+K004Rvw+jnRmqIooVnjd5PwplIuJzt4
+
+keyID:
+004e01cd126154a0000000001
+keyName:
+nursing-rocks-uploader
+bucketName:
+nursing-rocks-videos
+capabilities:
+deleteFiles, listAllBucketNames, listBuckets, listFiles, readBucketEncryption, readBucketLifecycleRules, readBucketLogging, readBucketNotifications, readBucketReplications, readBuckets, readFiles, shareFiles, writeBucketEncryption, writeBucketLifecycleRules, writeBucketLogging, writeBucketNotifications, writeBucketReplications, writeBuckets, writeFiles
+expiration:
+-
+namePrefix:
+(none)
