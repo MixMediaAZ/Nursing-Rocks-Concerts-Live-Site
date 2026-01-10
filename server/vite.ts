@@ -68,20 +68,15 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  // In Vercel/serverless, the dist folder is at the project root
-  // In local production, it's relative to server directory
-  // Try multiple possible paths to find the dist/public directory
+  // Try to find dist/public directory
   const possiblePaths = [
-    // Vercel serverless environment - check VERCEL env var
+    // Vercel serverless environment
     process.env.VERCEL ? path.resolve(process.cwd(), "dist", "public") : null,
-    // Vercel also uses /var/task as working directory sometimes
     process.env.VERCEL ? path.resolve("/var/task", "dist", "public") : null,
     // Local production (relative to server directory)
     path.resolve(import.meta.dirname, "..", "dist", "public"),
     // Alternative: absolute from project root
     path.resolve(process.cwd(), "dist", "public"),
-    // Fallback: relative to current working directory
-    path.join(process.cwd(), "dist", "public"),
   ].filter(Boolean) as string[];
 
   let distPath: string | null = null;
@@ -100,19 +95,36 @@ export function serveStatic(app: Express) {
   if (!distPath) {
     const errorMsg = `Could not find the build directory. Tried: ${possiblePaths.join(", ")}. cwd: ${process.cwd()}, VERCEL: ${process.env.VERCEL}`;
     console.error(`[serveStatic] ${errorMsg}`);
-    throw new Error(errorMsg);
+    // In Vercel, don't throw - static files might be served by CDN
+    if (!process.env.VERCEL) {
+      throw new Error(errorMsg);
+    }
+  } else {
+    // Serve static files
+    app.use(express.static(distPath));
   }
 
-  app.use(express.static(distPath));
-
-  // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
-    const indexPath = path.resolve(distPath!, "index.html");
-    if (fs.existsSync(indexPath)) {
-      res.sendFile(indexPath);
-    } else {
-      console.error(`[serveStatic] index.html not found at: ${indexPath}`);
-      res.status(404).send("index.html not found");
+  // Fall through to index.html for SPA routes (after API routes)
+  app.use("*", (req, res, next) => {
+    // Skip API routes
+    if (req.path.startsWith("/api/")) {
+      return next();
     }
+    
+    // Skip static asset requests (they should be served by express.static or Vercel CDN)
+    if (req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json|webp)$/)) {
+      return res.status(404).send("Static file not found");
+    }
+    
+    // Serve index.html for all other routes (SPA routing)
+    if (distPath) {
+      const indexPath = path.resolve(distPath, "index.html");
+      if (fs.existsSync(indexPath)) {
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        return res.sendFile(indexPath);
+      }
+    }
+    
+    res.status(404).send("index.html not found");
   });
 }
