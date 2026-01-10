@@ -1,6 +1,11 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
+  "functions": {
+    "api/index.ts": {
+      "runtime": "nodejs20.x"
+    }
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
@@ -9,17 +14,6 @@
     {
       "source": "/(.*)",
       "destination": "/api"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        }
-      ]
     }
   ]
 }
