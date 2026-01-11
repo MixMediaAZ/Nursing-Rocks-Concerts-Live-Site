@@ -85,6 +85,9 @@ export function serveStatic(app: Express) {
       if (fs.existsSync(possiblePath)) {
         distPath = possiblePath;
         console.log(`[serveStatic] Found dist directory at: ${distPath}`);
+        // #region agent log
+        try{const files=fs.readdirSync(distPath);fetch('http://127.0.0.1:7253/ingest/a70d3c4c-5483-4936-8dc1-1a2a5745df39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'server/vite.ts:serveStatic',message:'Found dist/public',data:{distPath,fileCount:files.length,hasIndexHtml:files.includes('index.html'),hasAssets:files.includes('assets')},timestamp:Date.now(),sessionId:'debug-session',runId:'old-site-debug',hypothesisId:'A,C,E'})}).catch(()=>{});}catch(e){}
+        // #endregion
         break;
       }
     } catch (err) {
