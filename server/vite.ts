@@ -68,6 +68,7 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
+<<<<<<< HEAD
   // Try to find dist/public directory
   const possiblePaths = [
     // Vercel serverless environment
@@ -129,5 +130,20 @@ export function serveStatic(app: Express) {
     }
     
     res.status(404).send("index.html not found");
+=======
+  const distPath = path.resolve(import.meta.dirname, "public");
+
+  if (!fs.existsSync(distPath)) {
+    throw new Error(
+      `Could not find the build directory: ${distPath}, make sure to build the client first`,
+    );
+  }
+
+  app.use(express.static(distPath));
+
+  // fall through to index.html if the file doesn't exist
+  app.use("*", (_req, res) => {
+    res.sendFile(path.resolve(distPath, "index.html"));
+>>>>>>> parent of 2e54bf0 (1/9/2026)
   });
 }
