@@ -6,7 +6,7 @@ import fs from "fs";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { storage } from "./storage";
-import { gallery, mediaFolders, events } from "@shared/schema";
+import { approvedVideos, gallery, mediaFolders, events } from "@shared/schema";
 import sharp from "sharp";
 import { processImage } from "./image-utils";
 import { 
@@ -25,7 +25,24 @@ import {
 } from "./gallery-media";
 import { fetchCustomCatProducts } from "./customcat-api";
 import { processCustomCatProductsImages, formatCustomCatProducts } from "./product-utils";
-import { getCloudinaryVideos, getCloudinarySignature, checkCloudinaryConnection } from "./cloudinary-api";
+import { getVideoProvider, getVideoProviderId } from "./video";
+import {
+  checkB2Connection,
+  getB2Bucket,
+  getB2S3Client,
+  headB2Object,
+  listB2Objects,
+  manifestUrlForVideoId,
+  posterKeyForVideoId,
+  publicUrlForKey,
+  stableVideoIdFromKey,
+} from "./video/b2-s3";
+import { packageMp4KeyToHlsInB2 } from "./video/hls-packager";
+import multer from "multer";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import ffmpeg from "fluent-ffmpeg";
+import ffmpegPath from "ffmpeg-static";
+import os from "os";
 
 // Initialize Stripe with the secret key if it exists
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -971,16 +988,361 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // ========== CLOUDINARY API ==========
-  
-  // Get videos from a Cloudinary folder
-  app.get("/api/cloudinary/videos", getCloudinaryVideos);
-  
-  // Get Cloudinary signature for direct uploads
-  app.post("/api/cloudinary/signature", getCloudinarySignature);
-  
-  // Check Cloudinary connection status
-  app.get("/api/cloudinary/status", checkCloudinaryConnection);
+  // ========== VIDEO API (Provider-neutral) ==========
+
+  app.get("/api/videos", async (req: Request, res: Response) => {
+    try {
+      const provider = getVideoProvider();
+      const prefix = (req.query.folder as string) || undefined;
+      const fetchAll = req.query.all === "true";
+      const isAdmin = isUserAdmin(req);
+
+      let resources = await provider.listSourceVideos({ prefix });
+      if (!(fetchAll && isAdmin)) {
+        const approvedList = await db
+          .select({ public_id: approvedVideos.public_id })
+          .from(approvedVideos)
+          .where(eq(approvedVideos.approved, true));
+        const approvedIds = new Set(approvedList.map((v) => v.public_id));
+        resources = resources.filter((r) => approvedIds.has(r.public_id));
+      }
+
+      res.json({ success: true, resources, total: resources.length });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to list videos";
+      const m = message.match(/Missing required env var:\s*([A-Z0-9_]+)/);
+      console.error("[videos] list error:", err);
+      res.status(500).json({
+        success: false,
+        provider: getVideoProviderId(),
+        missingEnv: m?.[1],
+        message,
+      });
+    }
+  });
+
+  app.post("/api/videos/upload-url", async (req: Request, res: Response) => {
+    try {
+      const provider = getVideoProvider();
+      const filename = typeof req.body?.filename === "string" ? req.body.filename : "upload.mp4";
+      const contentType = typeof req.body?.contentType === "string" ? req.body.contentType : "video/mp4";
+      const presigned = await provider.createSourceUploadUrl({ filename, contentType });
+      const videoId = stableVideoIdFromKey(presigned.key);
+      res.json({
+        success: true,
+        ...presigned,
+        videoId,
+        publicUrl: publicUrlForKey(presigned.key),
+        manifestUrl: manifestUrlForVideoId(videoId),
+      });
+    } catch (err) {
+      console.error("[videos] presign error:", err);
+      res.status(500).json({ success: false, message: err instanceof Error ? err.message : "Failed to create upload URL" });
+    }
+  });
+
+  app.get("/api/videos/status", async (_req: Request, res: Response) => {
+    try {
+      const status = await checkB2Connection();
+      if (status.ok) {
+        return res.json({
+          success: true,
+          connected: true,
+          status: "online",
+          provider: "b2",
+          bucket: status.bucket,
+          endpoint: status.endpoint,
+          region: status.region,
+          cdnBaseUrl: status.cdnBaseUrl,
+        });
+      }
+      return res.status(500).json({
+        success: false,
+        connected: false,
+        status: "error",
+        provider: "b2",
+        missingEnv: status.missingEnv,
+        message: status.message,
+      });
+    } catch (err) {
+      res.status(500).json({
+        success: false,
+        connected: false,
+        status: "error",
+        provider: "b2",
+        message: err instanceof Error ? err.message : "Unknown error",
+      });
+    }
+  });
+
+  // ========== VIDEO APPROVAL API (Admin only) ==========
+
+  const requireAdminToken = (req: Request, res: Response, next: any) => {
+    if (!isUserAdmin(req)) return res.status(403).json({ message: "Admin privileges required" });
+    return next();
+  };
+
+  app.get("/api/admin/videos", requireAdminToken, async (_req: Request, res: Response) => {
+    try {
+      const approvedVideosList = await db.select().from(approvedVideos);
+      res.json(approvedVideosList);
+    } catch (error) {
+      console.error("Error fetching approved videos:", error);
+      res.status(500).json({ message: "Failed to fetch videos" });
+    }
+  });
+
+  app.post("/api/admin/videos/sync", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      // Sync videos from provider to database
+      const defaultPrefix = (process.env.VIDEO_SOURCE_PREFIX || "").replace(/\/+$/, "");
+      const requestedPrefix =
+        typeof req.body?.prefix === "string"
+          ? req.body.prefix
+          : (typeof req.body?.folder === "string" ? req.body.folder : "");
+
+      // If folder looks like a legacy UI label (spaces/!/etc), prefer configured prefix.
+      const looksLikeLegacyFolderName = /[ !]/.test(requestedPrefix || "");
+      const prefix =
+        requestedPrefix && !looksLikeLegacyFolderName
+          ? requestedPrefix
+          : (defaultPrefix || undefined);
+
+      const provider = getVideoProvider();
+      const resources = prefix ? await provider.listSourceVideos({ prefix }) : await provider.listSourceVideos();
+
+      let created = 0;
+      for (const video of resources) {
+        const existing = await db
+          .select()
+          .from(approvedVideos)
+          .where(eq(approvedVideos.public_id, video.public_id))
+          .limit(1);
+
+        if (existing.length === 0) {
+          await db
+            .insert(approvedVideos)
+            .values({
+              public_id: video.public_id,
+              folder: video.asset_folder || prefix || "videos",
+              approved: false,
+            });
+          created += 1;
+        }
+      }
+
+      res.json({
+        success: true,
+        created,
+        total: resources.length,
+        provider: provider.id,
+      });
+    } catch (error) {
+      console.error("Error syncing videos:", error);
+      res.status(500).json({ message: "Failed to sync videos" });
+    }
+  });
+
+  // HLS packaging (B2 only)
+  app.post("/api/admin/videos/hls/backfill", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      if (getVideoProviderId() !== "b2") {
+        return res.status(400).json({ success: false, message: "Backfill only supported for VIDEO_PROVIDER=b2" });
+      }
+
+      const sourcePrefix = (process.env.VIDEO_SOURCE_PREFIX || "").replace(/\/+$/, "");
+      const limit = Number(req.body?.limit ?? 25);
+      const mp4s = (await listB2Objects(sourcePrefix || undefined))
+        .filter((o) => o.key.toLowerCase().endsWith(".mp4"))
+        .slice(0, Number.isFinite(limit) ? limit : 25);
+
+      const processed: any[] = [];
+      const skipped: any[] = [];
+
+      for (const obj of mp4s) {
+        const videoId = stableVideoIdFromKey(obj.key);
+        const manifestKey = `${(process.env.VIDEO_HLS_PREFIX || "hls").replace(/\/+$/, "")}/${videoId}/master.m3u8`;
+        const already = await headB2Object(manifestKey);
+        if (already) {
+          skipped.push({ sourceKey: obj.key, videoId, reason: "already_packaged" });
+          continue;
+        }
+        const result = await packageMp4KeyToHlsInB2({ sourceKey: obj.key, videoId });
+        processed.push(result);
+      }
+
+      res.json({ success: true, processedCount: processed.length, skippedCount: skipped.length, processed, skipped });
+    } catch (err) {
+      console.error("Error backfilling HLS:", err);
+      res.status(500).json({ success: false, message: err instanceof Error ? err.message : "Backfill failed" });
+    }
+  });
+
+  app.post("/api/admin/videos/hls/process", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      if (getVideoProviderId() !== "b2") {
+        return res.status(400).json({ success: false, message: "Only supported for VIDEO_PROVIDER=b2" });
+      }
+      const sourceKey = typeof req.body?.sourceKey === "string" ? req.body.sourceKey : "";
+      if (!sourceKey) return res.status(400).json({ success: false, message: "sourceKey is required" });
+      const videoId = stableVideoIdFromKey(sourceKey);
+      const result = await packageMp4KeyToHlsInB2({ sourceKey, videoId });
+      res.json({ success: true, result });
+    } catch (err) {
+      console.error("Error processing HLS:", err);
+      res.status(500).json({ success: false, message: err instanceof Error ? err.message : "Processing failed" });
+    }
+  });
+
+  app.post("/api/admin/videos/approve", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const { public_id, admin_notes } = req.body;
+      if (!public_id) return res.status(400).json({ message: "public_id is required" });
+
+      const existing = await db.select().from(approvedVideos).where(eq(approvedVideos.public_id, public_id)).limit(1);
+      if (existing.length === 0) {
+        const inserted = await db
+          .insert(approvedVideos)
+          .values({
+            public_id,
+            folder: "videos",
+            approved: true,
+            approved_at: new Date(),
+            admin_notes: admin_notes || null,
+          })
+          .returning();
+        return res.json(inserted[0]);
+      }
+
+      const updated = await db
+        .update(approvedVideos)
+        .set({
+          approved: true,
+          approved_at: new Date(),
+          admin_notes: admin_notes || existing[0].admin_notes,
+          updated_at: new Date(),
+        })
+        .where(eq(approvedVideos.public_id, public_id))
+        .returning();
+
+      res.json(updated[0]);
+    } catch (error) {
+      console.error("Error approving video:", error);
+      res.status(500).json({ message: "Failed to approve video" });
+    }
+  });
+
+  app.post("/api/admin/videos/unapprove", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const { public_id } = req.body;
+      if (!public_id) return res.status(400).json({ message: "public_id is required" });
+
+      const updated = await db
+        .update(approvedVideos)
+        .set({
+          approved: false,
+          approved_at: null,
+          updated_at: new Date(),
+        })
+        .where(eq(approvedVideos.public_id, public_id))
+        .returning();
+
+      if (updated.length === 0) return res.status(404).json({ message: "Video not found" });
+      res.json(updated[0]);
+    } catch (error) {
+      console.error("Error unapproving video:", error);
+      res.status(500).json({ message: "Failed to unapprove video" });
+    }
+  });
+
+  app.post("/api/admin/videos/delete", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const { public_id } = req.body || {};
+      if (!public_id) return res.status(400).json({ message: "public_id is required" });
+
+      await db.delete(approvedVideos).where(eq(approvedVideos.public_id, public_id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting video:", error);
+      res.status(500).json({ message: "Failed to delete video" });
+    }
+  });
+
+  // Thumbnails: upload from browser capture -> store in B2 under poster/<videoId>.jpg
+  const thumbnailUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+
+  app.post("/api/admin/videos/upload-thumbnail", requireAdminToken, thumbnailUpload.single("thumbnail"), async (req: Request, res: Response) => {
+    try {
+      const videoId = typeof (req.body as any)?.videoId === "string" ? (req.body as any).videoId : "";
+      const file = (req as any).file as { buffer: Buffer; mimetype: string; originalname: string } | undefined;
+
+      if (!videoId) return res.status(400).json({ message: "videoId is required" });
+      if (!file?.buffer) return res.status(400).json({ message: "thumbnail file is required" });
+
+      const Key = posterKeyForVideoId(videoId);
+      const Bucket = getB2Bucket();
+      const s3 = getB2S3Client();
+
+      await s3.send(
+        new PutObjectCommand({
+          Bucket,
+          Key,
+          Body: file.buffer,
+          ContentType: file.mimetype || "image/jpeg",
+        }),
+      );
+
+      res.json({ success: true, videoId, key: Key, url: publicUrlForKey(Key) });
+    } catch (error) {
+      console.error("Error uploading thumbnail:", error);
+      res.status(500).json({ message: "Failed to upload thumbnail" });
+    }
+  });
+
+  // Thumbnails: server-side generation (requires ffmpeg)
+  app.post("/api/admin/videos/generate-thumbnail", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const videoUrl = typeof req.body?.videoUrl === "string" ? req.body.videoUrl : "";
+      const videoId = typeof req.body?.videoId === "string" ? req.body.videoId : "";
+
+      if (!videoUrl) return res.status(400).json({ message: "videoUrl is required" });
+      if (!videoId) return res.status(400).json({ message: "videoId is required" });
+      if (!ffmpegPath) return res.status(500).json({ message: "ffmpeg binary not available" });
+
+      ffmpeg.setFfmpegPath(ffmpegPath as any);
+
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "nr-thumb-"));
+      const outPath = path.join(tmpDir, `${videoId}.jpg`);
+
+      await new Promise<void>((resolve, reject) => {
+        ffmpeg(videoUrl)
+          .outputOptions(["-ss 00:00:03.000", "-frames:v 1"])
+          .output(outPath)
+          .on("end", () => resolve())
+          .on("error", (err: any) => reject(err))
+          .run();
+      });
+
+      const buf = fs.readFileSync(outPath);
+      const Key = posterKeyForVideoId(videoId);
+      const Bucket = getB2Bucket();
+      const s3 = getB2S3Client();
+
+      await s3.send(
+        new PutObjectCommand({
+          Bucket,
+          Key,
+          Body: buf,
+          ContentType: "image/jpeg",
+        }),
+      );
+
+      res.json({ success: true, videoId, key: Key, url: publicUrlForKey(Key) });
+    } catch (error) {
+      console.error("Error generating thumbnail:", error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to generate thumbnail" });
+    }
+  });
 
   // ========== STORE API ==========
   

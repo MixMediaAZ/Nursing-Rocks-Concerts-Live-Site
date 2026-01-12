@@ -19,10 +19,6 @@ export type B2VideoObject = {
 function requiredEnv(name: string): string {
   const v = process.env[name];
   if (!v) {
-    // #region agent log
-    const envKeys = Object.keys(process.env).filter(k => k.includes('VIDEO') || k.includes('B2')).sort();
-    fetch('http://127.0.0.1:7253/ingest/a70d3c4c-5483-4936-8dc1-1a2a5745df39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'b2-s3.ts:requiredEnv',message:'Missing env var - debugging',data:{missingVar:name,availableVideoKeys:envKeys,hasDotEnv:!!process.env.DATABASE_URL},timestamp:Date.now(),sessionId:'debug-session',runId:'env-debug',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
     throw new Error(`Missing required env var: ${name}`);
   }
   return v;

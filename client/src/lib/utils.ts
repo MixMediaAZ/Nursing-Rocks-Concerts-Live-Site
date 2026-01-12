@@ -23,6 +23,16 @@ export function truncateText(text: string, maxLength: number): string {
   return text.slice(0, maxLength) + '...';
 }
 
+// Fisher–Yates shuffle. Returns a new shuffled array (does not mutate the input).
+export function shuffleArray<T>(items: T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
 export const genreColorMap: Record<string, { bg: string, text: string }> = {
   Rock: { bg: 'bg-secondary/10', text: 'text-secondary' },
   Pop: { bg: 'bg-accent/10', text: 'text-accent' },

@@ -1,39 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CloudinaryVideoPlaylist } from '@/components/cloudinary-video-playlist';
-import { CloudinaryIframeVideo } from '@/components/cloudinary-iframe-video';
+import { VideoPlaylist } from '@/components/video-playlist';
 import { VideoSlideshow } from '@/components/video-slideshow';
-import { checkCloudinaryConnection, detectResourceType } from '@/lib/cloudinary';
-import { fetchCloudinaryVideos, type CloudinaryResource } from '@/lib/api';
+import { checkVideoConnection } from '@/lib/video-service';
+import { fetchApprovedVideos } from '@/lib/videos';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Grid3X3, List, Loader2 } from 'lucide-react';
+import { shuffleArray } from '@/lib/utils';
 
 const VideosPage = () => {
-  const [cloudinaryCloudName, setCloudinaryCloudName] = useState<string | undefined>(undefined);
   const [featuredVideoId, setFeaturedVideoId] = useState('Nursing Rocks! Concerts- video/d9wtyh03k0tpfsvflagg');
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
   const [isConnected, setIsConnected] = useState(false);
   const [allVideoIds, setAllVideoIds] = useState<string[]>([]);
   const [isLoadingVideos, setIsLoadingVideos] = useState(true);
   
-  // Check Cloudinary connection when component mounts
+  // Check video service connection when component mounts
   useEffect(() => {
     async function checkConnection() {
       try {
-        const result = await checkCloudinaryConnection();
-        console.log("Cloudinary connection check:", result);
+        const result = await checkVideoConnection();
+        console.log("Video service connection check:", result);
         
-        if (result.connected && result.cloudName) {
-          setCloudinaryCloudName(result.cloudName);
-          setIsConnected(true);
-        } else {
-          setIsConnected(false);
-        }
+        setIsConnected(!!result.connected);
       } catch (error) {
-        console.error("Error checking Cloudinary connection:", error);
+        console.error("Error checking video service connection:", error);
         setIsConnected(false);
       }
     }
@@ -41,32 +35,23 @@ const VideosPage = () => {
     checkConnection();
   }, []);
   
-  // Fetch all videos from Cloudinary when component mounts or connection status changes
+  // Fetch all approved videos when component mounts or connection status changes
   useEffect(() => {
     if (!isConnected) return;
     
     async function fetchVideos() {
       setIsLoadingVideos(true);
       try {
-        // Fetch videos from the Nursing Rocks Cloudinary folder
-        const videos = await fetchCloudinaryVideos('Nursing Rocks! Concerts- video');
+        // Fetch approved videos (provider-neutral IDs) from server
+        const videoIds = await fetchApprovedVideos();
+        const shuffledIds = shuffleArray(videoIds);
         
-        // Extract public_ids for the video slideshow
-        const videoIds = videos.map((video) => video.public_id);
-        
-        console.log(`Fetched ${videoIds.length} videos from Cloudinary`);
-        setAllVideoIds(videoIds);
+        console.log(`🎬 Videos Page: Fetched ${videoIds.length} approved videos (shuffled)`);
+        setAllVideoIds(shuffledIds);
         
         // Update the featured video if videos are available
         if (videoIds.length > 0) {
-          // Find a high-quality video for the feature spot
-          const featuredVideo = videos.find((v) => 
-            v.width && v.width >= 1280 && v.format === 'mp4'
-          ) || videos[0];
-          
-          if (featuredVideo) {
-            setFeaturedVideoId(featuredVideo.public_id);
-          }
+          setFeaturedVideoId(videoIds[0]);
         }
       } catch (error) {
         console.error('Error fetching videos:', error);
@@ -78,9 +63,6 @@ const VideosPage = () => {
     fetchVideos();
   }, [isConnected]);
   
-  // Use resource type detection to verify video format
-  const videoResourceType = detectResourceType(featuredVideoId);
-  
   return (
     <>
       <Helmet>
@@ -88,12 +70,24 @@ const VideosPage = () => {
         <meta name="description" content="Watch exclusive videos from the Nursing Rocks Concert Series. Experience the power of music and support for nurses." />
       </Helmet>
       
-      <div className="mobile-container py-6 sm:py-8">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6 sm:mb-8">
-          <div className="text-center md:text-left">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">Nursing Rocks! Videos</h1>
-            <p className="text-gray-800 dark:text-gray-200 font-medium mt-2 text-sm sm:text-base">
-              We love you nurses....thanks for all you do....we see you. You rock and Nursing Rocks!
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
+          <div 
+            className="bg-gradient-to-br from-primary/90 to-[hsl(180,65%,35%)] text-white px-4 sm:px-6 md:px-8 py-4 sm:py-6 rounded-xl text-center mx-auto"
+            style={{
+              border: '4px solid transparent',
+              background: 'linear-gradient(135deg, hsl(233, 100%, 27%) 0%, hsl(180, 65%, 35%) 100%) padding-box, linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(0,0,0,0.3) 100%) border-box',
+              boxShadow: 'inset 4px 4px 8px rgba(255,255,255,0.3), inset -4px -4px 8px rgba(0,0,0,0.2), 8px 8px 24px rgba(0,0,0,0.25), -4px -4px 12px rgba(255,255,255,0.15)'
+            }}
+          >
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.4), 0 0 20px rgba(255,255,255,0.3)' }}>
+              Nursing Rocks! Videos
+            </h1>
+            <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold mt-3 sm:mt-4 text-white/95" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.3)' }}>
+              We love you nurses....thanks for all you do....we see you.
+            </p>
+            <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold mt-1 sm:mt-2 text-white/95" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.3)' }}>
+              You rock and Nursing Rocks!
             </p>
           </div>
           
@@ -141,20 +135,13 @@ const VideosPage = () => {
               </div>
               <CardContent className="p-0">
                 <div className="aspect-video w-full">
-                  <CloudinaryIframeVideo 
-                    publicId={featuredVideoId}
-                    className="w-full h-full"
+                  <VideoSlideshow
+                    videos={allVideoIds}
                     autoPlay={true}
                     muted={true}
                     controls={true}
-                    loop={true}
-                    cloudName={cloudinaryCloudName}
-                    resourceType={videoResourceType}
-                    fallbackContent={
-                      <div className="flex items-center justify-center h-full bg-gray-900 text-gray-400">
-                        <span>Featured video unavailable</span>
-                      </div>
-                    }
+                    interval={20000}
+                    className="w-full h-full"
                   />
                 </div>
               </CardContent>
@@ -173,10 +160,8 @@ const VideosPage = () => {
             <div className="space-y-4">
               <h2 className="text-2xl font-semibold">More Featured Videos</h2>
               <Separator />
-              <CloudinaryVideoPlaylist
-                folder="Nursing Rocks! Concerts- video"
+              <VideoPlaylist
                 limit={4}
-                cloudName={cloudinaryCloudName}
                 controls={true}
                 autoPlay={false}
                 muted={true}
@@ -222,7 +207,6 @@ const VideosPage = () => {
               ) : allVideoIds.length > 0 ? (
                 <VideoSlideshow 
                   videos={allVideoIds}
-                  cloudName={cloudinaryCloudName || undefined}
                   autoPlay={true}
                   muted={true}
                   controls={true}
@@ -239,10 +223,8 @@ const VideosPage = () => {
             {/* Individual Videos */}
             <div className="space-y-4">
               <h3 className="text-xl font-semibold">Browse All Videos</h3>
-              <CloudinaryVideoPlaylist
-                folder="Nursing Rocks! Concerts- video"
+              <VideoPlaylist
                 limit={12}
-                cloudName={cloudinaryCloudName}
                 controls={true}
                 autoPlay={false}
                 muted={true}

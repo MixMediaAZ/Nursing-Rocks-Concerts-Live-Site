@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Heart, Mail, Phone, MapPin, Instagram, Facebook, Twitter, Lock, LogOut } from "lucide-react";
+import { Heart, Mail, Phone, MapPin, Instagram, Facebook, Twitter, Lock, LogOut, LayoutDashboard } from "lucide-react";
 import logoPath from "../assets/nursing-rocks-logo.png";
 import { useEffect, useState } from "react";
 import { toast } from "@/hooks/use-toast";
@@ -9,6 +9,8 @@ import { toast } from "@/hooks/use-toast";
 export function Footer() {
   const currentYear = new Date().getFullYear();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [isSubscribing, setIsSubscribing] = useState(false);
   
   // Check if user is in admin mode
   useEffect(() => {
@@ -32,19 +34,21 @@ export function Footer() {
   
   return (
     <footer className="border-t bg-background mt-auto">
-      <div className="mobile-container py-6 md:py-10">
+      <div className="page-container content-wrapper py-6 md:py-10 mx-auto">
         {/* Logo and Tagline Section */}
-        <div className="mb-8 flex flex-col md:flex-row items-center justify-center gap-4">
-          <Link href="/" className="flex-shrink-0">
-            <img
-              src={logoPath}
-              alt="Nursing Rocks!"
-              className="h-14 md:h-16 w-auto"
-            />
-          </Link>
-          <p className="text-sm text-muted-foreground max-w-lg text-center">
-            Nursing Rocks! Concert Series celebrates healthcare professionals with exclusive music experiences.
-          </p>
+        <div className="mb-8">
+          <div className="bg-blue-50 rounded-lg p-3 sm:p-4 flex flex-col md:flex-row items-center justify-center gap-4">
+            <Link href="/" className="flex-shrink-0">
+              <img
+                src={logoPath}
+                alt="Nursing Rocks!"
+                className="h-14 md:h-16 w-auto"
+              />
+            </Link>
+            <p className="text-sm text-muted-foreground max-w-lg text-center">
+              Nursing Rocks! Concert Series celebrates healthcare professionals with exclusive music experiences.
+            </p>
+          </div>
         </div>
 
         {/* Social Media */}
@@ -75,7 +79,7 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/#concerts">
+                <Link href="/">
                   <div className="inline-block text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">Concerts</div>
                 </Link>
               </li>
@@ -89,20 +93,18 @@ export function Footer() {
           
           {/* Contact Us */}
           <div className="text-center">
-            <h3 className="text-base font-bold mb-3">Contact Us</h3>
-            <div className="space-y-2 flex flex-col items-center">
-              <a href="mailto:NursingRocksConcerts@gmail.com" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
-                <Mail className="h-4 w-4" />
-                <span className="text-sm">
-                  NursingRocksConcerts@gmail.com
-                </span>
-              </a>
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground text-center">
-                  732 S 6th St, Las Vegas, NV
-                </span>
+            <Link href="/contact">
+              <div className="text-base font-bold mb-3 cursor-pointer hover:text-primary transition-colors">
+                Contact Us
               </div>
+            </Link>
+            <div className="space-y-2 flex flex-col items-center">
+              <Link href="/contact">
+                <div className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                  <Mail className="h-4 w-4" />
+                  <span className="text-sm">Bernd Haber worldstringspromotion@gmail.com</span>
+                </div>
+              </Link>
             </div>
           </div>
           
@@ -113,8 +115,68 @@ export function Footer() {
               Updates on upcoming concerts
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-2 max-w-xs mx-auto">
-              <Input type="email" placeholder="Email" className="h-9 text-sm" />
-              <Button type="submit" size="sm" className="h-9 text-sm w-full sm:w-auto">
+              <Input
+                type="email"
+                placeholder="Email"
+                className="h-9 text-sm"
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
+              />
+              <Button
+                type="button"
+                size="sm"
+                className="h-9 text-sm w-full sm:w-auto"
+                disabled={isSubscribing}
+                onClick={async () => {
+                  const email = newsletterEmail.trim();
+                  if (!email) {
+                    toast({ title: "Email required", description: "Please enter your email." });
+                    return;
+                  }
+
+                  setIsSubscribing(true);
+                  try {
+                    const res = await fetch("/api/subscribe", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ email }),
+                    });
+
+                    if (res.status === 201) {
+                      setNewsletterEmail("");
+                      toast({
+                        title: "Subscribed",
+                        description: "You’re on the list for upcoming concert updates.",
+                      });
+                      return;
+                    }
+
+                    if (res.status === 409) {
+                      toast({
+                        title: "Already subscribed",
+                        description: "That email is already subscribed.",
+                      });
+                      return;
+                    }
+
+                    const data = await res.json().catch(() => null);
+                    toast({
+                      title: "Subscribe failed",
+                      description: data?.message || "Please try again.",
+                      variant: "destructive",
+                    });
+                  } catch (err) {
+                    console.error("Newsletter subscribe error:", err);
+                    toast({
+                      title: "Subscribe failed",
+                      description: "Please try again.",
+                      variant: "destructive",
+                    });
+                  } finally {
+                    setIsSubscribing(false);
+                  }
+                }}
+              >
                 Subscribe
               </Button>
             </div>
@@ -144,39 +206,46 @@ export function Footer() {
                 </div>
               </Link>
               {isAdmin ? (
-                <div 
-                  className="text-sm font-semibold text-red-500 hover:text-red-600 transition-colors cursor-pointer border border-red-300 rounded-md px-2 py-1 flex items-center justify-center gap-1"
-                  onClick={() => {
-                    // Perform admin logout
-                    fetch('/api/admin/logout', { method: 'POST' })
-                      .then(() => {
-                        // Clear all admin-related local storage items
-                        localStorage.removeItem('adminToken');
-                        localStorage.removeItem('isAdmin');
-                        localStorage.removeItem('adminPinVerified');
-                        localStorage.removeItem('editMode');
-                        
-                        // Show success toast
-                        toast({
-                          title: 'Logged Out',
-                          description: 'You have been logged out of admin mode',
+                <>
+                  <Link href="/admin">
+                    <div className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors cursor-pointer border border-primary/30 rounded-md px-2 py-1 flex items-center justify-center gap-1">
+                      <LayoutDashboard className="h-3 w-3" /> Dashboard
+                    </div>
+                  </Link>
+                  <div 
+                    className="text-sm font-semibold text-red-500 hover:text-red-600 transition-colors cursor-pointer border border-red-300 rounded-md px-2 py-1 flex items-center justify-center gap-1"
+                    onClick={() => {
+                      // Perform admin logout
+                      fetch('/api/admin/logout', { method: 'POST' })
+                        .then(() => {
+                          // Clear all admin-related local storage items
+                          localStorage.removeItem('adminToken');
+                          localStorage.removeItem('isAdmin');
+                          localStorage.removeItem('adminPinVerified');
+                          localStorage.removeItem('editMode');
+                          
+                          // Show success toast
+                          toast({
+                            title: 'Logged Out',
+                            description: 'You have been logged out of admin mode',
+                          });
+                          
+                          // Reload page to ensure all admin components are unmounted
+                          window.location.reload();
+                        })
+                        .catch(err => {
+                          console.error('Logout error:', err);
+                          toast({
+                            title: 'Logout Failed',
+                            description: 'There was an error logging out. Please try again.',
+                            variant: 'destructive',
+                          });
                         });
-                        
-                        // Reload page to ensure all admin components are unmounted
-                        window.location.reload();
-                      })
-                      .catch(err => {
-                        console.error('Logout error:', err);
-                        toast({
-                          title: 'Logout Failed',
-                          description: 'There was an error logging out. Please try again.',
-                          variant: 'destructive',
-                        });
-                      });
-                  }}
-                >
-                  <LogOut className="h-3 w-3" /> Admin Logout
-                </div>
+                    }}
+                  >
+                    <LogOut className="h-3 w-3" /> Admin Logout
+                  </div>
+                </>
               ) : (
                 <a href="/admin" className="no-underline">
                   <div className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors cursor-pointer border border-primary/30 rounded-md px-2 py-1 flex items-center justify-center gap-1">

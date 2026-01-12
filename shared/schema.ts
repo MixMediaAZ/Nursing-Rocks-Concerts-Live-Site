@@ -133,6 +133,56 @@ export const insertSubscriberSchema = createInsertSchema(subscribers).omit({
   created_at: true,
 });
 
+// Video Submissions (appreciation videos from users)
+export const videoSubmissions = pgTable("video_submissions", {
+  id: serial("id").primaryKey(),
+  name: text("name"),
+  email: text("email"),
+  location: text("location"),
+  connection: text("connection"),
+  nurse_name: text("nurse_name"),
+  message: text("message"),
+  video_url: text("video_url").notNull(),
+  video_public_id: text("video_public_id").notNull(),
+  // Backblaze (or other) source object key, used for HLS packaging/backfills.
+  video_source_key: text("video_source_key"),
+  video_duration: integer("video_duration"),
+  video_bytes: integer("video_bytes"),
+  resource_type: text("resource_type"),
+  consent_given: boolean("consent_given").default(false),
+  wants_updates: boolean("wants_updates").default(false),
+  submitted_at: timestamp("submitted_at").defaultNow(),
+  status: text("status").default("pending"),
+  admin_notes: text("admin_notes"),
+});
+
+export const insertVideoSubmissionSchema = createInsertSchema(videoSubmissions).omit({
+  id: true,
+  submitted_at: true,
+});
+
+// Approved Videos (for content moderation)
+export const approvedVideos = pgTable("approved_videos", {
+  id: serial("id").primaryKey(),
+  public_id: text("public_id").notNull().unique(),
+  folder: text("folder"),
+  approved: boolean("approved").default(false),
+  approved_by: integer("approved_by"),
+  approved_at: timestamp("approved_at"),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+  admin_notes: text("admin_notes"),
+});
+
+export const insertApprovedVideoSchema = createInsertSchema(approvedVideos).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+export type ApprovedVideo = typeof approvedVideos.$inferSelect;
+export type InsertApprovedVideo = z.infer<typeof insertApprovedVideoSchema>;
+
 // User model
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),

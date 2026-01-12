@@ -9,6 +9,7 @@ import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
 import ProfilePage from "@/pages/profile";
 import DashboardPage from "@/pages/dashboard";
+import EmployerDashboardPage from "@/pages/employer-dashboard";
 import TicketsPage from "@/pages/tickets";
 import FreeTicketsPage from "@/pages/free-tickets";
 import LicenseVerificationPage from "@/pages/license-verification";
@@ -31,6 +32,8 @@ import SponsorshipsPage from "@/pages/sponsorships";
 import EditDemoPage from "@/pages/edit-demo-page";
 import ProductSyncPage from "@/pages/product-sync";
 import UploadUtilityPage from "@/pages/upload-utility";
+import ThanksPage from "@/pages/thanks";
+import ContactPage from "@/pages/contact";
 
 // Import the pages that were previously lazy loaded
 import TermsPage from "@/pages/terms";
@@ -40,6 +43,7 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { AdminEditingProvider } from "@/components/admin/admin-editing-provider";
 import { FloatingAdminControl } from "@/components/admin/floating-admin-control";
+import { Wallpaper } from "@/components/wallpaper";
 
 // We use Zustand for cart management, no provider needed
 import { AuthProvider } from "@/hooks/use-auth";
@@ -65,6 +69,7 @@ function Router() {
             </Route>
             <Route path="/profile" component={ProfilePage} />
             <Route path="/dashboard" component={DashboardPage} />
+            <Route path="/employer-dashboard" component={EmployerDashboardPage} />
             <Route path="/tickets" component={TicketsPage} />
             <Route path="/free-tickets" component={FreeTicketsPage} />
             <Route path="/license-verification" component={LicenseVerificationPage} />
@@ -76,6 +81,7 @@ function Router() {
             <Route path="/jobs/:id" component={JobDetailsPage} />
             <Route path="/gallery" component={GalleryPage} />
             <Route path="/videos" component={VideosPage} />
+            <Route path="/thanks" component={ThanksPage} />
             <Route path="/store" component={StorePage} />
             <Route path="/store/products/:id" component={ProductDetailsPage} />
             <Route path="/store/category/:category" component={StoreCategoryPage} />
@@ -90,6 +96,7 @@ function Router() {
             <Route path="/terms" component={TermsPage} />
             <Route path="/privacy" component={PrivacyPage} />
             <Route path="/faq" component={FAQPage} />
+            <Route path="/contact" component={ContactPage} />
             <Route component={NotFound} />
           </Switch>
         </div>
@@ -104,6 +111,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <AdminEditingProvider>
+          <Wallpaper />
           <Router />
           <FloatingAdminControl />
           <Toaster />

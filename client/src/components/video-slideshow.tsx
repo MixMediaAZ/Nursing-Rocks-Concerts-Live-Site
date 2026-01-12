@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { CloudinaryIframeVideo } from './cloudinary-iframe-video';
+import { HlsVideo } from "./hls-video";
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { checkCloudinaryConnection } from '@/lib/cloudinary';
+import { ChevronLeft, ChevronRight, Play } from 'lucide-react';
 
 export interface VideoSlideshowProps {
-  videos: string[];  // Array of video public IDs
-  cloudName?: string;
+  videos: string[];  // Array of provider-neutral video IDs (b2_*)
   autoPlay?: boolean;
   muted?: boolean;
   controls?: boolean;
@@ -16,7 +14,6 @@ export interface VideoSlideshowProps {
 
 export function VideoSlideshow({
   videos,
-  cloudName: propCloudName,
   autoPlay = true,
   muted = true,
   controls = true,
@@ -25,29 +22,11 @@ export function VideoSlideshow({
 }: VideoSlideshowProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
-  const [cloudinaryCloudName, setCloudinaryCloudName] = useState<string | null>(propCloudName || null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Get cloud name when component mounts
-  useEffect(() => {
-    if (propCloudName) {
-      setCloudinaryCloudName(propCloudName);
-      return;
-    }
-    
-    async function getCloudName() {
-      try {
-        const result = await checkCloudinaryConnection();
-        if (result.connected && result.cloudName) {
-          setCloudinaryCloudName(result.cloudName);
-        }
-      } catch (error) {
-        console.error('Error checking Cloudinary connection:', error);
-      }
-    }
-    
-    getCloudName();
-  }, [propCloudName]);
+  // Track user's mute preference and interaction state
+  const [userIsMuted, setUserIsMuted] = useState(true);
+  const [hasInteracted, setHasInteracted] = useState(false);
   
   // Function to go to next slide
   const nextSlide = useCallback(() => {
@@ -68,22 +47,52 @@ export function VideoSlideshow({
     setIsPlaying(prev => !prev);
   }, []);
   
-  // Set up and clear timer based on play state
+  // Handle video click for interactive control
+  const handleVideoClick = useCallback(() => {
+    if (!hasInteracted) {
+      // First click: start slideshow + unmute
+      setIsPlaying(true);
+      setUserIsMuted(false);
+      setHasInteracted(true);
+      console.log('🎬 First click: Starting slideshow and unmuting audio');
+    } else {
+      // Subsequent clicks: toggle slideshow pause
+      setIsPlaying(prev => {
+        console.log(`🎬 Toggling slideshow: ${!prev ? 'playing' : 'paused'}`);
+        return !prev;
+      });
+    }
+  }, [hasInteracted]);
+  
+  // Handle volume change from transport controls
+  const handleVolumeChange = useCallback((isMuted: boolean) => {
+    setUserIsMuted(isMuted);
+    console.log(`🔊 Volume changed via controls: ${isMuted ? 'muted' : 'unmuted'}`);
+  }, []);
+  
+  // Handle video completion - advance to next video
+  const handleVideoEnded = useCallback(() => {
+    console.log('🎬 Video ended, advancing to next');
+    if (isPlaying) {
+      nextSlide();
+    }
+  }, [isPlaying, nextSlide]);
+  
+  // Fallback timer in case video doesn't trigger onEnded (max duration per video)
   useEffect(() => {
     if (isPlaying) {
-      timerRef.current = setInterval(() => {
+      timerRef.current = setTimeout(() => {
+        console.log('⏱️ Fallback timer triggered - advancing to next video');
         nextSlide();
       }, interval);
-    } else if (timerRef.current) {
-      clearInterval(timerRef.current);
     }
     
     return () => {
       if (timerRef.current) {
-        clearInterval(timerRef.current);
+        clearTimeout(timerRef.current);
       }
     };
-  }, [isPlaying, nextSlide, interval]);
+  }, [isPlaying, nextSlide, interval, currentIndex]);
   
   // Handle keyboard navigation
   useEffect(() => {
@@ -104,41 +113,60 @@ export function VideoSlideshow({
     };
   }, [nextSlide, prevSlide, toggleAutoplay]);
   
-  // Don't render if we have no videos or cloud name
-  if (videos.length === 0 || !cloudinaryCloudName) {
+  // Don't render if we have no videos
+  if (videos.length === 0) {
     return (
       <div className={`flex items-center justify-center bg-muted h-64 rounded-lg ${className}`}>
-        {!cloudinaryCloudName ? 'Loading...' : 'No videos available'}
+        <div className="text-center">
+          <div className="animate-pulse text-muted-foreground mb-2">Loading videos...</div>
+          <div className="text-xs text-muted-foreground">Please wait</div>
+        </div>
       </div>
     );
   }
-  
+
+  const currentId = videos[currentIndex];
+  const isB2Video = typeof currentId === "string" && currentId.startsWith("b2_");
+  const cdnBase = (import.meta as any).env?.VITE_VIDEO_CDN_BASE_URL as string | undefined;
+  const normalizedBase = cdnBase ? cdnBase.replace(/\/+$/, "") : "";
+  const manifestUrl = isB2Video ? `${normalizedBase}/hls/${currentId}/master.m3u8` : "";
+  const posterUrl = isB2Video ? `${normalizedBase}/poster/${currentId}.jpg` : undefined;
+
   return (
     <div className={`relative group ${className}`}>
-      {/* Current video */}
-      <div className="aspect-video w-full bg-black rounded-lg overflow-hidden">
-        <CloudinaryIframeVideo
-          publicId={videos[currentIndex]}
+      {/* Current video - key prop forces remount on video change */}
+      <div 
+        className="aspect-video w-full bg-black rounded-lg overflow-hidden cursor-pointer"
+        onClick={handleVideoClick}
+      >
+        <HlsVideo
+          src={manifestUrl}
+          poster={posterUrl}
           className="w-full h-full"
           autoPlay={autoPlay}
-          muted={muted}
+          muted={userIsMuted}
           controls={controls}
-          loop={false}  // Don't loop individual videos
-          cloudName={cloudinaryCloudName}
-          fallbackContent={
-            <div className="flex items-center justify-center h-full bg-gray-900 text-gray-400">
-              <span>Video unavailable</span>
-            </div>
-          }
+          loop={false}
+          onEnded={handleVideoEnded}
+          onError={(error) => console.error("HLS video error:", error)}
+          onLoaded={() => console.log("HLS video loaded:", currentId)}
+          onVolumeChange={handleVolumeChange}
         />
       </div>
       
+      {/* Paused state visual feedback */}
+      {!isPlaying && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
+          <Play className="h-16 w-16 text-white opacity-70" />
+        </div>
+      )}
+      
       {/* Navigation controls */}
-      <div className="absolute inset-0 flex items-center justify-between p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="absolute inset-0 flex items-center justify-between p-4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
         <Button 
           variant="secondary" 
           size="icon" 
-          className="rounded-full bg-black/50 hover:bg-black/70 text-white"
+          className="rounded-full bg-black/50 hover:bg-black/70 text-white pointer-events-auto"
           onClick={prevSlide}
           aria-label="Previous video"
         >
@@ -148,7 +176,7 @@ export function VideoSlideshow({
         <Button 
           variant="secondary" 
           size="icon" 
-          className="rounded-full bg-black/50 hover:bg-black/70 text-white"
+          className="rounded-full bg-black/50 hover:bg-black/70 text-white pointer-events-auto"
           onClick={nextSlide}
           aria-label="Next video"
         >

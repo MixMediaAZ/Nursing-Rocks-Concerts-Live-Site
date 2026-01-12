@@ -7,42 +7,58 @@ import { formatDate } from "@/lib/utils";
 import { useNavigation } from "@/hooks/use-navigation";
 import { EditableElement } from "@/components/admin/editable-element";
 import { useState, useEffect } from "react";
-// Import Cloudinary components
-import { CloudinaryIframeVideo } from "@/components/cloudinary-iframe-video";
-// Import Cloudinary helpers
-import { checkCloudinaryConnection } from "@/lib/cloudinary";
+import { VideoSlideshow } from "@/components/video-slideshow";
+import { checkVideoConnection } from "@/lib/video-service";
+import { fetchApprovedVideos } from "@/lib/videos";
+import { shuffleArray } from "@/lib/utils";
 
 const HeroSection = () => {
   const { navigateTo } = useNavigation();
   const [refreshKey, setRefreshKey] = useState(Date.now());
-  const [cloudinaryConnected, setCloudinaryConnected] = useState(true);
-  const [cloudinaryFolder] = useState("Nursing Rocks! Concerts- video");
-  const [videoPublicId, setVideoPublicId] = useState("Nursing Rocks! Concerts- video/d9wtyh03k0tpfsvflagg");
-  const [cloudinaryCloudName, setCloudinaryCloudName] = useState<string | null>(null);
+  const [videoServiceConnected, setVideoServiceConnected] = useState(true);
+  const [allVideoIds, setAllVideoIds] = useState<string[]>([]);
+  const [isLoadingVideos, setIsLoadingVideos] = useState(true);
   
-  // Check Cloudinary connection when component mounts
+  // Check video service connection when component mounts
   useEffect(() => {
     async function checkConnection() {
       try {
-        const result = await checkCloudinaryConnection();
-        console.log("Cloudinary connection check:", result);
-        setCloudinaryConnected(result.connected);
-        
-        if (result.cloudName) {
-          setCloudinaryCloudName(result.cloudName);
-        }
-        
+        const result = await checkVideoConnection();
+        console.log("Video service connection check:", result);
+        setVideoServiceConnected(!!result.connected);
+
         if (!result.connected) {
-          console.warn("Cloudinary connection failed:", result.message);
+          console.warn("Video service connection failed:", result.message);
         }
       } catch (error) {
-        console.error("Error checking Cloudinary connection:", error);
-        setCloudinaryConnected(false);
+        console.error("Error checking video service connection:", error);
+        setVideoServiceConnected(false);
       }
     }
     
     checkConnection();
   }, []);
+
+  // Fetch all videos for slideshow
+  useEffect(() => {
+    async function fetchVideos() {
+      if (!videoServiceConnected) return;
+
+      setIsLoadingVideos(true);
+      try {
+        const videoIds = await fetchApprovedVideos();
+        const shuffledIds = shuffleArray(videoIds);
+        console.log(`🎬 Hero: Fetched ${videoIds.length} approved videos (shuffled)`);
+        setAllVideoIds(shuffledIds);
+      } catch (error) {
+        console.error("Error fetching hero videos:", error);
+      } finally {
+        setIsLoadingVideos(false);
+      }
+    }
+
+    fetchVideos();
+  }, [videoServiceConnected]);
   
   const { data: featuredEvent, isLoading: isLoadingEvent } = useQuery<Event>({
     queryKey: ["/api/events/featured"],
@@ -196,15 +212,14 @@ const HeroSection = () => {
             <div className="flex-1 max-w-sm">
               <div className="aspect-video w-full bg-black rounded-xl overflow-hidden shadow-xl border-4 border-white/30 transform hover:scale-105 transition-transform duration-300">
                 <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 opacity-75 blur-sm"></div>
-                <div className="relative z-10">
-                  <CloudinaryIframeVideo
-                    publicId={videoPublicId}
-                    className="w-full h-full"
+                <div className="relative z-10 w-full h-full">
+                  <VideoSlideshow
+                    videos={allVideoIds}
                     autoPlay={true}
                     muted={true}
-                    controls={false}
-                    loop={true}
-                    cloudName={cloudinaryCloudName}
+                    controls={true}
+                    interval={15000}
+                    className="w-full h-full"
                   />
                 </div>
               </div>
@@ -241,26 +256,25 @@ const HeroSection = () => {
               {/* Video Upload Button */}
               <Button
                 className="bg-[#FF8C00] hover:bg-[#FF6B00] text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full shadow-lg border-2 border-white/30"
-                onClick={() => window.open('https://nursingrocksconcerts3.replit.app/thanks', '_blank', 'noopener noreferrer')}
+                onClick={() => (window.location.href = "/thanks")}
               >
                 Upload your video of appreciation here
                 <i className="fas fa-video ml-1 sm:ml-2"></i>
               </Button>
               
-              {/* Cloudinary Video for Mobile Only - Under buttons */}
+              {/* Slideshow for Mobile Only - Under buttons */}
               <div className="mt-6 w-full">
                 <h4 className="text-center font-semibold mb-2 text-white/90">Featured Video</h4>
                 <div className="aspect-video w-full mx-auto bg-black rounded-xl overflow-hidden shadow-xl border-2 border-white/30 transform transition-transform duration-300">
                   <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-[#5D3FD3]/80 to-[#FF3366]/80 opacity-50 blur-sm"></div>
-                  <div className="relative z-10">
-                    <CloudinaryIframeVideo
-                      publicId={videoPublicId}
-                      className="w-full h-full"
+                  <div className="relative z-10 w-full h-full">
+                    <VideoSlideshow
+                      videos={allVideoIds}
                       autoPlay={true}
                       muted={true}
-                      controls={false}
-                      loop={true}
-                      cloudName={cloudinaryCloudName}
+                      controls={true}
+                      interval={15000}
+                      className="w-full h-full"
                     />
                   </div>
                 </div>

@@ -8,8 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Menu, X, User, HeartPulse, Map, ShoppingBag, Image, PlayCircle } from "lucide-react";
-import newLogoPath from "../assets/NursingRocks_NewLogo.png";
+import { Menu, X, User, HeartPulse, Map, Image, PlayCircle, Video, Briefcase } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // Define the type for navigation links
@@ -55,11 +54,17 @@ export function Header() {
   const publicNavLinks: NavLink[] = [
     { href: "/", label: "Home", icon: <HeartPulse size={18} /> },
     { href: "/videos", label: "Videos", icon: <PlayCircle size={18} /> },
+    { href: "/jobs", label: "Jobs Board", icon: <Briefcase size={18} /> },
+    {
+      href: "/thanks",
+      label: "Upload Video",
+      icon: <Video size={18} />,
+    },
     { href: "/sponsors", label: "Sponsors", icon: <HeartPulse size={18} /> },
-    { href: "https://rgwrvu-sq.myshopify.com/", label: "Store", icon: <ShoppingBag size={18} />, isExternal: true },
   ];
   
   const authenticatedNavLinks: NavLink[] = [
+    { href: "/dashboard", label: "Dashboard", icon: <User size={18} /> },
     { href: "/gallery", label: "Gallery", icon: <Image size={18} /> },
   ];
   
@@ -78,107 +83,119 @@ export function Header() {
       <div className="w-full h-1.5 nurse-gradient"></div>
       
       <div className="page-container">
-        <div className="flex items-center justify-between h-20">
-          {/* Logo on left */}
-          <div className="flex-shrink-0">
-            <Link href="/">
-              <div className="flex items-center gap-2 cursor-pointer">
-                <img
-                  src={newLogoPath}
-                  alt="Nursing Rocks!"
-                  className="h-12 md:h-14 w-auto"
-                />
-                <span className="heartbeat-animation text-lg font-semibold hidden lg:inline-block">
-                  Concert Series
-                </span>
-              </div>
-            </Link>
+        <div className="flex items-center justify-between h-16 sm:h-20 lg:h-24">
+          {/* Left side - NursingRocks.org */}
+          <div className="w-48 sm:w-52 lg:w-64 flex items-center justify-center">
+            <a 
+              href="https://nursingrocks.org" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary font-bold text-sm sm:text-base md:text-lg lg:text-xl hover:text-primary/80 transition-colors"
+            >
+              NursingRocks.org
+            </a>
           </div>
           
           {/* Navigation in center - centered and justified content */}
           {!isMobile ? (
-            <nav className="flex items-center justify-center md:ml-4 lg:ml-8 flex-grow">
-              <div className="flex items-center justify-start flex-wrap gap-x-3 md:gap-x-4 lg:gap-x-6">
-                {navLinks.map((link) => (
-                  link.isExternal ? (
-                    <a 
-                      key={link.href} 
-                      href={link.href} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className={`text-xs md:text-sm font-medium cursor-pointer flex items-center gap-1 transition-colors hover:text-primary text-muted-foreground py-1`}
-                    >
-                      {link.icon}
-                      <span className="hidden md:inline">{link.label}</span>
-                    </a>
-                  ) : (
-                    <Link key={link.href} href={link.href}>
-                      <div
-                        className={`text-xs md:text-sm font-medium cursor-pointer flex items-center gap-1 transition-colors hover:text-primary py-1 ${
-                          isActive(link.href) ? "text-primary" : "text-muted-foreground"
-                        }`}
+            <nav className="flex items-center justify-center flex-grow mx-4 sm:mx-8 h-full">
+              <div className="flex items-center gap-x-2 lg:gap-x-4 h-full">
+                <div className="flex items-center gap-x-2 lg:gap-x-4 bg-muted/50 p-1.5 rounded-full border border-border/50">
+                  {navLinks.map((link) => (
+                    link.isExternal ? (
+                      <a 
+                        key={link.href} 
+                        href={link.href} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className={`px-4 py-2 rounded-full text-xs md:text-sm font-semibold uppercase tracking-wider transition-all hover:bg-background hover:shadow-sm text-muted-foreground hover:text-primary flex items-center gap-2`}
                       >
                         {link.icon}
-                        <span className="hidden md:inline">{link.label}</span>
-                      </div>
-                    </Link>
-                  )
-                ))}
+                        <span>{link.label}</span>
+                      </a>
+                    ) : (
+                      <Link key={link.href} href={link.href}>
+                        <div
+                          className={`px-4 py-2 rounded-full text-xs md:text-sm font-semibold uppercase tracking-wider cursor-pointer transition-all flex items-center gap-2 ${
+                            isActive(link.href) 
+                              ? "bg-primary text-white shadow-md shadow-primary/20" 
+                              : "text-muted-foreground hover:bg-background hover:text-primary"
+                          }`}
+                        >
+                          {link.icon}
+                          <span>{link.label}</span>
+                        </div>
+                      </Link>
+                    )
+                  ))}
+                </div>
+                {/* Login/Register buttons next to nav pill - desktop only, logged out only */}
+                {!isLoggedIn && (
+                  <div className="flex items-center gap-2 ml-4">
+                    <Button variant="ghost" asChild size="sm">
+                      <Link href="/login">Login</Link>
+                    </Button>
+                    <Button asChild size="sm">
+                      <Link href="/register">Register</Link>
+                    </Button>
+                  </div>
+                )}
               </div>
             </nav>
           ) : (
             <div className="flex-grow"></div>
           )}
           
-          {/* Right side controls - always visible */}
-          <div className="flex items-center space-x-3">
-            
-            {isLoggedIn ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-9 w-9 rounded-full">
-                    <User size={18} />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard">My Dashboard</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/profile">My Profile</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => window.location.href = "/license-verification"}>
-                    License Verification
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/tickets">My Tickets</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout}>
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <div className="hidden sm:flex items-center gap-2">
-                <Button variant="ghost" asChild size="sm">
-                  <Link href="/login">Login</Link>
-                </Button>
-                <Button asChild size="sm">
-                  <Link href="/register">Register</Link>
-                </Button>
-              </div>
-            )}
-            
-            {isMobile && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="sm:ml-2"
+          {/* Right side - Linktree and controls */}
+          <div className="w-48 sm:w-52 lg:w-64 flex items-center justify-center">
+            <div className="flex items-center gap-3">
+              <a 
+                href="https://linktr.ee/nursingrocksconcertseries" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary font-bold text-sm sm:text-base md:text-lg lg:text-xl hover:text-primary/80 transition-colors"
               >
-                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-              </Button>
-            )}
+                Linktree
+              </a>
+            
+              {isLoggedIn && !isMobile && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-9 w-9 rounded-full">
+                      <User size={18} />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard">My Dashboard</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile">My Profile</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => window.location.href = "/license-verification"}>
+                      License Verification
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/tickets">My Tickets</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout}>
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            
+              {isMobile && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  className="sm:ml-2"
+                >
+                  {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>

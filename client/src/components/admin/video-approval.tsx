@@ -112,7 +112,7 @@ export default function VideoApproval() {
   } = useQuery({
     queryKey: ['/api/videos', { all: true }],
     queryFn: async () => {
-      console.log('[VideoApproval] Fetching all videos from provider...');
+      // (debug log removed)
       // Fetch videos through server API endpoint with all=true parameter for admin
       const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
       const response = await fetch('/api/videos?all=true', {
@@ -128,7 +128,7 @@ export default function VideoApproval() {
         throw new Error(errorData.message || 'Failed to fetch videos');
       }
       const data = await response.json();
-      console.log('[VideoApproval] Fetched videos:', data);
+      // (debug log removed)
       return data;
     },
   });
@@ -172,9 +172,9 @@ export default function VideoApproval() {
   // Approve video mutation
   const approveMutation = useMutation({
     mutationFn: async ({ public_id, admin_notes }: { public_id: string; admin_notes?: string }) => {
-      console.log('[VideoApproval] Approving video:', public_id);
+      // (debug log removed)
       setPendingVideoId(public_id);
-      console.log('[VideoApproval] Approving video:', public_id);
+      // (debug log removed)
       const response = await adminFetch('/api/admin/videos/approve', {
         method: 'POST',
         headers: {
@@ -182,7 +182,7 @@ export default function VideoApproval() {
         },
         body: JSON.stringify({ public_id, admin_notes }),
       });
-      console.log('[VideoApproval] Approval response status:', response.status);
+      // (debug log removed)
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         console.error('[VideoApproval] Approval failed:', errorData);
@@ -192,14 +192,14 @@ export default function VideoApproval() {
     },
     onSuccess: async (data, variables) => {
       // #region agent log
-      console.log('🔍 [DEBUG] APPROVE onSuccess START', {public_id:variables.public_id,hasNotes:!!variables.admin_notes,timestamp:Date.now()});
+      // (debug log removed)
       fetch('http://127.0.0.1:7253/ingest/a70d3c4c-5483-4936-8dc1-1a2a5745df39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'video-approval.tsx:196',message:'APPROVE onSuccess START',data:{public_id:variables.public_id,hasNotes:!!variables.admin_notes},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H5'})}).catch(()=>{});
       // #endregion
       setPendingVideoId(null);
       
       // Update React Query cache (persists across remounts)
       // #region agent log
-      console.log('🔍 [DEBUG] BEFORE queryClient.setQueryData', {public_id:variables.public_id});
+      // (debug log removed)
       fetch('http://127.0.0.1:7253/ingest/a70d3c4c-5483-4936-8dc1-1a2a5745df39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'video-approval.tsx:200',message:'BEFORE queryClient.setQueryData',data:{public_id:variables.public_id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3,H4'})}).catch(()=>{});
       // #endregion
       
@@ -226,7 +226,7 @@ export default function VideoApproval() {
       });
       
       // #region agent log
-      console.log('🔍 [DEBUG] AFTER queryClient.setQueryData', {public_id:variables.public_id});
+      // (debug log removed)
       fetch('http://127.0.0.1:7253/ingest/a70d3c4c-5483-4936-8dc1-1a2a5745df39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'video-approval.tsx:204',message:'AFTER queryClient.setQueryData',data:{public_id:variables.public_id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3,H4'})}).catch(()=>{});
       // #endregion
       
@@ -235,14 +235,14 @@ export default function VideoApproval() {
         description: 'Video is now visible to users',
       });
       // #region agent log
-      console.log('🔍 [DEBUG] BEFORE dialog state changes', {showNotesDialog,hasSelectedVideo:!!selectedVideo});
+      // (debug log removed)
       fetch('http://127.0.0.1:7253/ingest/a70d3c4c-5483-4936-8dc1-1a2a5745df39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'video-approval.tsx:209',message:'BEFORE dialog state changes',data:{showNotesDialog,hasSelectedVideo:!!selectedVideo},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
       // #endregion
       setShowNotesDialog(false);
       setSelectedVideo(null);
       setAdminNotes('');
       // #region agent log
-      console.log('🔍 [DEBUG] APPROVE onSuccess END');
+      // (debug log removed)
       fetch('http://127.0.0.1:7253/ingest/a70d3c4c-5483-4936-8dc1-1a2a5745df39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'video-approval.tsx:212',message:'APPROVE onSuccess END',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H5'})}).catch(()=>{});
       // #endregion
     },
@@ -306,7 +306,7 @@ export default function VideoApproval() {
   const deleteMutation = useMutation({
     mutationFn: async (public_id: string) => {
       // #region agent log
-      console.log('🔍 [DEBUG] DELETE mutation START', {public_id, timestamp: Date.now()});
+      // (debug log removed)
       // #endregion
       setPendingVideoId(public_id);
       const response = await adminFetch('/api/admin/videos/delete', {
@@ -317,12 +317,12 @@ export default function VideoApproval() {
         body: JSON.stringify({ public_id }),
       });
       // #region agent log
-      console.log('🔍 [DEBUG] DELETE response', {ok: response.ok, status: response.status, timestamp: Date.now()});
+      // (debug log removed)
       // #endregion
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         // #region agent log
-        console.log('🔍 [DEBUG] DELETE failed', {errorData, timestamp: Date.now()});
+        // (debug log removed)
         // #endregion
         throw new Error(errorData.message || 'Failed to delete video');
       }
@@ -330,7 +330,7 @@ export default function VideoApproval() {
     },
     onSuccess: async (data, variables) => {
       // #region agent log
-      console.log('🔍 [DEBUG] DELETE onSuccess', {public_id: variables, timestamp: Date.now()});
+      // (debug log removed)
       // #endregion
       setPendingVideoId(null);
       
@@ -356,7 +356,7 @@ export default function VideoApproval() {
     },
     onError: (error: Error) => {
       // #region agent log
-      console.log('🔍 [DEBUG] DELETE onError', {error: error.message, timestamp: Date.now()});
+      // (debug log removed)
       // #endregion
       setPendingVideoId(null);
       toast({
@@ -501,15 +501,13 @@ export default function VideoApproval() {
   const allVideos = useMemo(() => {
     if (!providerData?.resources) return [];
     
-    console.log('[VideoApproval] Using', providerData.resources.length, 'videos from provider');
-    console.log('[VideoApproval] Approval status from database:', approvedVideos?.length, 'entries');
+  // (debug log removed)
     
     // Return raw resources - approval will be checked at render time
     return providerData.resources;
   }, [providerData?.resources]);
 
-  console.log('[VideoApproval] Loading states:', { isLoadingApproved, isLoadingProvider, approvedError, providerError });
-  console.log('[VideoApproval] Data:', { approvedVideosCount: approvedVideos?.length, providerResourcesCount: providerData?.resources?.length });
+  // (debug log removed)
 
   if (isLoadingProvider) {
     return (

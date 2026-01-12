@@ -529,6 +529,95 @@ export async function getAllGalleryImages(req: Request, res: Response) {
 }
 
 /**
+ * Wallpaper images endpoint:
+ * - Prefer DB gallery images (same as /api/gallery)
+ * - If DB is empty, fall back to existing local files in uploads/gallery (dev convenience)
+ *
+ * NOTE: This is intentionally separate from /api/gallery so admin/gallery behavior remains DB-backed.
+ */
+export async function getWallpaperImages(_req: Request, res: Response) {
+  const runId = "wallpaper-images";
+  try {
+    let dbImages: any[] = [];
+    try {
+      dbImages = await db.select().from(gallery).orderBy(asc(gallery.sort_order), desc(gallery.id));
+    } catch (err) {
+      // If DB query fails for any reason, treat as empty and fall back to filesystem.
+      dbImages = [];
+      // #region agent log
+      fetch('http://127.0.0.1:7253/ingest/a70d3c4c-5483-4936-8dc1-1a2a5745df39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'server/gallery-media.ts:getWallpaperImages',message:'DB query failed, will attempt filesystem fallback',data:{error:err instanceof Error?err.message:String(err)},timestamp:Date.now(),sessionId:'debug-session',runId,hypothesisId:'W2'})}).catch(()=>{});
+      // #endregion
+    }
+
+    if (Array.isArray(dbImages) && dbImages.length > 0) {
+      // #region agent log
+      fetch('http://127.0.0.1:7253/ingest/a70d3c4c-5483-4936-8dc1-1a2a5745df39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'server/gallery-media.ts:getWallpaperImages',message:'Using DB images for wallpaper',data:{count:dbImages.length},timestamp:Date.now(),sessionId:'debug-session',runId,hypothesisId:'W1'})}).catch(()=>{});
+      // #endregion
+      return res.json(dbImages);
+    }
+
+    const dir = path.join(process.cwd(), "uploads", "gallery");
+    const exists = fs.existsSync(dir);
+
+    // #region agent log
+    fetch('http://127.0.0.1:7253/ingest/a70d3c4c-5483-4936-8dc1-1a2a5745df39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'server/gallery-media.ts:getWallpaperImages',message:'DB empty, checking filesystem fallback',data:{uploadsGalleryDir:dir,exists},timestamp:Date.now(),sessionId:'debug-session',runId,hypothesisId:'W1,W3'})}).catch(()=>{});
+    // #endregion
+
+    if (!exists) return res.json([]);
+
+    const files = fs.readdirSync(dir);
+    const isImage = (name: string) => /\.(png|jpe?g|webp|gif)$/i.test(name);
+    const isDerivative = (name: string) =>
+      /-(thumbnail|small|medium|large)\.(png|jpe?g|webp|gif)$/i.test(name);
+
+    // Prefer original-sized files; use thumbnail derivative if present.
+    const originals = files.filter((f) => isImage(f) && !isDerivative(f));
+    const thumbSet = new Set(files.filter((f) => isImage(f) && /-thumbnail\./i.test(f)));
+
+    const items = originals.slice(0, 400).map((filename, idx) => {
+      const ext = path.extname(filename);
+      const base = filename.slice(0, -ext.length);
+      const possibleThumbs = [
+        `${base}-thumbnail.webp`,
+        `${base}-thumbnail.jpg`,
+        `${base}-thumbnail.jpeg`,
+        `${base}-thumbnail.png`,
+      ];
+      const thumb = possibleThumbs.find((t) => thumbSet.has(t)) || null;
+      return {
+        id: idx + 1,
+        image_url: `/uploads/gallery/${filename}`,
+        thumbnail_url: thumb ? `/uploads/gallery/${thumb}` : null,
+        alt_text: "Wallpaper image",
+        event_id: null,
+        folder_id: null,
+        media_type: "image",
+        file_size: null,
+        dimensions: null,
+        duration: null,
+        sort_order: 0,
+        created_at: new Date(),
+        updated_at: new Date(),
+        z_index: 0,
+        metadata: null,
+      };
+    });
+
+    // #region agent log
+    fetch('http://127.0.0.1:7253/ingest/a70d3c4c-5483-4936-8dc1-1a2a5745df39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'server/gallery-media.ts:getWallpaperImages',message:'Filesystem wallpaper images prepared',data:{filesTotal:files.length,originals:originals.length,returned:items.length},timestamp:Date.now(),sessionId:'debug-session',runId,hypothesisId:'W3'})}).catch(()=>{});
+    // #endregion
+
+    return res.json(items);
+  } catch (error) {
+    // #region agent log
+    fetch('http://127.0.0.1:7253/ingest/a70d3c4c-5483-4936-8dc1-1a2a5745df39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'server/gallery-media.ts:getWallpaperImages',message:'Wallpaper endpoint failed',data:{error:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId,hypothesisId:'W4'})}).catch(()=>{});
+    // #endregion
+    console.error("Error getting wallpaper images:", error);
+    return res.status(500).json({ error: "Failed to get wallpaper images" });
+  }
+}
+
+/**
  * Replace gallery image with a new image
  */
 export async function replaceGalleryImage(req: Request, res: Response) {
