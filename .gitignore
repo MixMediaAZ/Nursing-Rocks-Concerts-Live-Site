@@ -31,3 +31,6 @@ vite.config.ts.*
 products.json
 response.json
 uploads/
+
+# Exclude the old site folder
+Nursing-Rocks-Concerts-Live-Site-OLD/
