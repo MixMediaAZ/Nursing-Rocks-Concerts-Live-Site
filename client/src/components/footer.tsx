@@ -247,11 +247,18 @@ export function Footer() {
                   </div>
                 </>
               ) : (
-                <a href="/admin" className="no-underline">
-                  <div className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors cursor-pointer border border-primary/30 rounded-md px-2 py-1 flex items-center justify-center gap-1">
+                <Link href="/admin" className="no-underline">
+                  <div 
+                    className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors cursor-pointer border border-primary/30 rounded-md px-2 py-1 flex items-center justify-center gap-1"
+                    onClick={() => {
+                      // #region agent log
+                      fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/components/footer.tsx:AdminLoginLink',message:'Admin login link clicked',data:{currentPath:window.location.pathname},timestamp:Date.now(),sessionId:'debug-session',runId:'admin-login-debug',hypothesisId:'H1'})}).catch(()=>{});
+                      // #endregion
+                    }}
+                  >
                     <Lock className="h-3 w-3" /> Admin Login
                   </div>
-                </a>
+                </Link>
               )}
             </div>
             <div className="flex items-center gap-1 mt-2">

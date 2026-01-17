@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+// #region agent log - Admin page instrumentation
+// #endregion
 import { Helmet } from "react-helmet";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -51,6 +53,12 @@ import VideoApproval from "@/components/admin/video-approval";
 import { LicenseManagement } from "@/components/admin/license-management";
 
 export default function AdminPage() {
+  // #region agent log
+  useEffect(() => {
+    fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/pages/admin.tsx:AdminPage',message:'Admin page mounted',data:{pathname:window.location.pathname,search:window.location.search},timestamp:Date.now(),sessionId:'debug-session',runId:'admin-login-debug',hypothesisId:'H1'})}).catch(()=>{});
+  }, []);
+  // #endregion
+  
   const [authenticated, setAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string>("");
