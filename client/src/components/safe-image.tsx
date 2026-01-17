@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ImageOff } from 'lucide-react';
+import { devLog, devError } from '@/lib/dev';
 
 interface SafeImageProps {
   src: string | null;
@@ -9,6 +10,10 @@ interface SafeImageProps {
   showLoadingIndicator?: boolean;
   elementId?: string | number; // Optional element ID for targeted updates
   productId?: number; // Optional product ID for product images
+  loading?: 'lazy' | 'eager'; // Image loading strategy
+  fetchpriority?: 'high' | 'low' | 'auto'; // Resource priority hint
+  width?: number; // Image width for layout stability
+  height?: number; // Image height for layout stability
 }
 
 export function SafeImage({ 
@@ -18,7 +23,11 @@ export function SafeImage({
   fallbackClassName = '', 
   showLoadingIndicator = false,
   elementId,
-  productId
+  productId,
+  loading = 'lazy', // Default to lazy loading for better performance
+  fetchpriority = 'auto',
+  width,
+  height
 }: SafeImageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -53,7 +62,7 @@ export function SafeImage({
       ? `${cleanSrc}&${cacheBuster}` 
       : `${cleanSrc}?${cacheBuster}`;
     
-    console.log(`SafeImage: Updated src with cache busting: ${src} -> ${newSrc}`);
+    devLog(`SafeImage: Updated src with cache busting: ${src} -> ${newSrc}`);
     
     setImageSrc(newSrc);
     setIsLoading(true);
@@ -65,9 +74,9 @@ export function SafeImage({
     const handleImageReplaced = (event: Event) => {
       const detail = (event as CustomEvent).detail;
       
-      console.log('SafeImage received replacement event:', detail);
-      console.log('Current image src:', src);
-      console.log('Original stored src:', originalSrcRef.current);
+      devLog('SafeImage received replacement event:', detail);
+      devLog('Current image src:', src);
+      devLog('Original stored src:', originalSrcRef.current);
       
       if (!detail || !src) {
         return;
@@ -84,10 +93,10 @@ export function SafeImage({
         const normalizedCurrentSrc = normalizeUrl(src);
         const normalizedStoredSrc = originalSrcRef.current ? normalizeUrl(originalSrcRef.current) : '';
         
-        console.log('Normalized URLs for comparison:');
-        console.log('  Original from event:', normalizedOriginalUrl);
-        console.log('  Current src:', normalizedCurrentSrc);
-        console.log('  Stored original src:', normalizedStoredSrc);
+        devLog('Normalized URLs for comparison:');
+        devLog('  Original from event:', normalizedOriginalUrl);
+        devLog('  Current src:', normalizedCurrentSrc);
+        devLog('  Stored original src:', normalizedStoredSrc);
         
         // Multiple possible matches to handle different URL formats
         const isMatch = 
@@ -99,9 +108,9 @@ export function SafeImage({
           normalizedCurrentSrc.replace(/\.[^/.]+$/, "").includes(normalizedOriginalUrl.replace(/\.[^/.]+$/, ""));
         
         if (isMatch) {
-          console.log('✅ Image replacement match found!');
-          console.log('  Current:', src);
-          console.log('  New URL:', newImageUrl);
+          devLog('✅ Image replacement match found!');
+          devLog('  Current:', src);
+          devLog('  New URL:', newImageUrl);
           
           // Force browser to get fresh image without all the flickering
           if (newImageUrl) {
@@ -111,7 +120,7 @@ export function SafeImage({
             const uniqueBuster = `?t=${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
             const forcedNewUrl = cleanUrl + uniqueBuster;
             
-            console.log(`Updating image src to: ${forcedNewUrl}`);
+            devLog(`Updating image src to: ${forcedNewUrl}`);
             
             // First update just the key to avoid DOM errors
             setForceRefresh(Date.now());
@@ -136,7 +145,7 @@ export function SafeImage({
       
       // Check for a specific element ID or product ID match
       if (detail.elementId && elementId && detail.elementId.toString() === elementId.toString()) {
-        console.log('Image replacement: Direct element ID match found');
+        devLog('Image replacement: Direct element ID match found');
         setTimeout(() => {
           setForceRefresh(Date.now());
         }, 300);
@@ -145,7 +154,7 @@ export function SafeImage({
       
       // Match by product ID for product images
       if (detail.productId && productId && detail.productId.toString() === productId.toString()) {
-        console.log('Image replacement: Product ID match found');
+        devLog('Image replacement: Product ID match found');
         setTimeout(() => {
           // If the new URL was provided in the event, use it directly
           if (detail.newUrl) {
@@ -154,7 +163,7 @@ export function SafeImage({
             const uniqueBuster = `?t=${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
             const forcedNewUrl = cleanUrl + uniqueBuster;
             
-            console.log(`Updating product image src to: ${forcedNewUrl}`);
+            devLog(`Updating product image src to: ${forcedNewUrl}`);
             
             // Update both the original ref and the state
             originalSrcRef.current = forcedNewUrl;
@@ -167,7 +176,7 @@ export function SafeImage({
       
       // Generic element ID fallback for backwards compatibility
       if (detail.elementId && detail.elementId.toString().includes('image')) {
-        console.log('Refreshing image as element ID fallback strategy');
+        devLog('Refreshing image as element ID fallback strategy');
         setTimeout(() => {
           setForceRefresh(Date.now());
         }, 300);
@@ -211,11 +220,15 @@ export function SafeImage({
             className={`${className} ${productId ? 'object-contain max-h-full' : ''}`}
             data-element-id={elementId || ''}
             data-product-id={productId || ''}
+            loading={loading}
+            fetchPriority={fetchpriority}
+            width={width}
+            height={height}
             onLoad={() => setIsLoading(false)}
             onError={() => {
               setIsLoading(false);
               setHasError(true);
-              console.error(`Failed to load image: ${imageSrc}`);
+              devError(`Failed to load image: ${imageSrc}`);
             }}
           />
         </div>

@@ -121,10 +121,21 @@ export async function checkB2Connection(): Promise<B2ConnectionStatus> {
     const message = err instanceof Error ? err.message : "Unknown error";
     const m = message.match(/Missing required env var:\s*([A-Z0-9_]+)/);
 
+    const awsError = err as any;
+    // Provide more helpful error message for common B2 credential issues
+    let helpfulMessage = message;
+    if (awsError?.Code === "InvalidAccessKeyId") {
+      helpfulMessage = "Invalid B2 Application Key ID. Ensure VIDEO_B2_ACCESS_KEY_ID is the 25-character Application Key (not the Key ID).";
+    } else if (awsError?.Code === "SignatureDoesNotMatch") {
+      helpfulMessage = "B2 signature mismatch. The Application Key and Secret Key don't match. Verify both VIDEO_B2_ACCESS_KEY_ID and VIDEO_B2_SECRET_ACCESS_KEY are correct.";
+    } else if (message.includes("key") && message.includes("not valid")) {
+      helpfulMessage = "B2 credentials invalid. Verify you're using the Application Key (25 chars) and its matching Secret Key from your B2 account.";
+    }
+
     return {
       ok: false,
       missingEnv: m?.[1],
-      message,
+      message: helpfulMessage,
     };
   }
 }

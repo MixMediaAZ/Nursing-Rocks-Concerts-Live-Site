@@ -1,16 +1,21 @@
 import { useEffect, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { LogOut, Settings } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { LogOut, Settings, Edit } from 'lucide-react';
 
 export function FloatingAdminControl() {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isEditModeActive, setIsEditModeActive] = useState(false);
   
-  // Check if user is in admin mode
+  // Check if user is in admin mode and edit mode
   useEffect(() => {
     const checkAdminStatus = () => {
       const adminStatus = localStorage.getItem("isAdmin") === "true";
+      const editMode = localStorage.getItem("editMode") === "true";
       setIsAdmin(adminStatus);
+      setIsEditModeActive(editMode);
     };
     
     // Initial check
@@ -30,6 +35,20 @@ export function FloatingAdminControl() {
   if (!isAdmin) {
     return null;
   }
+
+  const toggleEditMode = (checked: boolean) => {
+    localStorage.setItem("editMode", checked ? "true" : "false");
+    setIsEditModeActive(checked);
+    
+    // Dispatch event to notify other components
+    window.dispatchEvent(new Event('admin-mode-changed'));
+    
+    toast({
+      title: checked ? "Edit Mode Enabled" : "Edit Mode Disabled",
+      description: checked ? "You can now edit elements on the page" : "Element editing has been turned off",
+      variant: "default",
+    });
+  };
 
   const handleLogout = () => {
     // Perform admin logout
@@ -68,6 +87,20 @@ export function FloatingAdminControl() {
 
   return (
     <div className="fixed bottom-24 right-4 z-50 flex flex-col gap-2">
+      {/* Edit Mode Toggle */}
+      <div className="bg-white rounded-lg shadow-lg border border-slate-200 p-3 mb-2 min-w-[180px]">
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="floating-edit-mode"
+            checked={isEditModeActive}
+            onCheckedChange={toggleEditMode}
+          />
+          <Label htmlFor="floating-edit-mode" className="flex items-center gap-1 text-sm font-medium cursor-pointer">
+            <Edit className="h-4 w-4" /> Edit Mode
+          </Label>
+        </div>
+      </div>
+      
       <Button
         variant="default"
         size="sm"

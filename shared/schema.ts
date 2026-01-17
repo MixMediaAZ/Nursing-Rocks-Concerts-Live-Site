@@ -333,6 +333,7 @@ export type InsertMediaAsset = z.infer<typeof insertMediaAssetSchema>;
 // Employer model
 export const employers = pgTable("employers", {
   id: serial("id").primaryKey(),
+  company_name: text("company_name"),
   name: text("name").notNull(),
   description: text("description"),
   website: text("website"),
@@ -345,6 +346,11 @@ export const employers = pgTable("employers", {
   contact_phone: text("contact_phone"),
   user_id: integer("user_id").references(() => users.id),
   is_verified: boolean("is_verified").default(false),
+  account_status: text("account_status").default("pending"), // pending, active, suspended
+  job_post_credits: integer("job_post_credits").default(0),
+  job_post_pass_expires_at: timestamp("job_post_pass_expires_at"),
+  job_post_lifetime: boolean("job_post_lifetime").default(false),
+  job_post_options: jsonb("job_post_options"),
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
 });
@@ -354,6 +360,7 @@ export const insertEmployerSchema = createInsertSchema(employers).omit({
   created_at: true,
   updated_at: true,
   is_verified: true,
+  account_status: true,
 });
 
 // Job listing model
@@ -384,6 +391,10 @@ export const jobListings = pgTable("job_listings", {
   expiry_date: timestamp("expiry_date"),
   views_count: integer("views_count").default(0),
   applications_count: integer("applications_count").default(0),
+  is_approved: boolean("is_approved").default(false),
+  approved_by: integer("approved_by").references(() => users.id),
+  approved_at: timestamp("approved_at"),
+  approval_notes: text("approval_notes"),
 });
 
 export const insertJobListingSchema = createInsertSchema(jobListings).omit({
@@ -391,6 +402,32 @@ export const insertJobListingSchema = createInsertSchema(jobListings).omit({
   posted_date: true,
   views_count: true,
   applications_count: true,
+  is_approved: true,
+  approved_by: true,
+  approved_at: true,
+  approval_notes: true,
+});
+
+// Contact requests (employer requests for applicant contact info)
+export const contactRequests = pgTable("contact_requests", {
+  id: serial("id").primaryKey(),
+  application_id: integer("application_id").notNull().references(() => jobApplications.id, { onDelete: "cascade" }),
+  employer_id: integer("employer_id").notNull().references(() => employers.id, { onDelete: "cascade" }),
+  requested_at: timestamp("requested_at").defaultNow(),
+  status: text("status").default("pending"), // pending, approved, denied
+  reviewed_at: timestamp("reviewed_at"),
+  reviewed_by: integer("reviewed_by").references(() => users.id),
+  admin_notes: text("admin_notes"),
+  denial_reason: text("denial_reason"),
+  expires_at: timestamp("expires_at"),
+  contact_revealed_at: timestamp("contact_revealed_at"),
+});
+
+export const insertContactRequestSchema = createInsertSchema(contactRequests).omit({
+  id: true,
+  requested_at: true,
+  reviewed_at: true,
+  contact_revealed_at: true,
 });
 
 // Nurse profiles (extension of user profiles)
@@ -409,6 +446,7 @@ export const nurseProfiles = pgTable("nurse_profiles", {
   availability: text("availability"),
   preferred_shift: text("preferred_shift"),
   preferred_work_arrangement: text("preferred_work_arrangement"),
+
   preferred_locations: text("preferred_locations").array(),
   current_employer: text("current_employer"),
   is_public: boolean("is_public").default(false),
@@ -485,6 +523,7 @@ export const insertJobAlertSchema = createInsertSchema(jobAlerts).omit({
 // Relations
 export const employersRelations = relations(employers, ({ many, one }) => ({
   jobListings: many(jobListings),
+  contactRequests: many(contactRequests),
   user: one(users, {
     fields: [employers.user_id],
     references: [users.id],
@@ -510,7 +549,7 @@ export const nurseProfilesRelations = relations(nurseProfiles, ({ one, many }) =
   alerts: many(jobAlerts, { relationName: "profile_job_alerts" }),
 }));
 
-export const jobApplicationsRelations = relations(jobApplications, ({ one }) => ({
+export const jobApplicationsRelations = relations(jobApplications, ({ one, many }) => ({
   job: one(jobListings, {
     fields: [jobApplications.job_id],
     references: [jobListings.id],
@@ -519,6 +558,7 @@ export const jobApplicationsRelations = relations(jobApplications, ({ one }) => 
     fields: [jobApplications.user_id],
     references: [users.id],
   }),
+  contactRequests: many(contactRequests, { relationName: "application_contact_requests" }),
 }));
 
 export const savedJobsRelations = relations(savedJobs, ({ one }) => ({
@@ -535,6 +575,22 @@ export const savedJobsRelations = relations(savedJobs, ({ one }) => ({
 export const jobAlertsRelations = relations(jobAlerts, ({ one }) => ({
   user: one(users, {
     fields: [jobAlerts.user_id],
+    references: [users.id],
+  }),
+}));
+
+export const contactRequestsRelations = relations(contactRequests, ({ one }) => ({
+  application: one(jobApplications, {
+    fields: [contactRequests.application_id],
+    references: [jobApplications.id],
+    relationName: "application_contact_requests",
+  }),
+  employer: one(employers, {
+    fields: [contactRequests.employer_id],
+    references: [employers.id],
+  }),
+  reviewer: one(users, {
+    fields: [contactRequests.reviewed_by],
     references: [users.id],
   }),
 }));
@@ -574,6 +630,9 @@ export type InsertSavedJob = z.infer<typeof insertSavedJobSchema>;
 
 export type JobAlert = typeof jobAlerts.$inferSelect;
 export type InsertJobAlert = z.infer<typeof insertJobAlertSchema>;
+
+export type ContactRequest = typeof contactRequests.$inferSelect;
+export type InsertContactRequest = z.infer<typeof insertContactRequestSchema>;
 
 // ========== STORE MODELS ==========
 
@@ -711,4 +770,5 @@ export type InsertStoreOrder = z.infer<typeof insertStoreOrderSchema>;
 export type StoreOrderItem = typeof storeOrderItems.$inferSelect;
 export type InsertStoreOrderItem = z.infer<typeof insertStoreOrderItemSchema>;
 
-
+export type VideoSubmission = typeof videoSubmissions.$inferSelect;
+export type InsertVideoSubmission = z.infer<typeof insertVideoSubmissionSchema>;

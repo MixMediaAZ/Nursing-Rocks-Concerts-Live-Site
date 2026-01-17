@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Menu, X, User, HeartPulse, Map, Image, PlayCircle, Video, Briefcase } from "lucide-react";
+import { Menu, X, User, HeartPulse, Map, PlayCircle, Video, Briefcase } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // Define the type for navigation links
@@ -65,7 +65,6 @@ export function Header() {
   
   const authenticatedNavLinks: NavLink[] = [
     { href: "/dashboard", label: "Dashboard", icon: <User size={18} /> },
-    { href: "/gallery", label: "Gallery", icon: <Image size={18} /> },
   ];
   
   // Combine links based on authentication status
@@ -161,8 +160,8 @@ export function Header() {
               {isLoggedIn && !isMobile && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-9 w-9 rounded-full">
-                      <User size={18} />
+                    <Button variant="ghost" className="h-10 w-10 rounded-full">
+                      <User size={24} />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">

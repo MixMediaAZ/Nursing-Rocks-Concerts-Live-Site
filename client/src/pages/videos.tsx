@@ -141,6 +141,7 @@ const VideosPage = () => {
                     muted={true}
                     controls={true}
                     interval={20000}
+                    maxAutoPlays={3}
                     className="w-full h-full"
                   />
                 </div>
@@ -211,6 +212,7 @@ const VideosPage = () => {
                   muted={true}
                   controls={true}
                   interval={15000} // 15 seconds per video
+                  maxAutoPlays={3}
                   className="rounded-xl overflow-hidden shadow-xl border border-muted"
                 />
               ) : (

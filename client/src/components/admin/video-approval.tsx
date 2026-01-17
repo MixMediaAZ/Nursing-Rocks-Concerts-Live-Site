@@ -191,18 +191,9 @@ export default function VideoApproval() {
       return response.json();
     },
     onSuccess: async (data, variables) => {
-      // #region agent log
-      // (debug log removed)
-      fetch('http://127.0.0.1:7253/ingest/a70d3c4c-5483-4936-8dc1-1a2a5745df39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'video-approval.tsx:196',message:'APPROVE onSuccess START',data:{public_id:variables.public_id,hasNotes:!!variables.admin_notes},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H5'})}).catch(()=>{});
-      // #endregion
       setPendingVideoId(null);
       
       // Update React Query cache (persists across remounts)
-      // #region agent log
-      // (debug log removed)
-      fetch('http://127.0.0.1:7253/ingest/a70d3c4c-5483-4936-8dc1-1a2a5745df39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'video-approval.tsx:200',message:'BEFORE queryClient.setQueryData',data:{public_id:variables.public_id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3,H4'})}).catch(()=>{});
-      // #endregion
-      
       queryClient.setQueryData<ApprovedVideo[]>(['/api/admin/videos'], (old = []) => {
         const exists = old.find(v => v.public_id === variables.public_id);
         if (exists) {
@@ -225,26 +216,13 @@ export default function VideoApproval() {
         }
       });
       
-      // #region agent log
-      // (debug log removed)
-      fetch('http://127.0.0.1:7253/ingest/a70d3c4c-5483-4936-8dc1-1a2a5745df39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'video-approval.tsx:204',message:'AFTER queryClient.setQueryData',data:{public_id:variables.public_id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3,H4'})}).catch(()=>{});
-      // #endregion
-      
       toast({
         title: 'Video Approved',
         description: 'Video is now visible to users',
       });
-      // #region agent log
-      // (debug log removed)
-      fetch('http://127.0.0.1:7253/ingest/a70d3c4c-5483-4936-8dc1-1a2a5745df39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'video-approval.tsx:209',message:'BEFORE dialog state changes',data:{showNotesDialog,hasSelectedVideo:!!selectedVideo},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
-      // #endregion
       setShowNotesDialog(false);
       setSelectedVideo(null);
       setAdminNotes('');
-      // #region agent log
-      // (debug log removed)
-      fetch('http://127.0.0.1:7253/ingest/a70d3c4c-5483-4936-8dc1-1a2a5745df39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'video-approval.tsx:212',message:'APPROVE onSuccess END',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H5'})}).catch(()=>{});
-      // #endregion
     },
     onError: (error: Error) => {
       setPendingVideoId(null);
@@ -274,9 +252,6 @@ export default function VideoApproval() {
       return response.json();
     },
     onSuccess: async (data, variables) => {
-      // #region agent log
-      fetch('http://127.0.0.1:7253/ingest/a70d3c4c-5483-4936-8dc1-1a2a5745df39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'video-approval.tsx:255',message:'UNAPPROVE onSuccess START',data:{public_id:variables},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H5'})}).catch(()=>{});
-      // #endregion
       setPendingVideoId(null);
       
       // Update React Query cache (persists across remounts)
@@ -288,9 +263,6 @@ export default function VideoApproval() {
         title: 'Video Unapproved',
         description: 'Video is now hidden from users',
       });
-      // #region agent log
-      fetch('http://127.0.0.1:7253/ingest/a70d3c4c-5483-4936-8dc1-1a2a5745df39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'video-approval.tsx:266',message:'UNAPPROVE onSuccess END',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H5'})}).catch(()=>{});
-      // #endregion
     },
     onError: (error: Error) => {
       setPendingVideoId(null);
@@ -305,9 +277,6 @@ export default function VideoApproval() {
   // Delete video from dashboard mutation
   const deleteMutation = useMutation({
     mutationFn: async (public_id: string) => {
-      // #region agent log
-      // (debug log removed)
-      // #endregion
       setPendingVideoId(public_id);
       const response = await adminFetch('/api/admin/videos/delete', {
         method: 'POST',
@@ -316,22 +285,13 @@ export default function VideoApproval() {
         },
         body: JSON.stringify({ public_id }),
       });
-      // #region agent log
-      // (debug log removed)
-      // #endregion
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        // #region agent log
-        // (debug log removed)
-        // #endregion
         throw new Error(errorData.message || 'Failed to delete video');
       }
       return response.json();
     },
     onSuccess: async (data, variables) => {
-      // #region agent log
-      // (debug log removed)
-      // #endregion
       setPendingVideoId(null);
       
       // Remove from both caches (approvedVideos and provider data)
@@ -355,9 +315,6 @@ export default function VideoApproval() {
       });
     },
     onError: (error: Error) => {
-      // #region agent log
-      // (debug log removed)
-      // #endregion
       setPendingVideoId(null);
       toast({
         title: 'Delete Failed',
@@ -393,9 +350,6 @@ export default function VideoApproval() {
   const handleCaptureInline = async (e: React.MouseEvent, video: ProviderVideo) => {
     e.preventDefault();
     e.stopPropagation();
-    // #region agent log
-    fetch('http://127.0.0.1:7253/ingest/a70d3c4c-5483-4936-8dc1-1a2a5745df39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'video-approval.tsx:308',message:'CAPTURE THUMBNAIL START',data:{public_id:video.public_id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H5'})}).catch(()=>{});
-    // #endregion
     setCapturingThumbnail(video.public_id);
     
     try {
@@ -464,10 +418,6 @@ export default function VideoApproval() {
         description: `Thumbnail captured for ${video.public_id.split('/').pop()}`,
       });
       
-      // #region agent log
-      fetch('http://127.0.0.1:7253/ingest/a70d3c4c-5483-4936-8dc1-1a2a5745df39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'video-approval.tsx:376',message:'CAPTURE THUMBNAIL SUCCESS',data:{public_id:video.public_id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H5'})}).catch(()=>{});
-      // #endregion
-      
       // Don't refetch - stay on page and keep videos playing
     } catch (error) {
       console.error('Error capturing thumbnail:', error);
@@ -478,9 +428,6 @@ export default function VideoApproval() {
       });
     } finally {
       setCapturingThumbnail(null);
-      // #region agent log
-      fetch('http://127.0.0.1:7253/ingest/a70d3c4c-5483-4936-8dc1-1a2a5745df39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'video-approval.tsx:392',message:'CAPTURE THUMBNAIL END (finally)',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H5'})}).catch(()=>{});
-      // #endregion
     }
   };
 

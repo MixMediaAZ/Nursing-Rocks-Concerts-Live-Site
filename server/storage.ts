@@ -12,6 +12,7 @@ import {
   JobApplication, InsertJobApplication,
   SavedJob, InsertSavedJob,
   JobAlert, InsertJobAlert,
+  ContactRequest, InsertContactRequest,
   StoreProduct, InsertStoreProduct,
   StoreOrder, InsertStoreOrder,
   StoreOrderItem, InsertStoreOrderItem,
@@ -52,7 +53,10 @@ export interface IStorage {
   createUser(user: InsertUser, passwordHash: string): Promise<User>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserById(id: number): Promise<User | undefined>;
+  getAllUsers(): Promise<User[]>;
+  updateUser(id: number, data: Partial<User>): Promise<User>;
   updateUserVerificationStatus(userId: number, isVerified: boolean): Promise<User>;
+  deleteUser(id: number): Promise<void>;
   
   // Nurse License Verification
   createNurseLicense(license: InsertNurseLicense, userId: number): Promise<NurseLicense>;
@@ -102,11 +106,17 @@ export interface IStorage {
     isActive?: boolean;
     isFeatured?: boolean;
   }): Promise<JobListing[]>;
+  getEmployerJobListings(employerId: number): Promise<JobListing[]>;
   getFeaturedJobListings(limit?: number): Promise<JobListing[]>;
   getRecentJobListings(limit?: number): Promise<JobListing[]>;
   updateJobListing(id: number, data: Partial<InsertJobListing>): Promise<JobListing>;
   incrementJobListingViews(id: number): Promise<JobListing>;
   incrementJobApplicationsCount(id: number): Promise<JobListing>;
+  
+  // Contact Requests
+  createContactRequest(requestData: InsertContactRequest): Promise<ContactRequest>;
+  getContactRequestsByEmployer(employerId: number): Promise<ContactRequest[]>;
+  getContactRequestById(id: number): Promise<ContactRequest | undefined>;
   
   // Nurse Profiles
   createNurseProfile(profile: InsertNurseProfile, userId: number): Promise<NurseProfile>;
@@ -1201,6 +1211,20 @@ export class MemStorage implements IStorage {
   async getUserById(id: number): Promise<User | undefined> {
     return this.users.get(id);
   }
+
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
+
+  async updateUser(id: number, data: Partial<User>): Promise<User> {
+    const user = this.users.get(id);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    const updatedUser = { ...user, ...data, updated_at: new Date() };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
   
   async updateUserVerificationStatus(userId: number, isVerified: boolean): Promise<User> {
     const user = this.users.get(userId);
@@ -1210,6 +1234,10 @@ export class MemStorage implements IStorage {
     const updatedUser = { ...user, is_verified: isVerified, updated_at: new Date() };
     this.users.set(userId, updatedUser);
     return updatedUser;
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    this.users.delete(id);
   }
   
   // Nurse License Verification

@@ -75,14 +75,36 @@ export default function DashboardPage() {
   
   // Fetch licenses
   const { data: licenses = { licenses: [] } } = useQuery<{ licenses: any[] }>({
-    queryKey: ['/api/auth/licenses'],
+    queryKey: ['/api/licenses'],
     enabled: isAuthenticated === true,
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      const response = await fetch('/api/licenses', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch licenses');
+      const data = await response.json();
+      return Array.isArray(data) ? { licenses: data } : data;
+    },
   });
   
   // Fetch tickets
   const { data: tickets = { tickets: [] } } = useQuery<{ tickets: any[] }>({
-    queryKey: ['/api/auth/tickets'],
+    queryKey: ['/api/tickets'],
     enabled: isAuthenticated === true,
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      const response = await fetch('/api/tickets', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch tickets');
+      const data = await response.json();
+      return Array.isArray(data) ? { tickets: data } : data;
+    },
   });
   
   // Handle logout
@@ -182,9 +204,14 @@ export default function DashboardPage() {
                   <CheckCircle className="mr-2 h-4 w-4" />
                   License Verification
                 </Button>
-                <Button variant="outline" className="w-full justify-start" onClick={() => window.location.href = "/"}>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start opacity-60 cursor-not-allowed" 
+                  disabled
+                  title="Coming Soon"
+                >
                   <Store className="mr-2 h-4 w-4" />
-                  Shop Merchandise
+                  Shop Merchandise (Coming Soon)
                 </Button>
                 <Button variant="outline" className="w-full justify-start text-destructive hover:text-destructive" onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
@@ -241,7 +268,7 @@ export default function DashboardPage() {
                 <Button 
                   variant="outline" 
                   className="w-full text-primary hover:text-primary border-primary/30 hover:border-primary/60"
-                  onClick={() => window.location.href = "/events"}
+                  onClick={() => window.location.href = "/"}
                 >
                   Browse Events
                 </Button>
@@ -326,7 +353,7 @@ export default function DashboardPage() {
                                       </p>
                                     </div>
                                   </div>
-                                  <Button variant="outline" onClick={() => window.location.href = `/tickets/${ticket.id}`}>
+                                  <Button variant="outline" onClick={() => window.location.href = "/tickets"}>
                                     View Ticket
                                   </Button>
                                 </div>
@@ -342,7 +369,7 @@ export default function DashboardPage() {
                         <p className="text-muted-foreground mt-1 mb-4">
                           You don't have any tickets for upcoming events
                         </p>
-                        <Button onClick={() => window.location.href = "/events"}>
+                        <Button onClick={() => window.location.href = "/"}>
                           Browse Events
                         </Button>
                       </div>
@@ -381,7 +408,7 @@ export default function DashboardPage() {
                                       <Badge variant="secondary">Past Event</Badge>
                                     </div>
                                   </div>
-                                  <Button variant="outline" onClick={() => window.location.href = `/tickets/${ticket.id}`}>
+                                  <Button variant="outline" onClick={() => window.location.href = "/tickets"}>
                                     View Details
                                   </Button>
                                 </div>

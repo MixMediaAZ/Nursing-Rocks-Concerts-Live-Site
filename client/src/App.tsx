@@ -44,6 +44,7 @@ import { Footer } from "@/components/footer";
 import { AdminEditingProvider } from "@/components/admin/admin-editing-provider";
 import { FloatingAdminControl } from "@/components/admin/floating-admin-control";
 import { Wallpaper } from "@/components/wallpaper";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 // We use Zustand for cart management, no provider needed
 import { AuthProvider } from "@/hooks/use-auth";
@@ -108,16 +109,18 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <AdminEditingProvider>
-          <Wallpaper />
-          <Router />
-          <FloatingAdminControl />
-          <Toaster />
-        </AdminEditingProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <AdminEditingProvider>
+            <Wallpaper />
+            <Router />
+            <FloatingAdminControl />
+            <Toaster />
+          </AdminEditingProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

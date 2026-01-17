@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { HlsVideo } from "./hls-video";
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Play } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Play, Wifi, WifiOff } from 'lucide-react';
+import { devLog } from '@/lib/dev';
 
 export interface VideoSlideshowProps {
   videos: string[];  // Array of provider-neutral video IDs (b2_*)
@@ -10,6 +11,7 @@ export interface VideoSlideshowProps {
   controls?: boolean;
   interval?: number; // Time in milliseconds between slides
   className?: string;
+  maxAutoPlays?: number; // Maximum number of videos to auto-play before switching to thumbnail mode (default: 3)
 }
 
 export function VideoSlideshow({
@@ -18,7 +20,8 @@ export function VideoSlideshow({
   muted = true,
   controls = true,
   interval = 12000, // Default 12 seconds per video
-  className = ''
+  className = '',
+  maxAutoPlays = 3 // Default: play 3 videos then switch to thumbnail mode
 }: VideoSlideshowProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
@@ -27,6 +30,45 @@ export function VideoSlideshow({
   // Track user's mute preference and interaction state
   const [userIsMuted, setUserIsMuted] = useState(true);
   const [hasInteracted, setHasInteracted] = useState(false);
+  
+  // Data saving: track play count and activate thumbnail mode after maxAutoPlays
+  const [playCount, setPlayCount] = useState(0);
+  // Load data saver preference from localStorage
+  const [dataSaverActive, setDataSaverActive] = useState(() => {
+    try {
+      const saved = localStorage.getItem('videoDataSaverEnabled');
+      return saved === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [selectedVideoIndex, setSelectedVideoIndex] = useState<number | null>(null);
+  
+  // Persist data saver preference to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('videoDataSaverEnabled', String(dataSaverActive));
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [dataSaverActive]);
+  
+  // Fetch video resources to get direct MP4 URLs (HLS may not exist)
+  const [videoUrls, setVideoUrls] = useState<Record<string, {url: string, poster?: string}>>({});
+  useEffect(() => {
+    fetch('/api/videos')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.resources)) {
+          const urlMap: Record<string, {url: string, poster?: string}> = {};
+          for (const v of data.resources) {
+            urlMap[v.public_id] = { url: v.secure_url || v.url, poster: v.poster_url };
+          }
+          setVideoUrls(urlMap);
+        }
+      })
+      .catch(() => {});
+  }, []);
   
   // Function to go to next slide
   const nextSlide = useCallback(() => {
@@ -54,11 +96,11 @@ export function VideoSlideshow({
       setIsPlaying(true);
       setUserIsMuted(false);
       setHasInteracted(true);
-      console.log('🎬 First click: Starting slideshow and unmuting audio');
+      devLog('🎬 First click: Starting slideshow and unmuting audio');
     } else {
       // Subsequent clicks: toggle slideshow pause
       setIsPlaying(prev => {
-        console.log(`🎬 Toggling slideshow: ${!prev ? 'playing' : 'paused'}`);
+        devLog(`🎬 Toggling slideshow: ${!prev ? 'playing' : 'paused'}`);
         return !prev;
       });
     }
@@ -67,23 +109,43 @@ export function VideoSlideshow({
   // Handle volume change from transport controls
   const handleVolumeChange = useCallback((isMuted: boolean) => {
     setUserIsMuted(isMuted);
-    console.log(`🔊 Volume changed via controls: ${isMuted ? 'muted' : 'unmuted'}`);
+    devLog(`🔊 Volume changed via controls: ${isMuted ? 'muted' : 'unmuted'}`);
   }, []);
   
   // Handle video completion - advance to next video
   const handleVideoEnded = useCallback(() => {
-    console.log('🎬 Video ended, advancing to next');
+    devLog('🎬 Video ended, advancing to next');
     if (isPlaying) {
-      nextSlide();
+      const newCount = playCount + 1;
+      setPlayCount(newCount);
+      
+      // Activate data saver mode after maxAutoPlays
+      if (newCount >= maxAutoPlays) {
+        setDataSaverActive(true);
+        setIsPlaying(false);
+        devLog(`💾 Data saver activated after ${newCount} videos`);
+      } else {
+        nextSlide();
+      }
     }
-  }, [isPlaying, nextSlide]);
+  }, [isPlaying, nextSlide, playCount, maxAutoPlays]);
   
   // Fallback timer in case video doesn't trigger onEnded (max duration per video)
   useEffect(() => {
-    if (isPlaying) {
+    if (isPlaying && !dataSaverActive) {
       timerRef.current = setTimeout(() => {
-        console.log('⏱️ Fallback timer triggered - advancing to next video');
-        nextSlide();
+        devLog('⏱️ Fallback timer triggered - advancing to next video');
+        const newCount = playCount + 1;
+        setPlayCount(newCount);
+        
+        // Activate data saver mode after maxAutoPlays
+        if (newCount >= maxAutoPlays) {
+          setDataSaverActive(true);
+          setIsPlaying(false);
+          devLog(`💾 Data saver activated after ${newCount} videos`);
+        } else {
+          nextSlide();
+        }
       }, interval);
     }
     
@@ -92,7 +154,7 @@ export function VideoSlideshow({
         clearTimeout(timerRef.current);
       }
     };
-  }, [isPlaying, nextSlide, interval, currentIndex]);
+  }, [isPlaying, nextSlide, interval, currentIndex, playCount, maxAutoPlays, dataSaverActive]);
   
   // Handle keyboard navigation
   useEffect(() => {
@@ -113,8 +175,29 @@ export function VideoSlideshow({
     };
   }, [nextSlide, prevSlide, toggleAutoplay]);
   
-  // Don't render if we have no videos
-  if (videos.length === 0) {
+  // Handle thumbnail click to resume playback - MUST be before any early returns
+  const handleThumbnailClick = useCallback((index: number) => {
+    setSelectedVideoIndex(index);
+    setCurrentIndex(index);
+    setDataSaverActive(false);
+    setIsPlaying(true);
+    setHasInteracted(true);
+  }, []);
+  
+  // Toggle data saver mode manually
+  const toggleDataSaver = useCallback(() => {
+    setDataSaverActive(prev => {
+      const newValue = !prev;
+      if (newValue) {
+        setIsPlaying(false);
+        setPlayCount(0); // Reset play count when manually enabling
+      }
+      return newValue;
+    });
+  }, []);
+  
+  // Don't render if we have no videos or URLs not yet loaded
+  if (videos.length === 0 || Object.keys(videoUrls).length === 0) {
     return (
       <div className={`flex items-center justify-center bg-muted h-64 rounded-lg ${className}`}>
         <div className="text-center">
@@ -126,21 +209,84 @@ export function VideoSlideshow({
   }
 
   const currentId = videos[currentIndex];
-  const isB2Video = typeof currentId === "string" && currentId.startsWith("b2_");
-  const cdnBase = (import.meta as any).env?.VITE_VIDEO_CDN_BASE_URL as string | undefined;
-  const normalizedBase = cdnBase ? cdnBase.replace(/\/+$/, "") : "";
-  const manifestUrl = isB2Video ? `${normalizedBase}/hls/${currentId}/master.m3u8` : "";
-  const posterUrl = isB2Video ? `${normalizedBase}/poster/${currentId}.jpg` : undefined;
+  const videoData = videoUrls[currentId];
+  // Use direct MP4 URL (secure_url) - HLS manifests may not exist
+  const videoUrl = videoData?.url || "";
+  const posterUrl = videoData?.poster;
+  
+  // Show error state if video URL is missing
+  if (!videoUrl && currentId) {
+    return (
+      <div className={`flex flex-col items-center justify-center bg-muted h-64 rounded-lg ${className}`}>
+        <div className="text-center">
+          <p className="text-muted-foreground mb-2">Video not available</p>
+          <p className="text-xs text-muted-foreground">The video may still be processing</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Data saver mode: show thumbnail grid instead of active player
+  if (dataSaverActive) {
+    return (
+      <div className={`relative ${className}`}>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {videos.map((videoId, index) => {
+            const vidData = videoUrls[videoId];
+            const isSelected = selectedVideoIndex === index;
+            
+            return (
+              <div
+                key={videoId}
+                className={`relative aspect-video bg-black rounded-lg overflow-hidden cursor-pointer transition-all ${
+                  isSelected ? 'ring-2 ring-primary' : 'hover:ring-1 hover:ring-white/50'
+                }`}
+                onClick={() => handleThumbnailClick(index)}
+              >
+                {vidData?.poster ? (
+                  <img
+                    src={vidData.poster}
+                    alt={`Video ${index + 1}`}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-900">
+                    <Play className="w-8 h-8 text-white/50" />
+                  </div>
+                )}
+                <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100 transition-opacity">
+                  <div className="bg-white/90 rounded-full p-3">
+                    <Play className="w-6 h-6 text-black fill-current" />
+                  </div>
+                </div>
+                {isSelected && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                    <div className="text-white text-sm font-medium">Loading...</div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`relative group ${className}`}>
       {/* Current video - key prop forces remount on video change */}
       <div 
         className="aspect-video w-full bg-black rounded-lg overflow-hidden cursor-pointer"
+        style={{
+          position: 'relative',
+          width: '100%',
+          maxWidth: '100%'
+        }}
         onClick={handleVideoClick}
       >
         <HlsVideo
-          src={manifestUrl}
+          src={videoUrl}
           poster={posterUrl}
           className="w-full h-full"
           autoPlay={autoPlay}
@@ -148,8 +294,8 @@ export function VideoSlideshow({
           controls={controls}
           loop={false}
           onEnded={handleVideoEnded}
-          onError={(error) => console.error("HLS video error:", error)}
-          onLoaded={() => console.log("HLS video loaded:", currentId)}
+          onError={(error) => devLog("HLS video error:", error)}
+          onLoaded={() => devLog("HLS video loaded:", currentId)}
           onVolumeChange={handleVolumeChange}
         />
       </div>
@@ -199,6 +345,7 @@ export function VideoSlideshow({
           />
         ))}
       </div>
+      
     </div>
   );
 }

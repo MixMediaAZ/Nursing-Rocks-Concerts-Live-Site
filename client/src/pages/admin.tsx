@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,226 +34,428 @@ import {
   Edit,
   LogOut,
   Shield,
-  Download
+  Download,
+  Video,
+  Mail,
+  Briefcase,
+  CheckCircle,
+  XCircle,
+  Building2,
+  FileCheck
 } from "lucide-react";
 import CustomCatApiSettings from "@/components/admin/custom-cat-api-settings";
 import ProductSyncTool from "@/components/admin/product-sync-tool";
-
-// Admin PIN setup - in production, this should be stored securely
-const ADMIN_PIN = "1234567";
+import { NewsletterContacts } from "@/components/admin/newsletter-contacts";
+import VideoSubmissions from "@/components/admin/video-submissions";
+import VideoApproval from "@/components/admin/video-approval";
+import { LicenseManagement } from "@/components/admin/license-management";
 
 export default function AdminPage() {
-  const [pin, setPin] = useState<string>("");
   const [authenticated, setAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [userEmail, setUserEmail] = useState<string>("");
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [showUserDialog, setShowUserDialog] = useState(false);
+  const [selectedEmployer, setSelectedEmployer] = useState<any>(null);
+  const [showEmployerDialog, setShowEmployerDialog] = useState(false);
+  const [employerJobPostOptions, setEmployerJobPostOptions] = useState({
+    perPost: false,
+    pass: false,
+    lifetime: false,
+  });
+  const [jobPostSettings, setJobPostSettings] = useState({
+    JOB_POST_PRICE_PER_POST_CENTS: "",
+    JOB_POST_PRICE_PASS_CENTS: "",
+    JOB_POST_PASS_DURATION_DAYS: "",
+    JOB_POST_PRICE_LIFETIME_CENTS: "",
+  });
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  // Check existing authentication
+  // Fetch real data from API with automatic refetching
+  const { data: eventsData, isLoading: eventsLoading } = useQuery({
+    queryKey: ['/api/events'],
+    enabled: authenticated,
+    staleTime: 0, // Always consider data stale to ensure fresh data
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+  });
+
+  const { data: productsData, isLoading: productsLoading } = useQuery({
+    queryKey: ['/api/store/products'],
+    enabled: authenticated,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+  });
+
+  const { data: usersData, isLoading: usersLoading } = useQuery({
+    queryKey: ['/api/admin/users'],
+    enabled: authenticated,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    queryFn: async () => {
+      const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+      const response = await fetch('/api/admin/users', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch users');
+      const data = await response.json();
+      return data;
+    },
+  });
+
+  const { data: jobsData, isLoading: jobsLoading } = useQuery({
+    queryKey: ['/api/admin/jobs'],
+    enabled: authenticated,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    queryFn: async () => {
+      const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+      const response = await fetch('/api/admin/jobs', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch jobs');
+      return response.json();
+    },
+  });
+
+  const { data: employersData, isLoading: employersLoading } = useQuery({
+    queryKey: ['/api/admin/employers'],
+    enabled: authenticated,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    queryFn: async () => {
+      const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+      const response = await fetch('/api/admin/employers', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch employers');
+      return response.json();
+    },
+  });
+
+  // Global app settings (admin-only via JWT)
+  const { data: appSettingsData, isLoading: appSettingsLoading } = useQuery({
+    queryKey: ['/api/settings'],
+    enabled: authenticated,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    queryFn: async () => {
+      const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+      const response = await fetch('/api/settings', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch settings');
+      return response.json();
+    },
+  });
+
   useEffect(() => {
-    // For development - set to false to require authentication
-    const bypassAuth = false;
+    if (!Array.isArray(appSettingsData)) return;
 
-    if (bypassAuth) {
-      // Set admin authentication for testing
-      localStorage.setItem("adminToken", "test-token");
-      localStorage.setItem("isAdmin", "true");
-      localStorage.setItem("adminPinVerified", "true");
-      setAuthenticated(true);
-    } else {
-      // Check if user has already been authenticated
-      const isAdmin = localStorage.getItem("isAdmin") === "true";
-      const adminPinVerified = localStorage.getItem("adminPinVerified") === "true";
-      const adminToken = localStorage.getItem("adminToken");
-      
-      if ((isAdmin || adminPinVerified) && adminToken) {
-        setAuthenticated(true);
-      } else {
-        setAuthenticated(false);
-        setPin("");
-        // Clear any potentially invalid auth data
-        localStorage.removeItem("isAdmin");
-        localStorage.removeItem("adminPinVerified");
-        localStorage.removeItem("adminToken");
-      }
-    }
-  }, []);
+    const getSettingValue = (key: string) => {
+      const row = appSettingsData.find((s: any) => s?.key === key);
+      return typeof row?.value === "string" ? row.value : "";
+    };
 
-  const handlePinInput = (digit: string) => {
-    if (pin.length < 7) {
-      const newPin = pin + digit;
-      setPin(newPin);
-    }
-  };
+    setJobPostSettings({
+      JOB_POST_PRICE_PER_POST_CENTS: getSettingValue("JOB_POST_PRICE_PER_POST_CENTS"),
+      JOB_POST_PRICE_PASS_CENTS: getSettingValue("JOB_POST_PRICE_PASS_CENTS"),
+      JOB_POST_PASS_DURATION_DAYS: getSettingValue("JOB_POST_PASS_DURATION_DAYS"),
+      JOB_POST_PRICE_LIFETIME_CENTS: getSettingValue("JOB_POST_PRICE_LIFETIME_CENTS"),
+    });
+  }, [appSettingsData]);
 
-  const handleBackspace = () => {
-    setPin(prev => prev.slice(0, -1));
-  };
+  const saveJobPostSettingsMutation = useMutation({
+    mutationFn: async () => {
+      const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+      const keys = Object.keys(jobPostSettings) as Array<keyof typeof jobPostSettings>;
 
-  const handleClear = () => {
-    setPin("");
-  };
-
-  const handleSubmit = async () => {
-    setLoading(true);
-    
-    try {
-      if (pin === ADMIN_PIN) {
-        // Request a JWT token from the server
-        const response = await fetch('/api/admin/token', {
+      for (const key of keys) {
+        const value = jobPostSettings[key];
+        const response = await fetch('/api/settings', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
           },
-          body: JSON.stringify({ pin }),
+          body: JSON.stringify({
+            key,
+            value,
+            description: "Employer job posting pricing (managed via Admin Dashboard)",
+            is_sensitive: false,
+          }),
         });
-        
-        if (response.ok) {
-          const { token } = await response.json();
-          
-          // Store the token in localStorage for API requests
-          localStorage.setItem("adminToken", token);
-          localStorage.setItem("isAdmin", "true");
-          // Also set the flag for admin PIN verification for gallery access
-          localStorage.setItem("adminPinVerified", "true");
-          
-          setAuthenticated(true);
-          toast({
-            title: "Authentication Successful",
-            description: "Welcome to the admin dashboard",
-            variant: "default",
-          });
-        } else {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to authenticate');
+
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err.message || `Failed to save setting ${key}`);
         }
-      } else {
-        toast({
-          title: "Authentication Failed",
-          description: "Invalid PIN code. Please try again.",
-          variant: "destructive",
-        });
-        setPin("");
       }
-    } catch (error) {
-      console.error('Admin authentication error:', error);
+    },
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ['/api/settings'] });
       toast({
-        title: "Authentication Failed",
-        description: error.message || "An error occurred during authentication.",
+        title: "Saved",
+        description: "Job posting pricing settings have been updated.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Save Failed",
+        description: error.message,
         variant: "destructive",
       });
-      setPin("");
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });
+
+  useEffect(() => {
+    if (!selectedEmployer) return;
+    const opts = selectedEmployer.job_post_options || {};
+    setEmployerJobPostOptions({
+      perPost: !!opts.perPost,
+      pass: !!opts.pass,
+      lifetime: !!opts.lifetime,
+    });
+  }, [selectedEmployer]);
+
+  const updateEmployerJobPostOptionsMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedEmployer?.id) throw new Error("No employer selected");
+      const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+      const response = await fetch(`/api/admin/employers/${selectedEmployer.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          job_post_options: employerJobPostOptions,
+        }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to update employer");
+      }
+      return response.json();
+    },
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ['/api/admin/employers'] });
+      toast({
+        title: "Saved",
+        description: "Employer job posting options updated.",
+      });
+      setShowEmployerDialog(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Save Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update user mutation
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ userId, updates }: { userId: number; updates: { is_admin?: boolean; is_verified?: boolean; is_suspended?: boolean } }) => {
+      const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(updates),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update user');
+      }
+      return response.json();
+    },
+    onSuccess: async () => {
+      // Immediately refetch users data to update dashboard
+      await queryClient.refetchQueries({ queryKey: ['/api/admin/users'] });
+      toast({
+        title: "User Updated",
+        description: "User information has been updated successfully.",
+      });
+      setShowUserDialog(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete user');
+      }
+      return response.json();
+    },
+    onSuccess: async () => {
+      // Immediately refetch users data to update dashboard
+      await queryClient.refetchQueries({ queryKey: ['/api/admin/users'] });
+      toast({
+        title: "User Deleted",
+        description: "User has been permanently deleted.",
+      });
+      setShowUserDialog(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Delete Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      // Don't close dialog on error so user can see what went wrong
+    },
+  });
+
+  // Check database-based admin authentication
+  useEffect(() => {
+    const checkAdminAuth = () => {
+      try {
+        // Get user data from localStorage
+        const token = localStorage.getItem("token");
+        const userDataStr = localStorage.getItem("user");
+        const isAdmin = localStorage.getItem("isAdmin") === "true";
+        
+        if (!token || !userDataStr) {
+          // No authentication found, redirect to login
+          setAuthenticated(false);
+          setLoading(false);
+          toast({
+            variant: "destructive",
+            title: "Authentication Required",
+            description: "Please login with an admin account to access this page.",
+          });
+          setTimeout(() => {
+            window.location.href = "/login?redirect=/admin";
+          }, 1500);
+          return;
+        }
+        
+        // Parse user data
+        const userData = JSON.parse(userDataStr);
+        
+        // Check if user is an admin
+        if (!isAdmin && !userData.is_admin) {
+          // User is not an admin, redirect to regular dashboard
+          setAuthenticated(false);
+          setLoading(false);
+          toast({
+            variant: "destructive",
+            title: "Access Denied",
+            description: "You do not have admin privileges.",
+          });
+          setTimeout(() => {
+            window.location.href = "/dashboard";
+          }, 1500);
+          return;
+        }
+        
+        // User is authenticated as admin
+        setUserEmail(userData.email);
+        setAuthenticated(true);
+        setLoading(false);
+      } catch (error) {
+        console.error("Admin auth check error:", error);
+        setAuthenticated(false);
+        setLoading(false);
+        toast({
+          variant: "destructive",
+          title: "Authentication Error",
+          description: "Please login again.",
+        });
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 1500);
+      }
+    };
+    
+    checkAdminAuth();
+  }, [toast]);
 
   const handleLogout = () => {
-    // Clear authentication state
-    setAuthenticated(false);
+    // Clear all authentication state
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     localStorage.removeItem("isAdmin");
     localStorage.removeItem("adminPinVerified");
     localStorage.removeItem("adminToken");
-    
-    // Also clear editing mode state
     localStorage.removeItem("editMode");
-    
-    // Reset PIN input
-    setPin("");
     
     toast({
       title: "Logged Out",
-      description: "You have been logged out of the admin dashboard and editing mode has been disabled",
+      description: "You have been logged out successfully.",
       variant: "default",
     });
     
-    // Small delay before redirecting to home page
+    // Redirect to login page
     setTimeout(() => {
-      window.location.href = "/";
-    }, 1500);
+      window.location.href = "/login";
+    }, 1000);
   };
 
-  // PIN pad component
-  const PinPad = () => (
-    <div className="flex flex-col items-center justify-center min-h-[70vh]">
-      <Card className="w-full max-w-md mx-auto bg-white shadow-xl">
-        <CardHeader className="text-center pb-2">
-          <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
-            <Lock className="h-6 w-6 text-primary" /> Admin Authentication
-          </CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">Enter your 7-digit PIN to access admin dashboard</p>
-        </CardHeader>
-        <CardContent className="pt-4">
-          <div className="flex justify-center mb-8">
-            <div className="flex gap-2">
-              {Array.from({ length: 7 }).map((_, i) => (
-                <div 
-                  key={i} 
-                  className={`w-9 h-12 border-2 rounded-md flex items-center justify-center text-xl font-bold transition-all
-                    ${pin[i] ? "border-primary bg-primary/10" : "border-gray-300"}`}
-                >
-                  {pin[i] ? "•" : ""}
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-              <Button 
-                key={num} 
-                variant="outline" 
-                className="h-16 text-xl font-semibold hover:bg-primary/5 hover:border-primary/50 active:scale-95 transition-all"
-                onClick={() => handlePinInput(num.toString())}
-              >
-                {num}
-              </Button>
-            ))}
-            <Button 
-              variant="outline" 
-              className="h-16 text-sm font-medium text-red-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 active:scale-95 transition-all"
-              onClick={handleClear}
-            >
-              Clear
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-16 text-xl font-semibold hover:bg-primary/5 hover:border-primary/50 active:scale-95 transition-all"
-              onClick={() => handlePinInput("0")}
-            >
-              0
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-16 flex items-center justify-center hover:bg-primary/5 hover:border-primary/50 active:scale-95 transition-all"
-              onClick={handleBackspace}
-            >
-              <Delete className="h-6 w-6" />
-            </Button>
-          </div>
-          
-          <Button 
-            className="w-full h-14 mt-2 text-lg font-bold bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white shadow-md hover:shadow-lg transition-all"
-            onClick={handleSubmit}
-            disabled={pin.length !== 7 || loading}
-          >
-            {loading ? (
-              <span className="flex items-center justify-center">
-                <svg className="animate-spin mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Verifying...
-              </span>
-            ) : (
-              <span className="flex items-center justify-center gap-2">
-                <KeyRound className="w-5 h-5" /> Sign In
-              </span>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  // Loading screen while checking authentication
+  if (loading) {
+    return (
+      <>
+        <Helmet>
+          <title>Admin Dashboard - Loading...</title>
+        </Helmet>
+        <div className="flex flex-col items-center justify-center min-h-[70vh]">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mb-4"></div>
+          <p className="text-lg text-muted-foreground">Verifying admin access...</p>
+        </div>
+      </>
+    );
+  }
+
+  // If not authenticated, show access denied (will redirect)
+  if (!authenticated) {
+    return (
+      <>
+        <Helmet>
+          <title>Access Denied</title>
+        </Helmet>
+        <div className="flex flex-col items-center justify-center min-h-[70vh]">
+          <Shield className="h-16 w-16 text-red-500 mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
+          <p className="text-muted-foreground">Redirecting to login...</p>
+        </div>
+      </>
+    );
+  }
 
   // Admin Dashboard Component
   const AdminDashboard = () => {
@@ -262,12 +465,8 @@ export default function AdminPage() {
     const storedTab = localStorage.getItem("adminActiveTab");
     const [activeTab, setActiveTab] = useState(tabParam || storedTab || "overview");
     
-    // Admin mode state - controls access to editing features
+    // Admin mode is always true for authenticated admins
     const [isAdminMode, setIsAdminMode] = useState(true);
-    
-    // PIN verification dialog state
-    const [showPinDialog, setShowPinDialog] = useState(false);
-    const [pinInput, setPinInput] = useState("");
     
     // Effect to handle scrolling to API settings when tab=store is in URL
     useEffect(() => {
@@ -330,15 +529,52 @@ export default function AdminPage() {
       localStorage.getItem("editMode") === "true"
     );
     
+    // Page view selector: dashboard or homepage
+    const [editLocation, setEditLocation] = useState<'dashboard' | 'homepage'>(
+      (localStorage.getItem("editLocation") as 'dashboard' | 'homepage') || 'dashboard'
+    );
+    
+    // Sync edit mode state when toggled from homepage or other components
+    useEffect(() => {
+      const checkEditMode = () => {
+        const editMode = localStorage.getItem("editMode") === "true";
+        setIsEditModeActive(editMode);
+      };
+      
+      // Listen for changes from homepage toggle
+      window.addEventListener('admin-mode-changed', checkEditMode);
+      window.addEventListener('storage', checkEditMode);
+      
+      return () => {
+        window.removeEventListener('admin-mode-changed', checkEditMode);
+        window.removeEventListener('storage', checkEditMode);
+      };
+    }, []);
+    
     // Open live site in admin mode for editing
     const openLiveSiteInAdminMode = (editMode = true) => {
+      console.log('[Admin] Opening live site in admin mode:', editMode);
+      
+      // Ensure all required flags are set
       localStorage.setItem("isAdmin", "true");
       localStorage.setItem("adminPinVerified", "true");
       localStorage.setItem("editMode", editMode ? "true" : "false");
       setIsEditModeActive(editMode);
       
+      // Dispatch event to notify other components
+      window.dispatchEvent(new Event('admin-mode-changed'));
+      
+      console.log('[Admin] localStorage flags set:', {
+        isAdmin: localStorage.getItem("isAdmin"),
+        editMode: localStorage.getItem("editMode"),
+        adminPinVerified: localStorage.getItem("adminPinVerified")
+      });
+      
       if (editMode) {
-        window.location.href = "/";
+        // Add a small delay to ensure localStorage is updated before navigation
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 100);
       } else {
         toast({
           title: "Element Edit Mode Disabled",
@@ -348,25 +584,23 @@ export default function AdminPage() {
       }
     };
 
-    // Function to handle PIN verification for admin mode toggle
-    const handleVerifyPinForAdminMode = () => {
-      if (pinInput === ADMIN_PIN) {
-        setIsAdminMode(true);
-        setShowPinDialog(false);
-        setPinInput("");
-        
+    // Admin mode toggle (no PIN needed for authenticated admins)
+    const toggleAdminMode = () => {
+      const newMode = !isAdminMode;
+      setIsAdminMode(newMode);
+      
+      if (newMode) {
+        localStorage.setItem("editMode", "true");
         toast({
-          title: "Admin Mode Activated",
-          description: "You now have full admin editing capabilities",
-          variant: "default",
+          title: "Edit Mode Enabled",
+          description: "You can now edit content on the site.",
         });
       } else {
+        localStorage.removeItem("editMode");
         toast({
-          title: "Invalid PIN",
-          description: "The PIN you entered is incorrect",
-          variant: "destructive",
+          title: "Edit Mode Disabled",
+          description: "Content editing has been disabled.",
         });
-        setPinInput("");
       }
     };
     
@@ -381,31 +615,31 @@ export default function AdminPage() {
               </Badge>
               
               <span className="text-sm font-medium mr-3">
-                Mode: <span className="font-bold">{isAdminMode ? "Active" : "Inactive"}</span>
+                Logged in as: <span className="font-bold">{userEmail}</span>
+              </span>
+              
+              <span className="text-sm font-medium mr-3">
+                View: <span className="font-bold">{editLocation === 'homepage' ? 'Homepage' : 'Dashboard'}</span>
               </span>
             </div>
             
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center space-x-2 bg-white py-1 px-3 rounded-full border flex-shrink-0">
-                <Label htmlFor="admin-mode-toggle" className="text-sm whitespace-nowrap">
-                  Admin Mode
+                <Label htmlFor="page-view-toggle" className="text-sm whitespace-nowrap">
+                  {editLocation === 'homepage' ? 'Homepage' : 'Dashboard'}
                 </Label>
                 <Switch
-                  id="admin-mode-toggle"
-                  checked={isAdminMode}
+                  id="page-view-toggle"
+                  checked={editLocation === 'homepage'}
                   onCheckedChange={(checked) => {
-                    if (!checked) {
-                      // Turning admin mode off
-                      setIsAdminMode(false);
-                      localStorage.removeItem("adminToken");
-                      toast({
-                        title: "Admin Mode Disabled",
-                        description: "You have exited admin mode. PIN will be required to re-enter.",
-                        variant: "default",
-                      });
+                    const location = checked ? 'homepage' : 'dashboard';
+                    setEditLocation(location);
+                    localStorage.setItem("editLocation", location);
+                    // Navigate to the selected page
+                    if (checked) {
+                      window.location.href = "/";
                     } else {
-                      // Show PIN dialog to re-enable admin mode
-                      setShowPinDialog(true);
+                      window.location.href = "/admin";
                     }
                   }}
                 />
@@ -433,86 +667,6 @@ export default function AdminPage() {
             </AlertDescription>
           </Alert>
         )}
-        
-        {/* PIN Verification Dialog */}
-        <Dialog open={showPinDialog} onOpenChange={setShowPinDialog}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Lock className="h-5 w-5 text-primary" /> Enter Admin PIN
-              </DialogTitle>
-              <DialogDescription>
-                Please enter your 7-digit admin PIN to enable admin mode
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="flex justify-center my-4">
-              <div className="flex gap-2">
-                {Array.from({ length: 7 }).map((_, i) => (
-                  <div 
-                    key={i} 
-                    className={`w-8 h-11 border-2 rounded-md flex items-center justify-center text-xl font-bold transition-all
-                      ${pinInput[i] ? "border-primary bg-primary/10" : "border-gray-300"}`}
-                  >
-                    {pinInput[i] ? "•" : ""}
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-                <Button 
-                  key={num} 
-                  variant="outline" 
-                  className="h-12 text-lg font-semibold hover:bg-primary/5 hover:border-primary/50"
-                  onClick={() => {
-                    if (pinInput.length < 7) {
-                      setPinInput(prev => prev + num.toString());
-                    }
-                  }}
-                >
-                  {num}
-                </Button>
-              ))}
-              <Button 
-                variant="outline" 
-                className="h-12 text-sm font-medium text-red-500 hover:text-red-600 hover:bg-red-50"
-                onClick={() => setPinInput("")}
-              >
-                Clear
-              </Button>
-              <Button 
-                variant="outline" 
-                className="h-12 text-lg font-semibold hover:bg-primary/5 hover:border-primary/50"
-                onClick={() => {
-                  if (pinInput.length < 7) {
-                    setPinInput(prev => prev + "0");
-                  }
-                }}
-              >
-                0
-              </Button>
-              <Button 
-                variant="outline" 
-                className="h-12 flex items-center justify-center hover:bg-primary/5 hover:border-primary/50"
-                onClick={() => setPinInput(prev => prev.slice(0, -1))}
-              >
-                <Delete className="h-5 w-5" />
-              </Button>
-            </div>
-            
-            <DialogFooter>
-              <Button
-                className="w-full bg-primary"
-                disabled={pinInput.length !== 7}
-                onClick={handleVerifyPinForAdminMode}
-              >
-                <KeyRound className="h-4 w-4 mr-2" /> Verify PIN
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
         
         <div className="flex flex-wrap justify-between items-center gap-y-4 mb-6">
           <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -553,7 +707,7 @@ export default function AdminPage() {
         </div>
 
         <Tabs value={activeTab} defaultValue="overview" className="w-full" onValueChange={setActiveTab}>
-          <TabsList className="w-full grid grid-cols-2 md:grid-cols-7 mb-8">
+          <TabsList className="w-full grid grid-cols-2 md:grid-cols-12 mb-8">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="editor">
               <div className="flex items-center gap-1">
@@ -564,7 +718,32 @@ export default function AdminPage() {
             <TabsTrigger value="gallery">Gallery</TabsTrigger>
             <TabsTrigger value="content">Content</TabsTrigger>
             <TabsTrigger value="store">Store</TabsTrigger>
+            <TabsTrigger value="jobs">
+              <div className="flex items-center gap-1">
+                <Briefcase className="h-4 w-4" /> Jobs
+              </div>
+            </TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="licenses">
+              <div className="flex items-center gap-1">
+                <FileCheck className="h-4 w-4" /> Licenses
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="newsletter">
+              <div className="flex items-center gap-1">
+                <Mail className="h-4 w-4" /> Newsletter
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="video-submissions">
+              <div className="flex items-center gap-1">
+                <Video className="h-4 w-4" /> Submissions
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="video-approval">
+              <div className="flex items-center gap-1">
+                <Shield className="h-4 w-4" /> Approval
+              </div>
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="overview">
@@ -618,7 +797,13 @@ export default function AdminPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold">4</p>
+                  {eventsLoading ? (
+                    <div className="animate-pulse h-8 bg-muted rounded w-16 mb-1"></div>
+                  ) : (
+                    <p className="text-2xl font-bold">
+                      {Array.isArray(eventsData) ? eventsData.length : 0}
+                    </p>
+                  )}
                   <p className="text-sm text-muted-foreground">Upcoming events</p>
                   <Button variant="link" className="p-0 h-auto mt-2">
                     Manage Events
@@ -636,7 +821,13 @@ export default function AdminPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold">23</p>
+                  {productsLoading ? (
+                    <div className="animate-pulse h-8 bg-muted rounded w-16 mb-1"></div>
+                  ) : (
+                    <p className="text-2xl font-bold">
+                      {Array.isArray(productsData) ? productsData.length : 0}
+                    </p>
+                  )}
                   <p className="text-sm text-muted-foreground">Products</p>
                   <Button variant="link" className="p-0 h-auto mt-2">
                     Manage Store
@@ -654,7 +845,13 @@ export default function AdminPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold">152</p>
+                  {usersLoading ? (
+                    <div className="animate-pulse h-8 bg-muted rounded w-16 mb-1"></div>
+                  ) : (
+                    <p className="text-2xl font-bold">
+                      {Array.isArray(usersData) ? usersData.length : 0}
+                    </p>
+                  )}
                   <p className="text-sm text-muted-foreground">Registered users</p>
                   <Button variant="link" className="p-0 h-auto mt-2">
                     Manage Users
@@ -779,7 +976,407 @@ export default function AdminPage() {
               </div>
             </div>
           </TabsContent>
-          
+
+          <TabsContent value="jobs">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold">Jobs Board Management</h2>
+              </div>
+
+              {/* Employer Job Posting Pricing (beta) */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Employer Job Posting Pricing (Beta)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    These values are used by the Employer Dashboard payment flow. All amounts are stored in cents.
+                  </p>
+
+                  {appSettingsLoading ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                      Loading pricing settings...
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="JOB_POST_PRICE_PER_POST_CENTS">Per-post price (cents)</Label>
+                        <Input
+                          id="JOB_POST_PRICE_PER_POST_CENTS"
+                          inputMode="numeric"
+                          placeholder="e.g. 9900"
+                          value={jobPostSettings.JOB_POST_PRICE_PER_POST_CENTS}
+                          onChange={(e) =>
+                            setJobPostSettings((s) => ({ ...s, JOB_POST_PRICE_PER_POST_CENTS: e.target.value }))
+                          }
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="JOB_POST_PRICE_PASS_CENTS">Pass price (cents)</Label>
+                        <Input
+                          id="JOB_POST_PRICE_PASS_CENTS"
+                          inputMode="numeric"
+                          placeholder="e.g. 29900"
+                          value={jobPostSettings.JOB_POST_PRICE_PASS_CENTS}
+                          onChange={(e) =>
+                            setJobPostSettings((s) => ({ ...s, JOB_POST_PRICE_PASS_CENTS: e.target.value }))
+                          }
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="JOB_POST_PASS_DURATION_DAYS">Pass duration (days)</Label>
+                        <Input
+                          id="JOB_POST_PASS_DURATION_DAYS"
+                          inputMode="numeric"
+                          placeholder="e.g. 30"
+                          value={jobPostSettings.JOB_POST_PASS_DURATION_DAYS}
+                          onChange={(e) =>
+                            setJobPostSettings((s) => ({ ...s, JOB_POST_PASS_DURATION_DAYS: e.target.value }))
+                          }
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="JOB_POST_PRICE_LIFETIME_CENTS">Lifetime price (cents)</Label>
+                        <Input
+                          id="JOB_POST_PRICE_LIFETIME_CENTS"
+                          inputMode="numeric"
+                          placeholder="e.g. 99900"
+                          value={jobPostSettings.JOB_POST_PRICE_LIFETIME_CENTS}
+                          onChange={(e) =>
+                            setJobPostSettings((s) => ({ ...s, JOB_POST_PRICE_LIFETIME_CENTS: e.target.value }))
+                          }
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-4 flex items-center justify-end">
+                    <Button
+                      onClick={() => saveJobPostSettingsMutation.mutate()}
+                      disabled={saveJobPostSettingsMutation.isPending}
+                    >
+                      {saveJobPostSettingsMutation.isPending ? "Saving..." : "Save pricing"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Jobs Stats Overview */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Jobs</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {Array.isArray(jobsData) ? jobsData.length : 0}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Active Jobs</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-600">
+                      {Array.isArray(jobsData) ? jobsData.filter((j: any) => j.is_active).length : 0}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Pending Approval</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-orange-600">
+                      {Array.isArray(jobsData) ? jobsData.filter((j: any) => !j.is_approved && j.is_active).length : 0}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Employers</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {Array.isArray(employersData) ? employersData.length : 0}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Job Listings Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Job Listings</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {jobsLoading ? (
+                    <div className="flex justify-center py-8">
+                      <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+                    </div>
+                  ) : Array.isArray(jobsData) && jobsData.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left p-3">Title</th>
+                            <th className="text-left p-3">Employer</th>
+                            <th className="text-left p-3">Location</th>
+                            <th className="text-left p-3">Status</th>
+                            <th className="text-left p-3">Approval</th>
+                            <th className="text-left p-3">Views</th>
+                            <th className="text-left p-3">Applications</th>
+                            <th className="text-left p-3">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {jobsData.map((job: any) => (
+                            <tr key={job.id} className="border-b hover:bg-muted/50">
+                              <td className="p-3 font-medium">{job.title}</td>
+                              <td className="p-3">{job.employer?.name || 'N/A'}</td>
+                              <td className="p-3">{job.location}</td>
+                              <td className="p-3">
+                                <Badge variant={job.is_active ? "default" : "secondary"}>
+                                  {job.is_active ? "Active" : "Inactive"}
+                                </Badge>
+                              </td>
+                              <td className="p-3">
+                                {job.is_approved ? (
+                                  <Badge variant="default" className="bg-green-500">
+                                    <CheckCircle className="h-3 w-3 mr-1" /> Approved
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="destructive">
+                                    <XCircle className="h-3 w-3 mr-1" /> Pending
+                                  </Badge>
+                                )}
+                              </td>
+                              <td className="p-3">{job.views_count || 0}</td>
+                              <td className="p-3">{job.applications_count || 0}</td>
+                              <td className="p-3">
+                                <div className="flex gap-2">
+                                  {!job.is_approved ? (
+                                    <Button
+                                      size="sm"
+                                      variant="default"
+                                      className="bg-green-600 hover:bg-green-700"
+                                      onClick={async () => {
+                                        try {
+                                          const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+                                          await fetch(`/api/admin/jobs/${job.id}/approve`, {
+                                            method: 'POST',
+                                            headers: {
+                                              'Authorization': `Bearer ${token}`,
+                                              'Content-Type': 'application/json',
+                                            },
+                                          });
+                                          await queryClient.refetchQueries({ queryKey: ['/api/admin/jobs'] });
+                                          toast({
+                                            title: "Job Approved",
+                                            description: "Job listing is now visible to users",
+                                          });
+                                        } catch (error) {
+                                          toast({
+                                            title: "Error",
+                                            description: "Failed to approve job",
+                                            variant: "destructive",
+                                          });
+                                        }
+                                      }}
+                                    >
+                                      Approve
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={async () => {
+                                        try {
+                                          const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+                                          await fetch(`/api/admin/jobs/${job.id}/reject`, {
+                                            method: 'POST',
+                                            headers: {
+                                              'Authorization': `Bearer ${token}`,
+                                              'Content-Type': 'application/json',
+                                            },
+                                          });
+                                          await queryClient.refetchQueries({ queryKey: ['/api/admin/jobs'] });
+                                          toast({
+                                            title: "Job Unapproved",
+                                            description: "Job listing is now hidden from users",
+                                          });
+                                        } catch (error) {
+                                          toast({
+                                            title: "Error",
+                                            description: "Failed to unapprove job",
+                                            variant: "destructive",
+                                          });
+                                        }
+                                      }}
+                                    >
+                                      Unapprove
+                                    </Button>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={async () => {
+                                      if (window.confirm('Are you sure you want to delete this job listing?')) {
+                                        try {
+                                          const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+                                          await fetch(`/api/admin/jobs/${job.id}`, {
+                                            method: 'DELETE',
+                                            headers: {
+                                              'Authorization': `Bearer ${token}`,
+                                            },
+                                          });
+                                          await queryClient.refetchQueries({ queryKey: ['/api/admin/jobs'] });
+                                          toast({
+                                            title: "Job Deleted",
+                                            description: "Job listing has been removed",
+                                          });
+                                        } catch (error) {
+                                          toast({
+                                            title: "Error",
+                                            description: "Failed to delete job",
+                                            variant: "destructive",
+                                          });
+                                        }
+                                      }
+                                    }}
+                                  >
+                                    Delete
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Briefcase className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>No job listings yet</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Employers Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Employers</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {employersLoading ? (
+                    <div className="flex justify-center py-8">
+                      <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+                    </div>
+                  ) : Array.isArray(employersData) && employersData.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left p-3">Name</th>
+                            <th className="text-left p-3">Contact</th>
+                            <th className="text-left p-3">Location</th>
+                            <th className="text-left p-3">Verification</th>
+                            <th className="text-left p-3">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {employersData.map((employer: any) => (
+                            <tr key={employer.id} className="border-b hover:bg-muted/50">
+                              <td className="p-3 font-medium">{employer.company_name || employer.name}</td>
+                              <td className="p-3">{employer.contact_email}</td>
+                              <td className="p-3">{employer.location || `${employer.city || ""}${employer.state ? `, ${employer.state}` : ""}`}</td>
+                              <td className="p-3">
+                                {employer.is_verified ? (
+                                  <Badge variant="default" className="bg-green-500">
+                                    <CheckCircle className="h-3 w-3 mr-1" /> Verified
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary">
+                                    <XCircle className="h-3 w-3 mr-1" /> Unverified
+                                  </Badge>
+                                )}
+                              </td>
+                              <td className="p-3">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setSelectedEmployer(employer);
+                                    setShowEmployerDialog(true);
+                                  }}
+                                >
+                                  Manage
+                                </Button>
+                                {!employer.is_verified && (
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    onClick={async () => {
+                                      try {
+                                        const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+                                        await fetch(`/api/admin/employers/${employer.id}/verify`, {
+                                          method: 'POST',
+                                          headers: {
+                                            'Authorization': `Bearer ${token}`,
+                                          },
+                                        });
+                                        await queryClient.refetchQueries({ queryKey: ['/api/admin/employers'] });
+                                        toast({
+                                          title: "Employer Verified",
+                                          description: "Employer can now post jobs",
+                                        });
+                                      } catch (error) {
+                                        toast({
+                                          title: "Error",
+                                          description: "Failed to verify employer",
+                                          variant: "destructive",
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    Verify
+                                  </Button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Building2 className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>No employers registered yet</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="newsletter">
+            <NewsletterContacts />
+          </TabsContent>
+
+          <TabsContent value="video-submissions">
+            <VideoSubmissions />
+          </TabsContent>
+
+          <TabsContent value="video-approval">
+            <VideoApproval />
+          </TabsContent>
+
           <TabsContent value="editor">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Editor Status Card */}
@@ -816,10 +1413,12 @@ export default function AdminPage() {
                         onCheckedChange={(checked) => {
                           localStorage.setItem("editMode", checked ? "true" : "false");
                           setIsEditModeActive(checked);
+                          // Dispatch event to sync with homepage and other components
+                          window.dispatchEvent(new Event('admin-mode-changed'));
                           toast({
                             title: checked ? "Editor Enabled" : "Editor Disabled",
                             description: checked 
-                              ? "Element editor is now active. Visit any page to edit elements." 
+                              ? "Element editor is now active on dashboard and homepage." 
                               : "Element editor has been deactivated.",
                             variant: "default",
                           });
@@ -1024,59 +1623,76 @@ export default function AdminPage() {
                 <CardTitle>Event Management</CardTitle>
               </CardHeader>
               <CardContent>
-                <p>Manage concert events, venues, schedules, and ticket sales.</p>
-                <div className="mt-4 space-y-4">
-                  <div className="flex flex-col gap-2">
-                    <h3 className="font-semibold">Upcoming Events</h3>
-                    {["The Healing Harmonies - Chicago", "Heroes in Scrubs - New York", "Nurse Beats - Los Angeles", "Stethoscope Symphony - Miami"].map((event, i) => (
-                      <div key={i} className="p-3 border rounded-md flex justify-between items-center">
-                        <span>{event}</span>
-                        <div className="flex gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => {
-                              toast({
-                                title: "Edit Event",
-                                description: `Editing ${event}...`,
-                                variant: "default",
-                              });
-                            }}
-                          >
-                            Edit
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-red-500"
-                            onClick={() => {
-                              toast({
-                                title: "Delete Event",
-                                description: `${event} has been deleted.`,
-                                variant: "destructive",
-                              });
-                            }}
-                          >
-                            Delete
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                <p className="mb-4">Manage concert events, venues, schedules, and ticket sales.</p>
+                
+                {eventsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    <span className="ml-2 text-muted-foreground">Loading events...</span>
                   </div>
-                  
-                  <Button 
-                    className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white"
-                    onClick={() => {
-                      toast({
-                        title: "Add New Event",
-                        description: "Opening event creation form...",
-                        variant: "default",
-                      });
-                    }}
-                  >
-                    Add New Event
-                  </Button>
-                </div>
+                ) : eventsData && Array.isArray(eventsData) && eventsData.length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="flex flex-col gap-2">
+                      <h3 className="font-semibold">Upcoming Events</h3>
+                      {eventsData.map((event: any) => (
+                        <div key={event.id} className="p-3 border rounded-md flex justify-between items-center">
+                          <div className="flex flex-col">
+                            <span className="font-medium">{event.title}</span>
+                            <span className="text-sm text-muted-foreground">
+                              {event.location} • {new Date(event.date).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => {
+                                toast({
+                                  title: "Feature Coming Soon",
+                                  description: "Event editing functionality is under development.",
+                                });
+                              }}
+                            >
+                              Edit
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-red-500"
+                              onClick={() => {
+                                toast({
+                                  title: "Feature Coming Soon",
+                                  description: "Event deletion functionality is under development.",
+                                  variant: "destructive",
+                                });
+                              }}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Calendar className="h-12 w-12 text-muted-foreground mb-3" />
+                    <p className="text-muted-foreground">No events created yet.</p>
+                    <p className="text-sm text-muted-foreground">Events will appear here once they are added to the database.</p>
+                  </div>
+                )}
+                
+                <Button 
+                  className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white mt-4"
+                  onClick={() => {
+                    toast({
+                      title: "Feature Coming Soon",
+                      description: "Event creation functionality is under development.",
+                    });
+                  }}
+                >
+                  Add New Event
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -1258,9 +1874,15 @@ export default function AdminPage() {
                   <CardTitle>Store Products</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p>Manage products, orders, and promotions.</p>
-                  <div className="mt-4 space-y-4">
-                    <div className="flex flex-col gap-2">
+                  <p className="mb-4">Manage products, orders, and promotions.</p>
+                  
+                  {productsLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      <span className="ml-2 text-muted-foreground">Loading products...</span>
+                    </div>
+                  ) : productsData && Array.isArray(productsData) && productsData.length > 0 ? (
+                    <div className="space-y-4">
                       <h3 className="font-semibold">Products</h3>
                       <div className="border rounded-md overflow-hidden">
                         <table className="min-w-full divide-y divide-gray-200">
@@ -1281,21 +1903,16 @@ export default function AdminPage() {
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
-                            {[
-                              { name: "Nursing Rocks T-Shirt", price: "$24.99", stock: 45 },
-                              { name: "Concert Mug", price: "$12.99", stock: 78 },
-                              { name: "Support a Nurse Bundle", price: "$49.99", stock: 23 },
-                              { name: "Exclusive Hoodie", price: "$39.99", stock: 12 },
-                            ].map((product, i) => (
-                              <tr key={i}>
+                            {productsData.map((product: any) => (
+                              <tr key={product.id}>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <div className="text-sm font-medium text-gray-900">{product.name}</div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="text-sm text-gray-500">{product.price}</div>
+                                  <div className="text-sm text-gray-500">${parseFloat(product.price).toFixed(2)}</div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="text-sm text-gray-500">{product.stock}</div>
+                                  <div className="text-sm text-gray-500">{product.stock_quantity || 0}</div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                   <div className="flex gap-2">
@@ -1304,9 +1921,8 @@ export default function AdminPage() {
                                       size="sm"
                                       onClick={() => {
                                         toast({
-                                          title: "Edit Product",
-                                          description: `Editing ${product.name}...`,
-                                          variant: "default",
+                                          title: "Feature Coming Soon",
+                                          description: "Product editing functionality is under development.",
                                         });
                                       }}
                                     >
@@ -1318,8 +1934,8 @@ export default function AdminPage() {
                                       className="text-red-500"
                                       onClick={() => {
                                         toast({
-                                          title: "Delete Product",
-                                          description: `${product.name} has been deleted.`,
+                                          title: "Feature Coming Soon",
+                                          description: "Product deletion functionality is under development.",
                                           variant: "destructive",
                                         });
                                       }}
@@ -1334,20 +1950,25 @@ export default function AdminPage() {
                         </table>
                       </div>
                     </div>
-                    
-                    <Button 
-                      className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white"
-                      onClick={() => {
-                        toast({
-                          title: "Add New Product",
-                          description: "Opening product creation form...",
-                          variant: "default",
-                        });
-                      }}
-                    >
-                      Add New Product
-                    </Button>
-                  </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <Store className="h-12 w-12 text-muted-foreground mb-3" />
+                      <p className="text-muted-foreground">No products in store yet.</p>
+                      <p className="text-sm text-muted-foreground">Sync products using the CustomCat API settings above or add them manually.</p>
+                    </div>
+                  )}
+                  
+                  <Button 
+                    className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white mt-4"
+                    onClick={() => {
+                      toast({
+                        title: "Feature Coming Soon",
+                        description: "Manual product creation functionality is under development.",
+                      });
+                    }}
+                  >
+                    Add New Product
+                  </Button>
                 </CardContent>
               </Card>
             </div>
@@ -1359,10 +1980,37 @@ export default function AdminPage() {
                 <CardTitle>User Management</CardTitle>
               </CardHeader>
               <CardContent>
-                <p>Manage user accounts, permissions, and credentials.</p>
-                <div className="mt-4 space-y-4">
-                  <div className="flex flex-col gap-2">
-                    <h3 className="font-semibold">Recent Users</h3>
+                <p className="mb-4">Manage user accounts, permissions, and credentials.</p>
+
+                <Alert className="mb-4">
+                  <Users className="h-4 w-4" />
+                  <AlertTitle>Beta: create the new admin accounts</AlertTitle>
+                  <AlertDescription>
+                    <div className="space-y-2">
+                      <div>
+                        1) Have each user register normally via <code>/register</code> (passwords are not stored in code).
+                        2) Then click <span className="font-medium">Manage</span> on their row and toggle{" "}
+                        <span className="font-medium">Admin Privileges</span>.
+                      </div>
+                      <div className="text-sm">
+                        Target emails:
+                        <ul className="list-disc ml-5">
+                          <li>SpenceCoon@gmail.com</li>
+                          <li>worldstringspromotion@gmail.com</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+                
+                {usersLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    <span className="ml-2 text-muted-foreground">Loading users...</span>
+                  </div>
+                ) : usersData && Array.isArray(usersData) && usersData.length > 0 ? (
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">Registered Users ({usersData.length})</h3>
                     <div className="border rounded-md overflow-hidden">
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -1377,45 +2025,82 @@ export default function AdminPage() {
                               Status
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Role
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Actions
                             </th>
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {[
-                            { name: "Jane Smith", email: "jane.smith@example.com", status: "Active" },
-                            { name: "John Doe", email: "john.doe@example.com", status: "Active" },
-                            { name: "Alex Johnson", email: "alex.johnson@example.com", status: "Inactive" },
-                            { name: "Sarah Williams", email: "sarah.williams@example.com", status: "Active" },
-                          ].map((user, i) => (
-                            <tr key={i}>
+                          {usersData.map((user: any) => (
+                            <tr key={user.id}>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                                <div className="text-sm font-medium text-gray-900">
+                                  {user.first_name} {user.last_name}
+                                </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm text-gray-500">{user.email}</div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                  user.status === "Active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                                }`}>
-                                  {user.status}
-                                </span>
+                                <div className="flex flex-col gap-1">
+                                  {user.is_suspended ? (
+                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                      Suspended
+                                    </span>
+                                  ) : (
+                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                      user.is_verified ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
+                                    }`}>
+                                      {user.is_verified ? "Verified" : "Unverified"}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {user.is_admin && (
+                                  <Badge variant="default">Admin</Badge>
+                                )}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                <div className="flex gap-2">
+                                <div className="flex flex-wrap gap-2">
                                   <Button 
                                     variant="ghost" 
                                     size="sm"
                                     onClick={() => {
-                                      toast({
-                                        title: "User Details",
-                                        description: `Viewing details for ${user.name}...`,
-                                        variant: "default",
-                                      });
+                                      setSelectedUser(user);
+                                      setShowUserDialog(true);
                                     }}
                                   >
-                                    View
+                                    Manage
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => {
+                                      updateUserMutation.mutate({
+                                        userId: user.id,
+                                        updates: { is_suspended: !user.is_suspended }
+                                      });
+                                    }}
+                                    disabled={updateUserMutation.isPending}
+                                    className={user.is_suspended ? "text-green-600 hover:text-green-700" : "text-orange-600 hover:text-orange-700"}
+                                  >
+                                    {user.is_suspended ? "Unsuspend" : "Suspend"}
+                                  </Button>
+                                  <Button 
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      if (window.confirm(`Are you sure you want to permanently delete ${user.first_name} ${user.last_name}? This action cannot be undone.`)) {
+                                        deleteUserMutation.mutate(user.id);
+                                      }
+                                    }}
+                                    disabled={deleteUserMutation.isPending}
+                                    className="text-red-600 hover:text-red-700"
+                                  >
+                                    Delete
                                   </Button>
                                 </div>
                               </td>
@@ -1425,9 +2110,218 @@ export default function AdminPage() {
                       </table>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Users className="h-12 w-12 text-muted-foreground mb-3" />
+                    <p className="text-muted-foreground">No users registered yet.</p>
+                    <p className="text-sm text-muted-foreground">Users will appear here once they create accounts.</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
+
+            {/* User Details Dialog */}
+            <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>User Details</DialogTitle>
+                  <DialogDescription>
+                    Manage user account settings and permissions
+                  </DialogDescription>
+                </DialogHeader>
+                {selectedUser && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium">Name:</span>
+                        <p className="text-muted-foreground">{selectedUser.first_name} {selectedUser.last_name}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium">Email:</span>
+                        <p className="text-muted-foreground break-all">{selectedUser.email}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium">Joined:</span>
+                        <p className="text-muted-foreground">
+                          {selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleDateString() : 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="font-medium">User ID:</span>
+                        <p className="text-muted-foreground">{selectedUser.id}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="border-t pt-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="verified-toggle">Verified Status</Label>
+                          <p className="text-xs text-muted-foreground">Allow user to access verified features</p>
+                        </div>
+                        <Switch
+                          id="verified-toggle"
+                          checked={selectedUser.is_verified}
+                          onCheckedChange={(checked) => {
+                            updateUserMutation.mutate({
+                              userId: selectedUser.id,
+                              updates: { is_verified: checked }
+                            });
+                            setSelectedUser({ ...selectedUser, is_verified: checked });
+                          }}
+                          disabled={updateUserMutation.isPending}
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="admin-toggle">Admin Privileges</Label>
+                          <p className="text-xs text-muted-foreground">Grant full admin dashboard access</p>
+                        </div>
+                        <Switch
+                          id="admin-toggle"
+                          checked={selectedUser.is_admin}
+                          onCheckedChange={(checked) => {
+                            updateUserMutation.mutate({
+                              userId: selectedUser.id,
+                              updates: { is_admin: checked }
+                            });
+                            setSelectedUser({ ...selectedUser, is_admin: checked });
+                          }}
+                          disabled={updateUserMutation.isPending}
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between border-t pt-3">
+                        <div>
+                          <Label htmlFor="suspended-toggle" className="text-orange-600">Suspended</Label>
+                          <p className="text-xs text-muted-foreground">Suspend user account access</p>
+                        </div>
+                        <Switch
+                          id="suspended-toggle"
+                          checked={selectedUser.is_suspended || false}
+                          onCheckedChange={(checked) => {
+                            updateUserMutation.mutate({
+                              userId: selectedUser.id,
+                              updates: { is_suspended: checked }
+                            });
+                            setSelectedUser({ ...selectedUser, is_suspended: checked });
+                          }}
+                          disabled={updateUserMutation.isPending}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="border-t pt-4">
+                      <Button 
+                        variant="destructive" 
+                        className="w-full"
+                        onClick={() => {
+                          if (window.confirm(`Are you sure you want to permanently delete ${selectedUser.first_name} ${selectedUser.last_name}? This action cannot be undone.`)) {
+                            deleteUserMutation.mutate(selectedUser.id);
+                          }
+                        }}
+                        disabled={deleteUserMutation.isPending}
+                      >
+                        Delete User Permanently
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowUserDialog(false)}>
+                    Close
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Employer Job Posting Options Dialog */}
+            <Dialog open={showEmployerDialog} onOpenChange={setShowEmployerDialog}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Employer Job Posting Options</DialogTitle>
+                  <DialogDescription>
+                    Enable which purchase options this employer can use to unlock job posting.
+                  </DialogDescription>
+                </DialogHeader>
+
+                {selectedEmployer && (
+                  <div className="space-y-4">
+                    <div className="text-sm">
+                      <div className="font-medium">{selectedEmployer.company_name || selectedEmployer.name}</div>
+                      <div className="text-muted-foreground break-all">{selectedEmployer.contact_email}</div>
+                    </div>
+
+                    <div className="border-t pt-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="jobopt-perpost">Per-post</Label>
+                          <p className="text-xs text-muted-foreground">Allow buying credits (1 credit = 1 job post)</p>
+                        </div>
+                        <Switch
+                          id="jobopt-perpost"
+                          checked={employerJobPostOptions.perPost}
+                          onCheckedChange={(checked) =>
+                            setEmployerJobPostOptions((s) => ({ ...s, perPost: checked }))
+                          }
+                          disabled={updateEmployerJobPostOptionsMutation.isPending}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="jobopt-pass">Pass</Label>
+                          <p className="text-xs text-muted-foreground">Allow buying a time-limited pass</p>
+                        </div>
+                        <Switch
+                          id="jobopt-pass"
+                          checked={employerJobPostOptions.pass}
+                          onCheckedChange={(checked) =>
+                            setEmployerJobPostOptions((s) => ({ ...s, pass: checked }))
+                          }
+                          disabled={updateEmployerJobPostOptionsMutation.isPending}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="jobopt-lifetime">Lifetime</Label>
+                          <p className="text-xs text-muted-foreground">Allow buying lifetime job posting access</p>
+                        </div>
+                        <Switch
+                          id="jobopt-lifetime"
+                          checked={employerJobPostOptions.lifetime}
+                          onCheckedChange={(checked) =>
+                            setEmployerJobPostOptions((s) => ({ ...s, lifetime: checked }))
+                          }
+                          disabled={updateEmployerJobPostOptionsMutation.isPending}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowEmployerDialog(false)}
+                    disabled={updateEmployerJobPostOptionsMutation.isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => updateEmployerJobPostOptionsMutation.mutate()}
+                    disabled={!selectedEmployer || updateEmployerJobPostOptionsMutation.isPending}
+                  >
+                    {updateEmployerJobPostOptionsMutation.isPending ? "Saving..." : "Save"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </TabsContent>
+
+          <TabsContent value="licenses">
+            <LicenseManagement />
           </TabsContent>
         </Tabs>
       </div>
@@ -1443,7 +2337,7 @@ export default function AdminPage() {
       
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
-          {authenticated ? <AdminDashboard /> : <PinPad />}
+          <AdminDashboard />
         </div>
       </section>
     </>

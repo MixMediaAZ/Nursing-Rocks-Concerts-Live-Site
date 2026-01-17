@@ -172,9 +172,9 @@ const HeroSection = () => {
           )}
           
           {/* Desktop Layout - Side by side */}
-          <div className="hidden lg:flex items-start justify-between gap-8 mt-8">
-            {/* Buttons Column - Left side (1/3 position) */}
-            <div className="flex flex-col gap-4 flex-1 max-w-md">
+          <div className="hidden lg:flex items-start justify-between gap-10 mt-8">
+            {/* Buttons Column - Left side */}
+            <div className="flex flex-col gap-4 flex-shrink-0 w-[320px]">
               {/* Free Ticket Button */}
               <Button
                 asChild
@@ -189,12 +189,13 @@ const HeroSection = () => {
                 </Link>
               </Button>
               
-              {/* Store Button - Redirects to Shopify store */}
+              {/* Store Button - Coming Soon */}
               <Button
-                className="bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full"
-                onClick={() => window.open('https://rgwrvu-sq.myshopify.com/', '_blank', 'noopener noreferrer')}
+                className="bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full opacity-60 cursor-not-allowed"
+                disabled
+                title="Coming Soon"
               >
-                Visit Our Store
+                Store (Coming Soon)
                 <i className="fas fa-shopping-bag ml-1 sm:ml-2"></i>
               </Button>
               
@@ -208,17 +209,18 @@ const HeroSection = () => {
               </Button>
             </div>
 
-            {/* Video Column - Right side (2/3 position) */}
-            <div className="flex-1 max-w-sm">
-              <div className="aspect-video w-full bg-black rounded-xl overflow-hidden shadow-xl border-4 border-white/30 transform hover:scale-105 transition-transform duration-300">
+            {/* Video Column - Right side - 20% larger (from max-w-sm 384px to ~460px) */}
+            <div className="flex-shrink-0 w-[460px] max-w-full">
+              <div className="aspect-video w-full bg-black rounded-xl overflow-hidden shadow-xl border-4 border-white/30 transform hover:scale-105 transition-transform duration-300" style={{ maxWidth: '100%' }}>
                 <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 opacity-75 blur-sm"></div>
-                <div className="relative z-10 w-full h-full">
+                <div className="relative z-10 w-full h-full" style={{ width: '100%', height: '100%', maxWidth: '100%' }}>
                   <VideoSlideshow
                     videos={allVideoIds}
                     autoPlay={true}
                     muted={true}
                     controls={true}
                     interval={15000}
+                    maxAutoPlays={3}
                     className="w-full h-full"
                   />
                 </div>
@@ -244,12 +246,13 @@ const HeroSection = () => {
                 </Link>
               </Button>
               
-              {/* Store Button - Redirects to Shopify store */}
+              {/* Store Button - Coming Soon */}
               <Button
-                className="bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full"
-                onClick={() => window.open('https://rgwrvu-sq.myshopify.com/', '_blank', 'noopener noreferrer')}
+                className="bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full opacity-60 cursor-not-allowed"
+                disabled
+                title="Coming Soon"
               >
-                Visit Our Store
+                Store (Coming Soon)
                 <i className="fas fa-shopping-bag ml-1 sm:ml-2"></i>
               </Button>
               
@@ -263,11 +266,11 @@ const HeroSection = () => {
               </Button>
               
               {/* Slideshow for Mobile Only - Under buttons */}
-              <div className="mt-6 w-full">
+              <div className="mt-6 w-full max-w-full" style={{ width: '100%', maxWidth: '100%' }}>
                 <h4 className="text-center font-semibold mb-2 text-white/90">Featured Video</h4>
-                <div className="aspect-video w-full mx-auto bg-black rounded-xl overflow-hidden shadow-xl border-2 border-white/30 transform transition-transform duration-300">
+                <div className="aspect-video w-full mx-auto bg-black rounded-xl overflow-hidden shadow-xl border-2 border-white/30 transform transition-transform duration-300" style={{ maxWidth: '100%' }}>
                   <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-[#5D3FD3]/80 to-[#FF3366]/80 opacity-50 blur-sm"></div>
-                  <div className="relative z-10 w-full h-full">
+                  <div className="relative z-10 w-full h-full" style={{ width: '100%', height: '100%', maxWidth: '100%' }}>
                     <VideoSlideshow
                       videos={allVideoIds}
                       autoPlay={true}

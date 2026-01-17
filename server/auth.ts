@@ -231,6 +231,53 @@ export async function getUserTickets(req: Request, res: Response) {
   }
 }
 
+// Middleware to check if request is from an authenticated employer
+export async function requireEmployerToken(req: Request, res: Response, next: Function) {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({ message: "Authentication token required" });
+  }
+
+  try {
+    const decoded = verifyToken(token);
+    if (!decoded || !decoded.userId) {
+      return res.status(403).json({ message: "Invalid or expired token" });
+    }
+
+    // Fetch employer by user id
+    const employer = await storage.getEmployerByUserId(decoded.userId);
+    if (!employer) {
+      return res.status(403).json({ message: "Employer profile not found" });
+    }
+
+    if (employer.account_status && employer.account_status !== "active") {
+      return res.status(403).json({ message: "Employer account is not active. Please wait for approval." });
+    }
+
+    (req as any).user = {
+      userId: decoded.userId,
+      email: decoded.email,
+      isVerified: decoded.isVerified,
+      isAdmin: decoded.isAdmin,
+    };
+
+    (req as any).employer = {
+      id: employer.id,
+      email: employer.contact_email,
+      companyName: (employer as any).company_name ?? employer.name,
+      isVerified: employer.is_verified,
+      account_status: employer.account_status,
+    };
+
+    return next();
+  } catch (error) {
+    console.error("[requireEmployerToken] Token verification error:", error);
+    return res.status(403).json({ message: "Invalid or expired token" });
+  }
+}
+
 // Authentication middleware
 export async function authenticateToken(req: Request, res: Response, next: Function) {
   const authHeader = req.headers['authorization'];

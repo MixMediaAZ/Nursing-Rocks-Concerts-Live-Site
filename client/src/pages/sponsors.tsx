@@ -1,173 +1,121 @@
-import SponsorsSection from "@/components/sponsors-section";
-import { Button } from "@/components/ui/button";
 import { Helmet } from "react-helmet";
-import sponsorshipOverview from "@assets/NRCS Sponsorship Overview.png";
+import { useMemo, useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+
+// Pitch deck slides (12)
+import slide0 from "@assets/pitch-deck/0_1758828531029-hvQgIknr.jpg";
+import slide1 from "@assets/pitch-deck/1_1758828531031-DMgzRFvL.jpg";
+import slide2 from "@assets/pitch-deck/2_1758828531031-frBdoLW9.jpg";
+import slide3 from "@assets/pitch-deck/3_1758828531032-_6KHYUZA.jpg";
+import slide4 from "@assets/pitch-deck/4_1758828531033-CpkSugu5.jpg";
+import slide5 from "@assets/pitch-deck/5_1758828531034-B8Ce15Gb.jpg";
+import slide6 from "@assets/pitch-deck/6_1758828531035-Bgh1IsTa.jpg";
+import slide7 from "@assets/pitch-deck/7_1758828531035-DE8liC_J.jpg";
+import slide8 from "@assets/pitch-deck/8_1758828531036-BiPv94LO.jpg";
+import slide9 from "@assets/pitch-deck/9_1758828531037-BHRwQbAN.jpg";
+import slide10 from "@assets/pitch-deck/10_1758828531038-DK6xrOqg.jpg";
+import slide11 from "@assets/pitch-deck/11_1758828531039-DWoUwVdw.jpg";
 
 export default function SponsorsPage() {
+  const slides = useMemo(
+    () => [
+      slide0,
+      slide1,
+      slide2,
+      slide3,
+      slide4,
+      slide5,
+      slide6,
+      slide7,
+      slide8,
+      slide9,
+      slide10,
+      slide11,
+    ],
+    [],
+  );
+
+  const [idx, setIdx] = useState(0);
+
+  useEffect(() => {}, [slides.length]);
+
+  const safeIdx = Math.max(0, Math.min(idx, slides.length - 1));
+  const current = slides[safeIdx];
+
   return (
     <>
       <Helmet>
-        <title>Nursing Rocks! Concert Series - Our Sponsors</title>
-        <meta name="description" content="Meet the generous sponsors who make the Nursing Rocks! Concert Series possible by providing free tickets for nursing professionals across America." />
+        <title>Nursing Rocks! Concert Series - Sponsorship Rocks!</title>
+        <meta
+          name="description"
+          content="Sponsorship pitch deck for the Nursing Rocks! Concert Series."
+        />
       </Helmet>
-      
-      <div className="py-8 sm:py-10 bg-gradient-to-r from-[#5D3FD3]/5 to-[#FF3366]/5">
-        <div className="mobile-container text-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">Our Sponsors</h1>
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
-            We celebrate the organizations that make our concerts free for nurses through their generous support.
+
+      <div className="py-10 bg-gradient-to-r from-[#5D3FD3]/5 to-[#FF3366]/5">
+        <div className="container px-6 md:px-8 flex justify-center">
+          <div 
+            className="bg-gradient-to-br from-primary/90 to-[hsl(180,65%,35%)] text-white px-4 sm:px-6 md:px-8 py-4 sm:py-6 rounded-xl text-center mx-auto"
+            style={{
+              border: '4px solid transparent',
+              background: 'linear-gradient(135deg, hsl(233, 100%, 27%) 0%, hsl(180, 65%, 35%) 100%) padding-box, linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(0,0,0,0.3) 100%) border-box',
+              boxShadow: 'inset 4px 4px 8px rgba(255,255,255,0.3), inset -4px -4px 8px rgba(0,0,0,0.2), 8px 8px 24px rgba(0,0,0,0.25), -4px -4px 12px rgba(255,255,255,0.15)'
+            }}
+          >
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.4), 0 0 20px rgba(255,255,255,0.3)' }}>
+              Sponsorship Rocks!
+            </h1>
+            <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold mt-3 sm:mt-4 text-white/95" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.3)' }}>
+            Browse the sponsorship opportunity deck below.
           </p>
-        </div>
-      </div>
-      
-      {/* NRCS Sponsorship Overview */}
-      <div className="mobile-container py-8 sm:py-12">
-        <div className="max-w-5xl mx-auto text-center">
-          <img 
-            src={sponsorshipOverview} 
-            alt="NRCS Sponsorship Overview - Event, Regional, and National sponsorship opportunities with pricing tiers" 
-            className="w-full h-auto rounded-lg shadow-lg"
-          />
-        </div>
-      </div>
-      
-      <div className="container px-6 md:px-8 py-8">
-        <SponsorsSection />
-      </div>
-      
-      <section className="py-10 container px-6 md:px-8">
-        <div className="grid md:grid-cols-2 gap-12">
-          <div>
-            <h2 className="text-3xl font-bold mb-6">Sponsorship Benefits</h2>
-            <ul className="space-y-4">
-              <li className="flex items-start gap-3">
-                <div className="rounded-full bg-primary/10 p-1 mt-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg">Brand Visibility</h3>
-                  <p className="text-muted-foreground">Your brand will be featured prominently at all concert venues, on our website, and in promotional materials.</p>
-                </div>
-              </li>
-              
-              <li className="flex items-start gap-3">
-                <div className="rounded-full bg-primary/10 p-1 mt-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg">Healthcare Network Access</h3>
-                  <p className="text-muted-foreground">Connect with nursing professionals who attend our concerts and build relationships with key healthcare institutions.</p>
-                </div>
-              </li>
-              
-              <li className="flex items-start gap-3">
-                <div className="rounded-full bg-primary/10 p-1 mt-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg">Community Goodwill</h3>
-                  <p className="text-muted-foreground">Demonstrate your organization's commitment to celebrating and honoring the nursing profession.</p>
-                </div>
-              </li>
-              
-              <li className="flex items-start gap-3">
-                <div className="rounded-full bg-primary/10 p-1 mt-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg">VIP Access</h3>
-                  <p className="text-muted-foreground">Receive exclusive access to VIP areas, meet-and-greets with performers, and special recognition at events.</p>
-                </div>
-              </li>
-            </ul>
           </div>
-          
-          <div>
-            <h2 className="text-3xl font-bold mb-6">Sponsorship Tiers</h2>
-            <div className="space-y-6">
-              <div className="border rounded-lg p-6 bg-[#E5E4E2]/20 border-[#E5E4E2]">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-bold">Platinum Sponsor</h3>
-                  <div className="px-3 py-1 text-xs rounded-full bg-[#E5E4E2] text-gray-800">
-                    $50,000+
-                  </div>
+        </div>
+      </div>
+
+      <div className="container px-6 md:px-8 py-10">
+        <div className="max-w-6xl mx-auto">
+          <div className="rounded-xl border bg-background shadow-sm overflow-hidden">
+            <div className="relative bg-black">
+              <img
+                src={current}
+                alt={`Pitch deck slide ${safeIdx + 1} of ${slides.length}`}
+                className="w-full h-auto"
+              />
+
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-4 flex items-center justify-between gap-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => setIdx((v) => (v - 1 + slides.length) % slides.length)}
+                >
+                  Prev
+                </Button>
+                <div className="text-white text-sm font-medium">
+                  Slide {safeIdx + 1} / {slides.length}
                 </div>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Premier visibility with logo placement on main stage, program covers, and all promotional materials. 
-                  Includes 50 VIP tickets per concert and exclusive meet-and-greet opportunities.
-                </p>
-                <Button variant="outline" size="sm">Learn More</Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => setIdx((v) => (v + 1) % slides.length)}
+                >
+                  Next
+                </Button>
               </div>
-              
-              <div className="border rounded-lg p-6 bg-[#FFD700]/10 border-amber-200">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-bold">Gold Sponsor</h3>
-                  <div className="px-3 py-1 text-xs rounded-full bg-[#FFD700]/20 text-amber-700">
-                    $25,000+
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Prominent logo placement on event signage and digital materials.
-                  Includes 25 VIP tickets per concert and special recognition during events.
-                </p>
-                <Button variant="outline" size="sm">Learn More</Button>
-              </div>
-              
-              <div className="border rounded-lg p-6 bg-gray-50 border-gray-200">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-bold">Silver Sponsor</h3>
-                  <div className="px-3 py-1 text-xs rounded-full bg-gray-200/50 text-gray-700">
-                    $10,000+
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Logo placement in event programs and website.
-                  Includes 10 VIP tickets per concert and recognition in promotional materials.
-                </p>
-                <Button variant="outline" size="sm">Learn More</Button>
-              </div>
-              
-              <div className="border rounded-lg p-6 bg-amber-50/50 border-amber-100">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-bold">Bronze Sponsor</h3>
-                  <div className="px-3 py-1 text-xs rounded-full bg-amber-100/30 text-amber-800">
-                    $5,000+
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Logo placement on website and mention in event programs.
-                  Includes 5 VIP tickets per concert.
-                </p>
-                <Button variant="outline" size="sm">Learn More</Button>
-              </div>
+            </div>
+
+            <div className="p-4 flex flex-wrap gap-2 justify-center">
+              {slides.map((_, i) => (
+                <button
+                  key={i}
+                  aria-label={`Go to slide ${i + 1}`}
+                  onClick={() => setIdx(i)}
+                  className={`h-2.5 w-2.5 rounded-full transition-colors ${
+                    i === safeIdx ? "bg-primary" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                  }`}
+                />
+              ))}
             </div>
           </div>
         </div>
-        
-        <div className="mt-16 p-8 rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 text-center">
-          <h2 className="text-2xl font-bold mb-4">Ready to Become a Sponsor?</h2>
-          <p className="max-w-2xl mx-auto mb-6 text-muted-foreground">
-            Join our growing community of organizations committed to celebrating nursing professionals. 
-            Contact our sponsorship team to discuss how your organization can participate.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Button size="lg">
-              Request Sponsorship Information
-            </Button>
-            <Button variant="outline" size="lg">
-              Contact Sponsorship Team
-            </Button>
-          </div>
-        </div>
-      </section>
+      </div>
     </>
   );
 }

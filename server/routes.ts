@@ -4,7 +4,7 @@ import Stripe from "stripe";
 import path from "path";
 import fs from "fs";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 import { storage } from "./storage";
 import { approvedVideos, gallery, mediaFolders, events } from "@shared/schema";
 import sharp from "sharp";
@@ -60,6 +60,9 @@ import {
   insertNurseProfileSchema,
   insertJobApplicationSchema,
   insertJobAlertSchema,
+  jobApplications,
+  contactRequests,
+  employers,
   insertStoreProductSchema,
   insertStoreOrderSchema,
   insertStoreOrderItemSchema
@@ -76,7 +79,8 @@ import {
   registerValidation,
   loginValidation,
   register,
-  login
+  login,
+  requireEmployerToken
 } from "./auth";
 import { setupAuth, requireAuth, requireVerifiedUser, requireAdmin } from "./session-auth";
 import { generateToken, isUserAdmin } from './jwt';
@@ -703,8 +707,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!employer) {
         return res.status(403).json({ message: "You must register as an employer first" });
       }
+      if (employer.account_status && employer.account_status !== "active") {
+        return res.status(403).json({ message: "Employer account is not active. Please wait for approval." });
+      }
+
+      const credits = (employer as any).job_post_credits ?? 0;
+      const passExpiresAt = (employer as any).job_post_pass_expires_at ?? null;
+      const lifetime = !!(employer as any).job_post_lifetime;
+      const passActive = !!passExpiresAt && new Date(passExpiresAt).getTime() > Date.now();
+      const canPost = lifetime || passActive || credits > 0;
+      if (!canPost) {
+        return res.status(402).json({ message: "Payment required to post jobs (no active entitlement)" });
+      }
       
       const jobListing = await storage.createJobListing(validationResult.data, employer.id);
+
+      // Consume one credit when applicable
+      if (!lifetime && !passActive) {
+        await db
+          .update(employers)
+          .set({
+            job_post_credits: sql`${employers.job_post_credits} - 1`,
+            updated_at: new Date(),
+          })
+          .where(eq(employers.id, employer.id));
+      }
+
       res.status(201).json({ 
         id: jobListing.id,
         message: "Job listing created successfully"
@@ -712,6 +740,286 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating job:", error);
       res.status(500).json({ message: "Failed to create job listing" });
+    }
+  });
+
+  // Employer profile for current user
+  app.get("/api/employer/me", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const employer = await storage.getEmployerByUserId(req.user!.userId);
+      if (!employer) {
+        return res.status(404).json({ message: "Employer profile not found" });
+      }
+      return res.json(employer);
+    } catch (error) {
+      console.error("Error fetching employer profile:", error);
+      return res.status(500).json({ message: "Failed to fetch employer profile" });
+    }
+  });
+
+  // Employer-specific job listings
+  app.get("/api/employer/jobs", requireEmployerToken, async (req: Request, res: Response) => {
+    try {
+      const employer = (req as any).employer;
+      const jobs = await storage.getEmployerJobListings(employer.id);
+      return res.status(200).json(jobs);
+    } catch (error) {
+      console.error("Error fetching employer jobs:", error);
+      return res.status(500).json({ message: "Server error while fetching jobs" });
+    }
+  });
+
+  // Employer contact requests
+  app.get("/api/employer/contact-requests", requireEmployerToken, async (req: Request, res: Response) => {
+    try {
+      const employer = (req as any).employer;
+      const requests = await storage.getContactRequestsByEmployer(employer.id);
+      return res.status(200).json(requests);
+    } catch (error) {
+      console.error("Error fetching contact requests:", error);
+      return res.status(500).json({ message: "Server error while fetching contact requests" });
+    }
+  });
+
+  app.post("/api/employer/contact-requests", requireEmployerToken, async (req: Request, res: Response) => {
+    try {
+      const employer = (req as any).employer;
+      const applicationId = Number(req.body?.applicationId);
+      if (!applicationId) {
+        return res.status(400).json({ message: "Application ID is required" });
+      }
+
+      const [application] = await db
+        .select({
+          id: jobApplications.id,
+          job_id: jobApplications.job_id,
+        })
+        .from(jobApplications)
+        .where(eq(jobApplications.id, applicationId));
+
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      const job = await storage.getJobListingById(application.job_id);
+      if (!job || job.employer_id !== employer.id) {
+        return res.status(403).json({ message: "You can only request contact for your own job applications" });
+      }
+
+      const [existing] = await db
+        .select({ id: contactRequests.id })
+        .from(contactRequests)
+        .where(
+          and(
+            eq(contactRequests.employer_id, employer.id),
+            eq(contactRequests.application_id, applicationId)
+          )
+        )
+        .limit(1);
+
+      if (existing) {
+        return res.status(409).json({ message: "Contact request already submitted for this application" });
+      }
+
+      const created = await storage.createContactRequest({
+        application_id: applicationId,
+        employer_id: employer.id,
+      });
+
+      return res.status(201).json(created);
+    } catch (error) {
+      console.error("Error creating contact request:", error);
+      return res.status(500).json({ message: "Server error while creating contact request" });
+    }
+  });
+
+  // Employer job posting entitlements
+  app.get("/api/employer/job-posting/entitlements", requireEmployerToken, async (req: Request, res: Response) => {
+    try {
+      const employerAuth = (req as any).employer;
+      const employerRow = await storage.getEmployerById(employerAuth.id);
+      if (!employerRow) return res.status(404).json({ message: "Employer not found" });
+
+      const getSetting = async (key: string, fallback: string) => {
+        const s = await storage.getAppSettingByKey(key);
+        return typeof s?.value === "string" && s.value.length ? s.value : fallback;
+      };
+
+      const perPostCents = parseInt(await getSetting("JOB_POST_PRICE_PER_POST_CENTS", "0"), 10) || 0;
+      const passCents = parseInt(await getSetting("JOB_POST_PRICE_PASS_CENTS", "0"), 10) || 0;
+      const lifetimeCents = parseInt(await getSetting("JOB_POST_PRICE_LIFETIME_CENTS", "0"), 10) || 0;
+      const passDurationDays = parseInt(await getSetting("JOB_POST_PASS_DURATION_DAYS", "30"), 10) || 30;
+
+      const options = (employerRow as any).job_post_options || {};
+      const credits = (employerRow as any).job_post_credits ?? 0;
+      const passExpiresAt = (employerRow as any).job_post_pass_expires_at ?? null;
+      const lifetime = !!(employerRow as any).job_post_lifetime;
+      const passActive = !!passExpiresAt && new Date(passExpiresAt).getTime() > Date.now();
+
+      return res.json({
+        employerId: employerRow.id,
+        options,
+        entitlements: {
+          credits,
+          passExpiresAt,
+          lifetime,
+          canPost: lifetime || passActive || credits > 0,
+        },
+        pricing: {
+          perPostCents,
+          passCents,
+          lifetimeCents,
+          passDurationDays,
+        },
+      });
+    } catch (error: any) {
+      console.error("Error fetching employer job-post entitlements:", error);
+      return res.status(500).json({ message: error.message || "Failed to fetch entitlements" });
+    }
+  });
+
+  // Employer job posting payment intent
+  app.post("/api/employer/job-posting/payment-intent", requireEmployerToken, async (req: Request, res: Response) => {
+    try {
+      const employerAuth = (req as any).employer;
+      const employerRow = await storage.getEmployerById(employerAuth.id);
+      if (!employerRow) return res.status(404).json({ message: "Employer not found" });
+
+      const purchaseType = String(req.body?.purchaseType || "");
+      const quantityRaw = req.body?.quantity;
+      const quantity = typeof quantityRaw === "number" ? quantityRaw : parseInt(String(quantityRaw || "1"), 10);
+
+      if (!["perPost", "pass", "lifetime"].includes(purchaseType)) {
+        return res.status(400).json({ message: "Invalid purchaseType" });
+      }
+
+      const options = (employerRow as any).job_post_options || {};
+      const enabled =
+        (purchaseType === "perPost" && options.perPost) ||
+        (purchaseType === "pass" && options.pass) ||
+        (purchaseType === "lifetime" && options.lifetime);
+
+      if (!enabled) {
+        return res.status(403).json({ message: "This purchase option is not enabled for this employer" });
+      }
+
+      const getSetting = async (key: string, fallback: string) => {
+        const s = await storage.getAppSettingByKey(key);
+        return typeof s?.value === "string" && s.value.length ? s.value : fallback;
+      };
+
+      const perPostCents = parseInt(await getSetting("JOB_POST_PRICE_PER_POST_CENTS", "0"), 10) || 0;
+      const passCents = parseInt(await getSetting("JOB_POST_PRICE_PASS_CENTS", "0"), 10) || 0;
+      const lifetimeCents = parseInt(await getSetting("JOB_POST_PRICE_LIFETIME_CENTS", "0"), 10) || 0;
+
+      const unit =
+        purchaseType === "perPost" ? perPostCents : purchaseType === "pass" ? passCents : lifetimeCents;
+      if (!unit || unit <= 0) {
+        return res.status(400).json({ message: "Job posting price is not configured yet" });
+      }
+
+      const finalQty = purchaseType === "perPost" ? Math.max(1, quantity || 1) : 1;
+      const amountCents = unit * finalQty;
+
+      // If Stripe is not initialized, simulate for development.
+      if (!stripe) {
+        return res.json({
+          clientSecret: "simulated_client_secret",
+          amountCents,
+          paymentIntentId: `simulated_pi_${Date.now()}`,
+        });
+      }
+
+      const pi = await stripe.paymentIntents.create({
+        amount: Math.round(amountCents),
+        currency: "usd",
+        automatic_payment_methods: { enabled: true },
+        metadata: {
+          employerId: String(employerRow.id),
+          purchaseType,
+          quantity: String(finalQty),
+          mode: "employer_job_posting",
+        },
+      });
+
+      return res.json({
+        clientSecret: pi.client_secret,
+        amountCents,
+        paymentIntentId: pi.id,
+      });
+    } catch (error: any) {
+      console.error("Error creating employer job-post PaymentIntent:", error);
+      return res.status(500).json({ message: error.message || "Failed to create payment intent" });
+    }
+  });
+
+  // Confirm job posting payment and apply entitlements
+  app.post("/api/employer/job-posting/confirm", requireEmployerToken, async (req: Request, res: Response) => {
+    try {
+      const employerAuth = (req as any).employer;
+      const employerRow = await storage.getEmployerById(employerAuth.id);
+      if (!employerRow) return res.status(404).json({ message: "Employer not found" });
+
+      const paymentIntentId = String(req.body?.paymentIntentId || "");
+      if (!paymentIntentId) return res.status(400).json({ message: "paymentIntentId is required" });
+
+      let purchaseType: string | null = null;
+      let quantity = 1;
+
+      if (!stripe) {
+        // Simulation mode
+        purchaseType = String(req.body?.purchaseType || "");
+        const q = parseInt(String(req.body?.quantity || "1"), 10);
+        quantity = Number.isFinite(q) && q > 0 ? q : 1;
+      } else {
+        const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+        if (!pi) return res.status(404).json({ message: "PaymentIntent not found" });
+        if (pi.status !== "succeeded") return res.status(400).json({ message: `Payment not completed (status=${pi.status})` });
+        const meta = (pi.metadata || {}) as any;
+        if (meta.employerId && String(meta.employerId) !== String(employerRow.id)) {
+          return res.status(403).json({ message: "PaymentIntent does not belong to this employer" });
+        }
+        purchaseType = meta.purchaseType || null;
+        quantity = parseInt(meta.quantity || "1", 10) || 1;
+      }
+
+      if (!purchaseType || !["perPost", "pass", "lifetime"].includes(purchaseType)) {
+        return res.status(400).json({ message: "Invalid purchaseType for confirmation" });
+      }
+
+      if (purchaseType === "perPost") {
+        await db
+          .update(employers)
+          .set({
+            job_post_credits: sql`${employers.job_post_credits} + ${quantity}`,
+            updated_at: new Date(),
+          })
+          .where(eq(employers.id, employerRow.id));
+      } else if (purchaseType === "lifetime") {
+        await db
+          .update(employers)
+          .set({
+            job_post_lifetime: true,
+            updated_at: new Date(),
+          })
+          .where(eq(employers.id, employerRow.id));
+      } else {
+        const passSetting = await storage.getAppSettingByKey("JOB_POST_PASS_DURATION_DAYS");
+        const passDurationDays = parseInt(String(passSetting?.value || "30"), 10) || 30;
+        const expires = new Date(Date.now() + passDurationDays * 24 * 60 * 60 * 1000);
+        await db
+          .update(employers)
+          .set({
+            job_post_pass_expires_at: expires,
+            updated_at: new Date(),
+          })
+          .where(eq(employers.id, employerRow.id));
+      }
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error confirming employer job-post payment:", error);
+      return res.status(500).json({ message: error.message || "Failed to confirm payment" });
     }
   });
   
@@ -854,8 +1162,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { 
           cover_letter: coverLetter, 
           resume_url: resumeUrl,
-          status: "submitted",
-          submitted_at: new Date()
+          status: "pending",
         }, 
         req.user.userId, 
         parseInt(jobId)
@@ -1012,11 +1319,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const message = err instanceof Error ? err.message : "Failed to list videos";
       const m = message.match(/Missing required env var:\s*([A-Z0-9_]+)/);
       console.error("[videos] list error:", err);
+      
+      // Provide more helpful error message for B2 key errors
+      let errorMessage = message;
+      if (message.includes("key") && message.includes("not valid")) {
+        // Check if it's an AWS SDK error with more details
+        const awsError = err as any;
+        if (awsError.Code === "InvalidAccessKeyId" || awsError.Code === "SignatureDoesNotMatch") {
+          errorMessage = `B2 authentication failed: ${awsError.Code || "Invalid credentials"}. Please verify VIDEO_B2_ACCESS_KEY_ID and VIDEO_B2_SECRET_ACCESS_KEY match your B2 application key pair.`;
+        } else {
+          errorMessage = "B2 credentials are invalid. Please check VIDEO_B2_ACCESS_KEY_ID and VIDEO_B2_SECRET_ACCESS_KEY in your .env file. Ensure you're using the Application Key (not Key ID) and its corresponding Secret Key from your B2 account.";
+        }
+      }
+      
       res.status(500).json({
         success: false,
         provider: getVideoProviderId(),
         missingEnv: m?.[1],
-        message,
+        message: errorMessage,
+        errorCode: (err as any)?.Code,
       });
     }
   });
@@ -1081,6 +1402,231 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!isUserAdmin(req)) return res.status(403).json({ message: "Admin privileges required" });
     return next();
   };
+
+  // Admin: Get all users
+  app.get("/api/admin/users", requireAdminToken, async (_req: Request, res: Response) => {
+    try {
+      const users = await storage.getAllUsers();
+      return res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      return res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  // Admin: Update user
+  app.patch("/api/admin/users/:id", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid user ID" });
+      
+      const user = await storage.getUserById(id);
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      const { is_admin, is_verified, is_suspended } = req.body;
+      const updates: any = {};
+      if (typeof is_admin === 'boolean') updates.is_admin = is_admin;
+      if (typeof is_verified === 'boolean') updates.is_verified = is_verified;
+      if (typeof is_suspended === 'boolean') {
+        // Assuming there's a suspended field or we use account_status
+        // For now, we'll skip this if the storage doesn't support it
+      }
+
+      const updated = await storage.updateUser(id, updates);
+      return res.json(updated);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      return res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  // Admin: Delete user
+  app.delete("/api/admin/users/:id", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid user ID" });
+      
+      const user = await storage.getUserById(id);
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      await storage.deleteUser(id);
+      return res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      return res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
+  // Admin: Get all jobs
+  app.get("/api/admin/jobs", requireAdminToken, async (_req: Request, res: Response) => {
+    try {
+      const jobs = await storage.getAllJobListings();
+      return res.json(jobs);
+    } catch (error) {
+      console.error("Error fetching jobs:", error);
+      return res.status(500).json({ message: "Failed to fetch jobs" });
+    }
+  });
+
+  // Admin: Get all employers
+  app.get("/api/admin/employers", requireAdminToken, async (_req: Request, res: Response) => {
+    try {
+      const employers = await storage.getAllEmployers();
+      return res.json(employers);
+    } catch (error) {
+      console.error("Error fetching employers:", error);
+      return res.status(500).json({ message: "Failed to fetch employers" });
+    }
+  });
+
+  // Admin: Update employer
+  app.patch("/api/admin/employers/:id", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid employer ID" });
+      
+      const employer = await storage.getEmployerById(id);
+      if (!employer) return res.status(404).json({ message: "Employer not found" });
+
+      const updated = await storage.updateEmployer(id, req.body);
+      return res.json(updated);
+    } catch (error) {
+      console.error("Error updating employer:", error);
+      return res.status(500).json({ message: "Failed to update employer" });
+    }
+  });
+
+  // Admin: employers
+  app.patch("/api/admin/employers/:id/approve", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid employer ID" });
+      const employer = await storage.getEmployerById(id);
+      if (!employer) return res.status(404).json({ message: "Employer not found" });
+
+      const updated = await storage.updateEmployer(id, {
+        is_verified: true,
+        account_status: "active",
+      });
+      return res.json(updated);
+    } catch (error) {
+      console.error("Error approving employer:", error);
+      return res.status(500).json({ message: "Failed to approve employer" });
+    }
+  });
+
+  // Admin: job approvals
+  app.patch("/api/admin/jobs/:id/approve", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid job ID" });
+      const job = await storage.getJobListingById(id);
+      if (!job) return res.status(404).json({ message: "Job not found" });
+
+      const adminId = (req as any).user?.userId;
+      const updated = await storage.updateJobListing(id, {
+        is_approved: true,
+        approved_by: adminId,
+        approved_at: new Date(),
+        approval_notes: req.body?.notes,
+        is_active: true,
+      });
+      return res.json(updated);
+    } catch (error) {
+      console.error("Error approving job:", error);
+      return res.status(500).json({ message: "Failed to approve job" });
+    }
+  });
+
+  app.patch("/api/admin/jobs/:id/deny", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid job ID" });
+      const job = await storage.getJobListingById(id);
+      if (!job) return res.status(404).json({ message: "Job not found" });
+
+      const adminId = (req as any).user?.userId;
+      const updated = await storage.updateJobListing(id, {
+        is_approved: false,
+        approved_by: adminId,
+        approved_at: new Date(),
+        approval_notes: req.body?.notes,
+        is_active: false,
+      });
+      return res.json(updated);
+    } catch (error) {
+      console.error("Error denying job:", error);
+      return res.status(500).json({ message: "Failed to deny job" });
+    }
+  });
+
+  // Admin: contact request decisions
+  app.patch("/api/admin/contact-requests/:id/approve", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid contact request ID" });
+
+      const adminId = (req as any).user?.userId;
+      const [updated] = await db
+        .update(contactRequests)
+        .set({
+          status: "approved",
+          reviewed_at: new Date(),
+          reviewed_by: adminId,
+          contact_revealed_at: new Date(),
+          admin_notes: req.body?.notes,
+        })
+        .where(eq(contactRequests.id, id))
+        .returning();
+
+      if (!updated) return res.status(404).json({ message: "Contact request not found" });
+      return res.json(updated);
+    } catch (error) {
+      console.error("Error approving contact request:", error);
+      return res.status(500).json({ message: "Failed to approve contact request" });
+    }
+  });
+
+  app.patch("/api/admin/contact-requests/:id/deny", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid contact request ID" });
+
+      const adminId = (req as any).user?.userId;
+      const [updated] = await db
+        .update(contactRequests)
+        .set({
+          status: "denied",
+          reviewed_at: new Date(),
+          reviewed_by: adminId,
+          admin_notes: req.body?.notes,
+          denial_reason: req.body?.reason,
+        })
+        .where(eq(contactRequests.id, id))
+        .returning();
+
+      if (!updated) return res.status(404).json({ message: "Contact request not found" });
+      return res.json(updated);
+    } catch (error) {
+      console.error("Error denying contact request:", error);
+      return res.status(500).json({ message: "Failed to deny contact request" });
+    }
+  });
+
+  // Admin: job posting pricing via app settings
+  app.post("/api/admin/job-posting/pricing", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const { perPostCents, passCents, lifetimeCents, passDurationDays } = req.body || {};
+      await storage.createOrUpdateAppSetting("JOB_POST_PRICE_PER_POST_CENTS", String(perPostCents ?? ""));
+      await storage.createOrUpdateAppSetting("JOB_POST_PRICE_PASS_CENTS", String(passCents ?? ""));
+      await storage.createOrUpdateAppSetting("JOB_POST_PRICE_LIFETIME_CENTS", String(lifetimeCents ?? ""));
+      await storage.createOrUpdateAppSetting("JOB_POST_PASS_DURATION_DAYS", String(passDurationDays ?? ""));
+      return res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating job posting pricing:", error);
+      return res.status(500).json({ message: "Failed to update pricing" });
+    }
+  });
 
   app.get("/api/admin/videos", requireAdminToken, async (_req: Request, res: Response) => {
     try {
@@ -1701,8 +2247,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allSettings = await storage.getAllAppSettings();
       
       // Only return non-sensitive settings for regular users
-      // @ts-ignore
-      const isAdmin = req.user?.is_admin === true;
+      // Use isUserAdmin helper for reliable admin checks
+      const isAdmin = isUserAdmin(req);
       
       const filteredSettings = isAdmin 
         ? allSettings 
@@ -1881,10 +2427,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { pin } = req.body;
       
-      // Hard-coded admin PIN - in production, this should be stored securely
-      const ADMIN_PIN = "1234567";
+      // Admin PIN from environment variable (trim whitespace)
+      const ADMIN_PIN = (process.env.ADMIN_PIN || "1234567").trim();
       
-      if (!pin || pin !== ADMIN_PIN) {
+      // Normalize the submitted PIN (convert to string and trim)
+      const submittedPin = pin ? String(pin).trim() : "";
+      
+      // Debug logging (remove in production)
+      console.log("Admin PIN validation attempt:", {
+        submittedPin: submittedPin ? `${submittedPin.substring(0, 2)}***` : "(empty)",
+        submittedPinLength: submittedPin.length,
+        expectedPin: ADMIN_PIN ? `${ADMIN_PIN.substring(0, 2)}***` : "(empty)",
+        expectedPinLength: ADMIN_PIN.length,
+        hasEnvPin: !!process.env.ADMIN_PIN,
+        pinMatch: submittedPin === ADMIN_PIN,
+        rawPinType: typeof pin,
+        rawPinValue: pin ? String(pin).substring(0, 2) + "***" : "(empty)"
+      });
+      
+      if (!submittedPin || submittedPin !== ADMIN_PIN) {
         return res.status(401).json({ message: "Invalid admin PIN" });
       }
       
