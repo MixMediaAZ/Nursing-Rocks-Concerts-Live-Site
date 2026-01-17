@@ -236,6 +236,12 @@ function WallpaperCell({
  * White background ensures clean fade transitions.
  */
 export function Wallpaper() {
+  // #region agent log
+  useEffect(() => {
+    fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/components/wallpaper.tsx:Wallpaper',message:'Wallpaper component mounted',data:{imagesCount:CITY_BACKGROUND_IMAGES.length,firstImageUrl:CITY_BACKGROUND_IMAGES[0]?.image_url},timestamp:Date.now(),sessionId:'debug-session',runId:'wallpaper-debug',hypothesisId:'H1'})}).catch(()=>{});
+  }, []);
+  // #endregion
+  
   // Responsive grid size: fewer cells on mobile for better performance
   const getGridSize = () => {
     if (typeof window === 'undefined') return 60;

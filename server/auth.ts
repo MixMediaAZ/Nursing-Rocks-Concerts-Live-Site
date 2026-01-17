@@ -69,8 +69,14 @@ export async function register(req: Request, res: Response) {
 
 export async function login(req: Request, res: Response) {
   try {
+    // #region agent log
+    fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'server/auth.ts:login',message:'Login endpoint called',data:{hasEmail:!!req.body?.email,hasPassword:!!req.body?.password},timestamp:Date.now(),sessionId:'debug-session',runId:'login-debug',hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      // #region agent log
+      fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'server/auth.ts:login',message:'Login validation failed',data:{errors:errors.array()},timestamp:Date.now(),sessionId:'debug-session',runId:'login-debug',hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -79,12 +85,18 @@ export async function login(req: Request, res: Response) {
     // Get user
     const user = await storage.getUserByEmail(email);
     if (!user) {
+      // #region agent log
+      fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'server/auth.ts:login',message:'User not found',data:{email},timestamp:Date.now(),sessionId:'debug-session',runId:'login-debug',hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) {
+      // #region agent log
+      fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'server/auth.ts:login',message:'Password invalid',data:{userId:user.id},timestamp:Date.now(),sessionId:'debug-session',runId:'login-debug',hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
@@ -93,12 +105,18 @@ export async function login(req: Request, res: Response) {
     
     // Return user data without password hash
     const { password_hash, ...userData } = user;
+    // #region agent log
+    fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'server/auth.ts:login',message:'Login successful',data:{userId:userData.id,hasToken:!!token},timestamp:Date.now(),sessionId:'debug-session',runId:'login-debug',hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
     return res.status(200).json({
       message: 'Login successful',
       user: userData,
       token
     });
   } catch (error) {
+    // #region agent log
+    fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'server/auth.ts:login',message:'Login error caught',data:{error:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'login-debug',hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
     console.error('Login error:', error);
     return res.status(500).json({ message: 'Server error during login' });
   }

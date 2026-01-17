@@ -35,6 +35,9 @@ export default function LoginPage() {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (values: LoginFormValues) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/pages/login.tsx:mutationFn',message:'Login request initiated',data:{email:values.email,hasPassword:!!values.password},timestamp:Date.now(),sessionId:'debug-session',runId:'login-debug',hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
       const response = await apiRequest("POST", "/api/auth/login", {
         headers: {
           "Content-Type": "application/json",
@@ -42,17 +45,39 @@ export default function LoginPage() {
         body: JSON.stringify(values),
       });
       
+      // #region agent log
+      fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/pages/login.tsx:mutationFn',message:'Login response received',data:{status:response.status,ok:response.ok},timestamp:Date.now(),sessionId:'debug-session',runId:'login-debug',hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
+      
       if (!response.ok) {
         const error = await response.json();
+        // #region agent log
+        fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/pages/login.tsx:mutationFn',message:'Login failed',data:{status:response.status,error:error.message||'Unknown error'},timestamp:Date.now(),sessionId:'debug-session',runId:'login-debug',hypothesisId:'H1'})}).catch(()=>{});
+        // #endregion
         throw new Error(error.message || "Login failed. Please check your credentials.");
       }
       
-      return response.json();
+      const data = await response.json();
+      // #region agent log
+      fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/pages/login.tsx:mutationFn',message:'Login response parsed',data:{hasToken:!!data.token,hasUser:!!data.user,userId:data.user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'login-debug',hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
+      return data;
     },
     onSuccess: (data) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/pages/login.tsx:onSuccess',message:'Login success handler',data:{hasToken:!!data.token,hasUser:!!data.user},timestamp:Date.now(),sessionId:'debug-session',runId:'login-debug',hypothesisId:'H2'})}).catch(()=>{});
+      // #endregion
       // Store token and user data
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      }
+      if (data.user) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+      }
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/pages/login.tsx:onSuccess',message:'Token and user stored in localStorage',data:{tokenStored:!!localStorage.getItem('token'),userStored:!!localStorage.getItem('user')},timestamp:Date.now(),sessionId:'debug-session',runId:'login-debug',hypothesisId:'H2'})}).catch(()=>{});
+      // #endregion
       
       toast({
         title: "Login Successful",
@@ -72,17 +97,30 @@ export default function LoginPage() {
   
   // Redirect after successful login with a consistent approach across platforms
   function handleLoginSuccess() {
+    // #region agent log
+    fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/pages/login.tsx:handleLoginSuccess',message:'Login success redirect handler',data:{currentPath:window.location.pathname,search:window.location.search},timestamp:Date.now(),sessionId:'debug-session',runId:'login-debug',hypothesisId:'H3'})}).catch(()=>{});
+    // #endregion
     // Check for redirect parameter in URL
     const urlParams = new URLSearchParams(window.location.search);
     const redirectPath = urlParams.get('redirect');
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/pages/login.tsx:handleLoginSuccess',message:'Redirect path determined',data:{redirectPath:redirectPath||'/dashboard'},timestamp:Date.now(),sessionId:'debug-session',runId:'login-debug',hypothesisId:'H3'})}).catch(()=>{});
+    // #endregion
     
     // Add a short timeout to ensure token is properly saved first
     setTimeout(() => {
       if (redirectPath) {
         // Honor the redirect parameter if present
+        // #region agent log
+        fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/pages/login.tsx:handleLoginSuccess',message:'Redirecting to custom path',data:{redirectPath},timestamp:Date.now(),sessionId:'debug-session',runId:'login-debug',hypothesisId:'H3'})}).catch(()=>{});
+        // #endregion
         window.location.href = redirectPath;
       } else {
         // Direct all successful logins to the dashboard
+        // #region agent log
+        fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/pages/login.tsx:handleLoginSuccess',message:'Redirecting to dashboard',data:{path:'/dashboard'},timestamp:Date.now(),sessionId:'debug-session',runId:'login-debug',hypothesisId:'H3'})}).catch(()=>{});
+        // #endregion
         window.location.href = "/dashboard";
       }
     }, 100);

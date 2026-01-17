@@ -149,20 +149,21 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Login endpoint
-  app.post("/api/auth/login", (req: Request, res: Response, next: NextFunction) => {
-    passport.authenticate("local", (err, user, info) => {
-      if (err) return next(err);
-      if (!user) {
-        return res.status(401).json({ message: info?.message || "Authentication failed" });
-      }
-      
-      req.login(user, (loginErr) => {
-        if (loginErr) return next(loginErr);
-        return res.json(user);
-      });
-    })(req, res, next);
-  });
+  // Login endpoint - DISABLED: Using JWT-based auth from routes.ts instead
+  // The JWT endpoint returns { token, user } which the frontend expects
+  // app.post("/api/auth/login", (req: Request, res: Response, next: NextFunction) => {
+  //   passport.authenticate("local", (err, user, info) => {
+  //     if (err) return next(err);
+  //     if (!user) {
+  //       return res.status(401).json({ message: info?.message || "Authentication failed" });
+  //     }
+  //     
+  //     req.login(user, (loginErr) => {
+  //       if (loginErr) return next(loginErr);
+  //       return res.json(user);
+  //     });
+  //   })(req, res, next);
+  // });
 
   // Logout endpoint
   app.post("/api/auth/logout", (req: Request, res: Response) => {

@@ -131,7 +131,16 @@ export function Header() {
                 {/* Login/Register buttons next to nav pill - desktop only, logged out only */}
                 {!isLoggedIn && (
                   <div className="flex items-center gap-2 ml-4">
-                    <Button variant="ghost" asChild size="sm">
+                    <Button 
+                      variant="ghost" 
+                      asChild 
+                      size="sm"
+                      onClick={() => {
+                        // #region agent log
+                        fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/components/header.tsx:LoginButton',message:'Login link clicked',data:{currentPath:window.location.pathname},timestamp:Date.now(),sessionId:'debug-session',runId:'login-debug',hypothesisId:'H4'})}).catch(()=>{});
+                        // #endregion
+                      }}
+                    >
                       <Link href="/login">Login</Link>
                     </Button>
                     <Button asChild size="sm">
@@ -296,7 +305,16 @@ export function Header() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-3 p-2">
-                  <Button variant="outline" asChild className="w-full">
+                  <Button 
+                    variant="outline" 
+                    asChild 
+                    className="w-full"
+                    onClick={() => {
+                      // #region agent log
+                      fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/components/header.tsx:MobileLoginButton',message:'Mobile login link clicked',data:{currentPath:window.location.pathname},timestamp:Date.now(),sessionId:'debug-session',runId:'login-debug',hypothesisId:'H4'})}).catch(()=>{});
+                      // #endregion
+                    }}
+                  >
                     <Link href="/login">
                       <div 
                         className="flex items-center justify-center"
