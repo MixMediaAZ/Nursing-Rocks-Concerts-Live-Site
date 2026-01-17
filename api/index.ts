@@ -8,12 +8,12 @@ async function getHandler() {
     return cached;
   }
 
-  // IMPORTANT: We intentionally import the pre-bundled handler from dist at runtime.
+  // IMPORTANT: We intentionally import the pre-bundled handler from .vercel-build at runtime.
   // This prevents Vercel's TypeScript compilation step from type-checking the entire
   // server codebase (which is not required for runtime execution).
   //
   // Using a variable path avoids TS module resolution at build time.
-  const modPath = "../dist/vercel-handler.js";
+  const modPath = "../.vercel-build/vercel-handler.js";
   const mod: any = await import(modPath);
   cached = mod?.default ?? mod?.handler ?? mod;
   return cached!;
