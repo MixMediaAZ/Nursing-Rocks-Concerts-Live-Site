@@ -3,7 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import path from "path";
-import { log } from "./vite";
+import { log } from "./logger";
 
 export function createApp() {
   const app = express();

@@ -2,7 +2,7 @@ import "dotenv/config";
 import type { Request, Response } from "express";
 import { createApp } from "./create-app";
 import { registerRoutes } from "./routes";
-import { serveStatic } from "./vite";
+import { serveStatic } from "./static";
 
 const app = createApp();
 
