@@ -213,6 +213,17 @@ function WallpaperCell({
         className="absolute inset-0 w-full h-full object-cover"
         loading="lazy"
         decoding="async"
+        onError={(e) => {
+          // #region agent log
+          fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/components/wallpaper.tsx:onError',message:'Wallpaper image failed to load',data:{imageUrl:currentImage.image_url,error:'Image load error'},timestamp:Date.now(),sessionId:'debug-session',runId:'wallpaper-debug',hypothesisId:'H1'})}).catch(()=>{});
+          // #endregion
+          console.error('Wallpaper image failed to load:', currentImage.image_url, e);
+        }}
+        onLoad={() => {
+          // #region agent log
+          fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/components/wallpaper.tsx:onLoad',message:'Wallpaper image loaded successfully',data:{imageUrl:currentImage.image_url},timestamp:Date.now(),sessionId:'debug-session',runId:'wallpaper-debug',hypothesisId:'H1'})}).catch(()=>{});
+          // #endregion
+        }}
       />
     </motion.div>
   );
