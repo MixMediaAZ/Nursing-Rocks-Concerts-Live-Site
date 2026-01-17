@@ -7,8 +7,15 @@ import { db } from "./db";
 import { eq, sql, and } from "drizzle-orm";
 import { storage } from "./storage";
 import { approvedVideos, gallery, mediaFolders, events } from "@shared/schema";
-import sharp from "sharp";
 import { processImage } from "./image-utils";
+
+// Dynamic import for sharp (handles serverless environments where sharp might not be available)
+let sharp: typeof import('sharp') | null = null;
+try {
+  sharp = require('sharp');
+} catch (e) {
+  console.warn('[routes] Sharp not available - some image features disabled');
+}
 import { 
   galleryUpload, 
   createMediaFolder, 
@@ -322,7 +329,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Handle the case where the URL is a local file
               const originalPath = path.join(process.cwd(), originalImage.image_url);
               
-              if (fs.existsSync(originalPath)) {
+              if (fs.existsSync(originalPath) && sharp) {
                 try {
                   const originalImage2 = await sharp(originalPath);
                   const originalMetadata = await originalImage2.metadata();
@@ -334,7 +341,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 } catch (innerErr) {
                   console.warn('Error processing original image with sharp:', innerErr);
                 }
-              } else {
+              } else if (!fs.existsSync(originalPath)) {
                 console.log('Original image not found locally, using replacement dimensions');
               }
             } catch (err) {
@@ -347,16 +354,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const originalPath = path.join(process.cwd(), originalImage.image_url);
           targetPath = originalPath;
           
-          try {
-            const originalImage2 = await sharp(originalPath);
-            const originalMetadata = await originalImage2.metadata();
-            dimensions = {
-              width: originalMetadata.width,
-              height: originalMetadata.height
-            };
-          } catch (err) {
-            console.warn('Could not determine dimensions from original image, using default');
-            // Continue without dimensions to use the original replacement size
+          if (sharp) {
+            try {
+              const originalImage2 = await sharp(originalPath);
+              const originalMetadata = await originalImage2.metadata();
+              dimensions = {
+                width: originalMetadata.width,
+                height: originalMetadata.height
+              };
+            } catch (err) {
+              console.warn('Could not determine dimensions from original image, using default:', err);
+              // Continue without dimensions to use the original replacement size
+            }
+          } else {
+            console.warn('Sharp not available - skipping dimension extraction');
           }
         }
         

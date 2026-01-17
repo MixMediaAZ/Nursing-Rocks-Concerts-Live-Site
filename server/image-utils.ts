@@ -1,6 +1,13 @@
-import sharp from 'sharp';
 import path from 'path';
 import fs from 'fs';
+
+// Dynamic import for sharp (handles serverless environments where sharp might not be available)
+let sharp: typeof import('sharp') | null = null;
+try {
+  sharp = require('sharp');
+} catch (e) {
+  console.warn('[image-utils] Sharp not available - image processing disabled');
+}
 
 /**
  * Supported image types for processing
@@ -87,6 +94,18 @@ export async function processImage(
   filename?: string,
   customDimensions?: ResizeConfig
 ): Promise<Record<keyof typeof IMAGE_SIZES, string>> {
+  // Check if sharp is available
+  if (!sharp) {
+    console.warn('[image-utils] Sharp not available - returning placeholder paths');
+    const baseFilename = filename || path.parse(sourceFile).name;
+    // Return the source file path for all sizes when sharp is not available
+    const result: Record<keyof typeof IMAGE_SIZES, string> = {} as any;
+    for (const size of Object.keys(IMAGE_SIZES)) {
+      result[size as keyof typeof IMAGE_SIZES] = sourceFile;
+    }
+    return result;
+  }
+
   // Ensure destination directory exists
   if (!fs.existsSync(destinationDir)) {
     fs.mkdirSync(destinationDir, { recursive: true });
