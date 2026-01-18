@@ -1,4 +1,4 @@
-import "dotenv/config";
+// Note: Vercel provides environment variables natively - no dotenv needed
 import type { Request, Response } from "express";
 
 // Check required environment variables early

@@ -1,4 +1,4 @@
-import "dotenv/config";
+// Note: Vercel provides environment variables natively - no dotenv needed
 import type { Request, Response } from "express";
 
 let cached: ((req: Request, res: Response) => Promise<any>) | null = null;
