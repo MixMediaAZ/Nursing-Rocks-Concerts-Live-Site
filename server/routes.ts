@@ -9,13 +9,9 @@ import { storage } from "./storage";
 import { approvedVideos, gallery, mediaFolders, events } from "@shared/schema";
 import { processImage } from "./image-utils";
 
-// Dynamic import for sharp (handles serverless environments where sharp might not be available)
+// Sharp is marked as external in the build - it's pre-installed on Vercel
+// We set to null and handle gracefully if not available
 let sharp: typeof import('sharp') | null = null;
-try {
-  sharp = require('sharp');
-} catch (e) {
-  console.warn('[routes] Sharp not available - some image features disabled');
-}
 import { 
   galleryUpload, 
   createMediaFolder, 

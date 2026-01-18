@@ -3,20 +3,8 @@ import { drizzle } from 'drizzle-orm/neon-serverless';
 import * as schema from "@shared/schema";
 
 // Use fetch for serverless environments (better for Vercel)
+// Neon automatically uses fetch-based connections when WebSocket is not available
 neonConfig.fetchConnectionCache = true;
-
-// Configure WebSocket for non-serverless environments (local dev)
-// In Vercel serverless, Neon uses fetch-based connections automatically
-if (!process.env.VERCEL && typeof globalThis.WebSocket === 'undefined') {
-  try {
-    // Use require for synchronous loading in non-serverless environments
-    const ws = require('ws');
-    neonConfig.webSocketConstructor = ws;
-  } catch (e) {
-    // ws not available - likely in serverless environment, Neon will use fetch
-    console.log('[db] WebSocket not available, using fetch-based connection');
-  }
-}
 
 if (!process.env.DATABASE_URL) {
   throw new Error(

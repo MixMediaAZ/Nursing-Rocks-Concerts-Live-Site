@@ -1,13 +1,9 @@
 import path from 'path';
 import fs from 'fs';
 
-// Dynamic import for sharp (handles serverless environments where sharp might not be available)
+// Sharp is marked as external in the build - it's pre-installed on Vercel
+// We set to null and handle gracefully if not available
 let sharp: typeof import('sharp') | null = null;
-try {
-  sharp = require('sharp');
-} catch (e) {
-  console.warn('[image-utils] Sharp not available - image processing disabled');
-}
 
 /**
  * Supported image types for processing
