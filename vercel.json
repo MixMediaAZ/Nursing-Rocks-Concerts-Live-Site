@@ -18,15 +18,15 @@
     },
     {
       "source": "/admin",
-      "destination": "/api"
+      "destination": "/index.html"
     },
     {
       "source": "/admin/(.*)",
-      "destination": "/api"
+      "destination": "/index.html"
     },
     {
       "source": "/((?!api|_next|assets|.*\\..*).*)",
-      "destination": "/api"
+      "destination": "/index.html"
     }
   ],
   "headers": [
