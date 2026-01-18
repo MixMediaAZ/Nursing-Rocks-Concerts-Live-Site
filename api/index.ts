@@ -13,7 +13,7 @@ async function getHandler() {
   // server codebase (which is not required for runtime execution).
   //
   // Using a variable path avoids TS module resolution at build time.
-  const modPath = "../.vercel-build/vercel-handler.js";
+  const modPath = "../.vercel-build/vercel-handler.cjs";
   const mod: any = await import(modPath);
   cached = mod?.default ?? mod?.handler ?? mod;
   return cached!;
