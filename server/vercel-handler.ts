@@ -1,16 +1,31 @@
 import "dotenv/config";
 import type { Request, Response } from "express";
-import { createApp } from "./create-app";
-import { registerRoutes } from "./routes";
-import { serveStatic } from "./static";
 
-const app = createApp();
+// Check required environment variables early
+const requiredEnvVars = ['DATABASE_URL'];
+const missingEnvVars = requiredEnvVars.filter(v => !process.env[v]);
 
+if (missingEnvVars.length > 0) {
+  console.error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
+}
+
+// Lazy imports to avoid initialization errors
+let app: any = null;
 let initPromise: Promise<void> | null = null;
 
 async function ensureInitialized() {
   if (!initPromise) {
     initPromise = (async () => {
+      // Check env vars before initializing
+      if (!process.env.DATABASE_URL) {
+        throw new Error('DATABASE_URL environment variable is not set');
+      }
+      
+      const { createApp } = await import("./create-app");
+      const { registerRoutes } = await import("./routes");
+      const { serveStatic } = await import("./static");
+      
+      app = createApp();
       await registerRoutes(app);
       // In Vercel we rewrite SPA routes to the function; serve built client if present.
       serveStatic(app);
@@ -42,7 +57,8 @@ export default async function handler(req: Request, res: Response) {
     console.error('Vercel handler error:', error);
     return res.status(500).json({ 
       error: 'Internal server error',
-      message: error instanceof Error ? error.message : String(error)
+      message: error instanceof Error ? error.message : String(error),
+      hint: 'Check Vercel environment variables (DATABASE_URL, JWT_SECRET, SESSION_SECRET)'
     });
   }
 }
