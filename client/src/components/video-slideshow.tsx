@@ -56,35 +56,18 @@ export function VideoSlideshow({
   // Fetch video resources to get direct MP4 URLs (HLS may not exist)
   const [videoUrls, setVideoUrls] = useState<Record<string, {url: string, poster?: string}>>({});
   useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/components/video-slideshow.tsx:useEffect',message:'Fetching video resources',data:{endpoint:'/api/videos'},timestamp:Date.now(),sessionId:'debug-session',runId:'video-debug',hypothesisId:'H2'})}).catch(()=>{});
-    // #endregion
     fetch('/api/videos')
-      .then(res => {
-        // #region agent log
-        fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/components/video-slideshow.tsx:fetch.then',message:'Video API response received',data:{status:res.status,ok:res.ok},timestamp:Date.now(),sessionId:'debug-session',runId:'video-debug',hypothesisId:'H2'})}).catch(()=>{});
-        // #endregion
-        return res.json();
-      })
+      .then(res => res.json())
       .then(data => {
-        // #region agent log
-        fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/components/video-slideshow.tsx:json.then',message:'Video API data parsed',data:{success:data.success,resourcesCount:Array.isArray(data.resources)?data.resources.length:0},timestamp:Date.now(),sessionId:'debug-session',runId:'video-debug',hypothesisId:'H2'})}).catch(()=>{});
-        // #endregion
         if (data.success && Array.isArray(data.resources)) {
           const urlMap: Record<string, {url: string, poster?: string}> = {};
           for (const v of data.resources) {
             urlMap[v.public_id] = { url: v.secure_url || v.url, poster: v.poster_url };
           }
-          // #region agent log
-          fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/components/video-slideshow.tsx:setVideoUrls',message:'Video URLs mapped',data:{urlMapSize:Object.keys(urlMap).length},timestamp:Date.now(),sessionId:'debug-session',runId:'video-debug',hypothesisId:'H2'})}).catch(()=>{});
-          // #endregion
           setVideoUrls(urlMap);
         }
       })
       .catch((error) => {
-        // #region agent log
-        fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/components/video-slideshow.tsx:fetch.catch',message:'Video API fetch failed',data:{error:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'video-debug',hypothesisId:'H2'})}).catch(()=>{});
-        // #endregion
         console.error('Error fetching videos:', error);
       });
   }, []);
@@ -314,15 +297,9 @@ export function VideoSlideshow({
           loop={false}
           onEnded={handleVideoEnded}
           onError={(error) => {
-            // #region agent log
-            fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/components/video-slideshow.tsx:onError',message:'HLS video error',data:{videoId:currentId,videoUrl,error},timestamp:Date.now(),sessionId:'debug-session',runId:'video-debug',hypothesisId:'H3'})}).catch(()=>{});
-            // #endregion
             devLog("HLS video error:", error);
           }}
           onLoaded={() => {
-            // #region agent log
-            fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/components/video-slideshow.tsx:onLoaded',message:'HLS video loaded successfully',data:{videoId:currentId,videoUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'video-debug',hypothesisId:'H3'})}).catch(()=>{});
-            // #endregion
             devLog("HLS video loaded:", currentId);
           }}
           onVolumeChange={handleVolumeChange}

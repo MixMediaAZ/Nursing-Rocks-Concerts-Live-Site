@@ -172,6 +172,7 @@ export const approvedVideos = pgTable("approved_videos", {
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
   admin_notes: text("admin_notes"),
+  deleted_at: timestamp("deleted_at"), // Soft delete support
 });
 
 export const insertApprovedVideoSchema = createInsertSchema(approvedVideos).omit({
@@ -193,6 +194,7 @@ export const users = pgTable("users", {
   created_at: timestamp("created_at").defaultNow(),
   is_verified: boolean("is_verified").default(false),
   is_admin: boolean("is_admin").default(false),
+  is_suspended: boolean("is_suspended").default(false),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({

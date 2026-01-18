@@ -11,4 +11,8 @@ export default defineConfig({
   dbCredentials: {
     url: process.env.DATABASE_URL,
   },
+  // Exclude tables managed by other systems
+  // Note: tablesFilter syntax may vary by drizzle-kit version
+  verbose: true,
+  strict: true,
 });

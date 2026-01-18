@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-// #region agent log - Admin page instrumentation
-// #endregion
 import { Helmet } from "react-helmet";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -53,12 +51,6 @@ import VideoApproval from "@/components/admin/video-approval";
 import { LicenseManagement } from "@/components/admin/license-management";
 
 export default function AdminPage() {
-  // #region agent log
-  useEffect(() => {
-    fetch('http://127.0.0.1:7256/ingest/99bf51b4-4988-46a2-ac14-c43ca591cfd4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client/src/pages/admin.tsx:AdminPage',message:'Admin page mounted',data:{pathname:window.location.pathname,search:window.location.search},timestamp:Date.now(),sessionId:'debug-session',runId:'admin-login-debug',hypothesisId:'H1'})}).catch(()=>{});
-  }, []);
-  // #endregion
-  
   const [authenticated, setAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string>("");
@@ -83,7 +75,7 @@ export default function AdminPage() {
   // Fetch real data from API with automatic refetching
   const { data: eventsData, isLoading: eventsLoading } = useQuery({
     queryKey: ['/api/events'],
-    enabled: authenticated,
+    enabled: authenticated && !loading,
     staleTime: 0, // Always consider data stale to ensure fresh data
     refetchOnMount: true,
     refetchOnWindowFocus: true,
@@ -91,7 +83,7 @@ export default function AdminPage() {
 
   const { data: productsData, isLoading: productsLoading } = useQuery({
     queryKey: ['/api/store/products'],
-    enabled: authenticated,
+    enabled: authenticated && !loading,
     staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
@@ -99,18 +91,40 @@ export default function AdminPage() {
 
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ['/api/admin/users'],
-    enabled: authenticated,
+    enabled: authenticated && !loading,
     staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 403 (authentication errors)
+      if (error?.message?.includes('403') || error?.message?.includes('Admin privileges')) {
+        return false;
+      }
+      return failureCount < 2;
+    },
     queryFn: async () => {
+      // Double-check authentication before making request
       const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+      const userDataStr = localStorage.getItem('user');
+      const isAdmin = localStorage.getItem('isAdmin') === 'true';
+      
+      if (!token || !userDataStr || !isAdmin) {
+        setAuthenticated(false);
+        throw new Error('Not authenticated');
+      }
+      
       const response = await fetch('/api/admin/users', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
-      if (!response.ok) throw new Error('Failed to fetch users');
+      if (!response.ok) {
+        if (response.status === 403) {
+          setAuthenticated(false);
+          throw new Error('Admin privileges required');
+        }
+        throw new Error('Failed to fetch users');
+      }
       const data = await response.json();
       return data;
     },
@@ -118,36 +132,78 @@ export default function AdminPage() {
 
   const { data: jobsData, isLoading: jobsLoading } = useQuery({
     queryKey: ['/api/admin/jobs'],
-    enabled: authenticated,
+    enabled: authenticated && !loading,
     staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
+    retry: (failureCount, error: any) => {
+      if (error?.message?.includes('403') || error?.message?.includes('Admin privileges')) {
+        return false;
+      }
+      return failureCount < 2;
+    },
     queryFn: async () => {
+      // Double-check authentication before making request
       const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+      const userDataStr = localStorage.getItem('user');
+      const isAdmin = localStorage.getItem('isAdmin') === 'true';
+      
+      if (!token || !userDataStr || !isAdmin) {
+        setAuthenticated(false);
+        throw new Error('Not authenticated');
+      }
+      
       const response = await fetch('/api/admin/jobs', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
-      if (!response.ok) throw new Error('Failed to fetch jobs');
+      if (!response.ok) {
+        if (response.status === 403) {
+          setAuthenticated(false);
+          throw new Error('Admin privileges required');
+        }
+        throw new Error('Failed to fetch jobs');
+      }
       return response.json();
     },
   });
 
   const { data: employersData, isLoading: employersLoading } = useQuery({
     queryKey: ['/api/admin/employers'],
-    enabled: authenticated,
+    enabled: authenticated && !loading,
     staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
+    retry: (failureCount, error: any) => {
+      if (error?.message?.includes('403') || error?.message?.includes('Admin privileges')) {
+        return false;
+      }
+      return failureCount < 2;
+    },
     queryFn: async () => {
+      // Double-check authentication before making request
       const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+      const userDataStr = localStorage.getItem('user');
+      const isAdmin = localStorage.getItem('isAdmin') === 'true';
+      
+      if (!token || !userDataStr || !isAdmin) {
+        setAuthenticated(false);
+        throw new Error('Not authenticated');
+      }
+      
       const response = await fetch('/api/admin/employers', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
-      if (!response.ok) throw new Error('Failed to fetch employers');
+      if (!response.ok) {
+        if (response.status === 403) {
+          setAuthenticated(false);
+          throw new Error('Admin privileges required');
+        }
+        throw new Error('Failed to fetch employers');
+      }
       return response.json();
     },
   });
@@ -155,18 +211,39 @@ export default function AdminPage() {
   // Global app settings (admin-only via JWT)
   const { data: appSettingsData, isLoading: appSettingsLoading } = useQuery({
     queryKey: ['/api/settings'],
-    enabled: authenticated,
+    enabled: authenticated && !loading,
     staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
+    retry: (failureCount, error: any) => {
+      if (error?.message?.includes('403') || error?.message?.includes('Invalid or expired token')) {
+        return false;
+      }
+      return failureCount < 2;
+    },
     queryFn: async () => {
+      // Double-check authentication before making request
       const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+      const userDataStr = localStorage.getItem('user');
+      const isAdmin = localStorage.getItem('isAdmin') === 'true';
+      
+      if (!token || !userDataStr || !isAdmin) {
+        setAuthenticated(false);
+        throw new Error('Not authenticated');
+      }
+      
       const response = await fetch('/api/settings', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
-      if (!response.ok) throw new Error('Failed to fetch settings');
+      if (!response.ok) {
+        if (response.status === 403) {
+          setAuthenticated(false);
+          throw new Error('Invalid or expired token');
+        }
+        throw new Error('Failed to fetch settings');
+      }
       return response.json();
     },
   });
@@ -473,6 +550,11 @@ export default function AdminPage() {
     const storedTab = localStorage.getItem("adminActiveTab");
     const [activeTab, setActiveTab] = useState(tabParam || storedTab || "overview");
     
+    // Persist active tab to localStorage when it changes
+    useEffect(() => {
+      localStorage.setItem("adminActiveTab", activeTab);
+    }, [activeTab]);
+    
     // Admin mode is always true for authenticated admins
     const [isAdminMode, setIsAdminMode] = useState(true);
     
@@ -714,7 +796,7 @@ export default function AdminPage() {
           )}
         </div>
 
-        <Tabs value={activeTab} defaultValue="overview" className="w-full" onValueChange={setActiveTab}>
+        <Tabs value={activeTab} className="w-full" onValueChange={setActiveTab}>
           <TabsList className="w-full grid grid-cols-2 md:grid-cols-12 mb-8">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="editor">

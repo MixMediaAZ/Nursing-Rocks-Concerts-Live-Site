@@ -1438,10 +1438,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updates: any = {};
       if (typeof is_admin === 'boolean') updates.is_admin = is_admin;
       if (typeof is_verified === 'boolean') updates.is_verified = is_verified;
-      if (typeof is_suspended === 'boolean') {
-        // Assuming there's a suspended field or we use account_status
-        // For now, we'll skip this if the storage doesn't support it
-      }
+      if (typeof is_suspended === 'boolean') updates.is_suspended = is_suspended;
 
       const updated = await storage.updateUser(id, updates);
       return res.json(updated);
