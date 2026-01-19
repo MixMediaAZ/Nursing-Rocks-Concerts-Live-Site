@@ -1495,6 +1495,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin: Get all newsletter subscribers
+  app.get("/api/admin/subscribers", requireAdminToken, async (_req: Request, res: Response) => {
+    try {
+      const subscribers = await storage.getAllSubscribers();
+      return res.json(subscribers);
+    } catch (error) {
+      console.error("Error fetching subscribers:", error);
+      return res.status(500).json({ message: "Failed to fetch subscribers" });
+    }
+  });
+
+  // Admin: Download subscribers as CSV
+  app.get("/api/admin/subscribers.csv", requireAdminToken, async (_req: Request, res: Response) => {
+    try {
+      const subscribers = await storage.getAllSubscribers();
+      
+      // Create CSV header
+      const csvHeader = "Email,Created At\n";
+      
+      // Create CSV rows
+      const csvRows = subscribers.map(sub => {
+        const email = sub.email.replace(/"/g, '""'); // Escape quotes
+        const createdAt = sub.created_at 
+          ? new Date(sub.created_at).toISOString() 
+          : "";
+        return `"${email}","${createdAt}"`;
+      }).join("\n");
+      
+      const csv = csvHeader + csvRows;
+      
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", "attachment; filename=newsletter-subscribers.csv");
+      return res.send(csv);
+    } catch (error) {
+      console.error("Error generating subscribers CSV:", error);
+      return res.status(500).json({ message: "Failed to generate CSV" });
+    }
+  });
+
   // Admin: Update employer
   app.patch("/api/admin/employers/:id", requireAdminToken, async (req: Request, res: Response) => {
     try {

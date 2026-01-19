@@ -48,6 +48,7 @@ export interface IStorage {
   // Subscribers
   createSubscriber(subscriber: InsertSubscriber): Promise<Subscriber>;
   getSubscriberByEmail(email: string): Promise<Subscriber | undefined>;
+  getAllSubscribers(): Promise<Subscriber[]>;
   
   // User Management
   createUser(user: InsertUser, passwordHash: string): Promise<User>;
@@ -345,6 +346,14 @@ export class MemStorage implements IStorage {
     return Array.from(this.subscribers.values()).find(
       subscriber => subscriber.email === email,
     );
+  }
+
+  async getAllSubscribers(): Promise<Subscriber[]> {
+    return Array.from(this.subscribers.values()).sort((a, b) => {
+      const aDate = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const bDate = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return bDate - aDate; // Newest first
+    });
   }
   
   // Initialize with sample data

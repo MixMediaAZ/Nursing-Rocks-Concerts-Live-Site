@@ -123,6 +123,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(subscribers.email, email));
     return subscriber;
   }
+
+  async getAllSubscribers(): Promise<Subscriber[]> {
+    return await db.select().from(subscribers).orderBy(desc(subscribers.created_at));
+  }
   
   // User Management
   async createUser(user: InsertUser, passwordHash: string): Promise<User> {
