@@ -86,7 +86,7 @@ import {
   requireEmployerToken
 } from "./auth";
 import { setupAuth, requireAuth, requireVerifiedUser, requireAdmin } from "./session-auth";
-import { generateToken, isUserAdmin } from './jwt';
+import { generateToken, isUserAdmin, getPayloadFromRequest } from './jwt';
 import {
   upload,
   uploadMediaFiles,
@@ -1290,15 +1290,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication status - should now be handled by session-auth
   // This route is kept for backward compatibility
   app.get("/api/auth/status", (req: Request, res: Response) => {
-    const isAuthenticated = req.isAuthenticated();
-    const isVerified = req.isAuthenticated() && (req.user as any)?.is_verified;
-    const isAdmin = req.isAuthenticated() && (req.user as any)?.is_admin;
-    
+    const sessionAuthenticated =
+      typeof req.isAuthenticated === "function" && req.isAuthenticated();
+    const sessionUser = sessionAuthenticated ? (req.user as any) : null;
+
+    const jwtPayload = sessionAuthenticated ? null : getPayloadFromRequest(req);
+    const jwtUser = jwtPayload
+      ? {
+          id: jwtPayload.userId,
+          email: jwtPayload.email,
+          is_verified: jwtPayload.isVerified,
+          is_admin: jwtPayload.isAdmin,
+        }
+      : null;
+
+    const user = sessionUser ?? jwtUser;
+
     res.json({
-      isAuthenticated,
-      isVerified,
-      isAdmin,
-      user: req.user || null
+      isAuthenticated: !!user,
+      isVerified: !!user?.is_verified,
+      isAdmin: !!user?.is_admin,
+      user: user || null,
     });
   });
 

@@ -6,6 +6,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { InsertUser, User } from "@shared/schema";
+import { getPayloadFromRequest } from "./jwt";
 
 // Extend Express.User interface
 declare global {
@@ -30,36 +31,76 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 // Authentication middleware for protected routes
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: "Unauthorized: Authentication required" });
+function getSessionUser(req: Request) {
+  if (typeof req.isAuthenticated === "function" && req.isAuthenticated()) {
+    return req.user as any;
   }
-  next();
+  return null;
+}
+
+function getJwtUser(req: Request) {
+  const payload = getPayloadFromRequest(req);
+  if (!payload) return null;
+  return {
+    id: payload.userId,
+    email: payload.email,
+    is_verified: payload.isVerified,
+    is_admin: payload.isAdmin,
+  };
+}
+
+export function requireAuth(req: Request, res: Response, next: NextFunction) {
+  const sessionUser = getSessionUser(req);
+  if (sessionUser) {
+    return next();
+  }
+
+  const jwtUser = getJwtUser(req);
+  if (jwtUser) {
+    (req as any).user = jwtUser;
+    return next();
+  }
+
+  return res.status(401).json({ message: "Unauthorized: Authentication required" });
 }
 
 // Middleware to require verified user
 export function requireVerifiedUser(req: Request, res: Response, next: NextFunction) {
-  if (!req.isAuthenticated()) {
+  const sessionUser = getSessionUser(req);
+  const jwtUser = sessionUser ? null : getJwtUser(req);
+
+  const user = sessionUser ?? jwtUser;
+  if (!user) {
     return res.status(401).json({ message: "Unauthorized: Authentication required" });
   }
-  
-  if (!(req.user as any).is_verified) {
+
+  if (!(user as any).is_verified) {
     return res.status(403).json({ message: "Forbidden: Account verification required" });
   }
-  
+
+  if (jwtUser) {
+    (req as any).user = jwtUser;
+  }
   next();
 }
 
 // Middleware to require admin user
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  if (!req.isAuthenticated()) {
+  const sessionUser = getSessionUser(req);
+  const jwtUser = sessionUser ? null : getJwtUser(req);
+  const user = sessionUser ?? jwtUser;
+
+  if (!user) {
     return res.status(401).json({ message: "Unauthorized: Authentication required" });
   }
-  
-  if (!(req.user as any).is_admin) {
+
+  if (!(user as any).is_admin) {
     return res.status(403).json({ message: "Forbidden: Admin privileges required" });
   }
-  
+
+  if (jwtUser) {
+    (req as any).user = jwtUser;
+  }
   next();
 }
 
