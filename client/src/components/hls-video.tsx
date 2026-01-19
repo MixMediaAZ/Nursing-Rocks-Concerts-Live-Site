@@ -9,9 +9,11 @@ type Props = {
   controls?: boolean;
   loop?: boolean;
   poster?: string;
+  objectFit?: 'contain' | 'cover' | 'fill' | 'none' | 'scale-down';
   onEnded?: () => void;
   onError?: (error: string) => void;
   onLoaded?: () => void;
+  onLoadedMetadata?: (e: React.SyntheticEvent<HTMLVideoElement>) => void;
   onVolumeChange?: (isMuted: boolean) => void;
 };
 
@@ -23,9 +25,11 @@ export function HlsVideo({
   controls = true,
   loop = false,
   poster,
+  objectFit = 'contain',
   onEnded,
   onError,
   onLoaded,
+  onLoadedMetadata,
   onVolumeChange,
 }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -91,6 +95,9 @@ export function HlsVideo({
     const handleLoadedData = () => {
       onLoaded?.();
     };
+    const handleLoadedMetadata = (e: Event) => {
+      onLoadedMetadata?.(e as any);
+    };
     const handleEnded = () => onEnded?.();
     const handleError = (e: Event) => {
       setHasError(true);
@@ -99,16 +106,18 @@ export function HlsVideo({
     const handleVolume = () => onVolumeChange?.(video.muted);
 
     video.addEventListener("loadeddata", handleLoadedData);
+    video.addEventListener("loadedmetadata", handleLoadedMetadata);
     video.addEventListener("ended", handleEnded);
     video.addEventListener("error", handleError);
     video.addEventListener("volumechange", handleVolume);
     return () => {
       video.removeEventListener("loadeddata", handleLoadedData);
+      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
       video.removeEventListener("ended", handleEnded);
       video.removeEventListener("error", handleError);
       video.removeEventListener("volumechange", handleVolume);
     };
-  }, [onLoaded, onEnded, onError, onVolumeChange, src]);
+  }, [onLoaded, onLoadedMetadata, onEnded, onError, onVolumeChange, src]);
 
   if (hasError) {
     return (
@@ -133,7 +142,7 @@ export function HlsVideo({
   return (
     <video
       ref={videoRef}
-      className={`w-full h-full object-contain ${className}`}
+      className={`w-full h-full ${className}`}
       autoPlay={autoPlay}
       muted={muted}
       controls={controls}
@@ -143,6 +152,7 @@ export function HlsVideo({
       poster={poster}
       controlsList="nodownload"
       style={{
+        objectFit: objectFit,
         maxWidth: '100%',
         maxHeight: '100%',
         width: 'auto',

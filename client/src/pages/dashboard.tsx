@@ -224,7 +224,7 @@ export default function DashboardPage() {
         
         {/* Main Content */}
         <div className="col-span-1 lg:col-span-9">
-          <div className="mb-6">
+          <div className="mb-6 border border-gray-300 rounded-lg p-6 bg-white/10 shadow-sm">
             <h1 className="text-3xl font-bold mb-2">Welcome back, {userData.first_name}!</h1>
             <p className="text-muted-foreground">
               Manage your Nursing Rocks account, view upcoming events, and access your tickets.

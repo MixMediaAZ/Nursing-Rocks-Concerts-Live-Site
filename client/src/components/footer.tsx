@@ -34,7 +34,7 @@ export function Footer() {
   
   return (
     <footer className="border-t bg-background mt-auto">
-      <div className="page-container content-wrapper py-6 md:py-10 mx-auto">
+      <div className="page-container content-wrapper py-6 md:py-10 mx-auto border border-gray-300 rounded-lg p-4 sm:p-6 bg-white/50 shadow-sm">
         {/* Logo and Tagline Section */}
         <div className="mb-8">
           <div className="bg-blue-50 rounded-lg p-3 sm:p-4 flex flex-col md:flex-row items-center justify-center gap-4">
@@ -70,7 +70,7 @@ export function Footer() {
         {/* Links Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8 mx-auto max-w-4xl">
           {/* Quick Links */}
-          <div className="text-center">
+          <div className="text-center border border-gray-300 rounded-lg p-4 bg-white/50 shadow-sm">
             <h3 className="text-base font-bold mb-3">Quick Links</h3>
             <ul className="space-y-2">
               <li>

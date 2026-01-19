@@ -134,17 +134,15 @@ const VideosPage = () => {
                 </div>
               </div>
               <CardContent className="p-0">
-                <div className="aspect-video w-full">
                   <VideoSlideshow
                     videos={allVideoIds}
                     autoPlay={true}
-                    muted={true}
+                    muted={false}
                     controls={true}
                     interval={20000}
                     maxAutoPlays={3}
-                    className="w-full h-full"
+                    className="w-full"
                   />
-                </div>
               </CardContent>
             </Card>
             
@@ -158,23 +156,24 @@ const VideosPage = () => {
             )}
             
             {/* Selected Featured Videos */}
-            <div className="space-y-4">
+            <div className="space-y-4 border border-gray-300 rounded-lg p-6 bg-white/50 shadow-sm">
               <h2 className="text-2xl font-semibold">More Featured Videos</h2>
               <Separator />
-              <VideoPlaylist
-                limit={4}
-                controls={true}
-                autoPlay={false}
-                muted={true}
-                loop={true}
-                layout={layout}
-                showDuration={true}
-                emptyMessage={
-                  <div className="text-center p-8">
-                    <p>Featured videos are being prepared. Check back soon!</p>
-                  </div>
-                }
-              />
+              <div style={{ transform: 'scale(0.5)', transformOrigin: 'top left', width: '200%' }}>
+                <VideoPlaylist
+                  controls={true}
+                  autoPlay={false}
+                  muted={true}
+                  loop={true}
+                  layout={layout}
+                  showDuration={true}
+                  emptyMessage={
+                    <div className="text-center p-8">
+                      <p>Featured videos are being prepared. Check back soon!</p>
+                    </div>
+                  }
+                />
+              </div>
             </div>
           </TabsContent>
           
@@ -209,7 +208,7 @@ const VideosPage = () => {
                 <VideoSlideshow 
                   videos={allVideoIds}
                   autoPlay={true}
-                  muted={true}
+                  muted={false}
                   controls={true}
                   interval={15000} // 15 seconds per video
                   maxAutoPlays={3}

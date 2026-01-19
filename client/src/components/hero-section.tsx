@@ -135,31 +135,33 @@ const HeroSection = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-[#5D3FD3]/60 to-[#FF3366]/60 sm:from-[#5D3FD3]/80 sm:to-[#FF3366]/80 mix-blend-multiply"></div>
       </div>
 
-      <div className="mobile-container pt-24 pb-8 sm:py-16 md:py-28 relative z-10">
+      <div className="mobile-container pt-2 pb-8 sm:pt-10 sm:pb-16 md:pt-[88px] md:pb-28 relative z-10">
         <div className="max-w-2xl">
           {/* Editable title */}
           <EditableElement
             type="text"
             id="hero-title"
           >
-            <div className="inline-block bg-[#FF3366] text-white px-4 py-2 sm:px-6 sm:py-3 rounded-full mb-4 sm:mb-6 font-accent text-lg sm:text-2xl md:text-3xl font-bold">
+            <div className="block mx-auto bg-[#FF3366] text-white px-4 py-2 sm:px-6 sm:py-3 rounded-full mb-4 sm:mb-6 font-accent text-lg sm:text-2xl md:text-3xl font-bold text-center">
               NURSING ROCKS! CONCERT SERIES
             </div>
           </EditableElement>
           
-          <h2 className="font-heading text-sm sm:text-base md:text-lg font-semibold mb-4 text-left">
-            Mission
-          </h2>
-          
-          {/* Editable mission statement */}
-          <EditableElement
-            type="text"
-            id="hero-mission"
-          >
-            <p className="text-sm sm:text-base md:text-lg mb-6 sm:mb-8 text-left">
-              Empowering and honoring nurses through the uplifting power of live music, our mission is to foster a positive impact within the nursing community at nationwide events. We strive to elevate awareness of the nursing profession and support its advancement through scholarship opportunities for further education.
-            </p>
-          </EditableElement>
+          <div className="border border-white/30 rounded-lg p-4 sm:p-6 bg-white/10 backdrop-blur-sm">
+            <h2 className="font-heading text-sm sm:text-base md:text-lg font-semibold mb-4 text-center">
+              Mission
+            </h2>
+            
+            {/* Editable mission statement */}
+            <EditableElement
+              type="text"
+              id="hero-mission"
+            >
+              <p className="text-sm sm:text-base md:text-lg mb-0 text-left">
+                Empowering and honoring nurses through the uplifting power of live music, our mission is to foster a positive impact within the nursing community at nationwide events. We strive to elevate awareness of the nursing profession and support its advancement through scholarship opportunities for further education.
+              </p>
+            </EditableElement>
+          </div>
 
           <div className="border-t border-white/20 my-8 pt-6"></div>
           
@@ -174,12 +176,12 @@ const HeroSection = () => {
           {/* Desktop Layout - Side by side */}
           <div className="hidden lg:flex items-start justify-between gap-10 mt-8">
             {/* Buttons Column - Left side */}
-            <div className="flex flex-col gap-4 flex-shrink-0 w-[320px]">
+            <div className="flex flex-col gap-4 flex-shrink-0 w-[450px]">
               {/* Free Ticket Button */}
               <Button
                 asChild
                 size="lg"
-                className="bg-gradient-to-r from-[#F61D7A] to-[#FF3366] hover:from-[#FF3366] hover:to-[#F61D7A] text-white font-accent font-bold text-xs sm:text-sm md:text-base py-4 px-4 sm:px-6 rounded-full shadow-lg transform transition-transform hover:scale-105 animate-pulse"
+                className="w-full bg-gradient-to-r from-[#F61D7A] to-[#FF3366] hover:from-[#FF3366] hover:to-[#F61D7A] text-white font-accent font-bold text-xs sm:text-sm md:text-base py-4 px-4 sm:px-6 rounded-full shadow-lg transform transition-transform hover:scale-105 animate-pulse"
               >
                 <Link href="/register">
                   <span className="uppercase">Nurses, Get Your Free Tickets Here!</span>
@@ -191,17 +193,17 @@ const HeroSection = () => {
               
               {/* Store Button - Coming Soon */}
               <Button
-                className="bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full opacity-60 cursor-not-allowed"
+                className="w-full bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full opacity-60 cursor-not-allowed"
                 disabled
                 title="Coming Soon"
               >
-                Store (Coming Soon)
+                Nursing Rocks! T-Shirts & Merch coming soon
                 <i className="fas fa-shopping-bag ml-1 sm:ml-2"></i>
               </Button>
               
               {/* Video Upload Button */}
               <Button
-                className="bg-[#FF8C00] hover:bg-[#FF6B00] text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full shadow-lg border-2 border-white/30"
+                className="w-full bg-[#FF8C00] hover:bg-[#FF6B00] text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full shadow-lg border-2 border-white/30"
                 onClick={() => window.open('https://nursingrocksconcerts3.replit.app/thanks', '_blank', 'noopener noreferrer')}
               >
                 Upload your video of appreciation here
@@ -211,13 +213,13 @@ const HeroSection = () => {
 
             {/* Video Column - Right side - 20% larger (from max-w-sm 384px to ~460px) */}
             <div className="flex-shrink-0 w-[460px] max-w-full">
-              <div className="aspect-video w-full bg-black rounded-xl overflow-hidden shadow-xl border-4 border-white/30 transform hover:scale-105 transition-transform duration-300" style={{ maxWidth: '100%' }}>
+              <div className="w-full bg-black rounded-xl overflow-hidden shadow-xl border-4 border-white/30 transform hover:scale-105 transition-transform duration-300" style={{ maxWidth: '100%' }}>
                 <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 opacity-75 blur-sm"></div>
-                <div className="relative z-10 w-full h-full" style={{ width: '100%', height: '100%', maxWidth: '100%' }}>
+                <div className="relative z-10 w-full" style={{ maxWidth: '100%' }}>
                   <VideoSlideshow
                     videos={allVideoIds}
                     autoPlay={true}
-                    muted={true}
+                    muted={false}
                     controls={true}
                     interval={15000}
                     maxAutoPlays={3}
@@ -231,12 +233,12 @@ const HeroSection = () => {
           {/* Mobile Layout - Vertical stack */}
           <div className="block lg:hidden">
             {/* Buttons Column */}
-            <div className="flex flex-col gap-4 max-w-sm">
+            <div className="flex flex-col gap-4 max-w-lg">
               {/* Free Ticket Button */}
               <Button
                 asChild
                 size="lg"
-                className="bg-gradient-to-r from-[#F61D7A] to-[#FF3366] hover:from-[#FF3366] hover:to-[#F61D7A] text-white font-accent font-bold text-xs sm:text-sm md:text-base py-4 px-4 sm:px-6 rounded-full shadow-lg transform transition-transform hover:scale-105 animate-pulse"
+                className="w-full bg-gradient-to-r from-[#F61D7A] to-[#FF3366] hover:from-[#FF3366] hover:to-[#F61D7A] text-white font-accent font-bold text-xs sm:text-sm md:text-base py-4 px-4 sm:px-6 rounded-full shadow-lg transform transition-transform hover:scale-105 animate-pulse"
               >
                 <Link href="/register">
                   <span className="uppercase">Nurses, Get Your Free Tickets Here!</span>
@@ -248,17 +250,17 @@ const HeroSection = () => {
               
               {/* Store Button - Coming Soon */}
               <Button
-                className="bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full opacity-60 cursor-not-allowed"
+                className="w-full bg-[#00A3E0] hover:bg-[#00A3E0]/90 text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full opacity-60 cursor-not-allowed"
                 disabled
                 title="Coming Soon"
               >
-                Store (Coming Soon)
+                Nursing Rocks! T-Shirts & Merch coming soon
                 <i className="fas fa-shopping-bag ml-1 sm:ml-2"></i>
               </Button>
               
               {/* Video Upload Button */}
               <Button
-                className="bg-[#FF8C00] hover:bg-[#FF6B00] text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full shadow-lg border-2 border-white/30"
+                className="w-full bg-[#FF8C00] hover:bg-[#FF6B00] text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full shadow-lg border-2 border-white/30"
                 onClick={() => (window.location.href = "/thanks")}
               >
                 Upload your video of appreciation here
@@ -268,15 +270,16 @@ const HeroSection = () => {
               {/* Slideshow for Mobile Only - Under buttons */}
               <div className="mt-6 w-full max-w-full" style={{ width: '100%', maxWidth: '100%' }}>
                 <h4 className="text-center font-semibold mb-2 text-white/90">Featured Video</h4>
-                <div className="aspect-video w-full mx-auto bg-black rounded-xl overflow-hidden shadow-xl border-2 border-white/30 transform transition-transform duration-300" style={{ maxWidth: '100%' }}>
+                <div className="w-full mx-auto bg-black rounded-xl overflow-hidden shadow-xl border-2 border-white/30 transform transition-transform duration-300" style={{ maxWidth: '100%' }}>
                   <div className="glow-effect absolute -inset-1 rounded-xl bg-gradient-to-r from-[#5D3FD3]/80 to-[#FF3366]/80 opacity-50 blur-sm"></div>
-                  <div className="relative z-10 w-full h-full" style={{ width: '100%', height: '100%', maxWidth: '100%' }}>
+                  <div className="relative z-10 w-full" style={{ maxWidth: '100%' }}>
                     <VideoSlideshow
                       videos={allVideoIds}
                       autoPlay={true}
-                      muted={true}
+                      muted={false}
                       controls={true}
                       interval={15000}
+                      maxAutoPlays={3}
                       className="w-full h-full"
                     />
                   </div>

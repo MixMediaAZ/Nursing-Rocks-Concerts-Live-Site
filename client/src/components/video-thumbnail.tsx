@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play } from 'lucide-react';
 import { HlsVideo } from './hls-video';
+import { ResponsiveVideoFrame } from './responsive-video-frame';
 
 interface VideoThumbnailProps {
   videoUrl: string;
@@ -89,19 +90,21 @@ export function VideoThumbnail({
   if (isPlaying) {
     return (
       <div className="relative w-full h-full beveled-video-frame">
-        <HlsVideo
-          src={videoUrl}
-          poster={posterUrl}
-          className={`w-full h-full ${className}`}
-          autoPlay={true}
-          muted={muted}
-          controls={controls}
-          loop={loop}
-          paused={paused}
-          onVolumeChange={onVolumeChange}
-          onEnded={onEnded}
-          objectFit="cover"
-        />
+        <ResponsiveVideoFrame className="w-full h-full">
+          <HlsVideo
+            src={videoUrl}
+            poster={posterUrl}
+            className={`w-full h-full ${className}`}
+            autoPlay={true}
+            muted={muted}
+            controls={controls}
+            loop={loop}
+            paused={paused}
+            onVolumeChange={onVolumeChange}
+            onEnded={onEnded}
+            objectFit="contain"
+          />
+        </ResponsiveVideoFrame>
       </div>
     );
   }
