@@ -7,14 +7,14 @@ import path from "path";
  */
 export function serveStatic(app: Express) {
   // Try to find dist/public directory
+  // Avoid import.meta in case this code runs in a CJS bundle on Vercel.
+  const cwd = process.cwd();
   const possiblePaths = [
     // Vercel serverless environment
-    process.env.VERCEL ? path.resolve(process.cwd(), "dist", "public") : null,
+    process.env.VERCEL ? path.resolve(cwd, "dist", "public") : null,
     process.env.VERCEL ? path.resolve("/var/task", "dist", "public") : null,
-    // Local production (relative to server directory)
-    path.resolve(import.meta.dirname, "..", "dist", "public"),
-    // Alternative: absolute from project root
-    path.resolve(process.cwd(), "dist", "public"),
+    // Local production / fallback
+    path.resolve(cwd, "dist", "public"),
   ].filter(Boolean) as string[];
 
   let distPath: string | null = null;
