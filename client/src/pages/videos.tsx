@@ -156,7 +156,7 @@ const VideosPage = () => {
             )}
             
             {/* Selected Featured Videos */}
-            <div className="space-y-4 border border-gray-300 rounded-lg p-6 bg-white/50 shadow-sm">
+            <div className="space-y-4 border border-gray-300 rounded-lg p-6 bg-white/70 shadow-sm">
               <h2 className="text-2xl font-semibold">More Featured Videos</h2>
               <Separator />
               <div style={{ transform: 'scale(0.5)', transformOrigin: 'top left', width: '200%' }}>

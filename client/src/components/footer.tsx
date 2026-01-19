@@ -92,7 +92,7 @@ export function Footer() {
           </div>
           
           {/* Contact Us */}
-          <div className="text-center">
+          <div className="text-center border border-gray-300 rounded-lg p-4 bg-white/50 shadow-sm">
             <Link href="/contact">
               <div className="text-base font-bold mb-3 cursor-pointer hover:text-primary transition-colors">
                 Contact Us
@@ -109,7 +109,7 @@ export function Footer() {
           </div>
           
           {/* Newsletter */}
-          <div className="text-center">
+          <div className="text-center border border-gray-300 rounded-lg p-4 bg-white/50 shadow-sm">
             <h3 className="text-base font-bold mb-3">Newsletter coming soon</h3>
             <p className="text-sm text-muted-foreground mb-3 mx-auto">
               Updates on upcoming concerts

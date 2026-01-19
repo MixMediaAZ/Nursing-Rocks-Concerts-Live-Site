@@ -127,7 +127,7 @@ export default function JobsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col items-center text-center mb-8 border border-gray-300 rounded-lg p-6 bg-white/10 shadow-sm">
+      <div className="flex flex-col items-center text-center mb-8 border border-gray-300 rounded-lg p-6 bg-white/70 shadow-sm">
         <h1 className="text-3xl md:text-4xl font-bold mb-2">Nursing Rocks! Jobs Board</h1>
         <p className="text-muted-foreground mb-6 max-w-2xl">
           Find your dream nursing job and connect with top healthcare employers. 
