@@ -15,8 +15,27 @@ async function getHandler() {
   // Using a variable path avoids TS module resolution at build time.
   const modPath = "../.vercel-build/vercel-handler.cjs";
   const mod: any = await import(modPath);
-  cached = mod?.default ?? mod?.handler ?? mod;
-  return cached!;
+  const candidate =
+    mod?.default ??
+    mod?.handler ??
+    mod?.default?.handler ??
+    mod;
+
+  if (typeof candidate === "function") {
+    cached = candidate;
+    return cached!;
+  }
+
+  // Some CJS bundles nest the handler under default
+  if (typeof mod?.default?.default === "function") {
+    cached = mod.default.default;
+    return cached!;
+  }
+
+  const keys = mod && typeof mod === "object" ? Object.keys(mod) : [];
+  throw new Error(
+    `Invalid handler export from ${modPath}. Keys: ${keys.join(", ")}`,
+  );
 }
 
 export default async function handler(req: Request, res: Response) {
