@@ -1,6 +1,12 @@
 import { db } from "./db";
 import { artists, events, venues, gallery } from "@shared/schema";
 
+// SAFETY: Do not run in production — clears events, artists, gallery. User accounts are NOT touched, but content is.
+if (process.env.NODE_ENV === "production") {
+  console.error("❌ Refusing to run seed-nursing-rocks in production. User data is safe; this script would clear content data.");
+  process.exit(1);
+}
+
 async function seedNursingRocks() {
   console.log("🌱 Starting Nursing Rocks seed process...");
 

@@ -19,6 +19,9 @@ export const events = pgTable("events", {
   genre: text("genre"),
   tickets_url: text("tickets_url"),
   location: text("location").notNull(), // Main location reference
+  // Ticket availability: not every event has online sales; some presale, some door-only
+  has_presale_tickets: boolean("has_presale_tickets").default(false),
+  tickets_at_door_only: boolean("tickets_at_door_only").default(false),
 });
 
 export const insertEventSchema = createInsertSchema(events).omit({

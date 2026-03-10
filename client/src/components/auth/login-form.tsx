@@ -43,8 +43,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   async function onSubmit(values: LoginFormValues) {
     setIsLoading(true);
     try {
-      const response = await apiRequest("/api/auth/login", {
-        method: "POST",
+      const response = await apiRequest("POST", "/api/auth/login", {
         headers: {
           "Content-Type": "application/json",
         },
@@ -91,7 +90,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       <CardHeader>
         <CardTitle>Login</CardTitle>
         <CardDescription>
-          Login to access your Nursing Rocks account and purchase tickets for upcoming concerts.
+          Login to access your Nursing Rocks account and claim free concert tickets (verified nurses).
         </CardDescription>
       </CardHeader>
       <CardContent>

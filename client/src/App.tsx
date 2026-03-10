@@ -7,6 +7,7 @@ import Home from "@/pages/home";
 import EventDetails from "@/pages/event-details";
 import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
+import ResetPasswordPage from "@/pages/reset-password";
 import ProfilePage from "@/pages/profile";
 import DashboardPage from "@/pages/dashboard";
 import EmployerDashboardPage from "@/pages/employer-dashboard";
@@ -64,6 +65,7 @@ function Router() {
             <Route path="/events/:id" component={EventDetails} />
             <Route path="/login" component={LoginPage} />
             <Route path="/register" component={RegisterPage} />
+            <Route path="/reset-password" component={ResetPasswordPage} />
             {/* Redirect from old license page to new integrated registration flow */}
             <Route path="/license">
               {() => <Redirect to="/register" />}

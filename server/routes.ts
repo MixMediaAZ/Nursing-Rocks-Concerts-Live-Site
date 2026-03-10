@@ -47,6 +47,14 @@ import ffmpeg from "fluent-ffmpeg";
 import ffmpegPath from "ffmpeg-static";
 import os from "os";
 
+const VIDEO_LIST_CACHE_TTL_MS = 5 * 60 * 1000;
+let videoListCache:
+  | {
+      timestamp: number;
+      data: { success: boolean; resources: unknown[]; total: number };
+    }
+  | null = null;
+
 // Initialize Stripe with the secret key if it exists
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 let stripe: Stripe | undefined;
@@ -1323,6 +1331,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fetchAll = req.query.all === "true";
       const isAdmin = isUserAdmin(req);
 
+      const canUseCache = !prefix && !(fetchAll && isAdmin);
+      if (canUseCache && videoListCache) {
+        const age = Date.now() - videoListCache.timestamp;
+        if (age < VIDEO_LIST_CACHE_TTL_MS) {
+          res.setHeader(
+            "Cache-Control",
+            "public, max-age=300, s-maxage=600, stale-while-revalidate=86400",
+          );
+          return res.json(videoListCache.data);
+        }
+      }
+
       let resources = await provider.listSourceVideos({ prefix });
       if (!(fetchAll && isAdmin)) {
         const approvedList = await db
@@ -1333,7 +1353,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         resources = resources.filter((r) => approvedIds.has(r.public_id));
       }
 
-      res.json({ success: true, resources, total: resources.length });
+      const payload = { success: true, resources, total: resources.length };
+      if (canUseCache) {
+        videoListCache = { timestamp: Date.now(), data: payload };
+        res.setHeader(
+          "Cache-Control",
+          "public, max-age=300, s-maxage=600, stale-while-revalidate=86400",
+        );
+      }
+      res.json(payload);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to list videos";
       const m = message.match(/Missing required env var:\s*([A-Z0-9_]+)/);
@@ -1422,11 +1450,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return next();
   };
 
-  // Admin: Get all users
+  // Admin: Get all users (exclude password_hash from response)
   app.get("/api/admin/users", requireAdminToken, async (_req: Request, res: Response) => {
     try {
       const users = await storage.getAllUsers();
-      return res.json(users);
+      const safeUsers = users.map(({ password_hash: _p, ...u }) => u);
+      return res.json(safeUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
       return res.status(500).json({ message: "Failed to fetch users" });
@@ -1449,7 +1478,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (typeof is_suspended === 'boolean') updates.is_suspended = is_suspended;
 
       const updated = await storage.updateUser(id, updates);
-      return res.json(updated);
+      const { password_hash: _p, ...safe } = updated;
+      return res.json(safe);
     } catch (error) {
       console.error("Error updating user:", error);
       return res.status(500).json({ message: "Failed to update user" });

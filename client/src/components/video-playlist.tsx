@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { VideoThumbnail } from "./video-thumbnail";
 import { Skeleton } from '@/components/ui/skeleton';
 import { detectResourceType } from '@/lib/video-service';
+import { fetchVideoListCached } from '@/lib/video-cache';
+import { getOptimizedPosterUrl } from '@/lib/poster-url';
+import { LazyRender } from './lazy-render';
 
 export interface VideoResource {
   public_id: string;
@@ -59,13 +62,13 @@ export function VideoPlaylist({
   
   // Fetch videos when component mounts
   useEffect(() => {
+    let isMounted = true;
     async function fetchVideos() {
       try {
         setLoading(true);
         
         // Fetch videos from server (approval-gated)
-        const response = await fetch('/api/videos');
-        const data = await response.json();
+        const data = await fetchVideoListCached();
         
         
         if (data.success && Array.isArray(data.resources)) {
@@ -108,19 +111,30 @@ export function VideoPlaylist({
           const limitedVideos = processedVideos.slice(0, limit);
           
           // All videos are from B2, no filtering needed
-          setVideos(limitedVideos);
+          if (isMounted) {
+            setVideos(limitedVideos);
+          }
         } else {
-          setError('Failed to fetch videos');
+          if (isMounted) {
+            setError('Failed to fetch videos');
+          }
         }
       } catch (err) {
         console.error('Error fetching videos:', err);
-        setError('Error loading videos. Please try again later.');
+        if (isMounted) {
+          setError('Error loading videos. Please try again later.');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
     
     fetchVideos();
+    return () => {
+      isMounted = false;
+    };
   }, [folder, limit]);
   
   // Format duration to mm:ss or hh:mm:ss format
@@ -179,10 +193,9 @@ export function VideoPlaylist({
   };
 
   const getPosterUrl = (video: VideoResource) => {
-    if (video.poster_url) return video.poster_url;
-    const base = (import.meta as any).env?.VITE_VIDEO_CDN_BASE_URL as string | undefined;
-    const normalized = base ? base.replace(/\/+$/, "") : "";
-    return `${normalized}/poster/${video.public_id}.jpg`;
+    // Use optimized poster URL helper (WebP preferred, JPG fallback)
+    const posterUrls = getOptimizedPosterUrl(video.public_id, video.poster_url);
+    return posterUrls.getUrl();
   };
 
   // Render videos in grid layout
@@ -190,7 +203,11 @@ export function VideoPlaylist({
     return (
       <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${className}`}>
         {videos.map((video, index) => (
-          <div key={video.asset_id} className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-md">
+          <LazyRender
+            key={video.asset_id}
+            className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-md"
+            fallback={<div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-md animate-pulse" />}
+          >
             <VideoThumbnail
               videoUrl={getVideoUrl(video)}
               posterUrl={getPosterUrl(video)}
@@ -203,7 +220,7 @@ export function VideoPlaylist({
               showTitle={true}
               showDuration={showDuration}
             />
-          </div>
+          </LazyRender>
         ))}
       </div>
     );
@@ -213,7 +230,11 @@ export function VideoPlaylist({
   return (
     <div className={`flex flex-col gap-4 ${className}`}>
       {videos.map((video, index) => (
-        <div key={video.asset_id} className="flex flex-col md:flex-row gap-4 bg-black/5 dark:bg-black/20 rounded-lg overflow-hidden shadow-md">
+        <LazyRender
+          key={video.asset_id}
+          className="flex flex-col md:flex-row gap-4 bg-black/5 dark:bg-black/20 rounded-lg overflow-hidden shadow-md"
+          fallback={<div className="flex flex-col md:flex-row gap-4 bg-black/5 dark:bg-black/20 rounded-lg overflow-hidden shadow-md animate-pulse h-32" />}
+        >
           <div className="aspect-video md:w-1/3 bg-black">
             <VideoThumbnail
               videoUrl={getVideoUrl(video)}
@@ -239,7 +260,7 @@ export function VideoPlaylist({
               {new Date(video.created_at).toLocaleDateString()}
             </div>
           </div>
-        </div>
+        </LazyRender>
       ))}
     </div>
   );

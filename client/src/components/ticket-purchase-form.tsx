@@ -6,7 +6,6 @@ import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -14,14 +13,7 @@ const ticketFormSchema = z.object({
   ticket_type: z.string({
     required_error: "Please select a ticket type",
   }),
-  quantity: z.coerce
-    .number({
-      required_error: "Please enter a quantity",
-      invalid_type_error: "Quantity must be a number",
-    })
-    .int()
-    .min(1, { message: "Quantity must be at least 1" })
-    .max(10, { message: "Maximum 10 tickets per purchase" }),
+  quantity: z.literal(1),
 });
 
 type TicketFormValues = z.infer<typeof ticketFormSchema>;
@@ -45,7 +37,7 @@ export function TicketPurchaseForm({
   const { toast } = useToast();
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
   
-  // Form definition
+  // Form definition (one ticket per purchase)
   const form = useForm<TicketFormValues>({
     resolver: zodResolver(ticketFormSchema),
     defaultValues: {
@@ -87,15 +79,18 @@ export function TicketPurchaseForm({
         throw new Error("Invalid ticket type selected");
       }
       
-      const response = await apiRequest("/api/tickets", {
+      const response = await apiRequest("/api/tickets/purchase", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(typeof localStorage !== "undefined" && localStorage.getItem("token")
+            ? { Authorization: `Bearer ${localStorage.getItem("token")}` }
+            : {}),
         },
         body: JSON.stringify({
           event_id: eventId,
           ticket_type: values.ticket_type,
-          quantity: values.quantity,
+          quantity: 1,
           price: selectedTicket.price,
         }),
       });
@@ -110,7 +105,7 @@ export function TicketPurchaseForm({
     onSuccess: () => {
       toast({
         title: "Success!",
-        description: "Your ticket(s) have been purchased successfully.",
+        description: "Your free ticket has been reserved.",
       });
       
       if (onSuccess) {
@@ -121,7 +116,7 @@ export function TicketPurchaseForm({
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Failed to purchase ticket. Please try again.",
+        description: error.message || "Failed to reserve ticket. Please try again.",
       });
     },
   });
@@ -133,8 +128,7 @@ export function TicketPurchaseForm({
   
   const selectedTicketType = form.watch("ticket_type");
   const selectedTicket = ticketOptions.find((option) => option.type === selectedTicketType);
-  const quantity = form.watch("quantity") || 0;
-  const subtotal = selectedTicket ? selectedTicket.price * quantity : 0;
+  const subtotal = selectedTicket ? selectedTicket.price : 0;
   
   if (isVerified === null) {
     return <p>Loading verification status...</p>;
@@ -142,7 +136,10 @@ export function TicketPurchaseForm({
   
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold">Get Tickets</h3>
+      <h3 className="text-lg font-semibold">Claim your free ticket</h3>
+      <p className="text-sm text-muted-foreground">
+        Verified nurses receive one free ticket per event. Some venues also offer presale or door-only tickets for guests—see event details.
+      </p>
       
       {isVerified ? (
         <Form {...form}>
@@ -162,30 +159,14 @@ export function TicketPurchaseForm({
                     <SelectContent>
                       {ticketOptions.map((option) => (
                         <SelectItem key={option.type} value={option.type}>
-                          {option.type} - ${option.price.toFixed(2)}
+                          {option.type}
+                          {option.price === 0 ? " (Free)" : ` – $${option.price.toFixed(2)}`}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    Select the type of ticket you want to purchase
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="quantity"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Quantity</FormLabel>
-                  <FormControl>
-                    <Input type="number" min={1} max={10} {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    Maximum of 10 tickets per purchase
+                    Select your ticket type (free for verified nurses)
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -195,17 +176,14 @@ export function TicketPurchaseForm({
             {selectedTicketType && (
               <div className="pt-4 border-t">
                 <div className="flex justify-between text-sm mb-2">
-                  <span>Ticket Price:</span>
-                  <span>${selectedTicket?.price.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span>Quantity:</span>
-                  <span>{quantity}</span>
+                  <span>Ticket type:</span>
+                  <span>{selectedTicket?.type}</span>
                 </div>
                 <div className="flex justify-between font-bold">
-                  <span>Total:</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>Total (1 ticket):</span>
+                  <span>{selectedTicket?.price === 0 ? "Free" : `$${subtotal.toFixed(2)}`}</span>
                 </div>
+                <p className="text-xs text-muted-foreground mt-2">One free ticket per event for verified nurses.</p>
               </div>
             )}
             
@@ -214,15 +192,15 @@ export function TicketPurchaseForm({
               className="w-full"
               disabled={purchaseTicketMutation.isPending}
             >
-              {purchaseTicketMutation.isPending ? "Processing..." : "Get Tickets"}
+              {purchaseTicketMutation.isPending ? "Processing..." : "Claim free ticket"}
             </Button>
           </form>
         </Form>
       ) : (
         <div className="bg-amber-50 border border-amber-200 rounded-md p-4 text-amber-800">
-          <h4 className="font-medium mb-2">Nurse Verification Required</h4>
+          <h4 className="font-medium mb-2">Nurse verification required</h4>
           <p className="text-sm mb-4">
-            To purchase tickets for {eventTitle}, you need to register and verify your nursing license. This is a one-time process that ensures our events remain exclusive to healthcare professionals.
+            Tickets are free for verified nurses. To claim your free ticket for {eventTitle}, register and verify your nursing license (one-time).
           </p>
           <Button 
             variant="outline"

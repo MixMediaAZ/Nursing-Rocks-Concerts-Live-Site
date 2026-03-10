@@ -34,7 +34,7 @@ export default function CitiesPage() {
                 Each concert features prominent rock headliners performing in venues nationwide, with special program elements dedicated to honoring local nursing heroes.
               </p>
               <p>
-                What makes our concerts truly special is that they're free for registered nurses, with tickets provided by our generous sponsors who believe in our mission.
+                What makes our concerts special is that admission is free for verified nurses—tickets are provided by our sponsors. Ticket availability varies by venue: some offer presale tickets, others are admission at the door only. Check each event for details.
               </p>
             </div>
             <div>

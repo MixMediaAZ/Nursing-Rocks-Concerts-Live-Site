@@ -55,8 +55,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
       // Remove confirm_password since backend doesn't need it
       const { confirm_password, ...registrationData } = values;
       
-      const response = await apiRequest("/api/auth/register", {
-        method: "POST",
+      const response = await apiRequest("POST", "/api/auth/register", {
         headers: {
           "Content-Type": "application/json",
         },

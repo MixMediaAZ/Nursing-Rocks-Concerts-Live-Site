@@ -62,10 +62,23 @@ export default function TicketsPage() {
     }
   }, []);
   
-  // Fetch tickets
+  // Fetch tickets (use /api/tickets with Bearer token; default queryFn does not send auth)
   const { data: ticketsData, isLoading } = useQuery<TicketsResponse>({
-    queryKey: ['/api/auth/tickets'],
+    queryKey: ['/api/tickets'],
     enabled: isAuthenticated === true,
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("Not authenticated");
+      const res = await fetch("/api/tickets", {
+        credentials: "include",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`${res.status}: ${text || res.statusText}`);
+      }
+      return res.json();
+    },
   });
   
   if (isAuthenticated === false) {

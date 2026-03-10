@@ -242,6 +242,9 @@ export default function FreeTickets() {
                     
                     <div className="flex flex-col gap-4">
                       <h3 className="font-medium">Upcoming Concerts with Free Tickets</h3>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Verified nurses get one free ticket per event. Some venues offer presale or door-only admission—see each event for details.
+                      </p>
                       <div className="border rounded-lg p-4 flex items-center gap-4">
                         <CalendarClock className="h-8 w-8 text-primary/70" />
                         <div>
@@ -251,7 +254,7 @@ export default function FreeTickets() {
                           </p>
                           <div className="mt-2">
                             <Button size="sm" onClick={() => setLocation("/events/1")}>
-                              Get Tickets
+                              Claim free ticket
                             </Button>
                           </div>
                         </div>
@@ -266,7 +269,7 @@ export default function FreeTickets() {
                           </p>
                           <div className="mt-2">
                             <Button size="sm" onClick={() => setLocation("/events/2")}>
-                              Get Tickets
+                              Claim free ticket
                             </Button>
                           </div>
                         </div>

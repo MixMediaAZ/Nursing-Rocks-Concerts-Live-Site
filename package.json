@@ -14,7 +14,8 @@
     "db:push": "drizzle-kit push",
     "db:fix": "node scripts/apply-schema-fixes.js",
     "db:check": "node scripts/check-schema-status.js",
-    "db:create-admins": "node scripts/create-admin-users.js"
+    "db:create-admins": "node scripts/create-admin-users.js",
+    "safe-upgrade": "npm install && npm run build"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.744.0",

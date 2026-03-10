@@ -36,9 +36,7 @@ export default function FAQPage() {
           <AccordionItem value="item-2">
             <AccordionTrigger>How do I get tickets to concerts?</AccordionTrigger>
             <AccordionContent>
-              Nursing professionals can receive free tickets by registering on our site and verifying their nursing credentials. 
-              General admission tickets are also available for purchase for friends and family of nurses. 
-              Visit our <Link href="/register"><span className="text-primary hover:underline">registration page</span></Link> to get started.
+              Verified nursing professionals always get free admission—no purchase required. Register on our site and verify your nursing license, then claim your free ticket for each event. We don’t sell tickets for every event: some venues offer presale tickets (advance purchase), and some are admission at the door only. Check each event page for details. <Link href="/register"><span className="text-primary hover:underline">Register here</span></Link> to get started.
             </AccordionContent>
           </AccordionItem>
           
@@ -82,9 +80,7 @@ export default function FAQPage() {
           <AccordionItem value="item-7">
             <AccordionTrigger>Are there refunds if I can't attend a concert?</AccordionTrigger>
             <AccordionContent>
-              For free nursing professional tickets, we ask that you notify us at least 48 hours in advance if you cannot attend 
-              so we can offer your ticket to another nursing professional. For purchased tickets, our refund policy allows for 
-              refunds up to 7 days before the event. After that, tickets are non-refundable but can be transferred to another person.
+              For free nurse tickets, please notify us at least 48 hours in advance if you cannot attend so we can offer your spot to another nursing professional. For presale or paid tickets (where offered by the venue), refunds are available up to 7 days before the event; after that, tickets are non-refundable but may be transferable. Door-only events are handled at the venue.
             </AccordionContent>
           </AccordionItem>
           

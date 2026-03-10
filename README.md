@@ -67,6 +67,8 @@ See `.env.example` for all required environment variables.
 
 See `VERCEL_DEPLOYMENT.md` for detailed deployment instructions.
 
+**Updating the site with Git (e.g. Git Desktop):** User data (login, dashboard, tickets, licenses) is stored in the database and is **not** modified by the build. See [DEPLOY.md](./DEPLOY.md) for how updates affect (or don’t affect) existing user info.
+
 ## Features
 
 - 🎥 Video upload and streaming

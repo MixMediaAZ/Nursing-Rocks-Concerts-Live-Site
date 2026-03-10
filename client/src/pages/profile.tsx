@@ -66,10 +66,21 @@ export default function ProfilePage() {
     enabled: isAuthenticated === true,
   });
   
-  // Fetch tickets
+  // Fetch tickets (use /api/tickets with Bearer token)
   const { data: tickets = { tickets: [] } } = useQuery<{ tickets: any[] }>({
-    queryKey: ['/api/auth/tickets'],
+    queryKey: ['/api/tickets'],
     enabled: isAuthenticated === true,
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return { tickets: [] };
+      const response = await fetch("/api/tickets", {
+        credentials: "include",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error("Failed to fetch tickets");
+      const data = await response.json();
+      return Array.isArray(data) ? { tickets: data } : data;
+    },
   });
   
   // Handle logout

@@ -4,6 +4,8 @@ import { ResponsiveVideoFrame } from "./responsive-video-frame";
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Play, Wifi, WifiOff } from 'lucide-react';
 import { devLog } from '@/lib/dev';
+import { getOptimizedPosterUrl } from '@/lib/poster-url';
+import { fetchVideoListCached } from '@/lib/video-cache';
 
 export interface VideoSlideshowProps {
   videos: string[];  // Array of provider-neutral video IDs (b2_*)
@@ -38,24 +40,36 @@ export function VideoSlideshow({
   // Start in thumbnail mode (one large thumbnail, auto-advancing)
   const [thumbnailMode, setThumbnailMode] = useState(true);
   const [selectedVideoIndex, setSelectedVideoIndex] = useState<number | null>(null);
+  // Track poster image errors for WebP fallback
+  const [posterImageErrors, setPosterImageErrors] = useState<Set<string>>(new Set());
   
   // Fetch video resources to get direct MP4 URLs (HLS may not exist)
   const [videoUrls, setVideoUrls] = useState<Record<string, {url: string, poster?: string}>>({});
   useEffect(() => {
-    fetch('/api/videos')
-      .then(res => res.json())
-      .then(data => {
+    let isMounted = true;
+    fetchVideoListCached()
+      .then((data) => {
+        if (!isMounted) return;
         if (data.success && Array.isArray(data.resources)) {
           const urlMap: Record<string, {url: string, poster?: string}> = {};
           for (const v of data.resources) {
-            urlMap[v.public_id] = { url: v.secure_url || v.url, poster: v.poster_url };
+            // Use optimized poster URL (WebP preferred, JPG fallback)
+            const posterUrls = getOptimizedPosterUrl(v.public_id, v.poster_url);
+            urlMap[v.public_id] = { 
+              url: v.secure_url || v.url, 
+              poster: posterUrls.getUrl() 
+            };
           }
           setVideoUrls(urlMap);
         }
       })
       .catch((error) => {
+        if (!isMounted) return;
         console.error('Error fetching videos:', error);
       });
+    return () => {
+      isMounted = false;
+    };
   }, []);
   
   // Function to go to next slide
@@ -77,7 +91,7 @@ export function VideoSlideshow({
     if (thumbnailMode && !isPlaying) {
       thumbnailTimerRef.current = setTimeout(() => {
         nextSlide();
-      }, 3000); // Auto-advance thumbnails every 3 seconds
+      }, 8000); // Auto-advance thumbnails every 8 seconds
     }
     
     return () => {
@@ -215,6 +229,12 @@ export function VideoSlideshow({
     const currentId = videos[currentIndex];
     const videoData = videoUrls[currentId];
     const posterUrl = videoData?.poster;
+    // Get both WebP and JPG URLs for fallback
+    const posterUrls = currentId ? getOptimizedPosterUrl(currentId, posterUrl) : null;
+    const hasError = currentId ? posterImageErrors.has(currentId) : false;
+    const finalPosterUrl = posterUrls && !hasError && posterUrls.webpUrl !== posterUrls.jpgUrl 
+      ? posterUrls.webpUrl 
+      : posterUrls?.jpgUrl || posterUrl;
     
     return (
       <div className={`relative group ${className}`}>
@@ -223,11 +243,18 @@ export function VideoSlideshow({
           onClick={() => handleThumbnailClick(currentIndex)}
         >
           <ResponsiveVideoFrame className="rounded-lg">
-            {posterUrl ? (
+            {finalPosterUrl ? (
               <img
-                src={posterUrl}
+                src={finalPosterUrl}
                 alt={`Video ${currentIndex + 1}`}
                 className="w-full h-full object-cover"
+                onError={() => {
+                  // Fallback to JPG if WebP fails
+                  if (currentId && posterUrls && posterUrls.webpUrl !== posterUrls.jpgUrl && !hasError) {
+                    setPosterImageErrors(prev => new Set(prev).add(currentId));
+                  }
+                }}
+                loading="lazy"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gray-900">

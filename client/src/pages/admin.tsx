@@ -126,7 +126,8 @@ export default function AdminPage() {
         throw new Error('Failed to fetch users');
       }
       const data = await response.json();
-      return data;
+      // API returns array; support object shape for robustness
+      return Array.isArray(data) ? data : (data?.users ?? []);
     },
   });
 
@@ -372,14 +373,16 @@ export default function AdminPage() {
       }
       return response.json();
     },
-    onSuccess: async () => {
-      // Immediately refetch users data to update dashboard
+    onSuccess: async (updated) => {
       await queryClient.refetchQueries({ queryKey: ['/api/admin/users'] });
+      if (selectedUser && updated && (updated as any).id === selectedUser.id) {
+        setSelectedUser({ ...selectedUser, ...(updated as any) });
+      }
       toast({
         title: "User Updated",
         description: "User information has been updated successfully.",
       });
-      setShowUserDialog(false);
+      // Keep dialog open so admin can make more changes
     },
     onError: (error: Error) => {
       toast({
@@ -939,7 +942,7 @@ export default function AdminPage() {
                     <div className="animate-pulse h-8 bg-muted rounded w-16 mb-1"></div>
                   ) : (
                     <p className="text-2xl font-bold">
-                      {Array.isArray(usersData) ? usersData.length : 0}
+                      {(Array.isArray(usersData) ? usersData : (usersData?.users ?? [])).length}
                     </p>
                   )}
                   <p className="text-sm text-muted-foreground">Registered users</p>
@@ -2098,9 +2101,11 @@ export default function AdminPage() {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                     <span className="ml-2 text-muted-foreground">Loading users...</span>
                   </div>
-                ) : usersData && Array.isArray(usersData) && usersData.length > 0 ? (
+                ) : (() => {
+                  const userList = Array.isArray(usersData) ? usersData : (usersData?.users ?? []);
+                  return userList.length > 0 ? (
                   <div className="space-y-4">
-                    <h3 className="font-semibold">Registered Users ({usersData.length})</h3>
+                    <h3 className="font-semibold">Registered Users ({userList.length})</h3>
                     <div className="border rounded-md overflow-hidden">
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -2123,7 +2128,7 @@ export default function AdminPage() {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {usersData.map((user: any) => (
+                          {userList.map((user: any) => (
                             <tr key={user.id}>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm font-medium text-gray-900">
@@ -2171,6 +2176,20 @@ export default function AdminPage() {
                                     onClick={() => {
                                       updateUserMutation.mutate({
                                         userId: user.id,
+                                        updates: { is_verified: !user.is_verified }
+                                      });
+                                    }}
+                                    disabled={updateUserMutation.isPending}
+                                    className={user.is_verified ? "text-amber-600 hover:text-amber-700" : "text-green-600 hover:text-green-700"}
+                                  >
+                                    {user.is_verified ? "Unverify" : "Verify"}
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => {
+                                      updateUserMutation.mutate({
+                                        userId: user.id,
                                         updates: { is_suspended: !user.is_suspended }
                                       });
                                     }}
@@ -2206,7 +2225,8 @@ export default function AdminPage() {
                     <p className="text-muted-foreground">No users registered yet.</p>
                     <p className="text-sm text-muted-foreground">Users will appear here once they create accounts.</p>
                   </div>
-                )}
+                );
+              })()}
               </CardContent>
             </Card>
 

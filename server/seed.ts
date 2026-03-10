@@ -5,6 +5,12 @@ import {
 } from "@shared/schema";
 import { seedStoreProducts } from "./seed-store";
 
+// SAFETY: Do not run in production — clears events, artists, gallery, store. User accounts are NOT touched, but content is.
+if (process.env.NODE_ENV === "production") {
+  console.error("❌ Refusing to run seed in production. User data is safe; this script would clear content data (events, artists, gallery).");
+  process.exit(1);
+}
+
 async function seed() {
   console.log("🌱 Seeding database...");
   

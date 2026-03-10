@@ -148,7 +148,7 @@ export function HlsVideo({
       controls={controls}
       loop={loop}
       playsInline
-      preload="metadata"
+      preload={autoPlay ? "metadata" : "none"}
       poster={poster}
       controlsList="nodownload"
       style={{
