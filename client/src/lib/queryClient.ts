@@ -21,6 +21,13 @@ export async function apiRequest(
   return res;
 }
 
+/** Returns headers with Bearer token when user is logged in (e.g. for JWT-only auth). */
+export function getAuthHeaders(): Record<string, string> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  if (!token) return {};
+  return { Authorization: `Bearer ${token}` };
+}
+
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;

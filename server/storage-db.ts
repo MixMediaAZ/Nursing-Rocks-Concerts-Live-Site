@@ -1,4 +1,4 @@
-import { eq, and, sql, desc } from "drizzle-orm";
+import { eq, and, or, ilike, gte, sql, desc } from "drizzle-orm";
 import { db, pool } from "./db";
 import { 
   Event, InsertEvent, 
@@ -540,6 +540,29 @@ export class DatabaseStorage implements IStorage {
     if (filters?.isFeatured !== undefined) {
       conditions.push(eq(jobListings.is_featured, filters.isFeatured));
     }
+    if (filters?.specialty !== undefined) {
+      const v = Array.isArray(filters.specialty) ? filters.specialty[0] : filters.specialty;
+      if (v) conditions.push(eq(jobListings.specialty, v));
+    }
+    if (filters?.location !== undefined) {
+      const v = Array.isArray(filters.location) ? filters.location[0] : filters.location;
+      if (v) conditions.push(eq(jobListings.location, v));
+    }
+    if (filters?.jobType !== undefined) {
+      const v = Array.isArray(filters.jobType) ? filters.jobType[0] : filters.jobType;
+      if (v) conditions.push(eq(jobListings.job_type, v));
+    }
+    if (filters?.experienceLevel !== undefined) {
+      const v = Array.isArray(filters.experienceLevel) ? filters.experienceLevel[0] : filters.experienceLevel;
+      if (v) conditions.push(eq(jobListings.experience_level, v));
+    }
+    if (filters?.salaryMin !== undefined && !isNaN(filters.salaryMin)) {
+      conditions.push(gte(jobListings.salary_min, String(filters.salaryMin)));
+    }
+    if (filters?.keywords !== undefined && filters.keywords.trim() !== "") {
+      const term = `%${filters.keywords.trim().replace(/%/g, "\\%")}%`;
+      conditions.push(or(ilike(jobListings.title, term), ilike(jobListings.description, term))!);
+    }
 
     const whereClause = conditions.length ? and(...conditions) : undefined;
 
@@ -615,6 +638,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(jobListings.id, id))
       .returning();
     return updated;
+  }
+
+  async deleteJobListing(id: number): Promise<void> {
+    await db.delete(jobApplications).where(eq(jobApplications.job_id, id));
+    await db.delete(savedJobs).where(eq(savedJobs.job_id, id));
+    await db.delete(jobListings).where(eq(jobListings.id, id));
   }
 
   // Contact Requests

@@ -171,6 +171,9 @@ export function Header() {
                     <DropdownMenuItem asChild>
                       <Link href="/profile">My Profile</Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/employer-dashboard">Employer Dashboard</Link>
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => window.location.href = "/license-verification"}>
                       License Verification
                     </DropdownMenuItem>
@@ -263,6 +266,15 @@ export function Header() {
                     >
                       <User size={18} />
                       My Profile
+                    </div>
+                  </Link>
+                  <Link href="/employer-dashboard">
+                    <div
+                      className="flex items-center justify-center gap-2 p-3 rounded-md text-muted-foreground hover:bg-muted transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Briefcase size={18} />
+                      Employer Dashboard
                     </div>
                   </Link>
                   <div

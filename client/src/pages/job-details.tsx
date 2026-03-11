@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useLocation, Link as WouterLink } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getAuthHeaders } from "@/lib/queryClient";
 import {
   Briefcase,
   Building2,
@@ -76,6 +76,17 @@ export default function JobDetailsPage() {
     queryKey: [`/api/jobs/${id}`],
     enabled: !!id,
     retry: false,
+    queryFn: async () => {
+      const res = await fetch(`/api/jobs/${id}`, {
+        credentials: "include",
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`${res.status}: ${text || res.statusText}`);
+      }
+      return res.json();
+    },
     onError: (err: any) => {
       toast({
         title: "Error loading job",
@@ -107,6 +118,14 @@ export default function JobDetailsPage() {
   // User authentication status
   const { data: authStatus } = useQuery<any>({
     queryKey: ['/api/auth/status'],
+    queryFn: async () => {
+      const res = await fetch("/api/auth/status", {
+        credentials: "include",
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) throw new Error("Auth status failed");
+      return res.json();
+    },
     initialData: { isAuthenticated: false, isVerified: false },
   });
   
@@ -116,10 +135,10 @@ export default function JobDetailsPage() {
   // Save job mutation
   const saveJobMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("/api/jobs/save", {
-        method: "POST",
+      const response = await apiRequest("POST", "/api/jobs/save", {
         headers: {
           "Content-Type": "application/json",
+          ...getAuthHeaders(),
         },
         body: JSON.stringify({
           jobId: id,
@@ -138,6 +157,7 @@ export default function JobDetailsPage() {
         description: "This job has been saved to your profile",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/jobs/saved'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/jobs/${id}`] });
     },
     onError: (err: any) => {
       toast({
@@ -161,10 +181,10 @@ export default function JobDetailsPage() {
   // Job application mutation
   const applyJobMutation = useMutation({
     mutationFn: async (values: ApplicationFormValues) => {
-      const response = await apiRequest("/api/jobs/apply", {
-        method: "POST",
+      const response = await apiRequest("POST", "/api/jobs/apply", {
         headers: {
           "Content-Type": "application/json",
+          ...getAuthHeaders(),
         },
         body: JSON.stringify({
           jobId: id,

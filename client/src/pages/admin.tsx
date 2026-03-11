@@ -1261,13 +1261,14 @@ export default function AdminPage() {
                                       onClick={async () => {
                                         try {
                                           const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
-                                          await fetch(`/api/admin/jobs/${job.id}/approve`, {
-                                            method: 'POST',
+                                          const res = await fetch(`/api/admin/jobs/${job.id}/approve`, {
+                                            method: 'PATCH',
                                             headers: {
                                               'Authorization': `Bearer ${token}`,
                                               'Content-Type': 'application/json',
                                             },
                                           });
+                                          if (!res.ok) throw new Error(await res.text() || res.statusText);
                                           await queryClient.refetchQueries({ queryKey: ['/api/admin/jobs'] });
                                           toast({
                                             title: "Job Approved",
@@ -1291,13 +1292,14 @@ export default function AdminPage() {
                                       onClick={async () => {
                                         try {
                                           const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
-                                          await fetch(`/api/admin/jobs/${job.id}/reject`, {
-                                            method: 'POST',
+                                          const res = await fetch(`/api/admin/jobs/${job.id}/deny`, {
+                                            method: 'PATCH',
                                             headers: {
                                               'Authorization': `Bearer ${token}`,
                                               'Content-Type': 'application/json',
                                             },
                                           });
+                                          if (!res.ok) throw new Error(await res.text() || res.statusText);
                                           await queryClient.refetchQueries({ queryKey: ['/api/admin/jobs'] });
                                           toast({
                                             title: "Job Unapproved",
@@ -1322,12 +1324,13 @@ export default function AdminPage() {
                                       if (window.confirm('Are you sure you want to delete this job listing?')) {
                                         try {
                                           const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
-                                          await fetch(`/api/admin/jobs/${job.id}`, {
+                                          const res = await fetch(`/api/admin/jobs/${job.id}`, {
                                             method: 'DELETE',
                                             headers: {
                                               'Authorization': `Bearer ${token}`,
                                             },
                                           });
+                                          if (!res.ok) throw new Error(await res.text() || res.statusText);
                                           await queryClient.refetchQueries({ queryKey: ['/api/admin/jobs'] });
                                           toast({
                                             title: "Job Deleted",

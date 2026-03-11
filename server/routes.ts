@@ -651,6 +651,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/jobs/:id", async (req: Request, res: Response) => {
     try {
+      // Optional auth: set req.user when Bearer token present so has_applied/is_saved work
+      const payload = getPayloadFromRequest(req);
+      if (payload) {
+        (req as any).user = { userId: payload.userId, id: payload.userId, is_verified: payload.isVerified, is_admin: payload.isAdmin };
+      }
+
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid job ID" });
@@ -667,12 +673,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add user-specific fields if authenticated
       let hasApplied = false;
       let isSaved = false;
-      
-      if (req.user?.userId) {
-        const applications = await storage.getJobApplicationsByUserId(req.user.userId);
+      const userId = (req as any).user?.userId ?? (req as any).user?.id;
+      if (userId) {
+        const applications = await storage.getJobApplicationsByUserId(userId);
         hasApplied = applications.some(app => app.job_id === id);
         
-        const savedJobs = await storage.getSavedJobsByUserId(req.user.userId);
+        const savedJobs = await storage.getSavedJobsByUserId(userId);
         isSaved = savedJobs.some(saved => saved.job_id === id);
       }
       
@@ -1642,6 +1648,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error denying job:", error);
       return res.status(500).json({ message: "Failed to deny job" });
+    }
+  });
+
+  app.delete("/api/admin/jobs/:id", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid job ID" });
+      const job = await storage.getJobListingById(id);
+      if (!job) return res.status(404).json({ message: "Job not found" });
+      await storage.deleteJobListing(id);
+      return res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting job:", error);
+      return res.status(500).json({ message: "Failed to delete job" });
     }
   });
 

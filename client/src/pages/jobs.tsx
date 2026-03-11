@@ -111,6 +111,20 @@ export default function JobsPage() {
   const { data: jobs, isLoading } = useQuery({
     queryKey: ['/api/jobs', searchValues, sortBy],
     enabled: true,
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (searchValues.keywords) params.set("keywords", searchValues.keywords);
+      if (searchValues.location) params.set("location", searchValues.location);
+      if (searchValues.specialty) params.set("specialty", searchValues.specialty);
+      if (searchValues.experienceLevel) params.set("experienceLevel", searchValues.experienceLevel);
+      if (searchValues.jobType) params.set("jobType", searchValues.jobType);
+      if (searchValues.minSalary != null && !isNaN(searchValues.minSalary)) params.set("salaryMin", String(searchValues.minSalary));
+      const qs = params.toString();
+      const url = qs ? `/api/jobs?${qs}` : "/api/jobs";
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error(`${res.status}: ${await res.text() || res.statusText}`);
+      return res.json();
+    },
     select: (data) => data || [],
   });
 

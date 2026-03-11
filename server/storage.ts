@@ -113,6 +113,7 @@ export interface IStorage {
   updateJobListing(id: number, data: Partial<InsertJobListing>): Promise<JobListing>;
   incrementJobListingViews(id: number): Promise<JobListing>;
   incrementJobApplicationsCount(id: number): Promise<JobListing>;
+  deleteJobListing(id: number): Promise<void>;
   
   // Contact Requests
   createContactRequest(requestData: InsertContactRequest): Promise<ContactRequest>;
@@ -1587,7 +1588,11 @@ export class MemStorage implements IStorage {
     this.jobListings.set(id, updatedJobListing);
     return updatedJobListing;
   }
-  
+
+  async deleteJobListing(id: number): Promise<void> {
+    this.jobListings.delete(id);
+  }
+
   // Nurse Profiles
   async createNurseProfile(profile: InsertNurseProfile, userId: number): Promise<NurseProfile> {
     const id = this.nurseProfileId++;
