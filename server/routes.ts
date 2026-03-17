@@ -106,6 +106,7 @@ import {
   deleteMedia
 } from "./media";
 import { authRateLimiter, adminPinRateLimiter } from "./rate-limit";
+import { runAllEmailSchedules, getEmailScheduleStatus } from "./email-scheduler";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup session-based authentication
@@ -2574,6 +2575,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error in admin logout:", error);
       res.status(500).json({ message: "Failed to process logout" });
+    }
+  });
+
+  // Email Scheduler Endpoints (Admin Only)
+  // Manually trigger email schedules for job alerts and event reminders
+  app.post("/api/admin/email/schedule", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      console.log("[ADMIN] Email schedule triggered by admin");
+      const result = await runAllEmailSchedules();
+      res.status(200).json({
+        success: true,
+        message: "Email schedules executed",
+        result,
+      });
+    } catch (error) {
+      console.error("Error running email schedules:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to run email schedules",
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // Get email schedule status and logs
+  app.get("/api/admin/email/status", requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const status = getEmailScheduleStatus();
+      res.status(200).json({
+        success: true,
+        status,
+      });
+    } catch (error) {
+      console.error("Error getting email schedule status:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to get email schedule status",
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
   });
 
