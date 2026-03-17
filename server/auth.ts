@@ -266,6 +266,99 @@ export async function getUserTickets(req: Request, res: Response) {
   }
 }
 
+/**
+ * Validate a ticket by code (read-only check)
+ * Used to verify if a ticket is valid before it's used
+ */
+export async function validateTicketByCode(req: Request, res: Response) {
+  try {
+    const { code } = req.params;
+
+    if (!code || typeof code !== 'string') {
+      return res.status(400).json({ message: 'Invalid ticket code' });
+    }
+
+    const ticket = await storage.getTicketByCode(code);
+
+    if (!ticket) {
+      return res.status(404).json({
+        valid: false,
+        message: 'Ticket not found'
+      });
+    }
+
+    // Get event details for the ticket
+    const event = await storage.getEvent(ticket.event_id);
+
+    return res.status(200).json({
+      valid: true,
+      ticket: {
+        code: ticket.ticket_code,
+        type: ticket.ticket_type,
+        price: ticket.price,
+        is_used: ticket.is_used,
+        event: event ? {
+          title: event.title,
+          date: event.date,
+          location: event.location,
+        } : null,
+      },
+      message: ticket.is_used ? 'Ticket has already been used' : 'Ticket is valid'
+    });
+  } catch (error) {
+    console.error('Ticket validation error:', error);
+    return res.status(500).json({ message: 'Server error during ticket validation' });
+  }
+}
+
+/**
+ * Mark a ticket as used (scan/check-in endpoint)
+ * Requires authentication for venue staff or admin
+ */
+export async function markTicketUsed(req: Request, res: Response) {
+  try {
+    const { code } = req.body;
+
+    if (!code || typeof code !== 'string') {
+      return res.status(400).json({ message: 'Invalid ticket code' });
+    }
+
+    const ticket = await storage.getTicketByCode(code);
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        message: 'Ticket not found'
+      });
+    }
+
+    if (ticket.is_used) {
+      return res.status(400).json({
+        success: false,
+        message: 'Ticket has already been used'
+      });
+    }
+
+    // Mark ticket as used
+    const updatedTicket = await storage.markTicketAsUsed(ticket.id);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Ticket marked as used',
+      ticket: {
+        code: updatedTicket.ticket_code,
+        type: updatedTicket.ticket_type,
+        price: updatedTicket.price,
+        is_used: updatedTicket.is_used,
+        usage_date: updatedTicket.usage_date,
+      }
+    });
+  } catch (error) {
+    console.error('Mark ticket as used error:', error);
+    return res.status(500).json({ message: 'Server error while marking ticket as used' });
+  }
+}
+
 // Middleware to check if request is from an authenticated employer
 export async function requireEmployerToken(req: Request, res: Response, next: Function) {
   const authHeader = req.headers["authorization"];

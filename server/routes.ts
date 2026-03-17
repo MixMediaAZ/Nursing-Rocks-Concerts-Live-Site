@@ -86,6 +86,8 @@ import {
   getNurseLicenses,
   purchaseTicket,
   getUserTickets,
+  validateTicketByCode,
+  markTicketUsed,
   authenticateToken,
   registerValidation,
   loginValidation,
@@ -532,6 +534,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/license", requireAuth, getNurseLicenses);
   app.post("/api/tickets/purchase", requireAuth, purchaseTicket);
   app.get("/api/tickets", requireAuth, getUserTickets);
+
+  // QR Ticket Validation Routes
+  app.get("/api/tickets/validate/:code", validateTicketByCode); // Public read-only validation
+  app.post("/api/tickets/validate", requireAdmin, markTicketUsed); // Admin/venue staff only
 
   // Media Management API
   app.get("/api/media", getMediaList);

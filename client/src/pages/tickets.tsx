@@ -201,7 +201,7 @@ function TicketCard({ ticket, isUsed }: TicketCardProps) {
               <QRCode
                 size={128}
                 style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                value={ticket.ticket_code || "DEMO-TICKET-CODE"}
+                value={`${window.location.origin}/verify-ticket/${ticket.ticket_code}`}
               />
             </div>
           ) : event.image_url ? (
@@ -288,7 +288,7 @@ function TicketCard({ ticket, isUsed }: TicketCardProps) {
           <QRCode
             size={180}
             style={{ height: "auto", maxWidth: "100%", width: "180px" }}
-            value={ticket.ticket_code || "DEMO-TICKET-CODE"}
+            value={`${window.location.origin}/verify-ticket/${ticket.ticket_code}`}
           />
         </div>
       )}
