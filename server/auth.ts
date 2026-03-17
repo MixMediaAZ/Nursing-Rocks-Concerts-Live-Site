@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import fetch from 'node-fetch';
 import { storage } from './storage';
 import { generateToken, verifyToken, getUserIdFromRequest, isUserVerified } from './jwt';
+import { sendTicketConfirmationEmail } from './email';
 
 const SALT_ROUNDS = 10;
 
@@ -210,6 +211,34 @@ export async function purchaseTicket(req: Request, res: Response) {
       event_id,
       ticketCode
     );
+
+    // Send confirmation email asynchronously (don't block the response)
+    try {
+      const eventDate = new Date(event.date);
+      const formattedDate = eventDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+
+      const nurseName = `${user.first_name} ${user.last_name}`;
+
+      await sendTicketConfirmationEmail({
+        nurseName,
+        userEmail: user.email,
+        eventTitle: event.title,
+        eventDate: formattedDate,
+        eventTime: event.start_time || 'TBD',
+        eventLocation: event.location,
+        ticketCode,
+        ticketType: ticket_type || 'General Admission',
+        price: price || 'Free'
+      });
+    } catch (emailError) {
+      // Log email error but don't fail the ticket purchase
+      console.error('Failed to send ticket confirmation email:', emailError);
+    }
 
     return res.status(201).json({
       message: 'Ticket purchased successfully',
