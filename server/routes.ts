@@ -105,6 +105,7 @@ import {
   updateMedia,
   deleteMedia
 } from "./media";
+import { authRateLimiter, adminPinRateLimiter } from "./rate-limit";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup session-based authentication
@@ -527,7 +528,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes are now handled by setupAuth
   // We'll keep these routes for backward compatibility
   app.post("/api/auth/register", registerValidation, register);
-  app.post("/api/auth/login", loginValidation, login);
+  app.post("/api/auth/login", authRateLimiter, loginValidation, login);
 
   // Protected routes (require authentication)
   app.post("/api/license/submit", requireAuth, licenseValidation, submitNurseLicense);
@@ -2537,7 +2538,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Admin token generation for admin interface operations
-  app.post("/api/admin/token", async (req: Request, res: Response) => {
+  app.post("/api/admin/token", adminPinRateLimiter, async (req: Request, res: Response) => {
     try {
       const { pin } = req.body;
       const isProduction = process.env.NODE_ENV === 'production';
