@@ -7,6 +7,12 @@ interface User {
   isVerified?: boolean;
 }
 
+interface AuthStatusResponse {
+  isAuthenticated: boolean;
+  isVerified: boolean;
+  user?: User;
+}
+
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
@@ -24,13 +30,13 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<AuthStatusResponse>({
     queryKey: ["/api/auth/status"],
   });
 
   const isAuthenticated = !!data?.isAuthenticated;
 
-  const authStatus = {
+  const authStatus: AuthContextType = {
     user: data?.user || null,
     isAuthenticated,
     isLoggedIn: isAuthenticated, // Alias for isAuthenticated

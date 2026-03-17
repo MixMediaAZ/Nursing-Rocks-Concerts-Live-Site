@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -47,15 +47,15 @@ export function TicketPurchaseForm({
   });
   
   // Check if user is verified on mount
-  useState(() => {
+  useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
       setIsVerified(false);
       return;
     }
-    
+
     // Fetch verification status
-    apiRequest("/api/auth/verification-status")
+    apiRequest("GET", "/api/auth/verification-status")
       .then((res) => {
         if (res.ok) {
           return res.json();
@@ -69,7 +69,7 @@ export function TicketPurchaseForm({
         console.error("Error fetching verification status:", error);
         setIsVerified(false);
       });
-  });
+  }, []);
   
   // Purchase ticket mutation
   const purchaseTicketMutation = useMutation({
@@ -79,8 +79,7 @@ export function TicketPurchaseForm({
         throw new Error("Invalid ticket type selected");
       }
       
-      const response = await apiRequest("/api/tickets/purchase", {
-        method: "POST",
+      const response = await apiRequest("POST", "/api/tickets/purchase", {
         headers: {
           "Content-Type": "application/json",
           ...(typeof localStorage !== "undefined" && localStorage.getItem("token")

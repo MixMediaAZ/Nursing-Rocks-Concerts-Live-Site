@@ -2,8 +2,15 @@ import { Request } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '@shared/schema';
 
-// Use environment variable or fallback for development
-const JWT_SECRET = process.env.JWT_SECRET || 'dev_jwt_secret_key_nursing_rocks';
+// Use environment variable or fallback for development only.
+// In production, JWT_SECRET must be set to a secure random value.
+const DEV_SECRET = 'dev_jwt_secret_key_nursing_rocks';
+if (process.env.NODE_ENV === 'production') {
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET.trim() === '' || process.env.JWT_SECRET === DEV_SECRET) {
+    throw new Error('JWT_SECRET must be set to a secure random value in production. Do not use the dev default.');
+  }
+}
+const JWT_SECRET = process.env.JWT_SECRET || DEV_SECRET;
 
 // Token expiration (24 hours)
 const TOKEN_EXPIRATION = '24h';

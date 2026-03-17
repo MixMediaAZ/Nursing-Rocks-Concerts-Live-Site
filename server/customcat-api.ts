@@ -48,9 +48,6 @@ export async function fetchCustomCatProducts(apiKey: string) {
     errors: {} as Record<string, string>
   };
 
-  console.log(`📝 CustomCat API key length: ${apiKey.length} characters`);
-  console.log(`📝 CustomCat API key first/last few chars: ${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`);
-
   // Create endpoints with multiple base URLs and parameters
   const endpointsToTry = [];
   

@@ -2197,9 +2197,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
-      
+      const currentUserId = (req as any).user?.userId ?? (req as any).user?.id;
+      if (currentUserId == null) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       // Check if user is requesting their own orders or is an admin
-      if (userId !== req.user!.userId && !req.user?.isAdmin) {
+      if (userId !== currentUserId && !(req as any).user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized: Cannot view orders for other users" });
       }
       
@@ -2375,10 +2378,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!setting) {
         return res.status(404).json({ message: `Setting with key '${key}' not found` });
       }
-      
-      // Only return sensitive settings to admins - use isUserAdmin helper for reliable JWT checks
-      // For sensitive keys (like API keys), always check for proper admin authentication
-      if (setting.is_sensitive) {
+      // Treat known secret keys as sensitive even if is_sensitive was not set
+      const SENSITIVE_KEYS = new Set(['CUSTOMCAT_API_KEY']);
+      const isSensitive = setting.is_sensitive || SENSITIVE_KEYS.has(key);
+      if (isSensitive) {
         const isAdmin = isUserAdmin(req);
         if (!isAdmin) {
           return res.status(403).json({ message: "You don't have permission to access this setting" });
@@ -2531,40 +2534,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/token", async (req: Request, res: Response) => {
     try {
       const { pin } = req.body;
-      
-      // Admin PIN from environment variable (trim whitespace)
-      const ADMIN_PIN = (process.env.ADMIN_PIN || "1234567").trim();
-      
-      // Normalize the submitted PIN (convert to string and trim)
+      const isProduction = process.env.NODE_ENV === 'production';
+      const envPin = process.env.ADMIN_PIN?.trim() ?? '';
+      const ADMIN_PIN = envPin || (isProduction ? '' : '1234567');
+      if (isProduction && (!ADMIN_PIN || ADMIN_PIN === '1234567')) {
+        return res.status(503).json({ message: "Admin PIN must be configured in production. Set ADMIN_PIN environment variable." });
+      }
       const submittedPin = pin ? String(pin).trim() : "";
-      
-      // Debug logging (remove in production)
-      console.log("Admin PIN validation attempt:", {
-        submittedPin: submittedPin ? `${submittedPin.substring(0, 2)}***` : "(empty)",
-        submittedPinLength: submittedPin.length,
-        expectedPin: ADMIN_PIN ? `${ADMIN_PIN.substring(0, 2)}***` : "(empty)",
-        expectedPinLength: ADMIN_PIN.length,
-        hasEnvPin: !!process.env.ADMIN_PIN,
-        pinMatch: submittedPin === ADMIN_PIN,
-        rawPinType: typeof pin,
-        rawPinValue: pin ? String(pin).substring(0, 2) + "***" : "(empty)"
-      });
-      
       if (!submittedPin || submittedPin !== ADMIN_PIN) {
         return res.status(401).json({ message: "Invalid admin PIN" });
       }
-      
-      // Create a fake admin user object for token generation
       const adminUser = {
-        id: 999999, // Use a reserved ID for admin
+        id: 999999,
         email: "admin@nursingrocks.com",
         is_verified: true,
-        is_admin: true // Admin-specific flag
+        is_admin: true
       };
-      
-      // Generate a token with admin privileges
       const token = generateToken(adminUser as any);
-      
       res.status(200).json({ token });
     } catch (error) {
       console.error("Error generating admin token:", error);

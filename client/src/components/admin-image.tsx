@@ -184,9 +184,6 @@ export function AdminImage({
             onOpenChange={setIsReplaceDialogOpen}
             onSelectImage={handleReplaceImage}
             isPending={replaceImageMutation.isPending}
-            elementId={elementId || `product-image-${productId || imageData.id}`}
-            productId={productId}
-            originalUrl={imageData.image_url}
           />
         </>
       )}

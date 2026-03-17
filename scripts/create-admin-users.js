@@ -4,10 +4,13 @@ import 'dotenv/config';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
+// Admin user definitions (no passwords in code). Passwords must be set via environment:
+//   ADMIN_PASSWORD_1  - password for first user (MixMediaAZ@gmail.com)
+//   ADMIN_PASSWORD_2  - password for second user (Spencer.Coon@...)
 const ADMIN_USERS = [
   {
     email: 'MixMediaAZ@gmail.com',
-    password: 'HomeRunBall1!',
+    passwordEnv: 'ADMIN_PASSWORD_1',
     first_name: 'MixMedia',
     last_name: 'Admin',
     is_admin: true,
@@ -15,7 +18,7 @@ const ADMIN_USERS = [
   },
   {
     email: 'Spencer.Coon@executiveelitegroup.com',
-    password: 'HeadPop123!',
+    passwordEnv: 'ADMIN_PASSWORD_2',
     first_name: 'Spencer',
     last_name: 'Coon',
     is_admin: true,
@@ -28,6 +31,11 @@ async function createAdminUsers() {
     console.log('Creating/updating admin users...\n');
     
     for (const adminUser of ADMIN_USERS) {
+      const password = process.env[adminUser.passwordEnv];
+      if (!password || password.trim() === '') {
+        console.error(`❌ Missing ${adminUser.passwordEnv}. Set it in .env or environment and run again.`);
+        process.exit(1);
+      }
       const normalizedEmail = adminUser.email.toLowerCase().trim();
       
       // Check if user exists (case-insensitive)
@@ -41,7 +49,7 @@ async function createAdminUsers() {
         console.log(`Found existing user: ${user.email}`);
         
         // Update password and admin status
-        const passwordHash = await bcrypt.hash(adminUser.password, 10);
+        const passwordHash = await bcrypt.hash(password, 10);
         await pool.query(
           `UPDATE users 
            SET password_hash = $1, 
@@ -62,7 +70,7 @@ async function createAdminUsers() {
         console.log(`✅ Updated admin user: ${adminUser.email} (ID: ${user.id})`);
       } else {
         // Create new user
-        const passwordHash = await bcrypt.hash(adminUser.password, 10);
+        const passwordHash = await bcrypt.hash(password, 10);
         const result = await pool.query(
           `INSERT INTO users (email, password_hash, first_name, last_name, is_admin, is_verified)
            VALUES ($1, $2, $3, $4, $5, $6)

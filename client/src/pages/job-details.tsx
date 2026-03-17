@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useLocation, Link as WouterLink } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -60,6 +60,96 @@ const applicationSchema = z.object({
 
 type ApplicationFormValues = z.infer<typeof applicationSchema>;
 
+// Type definitions for API responses
+interface Employer {
+  id: number;
+  company_name?: string;
+  name: string;
+  description?: string;
+  website?: string;
+  logo_url?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  location?: string;
+  contact_email: string;
+  contact_phone?: string;
+  user_id?: number;
+  is_verified: boolean;
+  account_status: string;
+  job_post_credits: number;
+  job_post_pass_expires_at?: string;
+  job_post_lifetime: boolean;
+  job_post_options?: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+interface JobListing {
+  id: number;
+  title: string;
+  employer_id: number;
+  description: string;
+  responsibilities?: string;
+  requirements?: string;
+  benefits?: string;
+  location: string;
+  job_type: string;
+  work_arrangement: string;
+  specialty: string;
+  experience_level: string;
+  education_required?: string;
+  certification_required?: string[];
+  shift_type?: string;
+  salary_min?: number | string;
+  salary_max?: number | string;
+  salary_period?: string;
+  application_url?: string;
+  contact_email?: string;
+  is_featured: boolean;
+  is_active: boolean;
+  posted_date: string;
+  expiry_date?: string;
+  views_count: number;
+  applications_count: number;
+  is_approved: boolean;
+  approved_by?: number;
+  approved_at?: string;
+  approval_notes?: string;
+  employer?: Employer;
+  has_applied?: boolean;
+  is_saved?: boolean;
+}
+
+interface AuthStatus {
+  isAuthenticated: boolean;
+  isVerified: boolean;
+  user?: { id: number; email: string; is_verified: boolean };
+}
+
+interface NurseProfile {
+  id: number;
+  user_id: number;
+  headline?: string;
+  summary?: string;
+  years_of_experience?: number;
+  specialties?: string[];
+  skills?: string[];
+  certifications?: Record<string, unknown>;
+  education?: Record<string, unknown>;
+  resume_url?: string;
+  profile_image_url?: string;
+  availability?: string;
+  preferred_shift?: string;
+  preferred_work_arrangement?: string;
+  preferred_locations?: string[];
+  current_employer?: string;
+  is_public: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export default function JobDetailsPage() {
   const { id } = useParams();
   const [_, navigate] = useLocation();
@@ -72,7 +162,7 @@ export default function JobDetailsPage() {
     data: job,
     isLoading,
     error,
-  } = useQuery<any>({
+  } = useQuery<JobListing>({
     queryKey: [`/api/jobs/${id}`],
     enabled: !!id,
     retry: false,
@@ -87,36 +177,39 @@ export default function JobDetailsPage() {
       }
       return res.json();
     },
-    onError: (err: any) => {
+  });
+
+  // Show error toast when job fails to load
+  useEffect(() => {
+    if (error) {
       toast({
         title: "Error loading job",
-        description: err.message || "Job not found",
+        description: error instanceof Error ? error.message : "Job not found",
         variant: "destructive",
       });
       navigate("/jobs");
-    },
-  });
+    }
+  }, [error, navigate, toast]);
 
   // Fetch employer details
-  const { data: employer, isLoading: isLoadingEmployer } = useQuery<any>({
+  const { data: employer, isLoading: isLoadingEmployer } = useQuery<Employer>({
     queryKey: [`/api/employers/${job?.employer_id}`],
     enabled: !!job?.employer_id,
   });
 
   // Fetch similar jobs
-  const { data: similarJobs, isLoading: isLoadingSimilarJobs } = useQuery<any[]>({
+  const { data: similarJobs = [], isLoading: isLoadingSimilarJobs } = useQuery<JobListing[]>({
     queryKey: [`/api/jobs/similar/${id}`],
     enabled: !!id,
-    initialData: [],
   });
 
   // Fetch nurse profile
-  const { data: profile, isLoading: isLoadingProfile } = useQuery<any>({
+  const { data: profile, isLoading: isLoadingProfile } = useQuery<NurseProfile>({
     queryKey: ['/api/profile'],
   });
 
   // User authentication status
-  const { data: authStatus } = useQuery<any>({
+  const { data: authStatus = { isAuthenticated: false, isVerified: false } } = useQuery<AuthStatus>({
     queryKey: ['/api/auth/status'],
     queryFn: async () => {
       const res = await fetch("/api/auth/status", {
@@ -126,7 +219,6 @@ export default function JobDetailsPage() {
       if (!res.ok) throw new Error("Auth status failed");
       return res.json();
     },
-    initialData: { isAuthenticated: false, isVerified: false },
   });
   
   const isAuthenticated = authStatus?.isAuthenticated;
@@ -427,9 +519,9 @@ export default function JobDetailsPage() {
                 <div>
                   <div className="font-bold text-2xl text-primary">
                     {job.salary_min && job.salary_max
-                      ? `$${(job.salary_min / 1000).toFixed(0)}k - $${(job.salary_max / 1000).toFixed(0)}k`
+                      ? `$${(Number(job.salary_min) / 1000).toFixed(0)}k - $${(Number(job.salary_max) / 1000).toFixed(0)}k`
                       : job.salary_min
-                      ? `$${(job.salary_min / 1000).toFixed(0)}k+`
+                      ? `$${(Number(job.salary_min) / 1000).toFixed(0)}k+`
                       : "Competitive"}
                   </div>
                   <div className="text-muted-foreground">
@@ -491,7 +583,7 @@ export default function JobDetailsPage() {
                   <div>
                     <h2 className="text-lg font-semibold mb-2">Responsibilities</h2>
                     <div className="text-muted-foreground space-y-2">
-                      {job.responsibilities.split('\n').map((responsibility, i) => (
+                      {job.responsibilities?.split('\n').map((responsibility: string, i: number) => (
                         <div key={i} className="flex items-start">
                           <div className="mr-2 mt-1 h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
                           <p>{responsibility}</p>
@@ -505,7 +597,7 @@ export default function JobDetailsPage() {
                   <div>
                     <h2 className="text-lg font-semibold mb-2">Requirements</h2>
                     <div className="text-muted-foreground space-y-2">
-                      {job.requirements.split('\n').map((requirement, i) => (
+                      {job.requirements?.split('\n').map((requirement: string, i: number) => (
                         <div key={i} className="flex items-start">
                           <div className="mr-2 mt-1 h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
                           <p>{requirement}</p>
@@ -519,7 +611,7 @@ export default function JobDetailsPage() {
                   <div>
                     <h2 className="text-lg font-semibold mb-2">Benefits</h2>
                     <div className="text-muted-foreground space-y-2">
-                      {job.benefits.split('\n').map((benefit, i) => (
+                      {job.benefits?.split('\n').map((benefit: string, i: number) => (
                         <div key={i} className="flex items-start">
                           <div className="mr-2 mt-1 h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
                           <p>{benefit}</p>
@@ -533,7 +625,7 @@ export default function JobDetailsPage() {
                   <div>
                     <h2 className="text-lg font-semibold mb-2">Required Certifications</h2>
                     <div className="flex flex-wrap gap-2">
-                      {job.certification_required.map((cert: string) => (
+                      {job.certification_required?.map((cert: string) => (
                         <Badge key={cert} variant="outline" className="bg-primary/5">
                           <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />
                           {cert}
@@ -802,7 +894,7 @@ export default function JobDetailsPage() {
                 ) : similarJobs && similarJobs.length > 0 ? (
                   <ScrollArea className="h-72">
                     <div className="space-y-3 pr-3">
-                      {similarJobs.map((similarJob: any) => (
+                      {similarJobs.map((similarJob: JobListing) => (
                         <WouterLink
                           key={similarJob.id}
                           href={`/jobs/${similarJob.id}`}
@@ -824,7 +916,7 @@ export default function JobDetailsPage() {
                               </Badge>
                               <span className="text-xs font-medium text-primary">
                                 {similarJob.salary_min
-                                  ? `$${(similarJob.salary_min / 1000).toFixed(0)}k+`
+                                  ? `$${(Number(similarJob.salary_min) / 1000).toFixed(0)}k+`
                                   : "Competitive"}
                               </span>
                             </div>

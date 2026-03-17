@@ -109,8 +109,7 @@ export const mediaService = {
       });
       
       // Send the request to the server
-      const response = await apiRequest('/api/media/upload', {
-        method: 'POST',
+      const response = await apiRequest('POST', '/api/media/upload', {
         body: formData,
         // Note: Don't set Content-Type header when using FormData
         // as the browser will set it correctly with the boundary
@@ -147,9 +146,7 @@ export const mediaService = {
    */
   async getMediaList(): Promise<MediaAsset[]> {
     try {
-      const response = await apiRequest('/api/media', {
-        method: 'GET',
-      });
+      const response = await apiRequest('GET', '/api/media');
       
       if (!response.ok) {
         throw new Error('Failed to fetch media assets');
@@ -178,9 +175,7 @@ export const mediaService = {
    */
   async deleteMedia(id: string): Promise<{ success: boolean; message?: string }> {
     try {
-      const response = await apiRequest(`/api/media/${id}`, {
-        method: 'DELETE',
-      });
+      const response = await apiRequest('DELETE', `/api/media/${id}`);
       
       if (!response.ok) {
         const error = await response.json();
@@ -205,8 +200,7 @@ export const mediaService = {
    */
   async updateMediaMetadata(id: string, metadata: Partial<MediaAsset>): Promise<{ success: boolean; asset?: MediaAsset; message?: string }> {
     try {
-      const response = await apiRequest(`/api/media/${id}`, {
-        method: 'PATCH',
+      const response = await apiRequest('PATCH', `/api/media/${id}`, {
         headers: {
           'Content-Type': 'application/json',
         },
@@ -242,9 +236,7 @@ export const mediaService = {
    */
   async getMediaById(id: string): Promise<MediaAsset | null> {
     try {
-      const response = await apiRequest(`/api/media/${id}`, {
-        method: 'GET',
-      });
+      const response = await apiRequest('GET', `/api/media/${id}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch media asset');

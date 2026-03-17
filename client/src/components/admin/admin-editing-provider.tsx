@@ -470,13 +470,13 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
                         targetSpan.textContent = newContent;
                         
                         // Force a repaint
-                        void selectedElement.element.offsetHeight;
+                        if (selectedElement.element) void selectedElement.element.offsetHeight;
                         
                         console.log('Successfully updated span text to:', newContent);
                       } catch (err) {
                         console.error('Error updating span text:', err);
                         // Fallback to the entire button if span update fails
-                        selectedElement.element.textContent = newContent;
+                        if (selectedElement.element) selectedElement.element.textContent = newContent;
                       }
                     });
                     return; // Exit early, we've handled the update
@@ -484,26 +484,30 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
 
                   // If we don't have a span element, continue with standard approach
                   // Store a reference to all non-text nodes (icons, etc.)
-                  const nonTextNodes = [];
+                  const nonTextNodes: Node[] = [];
                   const fragment = document.createDocumentFragment();
-                  
+
                   // First, clone all non-text nodes to preserve them
-                  for (let i = 0; i < selectedElement.element.childNodes.length; i++) {
-                    const node = selectedElement.element.childNodes[i];
-                    if (node.nodeType !== Node.TEXT_NODE) {
-                      nonTextNodes.push(node.cloneNode(true));
+                  if (selectedElement.element) {
+                    for (let i = 0; i < selectedElement.element.childNodes.length; i++) {
+                      const node = selectedElement.element.childNodes[i];
+                      if (node.nodeType !== Node.TEXT_NODE) {
+                        const clonedNode = node.cloneNode(true);
+                        if (clonedNode) nonTextNodes.push(clonedNode);
+                      }
                     }
                   }
                   
                   // Use requestAnimationFrame for both approaches to reduce flicker
                   requestAnimationFrame(() => {
+                    if (!selectedElement.element) return;
                     // Two approaches based on complexity
                     if (nonTextNodes.length === 0) {
                       // Simple case: button only contains text
                       selectedElement.element.textContent = newContent;
                     } else {
                       // Complex case: button has icons or other elements
-                      
+
                       // Safely clear the element's content
                       try {
                         // Use a safer approach by setting innerHTML to empty first
@@ -542,10 +546,10 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
                   // Batch updates using requestAnimationFrame to reduce flicker
                   requestAnimationFrame(() => {
                     // Apply the content in a single operation
-                    selectedElement.element.innerHTML = sanitizedContent;
-                    
-                    // Force a repaint to ensure content is displayed correctly
-                    if (selectedElement && selectedElement.element) {
+                    if (selectedElement.element) {
+                      selectedElement.element.innerHTML = sanitizedContent;
+
+                      // Force a repaint to ensure content is displayed correctly
                       void selectedElement.element.offsetHeight;
                     }
                   });
