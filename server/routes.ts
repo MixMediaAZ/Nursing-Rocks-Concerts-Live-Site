@@ -107,6 +107,7 @@ import {
 } from "./media";
 import { authRateLimiter, adminPinRateLimiter } from "./rate-limit";
 import { runAllEmailSchedules, getEmailScheduleStatus } from "./email-scheduler";
+import { searchJobs, searchEvents, searchNurses, getSearchSuggestions } from "./search";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup session-based authentication
@@ -170,15 +171,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid artist ID" });
       }
-      
+
       const artist = await storage.getArtist(id);
       if (!artist) {
         return res.status(404).json({ message: "Artist not found" });
       }
-      
+
       res.json(artist);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch artist" });
+    }
+  });
+
+  // Advanced Search Endpoints
+  app.get("/api/search/jobs", async (req: Request, res: Response) => {
+    try {
+      const { q, specialty, location, salaryMin, salaryMax, sortBy, limit, offset } = req.query;
+
+      const results = await searchJobs({
+        query: q as string,
+        specialty: specialty ? (Array.isArray(specialty) ? specialty as string[] : [specialty as string]) : undefined,
+        location: location as string,
+        salaryMin: salaryMin ? parseInt(salaryMin as string) : undefined,
+        salaryMax: salaryMax ? parseInt(salaryMax as string) : undefined,
+        sortBy: (sortBy as any) || 'relevance',
+        limit: limit ? parseInt(limit as string) : 20,
+        offset: offset ? parseInt(offset as string) : 0,
+      });
+
+      res.json(results);
+    } catch (error) {
+      console.error('Error searching jobs:', error);
+      res.status(500).json({ message: 'Failed to search jobs' });
+    }
+  });
+
+  app.get("/api/search/events", async (req: Request, res: Response) => {
+    try {
+      const { q, startDate, endDate, location, featured, sortBy, limit, offset } = req.query;
+
+      const results = await searchEvents({
+        query: q as string,
+        startDate: startDate ? new Date(startDate as string) : undefined,
+        endDate: endDate ? new Date(endDate as string) : undefined,
+        location: location as string,
+        isFeatured: featured === 'true' ? true : featured === 'false' ? false : undefined,
+        sortBy: (sortBy as any) || 'relevance',
+        limit: limit ? parseInt(limit as string) : 20,
+        offset: offset ? parseInt(offset as string) : 0,
+      });
+
+      res.json(results);
+    } catch (error) {
+      console.error('Error searching events:', error);
+      res.status(500).json({ message: 'Failed to search events' });
+    }
+  });
+
+  app.get("/api/search/nurses", async (req: Request, res: Response) => {
+    try {
+      const { q, specialty, experience, certifications, sortBy, limit, offset } = req.query;
+
+      const results = await searchNurses({
+        query: q as string,
+        specialty: specialty as string,
+        experience: experience ? parseInt(experience as string) : undefined,
+        certifications: certifications ? (Array.isArray(certifications) ? certifications as string[] : [certifications as string]) : undefined,
+        sortBy: (sortBy as any) || 'relevance',
+        limit: limit ? parseInt(limit as string) : 20,
+        offset: offset ? parseInt(offset as string) : 0,
+      });
+
+      res.json(results);
+    } catch (error) {
+      console.error('Error searching nurses:', error);
+      res.status(500).json({ message: 'Failed to search nurses' });
+    }
+  });
+
+  app.get("/api/search/suggestions/:type", async (req: Request, res: Response) => {
+    try {
+      const { type } = req.params;
+      const { q } = req.query;
+
+      if (!q || typeof q !== 'string' || q.trim().length === 0) {
+        return res.status(400).json({ message: 'Search query required' });
+      }
+
+      const validTypes = ['job', 'event', 'location'];
+      if (!validTypes.includes(type)) {
+        return res.status(400).json({ message: 'Invalid suggestion type' });
+      }
+
+      const suggestions = await getSearchSuggestions(type as any, q);
+      res.json({ suggestions });
+    } catch (error) {
+      console.error('Error getting suggestions:', error);
+      res.status(500).json({ message: 'Failed to get suggestions' });
     }
   });
 
