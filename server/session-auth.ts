@@ -8,10 +8,22 @@ import { storage } from "./storage";
 import { InsertUser, User } from "@shared/schema";
 import { getPayloadFromRequest } from "./jwt";
 
-// Extend Express.User interface
+// Extend Express.User to cover both session auth (Passport/schema User) and JWT auth shapes.
+// JWT middleware (requireAuth) always sets userId, isVerified, isAdmin before protected routes run.
 declare global {
   namespace Express {
-    interface User extends User {}
+    interface User {
+      // JWT auth fields (always present on protected routes)
+      userId: number;
+      email: string;
+      isVerified: boolean;
+      isAdmin: boolean;
+      // Session auth (Passport) fields — optional fallbacks
+      id?: number;
+      username?: string;
+      is_verified?: boolean;
+      is_admin?: boolean;
+    }
   }
 }
 

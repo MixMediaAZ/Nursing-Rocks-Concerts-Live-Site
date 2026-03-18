@@ -6,18 +6,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { MediaAsset } from '@shared/schema';
 import { authenticateToken } from './auth';
 
-// Add user interface to Request type (extending Express Request)
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        userId: number;
-        email: string;
-        isVerified: boolean;
-      };
-    }
-  }
-}
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
