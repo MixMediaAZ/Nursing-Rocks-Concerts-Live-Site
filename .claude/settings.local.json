@@ -1,7 +1,35 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(curl -s -X GET \"https://nursing-rocks-concerts-live-site-30-890df484q.vercel.app/api/cron/job-alerts\" -H \"Content-Type: application/json\" --max-time 60)",
+      "Bash(npx tsx:*)",
+      "Bash(npx dotenv-cli -e .env -- npx tsx -e \":*)",
+      "Bash(set -a)",
+      "Bash(source .env)",
+      "Bash(set +a)",
+      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://neondb_owner:npg_eESDud9K3Zwh@ep-icy-butterfly-afxy9quz-pooler.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require\" npx tsx -e \":*)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_eESDud9K3Zwh@ep-icy-butterfly-afxy9quz-pooler.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require\" npx tsx ./server/email-scheduler.ts)",
+      "Bash(echo \"Exit: $?\")",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_eESDud9K3Zwh@ep-icy-butterfly-afxy9quz-pooler.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require\" npm run db:push)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_eESDud9K3Zwh@ep-icy-butterfly-afxy9quz-pooler.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require\" npx drizzle-kit push --force)",
+      "Bash(printf '\\\\n')",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_eESDud9K3Zwh@ep-icy-butterfly-afxy9quz-pooler.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require\" npx drizzle-kit push)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(curl -s -X POST http://localhost:5000/api/nrpx/register -H \"Content-Type: application/json\" -d '{\"\"\"\"firstName\"\"\"\":\"\"\"\"Jane\"\"\"\",\"\"\"\"lastName\"\"\"\":\"\"\"\"RN-Test\"\"\"\",\"\"\"\"email\"\"\"\":\"\"\"\"dave.cozza@gmail.com\"\"\"\",\"\"\"\"employer\"\"\"\":\"\"\"\"Banner Health\"\"\"\"}')",
+      "Bash(python3 -m json.tool __NEW_LINE_fb3e754d5b7e500c__ echo \"\" echo \"=== TEST 2: Duplicate email ===\")",
+      "Bash(curl -s -X POST http://localhost:5000/api/nrpx/register -H \"Content-Type: application/json\" -d '{\"\"\"\"firstName\"\"\"\":\"\"\"\"Jane\"\"\"\",\"\"\"\"lastName\"\"\"\":\"\"\"\"RN-Test\"\"\"\",\"\"\"\"email\"\"\"\":\"\"\"\"dave.cozza@gmail.com\"\"\"\"}')",
+      "Bash(python3 -m json.tool __NEW_LINE_fb3e754d5b7e500c__ echo \"\" echo \"=== TEST 3: Missing required field ===\")",
+      "Bash(curl -s -X POST http://localhost:5000/api/nrpx/register -H \"Content-Type: application/json\" -d '{\"\"\"\"firstName\"\"\"\":\"\"\"\"\"\"\"\",\"\"\"\"lastName\"\"\"\":\"\"\"\"Smith\"\"\"\",\"\"\"\"email\"\"\"\":\"\"\"\"test2@example.com\"\"\"\"}')",
+      "Bash(python3 -m json.tool __NEW_LINE_fb3e754d5b7e500c__ echo \"\" echo \"=== TEST 4: Invalid email ===\")",
+      "Bash(curl -s -X POST http://localhost:5000/api/nrpx/register -H \"Content-Type: application/json\" -d '{\"\"\"\"firstName\"\"\"\":\"\"\"\"Jane\"\"\"\",\"\"\"\"lastName\"\"\"\":\"\"\"\"Smith\"\"\"\",\"\"\"\"email\"\"\"\":\"\"\"\"notanemail\"\"\"\"}')",
+      "Bash(python3 -m json.tool)",
+      "Bash(grep -E \"routes.ts\\\\\\(\\(8[0-9][0-9]|[0-9]{4}\\)\\\\,|media\\\\.ts|session-auth\\\\.ts\")",
+      "Bash(grep -E \"routes\\\\.ts\\\\\\(\\(8[0-9][0-9]|[0-9]{4}\\),|session-auth\\\\.ts|media\\\\.ts\")",
+      "Bash(node -e \":*)",
+      "Bash(curl -s -X GET \"https://nursing-rocks-concerts-live-site-30-890df484q.vercel.app/api/cron/job-alerts\" -H \"Content-Type: application/json\")",
+      "Bash(curl -s -X GET \"http://localhost:5000/api/cron/job-alerts\" -H \"Content-Type: application/json\")"
     ]
   }
 }
