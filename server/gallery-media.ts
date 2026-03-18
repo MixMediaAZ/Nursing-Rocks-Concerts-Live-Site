@@ -5,7 +5,7 @@ import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from './db';
 import { gallery, mediaFolders } from '@shared/schema';
-import { eq, and, isNull, desc, asc } from 'drizzle-orm';
+import { eq, and, isNull, desc, asc, sql } from 'drizzle-orm';
 import { processImage, SUPPORTED_IMAGE_TYPES } from './image-utils';
 
 // Configure storage
@@ -81,26 +81,19 @@ export async function getMediaFolders(req: Request, res: Response) {
       ? (req.query.parent_id === 'null' ? null : parseInt(req.query.parent_id as string, 10)) 
       : undefined;
     
-    let query = db.select().from(mediaFolders);
-    
-    // Filter by folder type if specified
+    const conditions = [];
     if (folderType) {
-      query = query.where(eq(mediaFolders.folder_type, folderType));
+      conditions.push(eq(mediaFolders.folder_type, folderType));
     }
-    
-    // Filter by parent_id if specified
     if (parentId !== undefined) {
-      if (parentId === null) {
-        query = query.where(isNull(mediaFolders.parent_id));
-      } else {
-        query = query.where(eq(mediaFolders.parent_id, parentId));
-      }
+      conditions.push(parentId === null
+        ? isNull(mediaFolders.parent_id)
+        : eq(mediaFolders.parent_id, parentId));
     }
-    
-    // Order by sort_order and then by name
-    query = query.orderBy(asc(mediaFolders.sort_order), asc(mediaFolders.name));
-    
-    const folders = await query;
+
+    const folders = await db.select().from(mediaFolders)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(asc(mediaFolders.sort_order), asc(mediaFolders.name));
     res.json(folders);
   } catch (error) {
     console.error('Error getting media folders:', error);
@@ -480,17 +473,9 @@ export async function getAllGalleryImages(req: Request, res: Response) {
     // This is a temporary solution to handle the case where the schema has been updated
     // but the database hasn't been migrated yet
     try {
-      let query = db.select().from(gallery);
-      
-      // Filter by media type if specified
-      if (mediaType) {
-        query = query.where(eq(gallery.media_type, mediaType));
-      }
-      
-      // Apply ordering
-      query = query.orderBy(asc(gallery.sort_order), desc(gallery.id));
-      
-      const images = await query;
+      const images = await db.select().from(gallery)
+        .where(mediaType ? eq(gallery.media_type, mediaType) : undefined)
+        .orderBy(asc(gallery.sort_order), desc(gallery.id));
       
       // If database is empty or no images found, let's add some placeholder images
       if (!images || images.length === 0) {
@@ -634,28 +619,17 @@ export async function replaceGalleryImage(req: Request, res: Response) {
       );
       
       // Update the image record using raw SQL to avoid schema issues
-      const rawUpdateQuery = `
+      const result = await db.execute(sql`
         UPDATE gallery
-        SET 
-          image_url = $1,
-          thumbnail_url = $2,
-          file_size = $3,
-          dimensions = $4,
-          updated_at = $5
-        WHERE id = $6
+        SET
+          image_url = ${sizes.original},
+          thumbnail_url = ${sizes.thumbnail},
+          file_size = ${file.size},
+          dimensions = ${null},
+          updated_at = ${new Date()}
+        WHERE id = ${targetImageId}
         RETURNING *
-      `;
-      
-      const updateParams = [
-        sizes.original,      // $1: image_url
-        sizes.thumbnail,     // $2: thumbnail_url
-        file.size,           // $3: file_size
-        null,                // $4: dimensions
-        new Date(),          // $5: updated_at
-        targetImageId        // $6: id
-      ];
-      
-      const result = await db.execute(rawUpdateQuery, updateParams);
+      `);
       
       // Clean up old files (optional)
       const oldBasePath = path.join(process.cwd(), originalImage.image_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
@@ -748,28 +722,18 @@ export async function replaceGalleryImage(req: Request, res: Response) {
       );
       
       // Update the target image record with the new image data using raw SQL
-      const rawUpdateQuery = `
-        UPDATE gallery
-        SET 
-          image_url = $1,
-          thumbnail_url = $2,
-          file_size = $3,
-          updated_at = $4
-        WHERE id = $5
-        RETURNING *
-      `;
-      
       const fileSize = fs.statSync(path.join(process.cwd(), sizes.original.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'))).size;
-      
-      const updateParams = [
-        sizes.original,      // $1: image_url
-        sizes.thumbnail,     // $2: thumbnail_url
-        fileSize,            // $3: file_size
-        new Date(),          // $4: updated_at
-        targetImageId        // $5: id
-      ];
-      
-      const result = await db.execute(rawUpdateQuery, updateParams);
+
+      const result = await db.execute(sql`
+        UPDATE gallery
+        SET
+          image_url = ${sizes.original},
+          thumbnail_url = ${sizes.thumbnail},
+          file_size = ${fileSize},
+          updated_at = ${new Date()}
+        WHERE id = ${targetImageId}
+        RETURNING *
+      `);
       
       // Clean up old files (optional)
       const oldBasePath = path.join(process.cwd(), targetImage.image_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));

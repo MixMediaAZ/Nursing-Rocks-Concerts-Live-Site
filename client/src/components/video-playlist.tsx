@@ -189,7 +189,7 @@ export function VideoPlaylist({
   const getVideoUrl = (video: VideoResource) => {
     // Use direct MP4 (secure_url) since HLS manifests may not exist yet
     // This ensures videos play immediately without requiring HLS transcoding
-    return video.secure_url || video.url;
+    return video.secure_url;
   };
 
   const getPosterUrl = (video: VideoResource) => {

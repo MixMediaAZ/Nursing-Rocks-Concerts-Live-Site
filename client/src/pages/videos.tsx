@@ -12,7 +12,6 @@ import { Grid3X3, List, Loader2 } from 'lucide-react';
 import { shuffleArray } from '@/lib/utils';
 
 const VideosPage = () => {
-  const [featuredVideoId, setFeaturedVideoId] = useState('Nursing Rocks! Concerts- video/d9wtyh03k0tpfsvflagg');
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
   const [isConnected, setIsConnected] = useState(false);
   const [allVideoIds, setAllVideoIds] = useState<string[]>([]);
@@ -35,33 +34,26 @@ const VideosPage = () => {
     checkConnection();
   }, []);
   
-  // Fetch all approved videos when component mounts or connection status changes
+  // Fetch all approved videos when component mounts (independent of connection check)
   useEffect(() => {
-    if (!isConnected) return;
-    
     async function fetchVideos() {
       setIsLoadingVideos(true);
       try {
         // Fetch approved videos (provider-neutral IDs) from server
         const videoIds = await fetchApprovedVideos();
         const shuffledIds = shuffleArray(videoIds);
-        
+
         console.log(`🎬 Videos Page: Fetched ${videoIds.length} approved videos (shuffled)`);
         setAllVideoIds(shuffledIds);
-        
-        // Update the featured video if videos are available
-        if (videoIds.length > 0) {
-          setFeaturedVideoId(videoIds[0]);
-        }
       } catch (error) {
         console.error('Error fetching videos:', error);
       } finally {
         setIsLoadingVideos(false);
       }
     }
-    
+
     fetchVideos();
-  }, [isConnected]);
+  }, []);
   
   return (
     <>
@@ -159,21 +151,19 @@ const VideosPage = () => {
             <div className="space-y-4 border border-gray-300 rounded-lg p-6 bg-white/70 shadow-sm">
               <h2 className="text-2xl font-semibold">More Featured Videos</h2>
               <Separator />
-              <div style={{ transform: 'scale(0.5)', transformOrigin: 'top left', width: '200%' }}>
-                <VideoPlaylist
-                  controls={true}
-                  autoPlay={false}
-                  muted={true}
-                  loop={true}
-                  layout={layout}
-                  showDuration={true}
-                  emptyMessage={
-                    <div className="text-center p-8">
-                      <p>Featured videos are being prepared. Check back soon!</p>
-                    </div>
-                  }
-                />
-              </div>
+              <VideoPlaylist
+                controls={true}
+                autoPlay={false}
+                muted={true}
+                loop={true}
+                layout={layout}
+                showDuration={true}
+                emptyMessage={
+                  <div className="text-center p-8">
+                    <p>Featured videos are being prepared. Check back soon!</p>
+                  </div>
+                }
+              />
             </div>
           </TabsContent>
           
