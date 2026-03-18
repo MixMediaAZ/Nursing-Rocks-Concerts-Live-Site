@@ -7,11 +7,10 @@ interface WallpaperImage {
 }
 
 // Static list of city background images from public/assets/city_backgrounds
-// Updated to match actual files in public/assets/city_backgrounds (47 files)
+// Matches actual files in public/assets/city_backgrounds (45 files)
 const CITY_BACKGROUND_IMAGES: WallpaperImage[] = [
-  { id: 1, image_url: '/assets/city_backgrounds/file-1746415252600-107696087.jpeg' },
-  { id: 2, image_url: '/assets/city_backgrounds/file-1746415423548-947578775.JPG' },
-  { id: 3, image_url: '/assets/city_backgrounds/file-1746415494151-726751177.JPG' },
+  { id: 1, image_url: '/assets/city_backgrounds/file-1746415423548-947578775.JPG' },
+  { id: 2, image_url: '/assets/city_backgrounds/file-1746415494151-726751177.JPG' },
   { id: 4, image_url: '/assets/city_backgrounds/file-1746415494698-946281521.JPG' },
   { id: 5, image_url: '/assets/city_backgrounds/file-1746415495033-742864723.JPG' },
   { id: 6, image_url: '/assets/city_backgrounds/file-1746415495378-648838152.JPG' },
@@ -53,9 +52,8 @@ const CITY_BACKGROUND_IMAGES: WallpaperImage[] = [
   { id: 42, image_url: '/assets/city_backgrounds/file-1746415507448-154023948.JPG' },
   { id: 43, image_url: '/assets/city_backgrounds/file-1746415507814-700417122.JPG' },
   { id: 44, image_url: '/assets/city_backgrounds/file-1746415508265-512751471.JPG' },
-  { id: 45, image_url: '/assets/city_backgrounds/file-1746415508563-984657263.JPG' },
-  { id: 46, image_url: '/assets/city_backgrounds/file-1746415508882-940919466.JPG' },
-  { id: 47, image_url: '/assets/city_backgrounds/files-1746415256343-783805015.jpeg' },
+  { id: 44, image_url: '/assets/city_backgrounds/file-1746415508563-984657263.JPG' },
+  { id: 45, image_url: '/assets/city_backgrounds/file-1746415508882-940919466.JPG' },
 ];
 
 /**
