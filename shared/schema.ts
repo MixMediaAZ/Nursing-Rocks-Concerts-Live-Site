@@ -785,7 +785,7 @@ export const nrpxRegistrations = pgTable("nrpx_registrations", {
   ticket_code: varchar("ticket_code", { length: 14 }).unique().notNull(),
   first_name: varchar("first_name", { length: 100 }).notNull(),
   last_name: varchar("last_name", { length: 100 }).notNull(),
-  email: varchar("email", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
   employer: varchar("employer", { length: 255 }),
   registered_at: timestamp("registered_at", { withTimezone: true }).defaultNow(),
   checked_in: boolean("checked_in").default(false),
