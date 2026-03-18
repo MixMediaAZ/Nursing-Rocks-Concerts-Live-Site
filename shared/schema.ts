@@ -782,7 +782,7 @@ export type InsertVideoSubmission = z.infer<typeof insertVideoSubmissionSchema>;
 
 export const nrpxRegistrations = pgTable("nrpx_registrations", {
   id: uuid("id").primaryKey().defaultRandom(),
-  ticket_code: varchar("ticket_code", { length: 12 }).unique().notNull(),
+  ticket_code: varchar("ticket_code", { length: 14 }).unique().notNull(),
   first_name: varchar("first_name", { length: 100 }).notNull(),
   last_name: varchar("last_name", { length: 100 }).notNull(),
   email: varchar("email", { length: 255 }).notNull(),
