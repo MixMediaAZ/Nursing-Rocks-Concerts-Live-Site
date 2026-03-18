@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ShieldCheck, Ticket, Info, CalendarClock, AlertTriangle } from "lucide-react";
+import { ShieldCheck, Ticket, Info, CalendarClock, AlertTriangle, Loader2 } from "lucide-react";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -67,15 +68,41 @@ export default function FreeTickets() {
     }
   }, []);
 
+  // Fetch upcoming events for verified nurses
+  const { data: eventsData } = useQuery<{ events: any[] }>({
+    queryKey: ['/api/events'],
+    enabled: isAuthenticated === true && isVerified,
+    select: (data: any) => ({
+      events: (Array.isArray(data) ? data : data?.events ?? []).slice(0, 3),
+    }),
+  });
+
+  // Subscribe mutation
+  const subscribeMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const res = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const json = await res.json();
+      if (!res.ok && res.status !== 409) throw new Error(json.message || "Subscription failed");
+      return json;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Subscribed!",
+        description: "You'll be notified when free tickets become available.",
+      });
+    },
+    onError: (err: Error) => {
+      toast({ variant: "destructive", title: "Subscription failed", description: err.message });
+    },
+  });
+
   // Handle form submission
   const onSubmit = (data: z.infer<typeof newsletterSchema>) => {
-    // Store the data for future processing
-    localStorage.setItem("newsletter_data", JSON.stringify(data));
-    
-    toast({
-      title: "Information Saved",
-      description: "Your information has been saved. We'll notify you about free tickets.",
-    });
+    subscribeMutation.mutate(data.email);
   };
   
   return (
@@ -227,7 +254,8 @@ export default function FreeTickets() {
                           />
                           
                           <div className="flex gap-4">
-                            <Button type="submit">
+                            <Button type="submit" disabled={subscribeMutation.isPending}>
+                              {subscribeMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                               Subscribe
                             </Button>
                             <Button type="button" variant="outline" onClick={() => setLocation("/tickets")}>
@@ -245,35 +273,32 @@ export default function FreeTickets() {
                       <p className="text-sm text-muted-foreground mb-2">
                         Verified nurses get one free ticket per event. Some venues offer presale or door-only admission—see each event for details.
                       </p>
-                      <div className="border rounded-lg p-4 flex items-center gap-4">
-                        <CalendarClock className="h-8 w-8 text-primary/70" />
-                        <div>
-                          <h4 className="font-medium">The Healing Harmonies</h4>
-                          <p className="text-sm text-muted-foreground">
-                            June 15, 2025 • City Medical Center Auditorium
-                          </p>
-                          <div className="mt-2">
-                            <Button size="sm" onClick={() => setLocation("/events/1")}>
-                              Claim free ticket
-                            </Button>
+                      {eventsData?.events && eventsData.events.length > 0 ? (
+                        eventsData.events.map((event: any) => (
+                          <div key={event.id} className="border rounded-lg p-4 flex items-center gap-4">
+                            <CalendarClock className="h-8 w-8 text-primary/70 flex-shrink-0" />
+                            <div className="flex-1">
+                              <h4 className="font-medium">{event.title}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                {event.date ? new Date(event.date).toLocaleDateString() : "Date TBD"}
+                                {event.venue ? ` • ${event.venue}` : ""}
+                              </p>
+                              <div className="mt-2">
+                                <Button size="sm" onClick={() => setLocation(`/events/${event.id}`)}>
+                                  View Event
+                                </Button>
+                              </div>
+                            </div>
                           </div>
+                        ))
+                      ) : (
+                        <div className="border rounded-lg p-4 text-center text-muted-foreground">
+                          <p>Check back soon for upcoming concert dates.</p>
+                          <Button size="sm" variant="outline" className="mt-2" onClick={() => setLocation("/events")}>
+                            Browse All Events
+                          </Button>
                         </div>
-                      </div>
-                      
-                      <div className="border rounded-lg p-4 flex items-center gap-4">
-                        <CalendarClock className="h-8 w-8 text-primary/70" />
-                        <div>
-                          <h4 className="font-medium">Frontline Melody Makers</h4>
-                          <p className="text-sm text-muted-foreground">
-                            July 22, 2025 • Nurses Memorial Hall
-                          </p>
-                          <div className="mt-2">
-                            <Button size="sm" onClick={() => setLocation("/events/2")}>
-                              Claim free ticket
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 ) : (

@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { formatDate } from "@/lib/utils";
 
@@ -16,6 +18,8 @@ export default function ProfilePage() {
   const [_, setLocation] = useLocation();
   const [userData, setUserData] = useState<any>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
   
   // Check authentication status on mount
   useEffect(() => {
@@ -41,7 +45,10 @@ export default function ProfilePage() {
         // We have token and user data in localStorage
         setIsAuthenticated(true);
         try {
-          setUserData(JSON.parse(storedUser));
+          const parsed = JSON.parse(storedUser);
+          setUserData(parsed);
+          setEditFirstName(parsed?.first_name || "");
+          setEditLastName(parsed?.last_name || "");
         } catch (error) {
           console.error("Error parsing user data:", error);
           setUserData(null);
@@ -83,6 +90,33 @@ export default function ProfilePage() {
     },
   });
   
+  // Profile update mutation
+  const updateProfileMutation = useMutation({
+    mutationFn: async (updates: { first_name: string; last_name: string }) => {
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/auth/profile", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: "include",
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) throw new Error((await res.json()).message || "Update failed");
+      return res.json();
+    },
+    onSuccess: (updated) => {
+      const newUserData = { ...userData, ...updated };
+      setUserData(newUserData);
+      localStorage.setItem("user", JSON.stringify(newUserData));
+      toast({ title: "Profile updated", description: "Your name has been saved." });
+    },
+    onError: (err: Error) => {
+      toast({ variant: "destructive", title: "Update failed", description: err.message });
+    },
+  });
+
   // Handle logout
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -293,14 +327,40 @@ export default function ProfilePage() {
                 </TabsContent>
                 
                 <TabsContent value="preferences">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Account Preferences</h3>
-                    <p className="text-muted-foreground">
-                      Manage your account settings and preferences. This feature is coming soon.
-                    </p>
-                    <Button variant="outline" disabled>
-                      Edit Profile
-                    </Button>
+                  <div className="space-y-6 max-w-md">
+                    <h3 className="text-lg font-medium">Edit Profile</h3>
+                    <div className="space-y-4">
+                      <div className="space-y-1">
+                        <Label htmlFor="first_name">First Name</Label>
+                        <Input
+                          id="first_name"
+                          value={editFirstName}
+                          onChange={(e) => setEditFirstName(e.target.value)}
+                          placeholder="First name"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="last_name">Last Name</Label>
+                        <Input
+                          id="last_name"
+                          value={editLastName}
+                          onChange={(e) => setEditLastName(e.target.value)}
+                          placeholder="Last name"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Email</Label>
+                        <Input value={userData?.email || ""} disabled className="text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">Email cannot be changed.</p>
+                      </div>
+                      <Button
+                        onClick={() => updateProfileMutation.mutate({ first_name: editFirstName, last_name: editLastName })}
+                        disabled={updateProfileMutation.isPending || (!editFirstName.trim() && !editLastName.trim())}
+                      >
+                        {updateProfileMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Changes
+                      </Button>
+                    </div>
                   </div>
                 </TabsContent>
               </Tabs>

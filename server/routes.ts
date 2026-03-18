@@ -1540,6 +1540,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Self-service profile update (authenticated user updates their own first/last name)
+  app.patch("/api/auth/profile", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req.user as any)?.userId ?? (req.user as any)?.id;
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+      const { first_name, last_name } = req.body;
+      const updates: Record<string, string> = {};
+      if (typeof first_name === "string" && first_name.trim()) updates.first_name = first_name.trim();
+      if (typeof last_name === "string" && last_name.trim()) updates.last_name = last_name.trim();
+
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ message: "No valid fields to update" });
+      }
+
+      const updated = await storage.updateUser(userId, updates);
+      const { password_hash: _p, ...safe } = updated;
+      return res.json(safe);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      return res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
   // ========== VIDEO API (Provider-neutral) ==========
 
   app.get("/api/videos", async (req: Request, res: Response) => {
