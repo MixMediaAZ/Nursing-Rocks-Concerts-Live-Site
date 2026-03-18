@@ -47,7 +47,7 @@ export async function searchJobs(filters: JobSearchFilters) {
   try {
     let baseQuery = db.select().from(jobListings);
 
-    const whereConditions: any[] = [eq(jobListings.status, 'approved')];
+    const whereConditions: any[] = [eq(jobListings.is_approved, true)];
 
     // Full-text search
     if (filters.query && filters.query.trim()) {
@@ -77,10 +77,10 @@ export async function searchJobs(filters: JobSearchFilters) {
 
     // Salary range filter
     if (filters.salaryMin !== undefined && filters.salaryMin > 0) {
-      whereConditions.push(gte(jobListings.salaryMax, filters.salaryMin));
+      whereConditions.push(gte(jobListings.salary_max, String(filters.salaryMin)));
     }
     if (filters.salaryMax !== undefined && filters.salaryMax > 0) {
-      whereConditions.push(lte(jobListings.salaryMin, filters.salaryMax));
+      whereConditions.push(lte(jobListings.salary_min, String(filters.salaryMax)));
     }
 
     // Build query
@@ -95,18 +95,18 @@ export async function searchJobs(filters: JobSearchFilters) {
     let sorted = jobs;
     switch (filters.sortBy) {
       case 'salary':
-        sorted = jobs.sort((a, b) => (b.salaryMax || 0) - (a.salaryMax || 0));
+        sorted = jobs.sort((a, b) => Number(b.salary_max || 0) - Number(a.salary_max || 0));
         break;
       case 'recent':
         sorted = jobs.sort((a, b) =>
-          (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0)
+          (b.posted_date?.getTime() || 0) - (a.posted_date?.getTime() || 0)
         );
         break;
       case 'relevance':
       default:
         // Default sort by creation date (newest first)
         sorted = jobs.sort((a, b) =>
-          (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0)
+          (b.posted_date?.getTime() || 0) - (a.posted_date?.getTime() || 0)
         );
     }
 
@@ -244,13 +244,13 @@ export async function searchNurses(filters: NurseSearchFilters) {
         firstName: users.first_name,
         lastName: users.last_name,
         email: users.email,
-        specialty: nurseProfiles.specialty,
+        specialty: nurseProfiles.specialties,
         experience: nurseProfiles.years_of_experience,
         skills: nurseProfiles.skills,
         certifications: nurseProfiles.certifications,
       })
       .from(users)
-      .leftJoin(nurseProfiles, eq(users.id, nurseProfiles.userId))
+      .leftJoin(nurseProfiles, eq(users.id, nurseProfiles.user_id))
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
       .limit(filters.limit || 20)
       .offset(filters.offset || 0);
@@ -259,7 +259,7 @@ export async function searchNurses(filters: NurseSearchFilters) {
     let filtered = nurses;
     if (filters.specialty) {
       filtered = nurses.filter(n =>
-        n.specialty?.toLowerCase().includes(filters.specialty!.toLowerCase())
+        n.specialty?.some((s: string) => s.toLowerCase().includes(filters.specialty!.toLowerCase()))
       );
     }
 
@@ -316,7 +316,7 @@ export async function getSearchSuggestions(type: 'job' | 'event' | 'location', q
           .from(jobListings)
           .where(
             and(
-              eq(jobListings.status, 'approved'),
+              eq(jobListings.is_approved, true),
               ilike(jobListings.title, searchQuery)
             )
           )
@@ -338,7 +338,7 @@ export async function getSearchSuggestions(type: 'job' | 'event' | 'location', q
           .from(jobListings)
           .where(
             and(
-              eq(jobListings.status, 'approved'),
+              eq(jobListings.is_approved, true),
               ilike(jobListings.location, searchQuery)
             )
           )

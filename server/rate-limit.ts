@@ -27,11 +27,6 @@ export const authRateLimiter = rateLimit({
     // Skip rate limiting for health checks or specific paths if needed
     return false;
   },
-  onLimitReached: (req, _res, options) => {
-    console.warn(
-      `Rate limit reached for ${options.keyGenerator(req, _res)} on ${req.path}`
-    );
-  },
 });
 
 /**
@@ -54,11 +49,6 @@ export const adminPinRateLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req, _res) => {
     return req.ip || req.socket.remoteAddress || 'unknown';
-  },
-  onLimitReached: (req, _res, options) => {
-    console.warn(
-      `Admin PIN rate limit reached for ${options.keyGenerator(req, _res)} on ${req.path}`
-    );
   },
 });
 

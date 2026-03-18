@@ -90,7 +90,7 @@ export interface IStorage {
   getEmployerByUserId(userId: number): Promise<Employer | undefined>;
   getAllEmployers(): Promise<Employer[]>;
   getVerifiedEmployers(): Promise<Employer[]>;
-  updateEmployer(id: number, data: Partial<InsertEmployer>): Promise<Employer>;
+  updateEmployer(id: number, data: Partial<Employer>): Promise<Employer>;
   verifyEmployer(id: number): Promise<Employer>;
   
   // Job Listings
@@ -110,7 +110,7 @@ export interface IStorage {
   getEmployerJobListings(employerId: number): Promise<JobListing[]>;
   getFeaturedJobListings(limit?: number): Promise<JobListing[]>;
   getRecentJobListings(limit?: number): Promise<JobListing[]>;
-  updateJobListing(id: number, data: Partial<InsertJobListing>): Promise<JobListing>;
+  updateJobListing(id: number, data: Partial<JobListing>): Promise<JobListing>;
   incrementJobListingViews(id: number): Promise<JobListing>;
   incrementJobApplicationsCount(id: number): Promise<JobListing>;
   deleteJobListing(id: number): Promise<void>;
@@ -134,7 +134,7 @@ export interface IStorage {
   }): Promise<NurseProfile[]>;
   
   // Job Applications
-  createJobApplication(application: InsertJobApplication, userId: number, jobId: number): Promise<JobApplication>;
+  createJobApplication(application: Omit<InsertJobApplication, 'user_id' | 'job_id'>, userId: number, jobId: number): Promise<JobApplication>;
   getJobApplicationById(id: number): Promise<JobApplication | undefined>;
   getJobApplicationsByUserId(userId: number): Promise<JobApplication[]>;
   getJobApplicationsByJobId(jobId: number): Promise<JobApplication[]>;
@@ -1387,7 +1387,7 @@ export class MemStorage implements IStorage {
     );
   }
   
-  async updateEmployer(id: number, data: Partial<InsertEmployer>): Promise<Employer> {
+  async updateEmployer(id: number, data: Partial<Employer>): Promise<Employer> {
     const employer = this.employers.get(id);
     if (!employer) {
       throw new Error("Employer not found");
@@ -1546,7 +1546,7 @@ export class MemStorage implements IStorage {
     return limit ? recentJobs.slice(0, limit) : recentJobs;
   }
   
-  async updateJobListing(id: number, data: Partial<InsertJobListing>): Promise<JobListing> {
+  async updateJobListing(id: number, data: Partial<JobListing>): Promise<JobListing> {
     const jobListing = this.jobListings.get(id);
     if (!jobListing) {
       throw new Error("Job listing not found");
@@ -1698,7 +1698,7 @@ export class MemStorage implements IStorage {
   }
   
   // Job Applications
-  async createJobApplication(application: InsertJobApplication, userId: number, jobId: number): Promise<JobApplication> {
+  async createJobApplication(application: Omit<InsertJobApplication, 'user_id' | 'job_id'>, userId: number, jobId: number): Promise<JobApplication> {
     const id = this.jobApplicationId++;
     const newApplication: JobApplication = {
       ...application,
@@ -1975,41 +1975,6 @@ export class MemStorage implements IStorage {
     return limit ? sortedJobs.slice(0, limit) : sortedJobs;
   }
 
-  // ========== APP SETTINGS ==========
-  
-  async getAppSettingByKey(key: string): Promise<AppSetting | undefined> {
-    return this.appSettings.get(key);
-  }
-  
-  async getAllAppSettings(): Promise<AppSetting[]> {
-    return Array.from(this.appSettings.values());
-  }
-  
-  async createOrUpdateAppSetting(
-    key: string, 
-    value: string, 
-    description?: string, 
-    isSensitive?: boolean
-  ): Promise<AppSetting> {
-    const now = new Date();
-    const existingSetting = this.appSettings.get(key);
-    
-    const setting: AppSetting = {
-      key,
-      value,
-      description: description || (existingSetting?.description || ''),
-      is_sensitive: isSensitive !== undefined ? isSensitive : (existingSetting?.is_sensitive || false),
-      created_at: existingSetting?.created_at || now,
-      updated_at: now
-    };
-    
-    this.appSettings.set(key, setting);
-    return setting;
-  }
-  
-  async deleteAppSetting(key: string): Promise<void> {
-    this.appSettings.delete(key);
-  }
 }
 
 // Using database storage for this implementation

@@ -472,7 +472,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(employers.is_verified, true));
   }
 
-  async updateEmployer(id: number, data: Partial<InsertEmployer>): Promise<Employer> {
+  async updateEmployer(id: number, data: Partial<Employer>): Promise<Employer> {
     const [updated] = await db
       .update(employers)
       .set({
@@ -607,7 +607,7 @@ export class DatabaseStorage implements IStorage {
     return await query;
   }
 
-  async updateJobListing(id: number, data: Partial<InsertJobListing>): Promise<JobListing> {
+  async updateJobListing(id: number, data: Partial<JobListing>): Promise<JobListing> {
     const [updated] = await db
       .update(jobListings)
       .set({
@@ -717,7 +717,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Job Applications
-  async createJobApplication(application: InsertJobApplication, userId: number, jobId: number): Promise<JobApplication> {
+  async createJobApplication(application: Omit<InsertJobApplication, 'user_id' | 'job_id'>, userId: number, jobId: number): Promise<JobApplication> {
     const now = new Date();
     const [created] = await db
       .insert(jobApplications)
