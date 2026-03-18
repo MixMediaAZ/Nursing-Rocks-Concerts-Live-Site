@@ -4,9 +4,11 @@ import Stripe from "stripe";
 import path from "path";
 import fs from "fs";
 import { db } from "./db";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql, and, desc, ilike, or } from "drizzle-orm";
 import { storage } from "./storage";
-import { approvedVideos, gallery, mediaFolders, events } from "@shared/schema";
+import { approvedVideos, gallery, mediaFolders, events, nrpxRegistrations } from "@shared/schema";
+import QRCode from "qrcode";
+import { sendNrpxTicketEmail } from "./email";
 import { processImage } from "./image-utils";
 
 // Sharp is marked as external in the build - it's pre-installed on Vercel
@@ -108,6 +110,7 @@ import {
 import { authRateLimiter, adminPinRateLimiter } from "./rate-limit";
 import { runAllEmailSchedules, getEmailScheduleStatus } from "./email-scheduler";
 import { searchJobs, searchEvents, searchNurses, getSearchSuggestions } from "./search";
+import { handleJobAlertsCron, handleEventRemindersCron, handleCronHealth } from "./cron-handlers";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup session-based authentication
@@ -2706,6 +2709,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Cron Job Endpoints
+  // These can be triggered by Vercel Cron, EasyCron, or external services
+  // Secure with CRON_SECRET environment variable
+
+  app.get("/api/cron/job-alerts", handleJobAlertsCron);
+  app.get("/api/cron/event-reminders", handleEventRemindersCron);
+  app.get("/api/cron/health", handleCronHealth);
+
   // Check if the CustomCat API connection is valid by making a test request
   app.get("/api/store/customcat/verify-connection", async (req: Request, res: Response) => {
     try {
@@ -2944,6 +2955,258 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // ========== NRPX PHOENIX NURSE REGISTRATION ROUTES ==========
+
+  // Ticket code generator — unambiguous chars, collision-safe
+  function generateTicketCode(): string {
+    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    const segment = () => Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    return `NRPX-${segment()}-${segment()}`;
+  }
+
+  // Simple in-memory rate limiter: IP → [timestamps]
+  const nrpxRateLimitMap = new Map<string, number[]>();
+  function nrpxRateLimit(ip: string): boolean {
+    const now = Date.now();
+    const window = 60 * 60 * 1000; // 1 hour
+    const hits = (nrpxRateLimitMap.get(ip) || []).filter(t => now - t < window);
+    if (hits.length >= 5) return false;
+    hits.push(now);
+    nrpxRateLimitMap.set(ip, hits);
+    return true;
+  }
+
+  // POST /api/nrpx/register — public nurse registration
+  app.post("/api/nrpx/register", async (req: Request, res: Response) => {
+    try {
+      const ip = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || 'unknown').split(',')[0].trim();
+      if (!nrpxRateLimit(ip)) {
+        return res.status(429).json({ success: false, message: "Too many registrations from this IP. Please try again later." });
+      }
+
+      // Validate input
+      const { firstName, lastName, email, employer } = req.body;
+      if (!firstName?.trim() || firstName.trim().length > 100) return res.status(400).json({ success: false, message: "First name is required (max 100 chars)." });
+      if (!lastName?.trim() || lastName.trim().length > 100) return res.status(400).json({ success: false, message: "Last name is required (max 100 chars)." });
+      const emailNorm = email?.trim().toLowerCase();
+      if (!emailNorm || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNorm)) return res.status(400).json({ success: false, message: "A valid email address is required." });
+      if (employer && employer.trim().length > 255) return res.status(400).json({ success: false, message: "Employer name is too long (max 255 chars)." });
+
+      // Cap check: max 500 registrations
+      const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(nrpxRegistrations);
+      if (count >= 500) {
+        return res.status(409).json({ success: false, message: "Registration is full. Thank you for your interest!" });
+      }
+
+      // Duplicate email check
+      const existing = await db.select({ id: nrpxRegistrations.id }).from(nrpxRegistrations)
+        .where(eq(nrpxRegistrations.email, emailNorm)).limit(1);
+      if (existing.length > 0) {
+        return res.status(409).json({ success: false, message: "This email is already registered. Check your inbox for your ticket." });
+      }
+
+      // Generate unique ticket code
+      let ticketCode = '';
+      for (let i = 0; i < 10; i++) {
+        const candidate = generateTicketCode();
+        const collision = await db.select({ id: nrpxRegistrations.id }).from(nrpxRegistrations)
+          .where(eq(nrpxRegistrations.ticket_code, candidate)).limit(1);
+        if (collision.length === 0) { ticketCode = candidate; break; }
+      }
+      if (!ticketCode) return res.status(500).json({ success: false, message: "Could not generate ticket code. Please try again." });
+
+      // Insert registration
+      const [reg] = await db.insert(nrpxRegistrations).values({
+        ticket_code: ticketCode,
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        email: emailNorm,
+        employer: employer?.trim() || null,
+      }).returning();
+
+      // Generate QR code
+      const qrBuffer = await QRCode.toBuffer(ticketCode, {
+        type: 'png',
+        width: 400,
+        margin: 2,
+        color: { dark: '#000000', light: '#FFFFFF' },
+        errorCorrectionLevel: 'H',
+      });
+
+      // Send ticket email
+      const emailResult = await sendNrpxTicketEmail({
+        firstName: reg.first_name,
+        lastName: reg.last_name,
+        email: reg.email,
+        ticketCode: reg.ticket_code,
+        qrBuffer,
+      });
+
+      // Mark email sent
+      if (emailResult.success) {
+        await db.update(nrpxRegistrations)
+          .set({ email_sent: true, email_sent_at: new Date() })
+          .where(eq(nrpxRegistrations.id, reg.id));
+      }
+
+      console.log(`[NRPX] Registered: ${reg.email} → ${ticketCode} | email: ${emailResult.success}`);
+      res.status(201).json({ success: true, message: "Check your email for your ticket! 🎸" });
+    } catch (error) {
+      console.error("[NRPX] Registration error:", error);
+      res.status(500).json({ success: false, message: "Registration failed. Please try again." });
+    }
+  });
+
+  // GET /api/nrpx/verify/:code — QR scanner verification (marks check-in)
+  app.get("/api/nrpx/verify/:code", async (req: Request, res: Response) => {
+    try {
+      const code = req.params.code?.toUpperCase().trim();
+      if (!code) return res.status(400).json({ valid: false, message: "No ticket code provided." });
+
+      const [reg] = await db.select().from(nrpxRegistrations)
+        .where(eq(nrpxRegistrations.ticket_code, code)).limit(1);
+
+      if (!reg) return res.status(404).json({ valid: false, message: "Ticket not found." });
+
+      if (reg.checked_in) {
+        const checkedInAt = reg.checked_in_at
+          ? new Date(reg.checked_in_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+          : 'earlier';
+        return res.json({
+          valid: false,
+          alreadyUsed: true,
+          message: `Already checked in at ${checkedInAt}`,
+          name: `${reg.first_name} ${reg.last_name}`,
+        });
+      }
+
+      await db.update(nrpxRegistrations)
+        .set({ checked_in: true, checked_in_at: new Date() })
+        .where(eq(nrpxRegistrations.id, reg.id));
+
+      console.log(`[NRPX] Checked in: ${reg.first_name} ${reg.last_name} (${code})`);
+      res.json({ valid: true, name: `${reg.first_name} ${reg.last_name}`, message: "Welcome!" });
+    } catch (error) {
+      console.error("[NRPX] Verify error:", error);
+      res.status(500).json({ valid: false, message: "Verification error. Please try again." });
+    }
+  });
+
+  // GET /api/nrpx/stats — running check-in count (public, for scanner display)
+  app.get("/api/nrpx/stats", async (_req: Request, res: Response) => {
+    try {
+      const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(nrpxRegistrations);
+      const [{ checkedIn }] = await db.select({ checkedIn: sql<number>`count(*)::int` }).from(nrpxRegistrations)
+        .where(eq(nrpxRegistrations.checked_in, true));
+      res.json({ total, checkedIn });
+    } catch (error) {
+      console.error("[NRPX] Stats error:", error);
+      res.status(500).json({ total: 0, checkedIn: 0 });
+    }
+  });
+
+  // GET /api/admin/nrpx/registrations — admin list with search/filter
+  app.get("/api/admin/nrpx/registrations", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { search, status, sort } = req.query as { search?: string; status?: string; sort?: string };
+
+      let query = db.select().from(nrpxRegistrations);
+
+      // Build where clauses
+      const conditions: any[] = [];
+      if (search) {
+        conditions.push(or(
+          ilike(nrpxRegistrations.first_name, `%${search}%`),
+          ilike(nrpxRegistrations.last_name, `%${search}%`),
+          ilike(nrpxRegistrations.email, `%${search}%`),
+          ilike(nrpxRegistrations.ticket_code, `%${search}%`),
+        ));
+      }
+      if (status === 'checked_in') conditions.push(eq(nrpxRegistrations.checked_in, true));
+      if (status === 'not_checked_in') conditions.push(eq(nrpxRegistrations.checked_in, false));
+
+      const regs = await (conditions.length > 0
+        ? query.where(and(...conditions))
+        : query
+      ).orderBy(sort === 'name'
+        ? nrpxRegistrations.first_name
+        : desc(nrpxRegistrations.registered_at)
+      );
+
+      const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(nrpxRegistrations);
+      const [{ emailsSent }] = await db.select({ emailsSent: sql<number>`count(*)::int` }).from(nrpxRegistrations).where(eq(nrpxRegistrations.email_sent, true));
+      const [{ checkedIn }] = await db.select({ checkedIn: sql<number>`count(*)::int` }).from(nrpxRegistrations).where(eq(nrpxRegistrations.checked_in, true));
+
+      res.json({
+        registrations: regs,
+        stats: { total, emailsSent, checkedIn, remaining: total - checkedIn },
+      });
+    } catch (error) {
+      console.error("[NRPX] Admin list error:", error);
+      res.status(500).json({ success: false, message: "Failed to fetch registrations." });
+    }
+  });
+
+  // POST /api/admin/nrpx/registrations/resend/:id — resend ticket email
+  app.post("/api/admin/nrpx/registrations/resend/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const [reg] = await db.select().from(nrpxRegistrations)
+        .where(eq(nrpxRegistrations.id, req.params.id)).limit(1);
+      if (!reg) return res.status(404).json({ success: false, message: "Registration not found." });
+
+      const qrBuffer = await QRCode.toBuffer(reg.ticket_code, {
+        type: 'png', width: 400, margin: 2,
+        color: { dark: '#000000', light: '#FFFFFF' },
+        errorCorrectionLevel: 'H',
+      });
+
+      const emailResult = await sendNrpxTicketEmail({
+        firstName: reg.first_name, lastName: reg.last_name,
+        email: reg.email, ticketCode: reg.ticket_code, qrBuffer,
+      });
+
+      if (emailResult.success) {
+        await db.update(nrpxRegistrations)
+          .set({ email_sent: true, email_sent_at: new Date() })
+          .where(eq(nrpxRegistrations.id, reg.id));
+        res.json({ success: true, message: "Email resent successfully." });
+      } else {
+        res.status(500).json({ success: false, message: emailResult.error || "Failed to resend email." });
+      }
+    } catch (error) {
+      console.error("[NRPX] Resend error:", error);
+      res.status(500).json({ success: false, message: "Failed to resend email." });
+    }
+  });
+
+  // GET /api/admin/nrpx/registrations/export — CSV export
+  app.get("/api/admin/nrpx/registrations/export", requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const regs = await db.select().from(nrpxRegistrations).orderBy(nrpxRegistrations.registered_at);
+      const header = 'Ticket Code,First Name,Last Name,Email,Employer,Registered At,Email Sent,Checked In,Checked In At\n';
+      const rows = regs.map(r =>
+        [
+          r.ticket_code,
+          `"${r.first_name}"`,
+          `"${r.last_name}"`,
+          r.email,
+          r.employer ? `"${r.employer}"` : '',
+          r.registered_at ? new Date(r.registered_at).toISOString() : '',
+          r.email_sent ? 'Yes' : 'No',
+          r.checked_in ? 'Yes' : 'No',
+          r.checked_in_at ? new Date(r.checked_in_at).toISOString() : '',
+        ].join(',')
+      ).join('\n');
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="nrpx-registrations.csv"');
+      res.send(header + rows);
+    } catch (error) {
+      console.error("[NRPX] Export error:", error);
+      res.status(500).json({ success: false, message: "Export failed." });
+    }
+  });
+
   // Create HTTP server
   const httpServer = createServer(app);
   return httpServer;

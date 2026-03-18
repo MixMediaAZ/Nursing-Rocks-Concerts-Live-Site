@@ -35,8 +35,9 @@ export async function sendJobAlerts(): Promise<{ success: number; failed: number
     // Get all active job listings
     const activeJobs = await db.select().from(jobListings).where(
       and(
-        eq(jobListings.status, 'approved'),
-        gt(jobListings.createdAt, sql`NOW() - INTERVAL '7 days'`) // Only recent jobs
+        eq(jobListings.is_approved, true),
+        eq(jobListings.is_active, true),
+        gt(jobListings.posted_date, sql`NOW() - INTERVAL '7 days'`) // Only recent jobs
       )
     );
 
@@ -48,25 +49,23 @@ export async function sendJobAlerts(): Promise<{ success: number; failed: number
     for (const job of activeJobs) {
       try {
         // Get all nurses with job alerts enabled
-        const nursesWithAlerts = await db.select({
-          userId: nurseProfiles.userId,
-          specialty: nurseProfiles.specialty,
+        const allNursesWithAlerts = await db.select({
+          userId: nurseProfiles.user_id,
+          specialties: nurseProfiles.specialties,
           email: users.email,
           firstName: users.first_name,
           lastName: users.last_name,
         })
           .from(nurseProfiles)
-          .innerJoin(users, eq(nurseProfiles.userId, users.id))
-          .innerJoin(jobAlerts, eq(jobAlerts.nurseId, nurseProfiles.userId))
-          .where(
-            and(
-              // Match specialty if specified in alert
-              jobAlerts.specialty
-                ? eq(jobAlerts.specialty, job.specialty)
-                : undefined,
-              eq(jobAlerts.enabled, true)
-            )
-          );
+          .innerJoin(users, eq(nurseProfiles.user_id, users.id))
+          .innerJoin(jobAlerts, eq(jobAlerts.user_id, nurseProfiles.user_id))
+          .where(eq(jobAlerts.is_active, true));
+
+        // Filter by specialty match in JS (alert.specialties is an array)
+        const nursesWithAlerts = allNursesWithAlerts.filter(nurse => {
+          if (!nurse.specialties || nurse.specialties.length === 0) return true;
+          return nurse.specialties.includes(job.specialty);
+        });
 
         // Send alert to each matching nurse
         for (const nurse of nursesWithAlerts) {
@@ -92,8 +91,8 @@ export async function sendJobAlerts(): Promise<{ success: number; failed: number
               employer: job.title, // Assuming employer name is in title, ideally fetch from employers table
               specialty: job.specialty,
               location: job.location || 'Location TBD',
-              salary: job.salaryMin && job.salaryMax
-                ? `$${job.salaryMin.toLocaleString()}-$${job.salaryMax.toLocaleString()}`
+              salary: job.salary_min && job.salary_max
+                ? `$${Number(job.salary_min).toLocaleString()}-$${Number(job.salary_max).toLocaleString()}`
                 : undefined,
               jobUrl,
             };
@@ -158,8 +157,14 @@ export async function sendEventReminders(): Promise<{ success: number; failed: n
     const threeDaysFromNow = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
     const oneDayBeforeThat = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
 
-    // Get events happening in 3 days
-    const upcomingEvents = await db.select().from(events).where(
+    // Get events happening in 3 days (select only columns that exist in DB)
+    const upcomingEvents = await db.select({
+      id: events.id,
+      title: events.title,
+      date: events.date,
+      start_time: events.start_time,
+      location: events.location,
+    }).from(events).where(
       and(
         gt(events.date, oneDayBeforeThat),
         lt(events.date, threeDaysFromNow)

@@ -18,18 +18,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { 
-  Key, 
-  KeyRound, 
+import {
+  Key,
+  KeyRound,
   Delete,
-  LayoutDashboard, 
-  Settings, 
-  Calendar, 
-  ImageIcon, 
-  Music, 
-  Users, 
-  Store, 
-  FileEdit, 
+  LayoutDashboard,
+  Settings,
+  Calendar,
+  ImageIcon,
+  Music,
+  Users,
+  Store,
+  FileEdit,
   Lock,
   Edit,
   LogOut,
@@ -41,7 +41,11 @@ import {
   CheckCircle,
   XCircle,
   Building2,
-  FileCheck
+  FileCheck,
+  Ticket,
+  Search,
+  RefreshCw,
+  UserCheck
 } from "lucide-react";
 import CustomCatApiSettings from "@/components/admin/custom-cat-api-settings";
 import ProductSyncTool from "@/components/admin/product-sync-tool";
@@ -837,6 +841,11 @@ export default function AdminPage() {
                 <Shield className="h-4 w-4" /> Approval
               </div>
             </TabsTrigger>
+            <TabsTrigger value="nrpx">
+              <div className="flex items-center gap-1">
+                <Ticket className="h-4 w-4" /> Phoenix
+              </div>
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="overview">
@@ -1471,6 +1480,10 @@ export default function AdminPage() {
 
           <TabsContent value="video-approval">
             <VideoApproval />
+          </TabsContent>
+
+          <TabsContent value="nrpx">
+            <NrpxRegistrationsTab />
           </TabsContent>
 
           <TabsContent value="editor">
@@ -2454,5 +2467,226 @@ export default function AdminPage() {
         </div>
       </section>
     </>
+  );
+}
+
+// ========== NRPX PHOENIX REGISTRATIONS TAB ==========
+
+interface NrpxReg {
+  id: string;
+  ticket_code: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  employer: string | null;
+  registered_at: string;
+  email_sent: boolean;
+  checked_in: boolean;
+  checked_in_at: string | null;
+}
+
+function NrpxRegistrationsTab() {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "checked_in" | "not_checked_in">("all");
+  const [sort, setSort] = useState<"date" | "name">("date");
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+  const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  if (statusFilter !== "all") params.set("status", statusFilter);
+  params.set("sort", sort);
+
+  const { data, isLoading, refetch } = useQuery<{
+    registrations: NrpxReg[];
+    stats: { total: number; emailsSent: number; checkedIn: number; remaining: number };
+  }>({
+    queryKey: ["/api/admin/nrpx/registrations", search, statusFilter, sort],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/nrpx/registrations?${params}`, { headers: authHeaders });
+      if (!res.ok) throw new Error("Failed to load");
+      return res.json();
+    },
+    refetchInterval: 30000,
+  });
+
+  const handleResend = async (id: string) => {
+    setResendingId(id);
+    try {
+      const res = await fetch(`/api/admin/nrpx/registrations/resend/${id}`, {
+        method: "POST",
+        headers: authHeaders,
+      });
+      const json = await res.json();
+      toast({ title: json.success ? "Email resent!" : "Resend failed", description: json.message, variant: json.success ? "default" : "destructive" });
+      if (json.success) refetch();
+    } catch {
+      toast({ title: "Network error", variant: "destructive" });
+    } finally {
+      setResendingId(null);
+    }
+  };
+
+  const handleExport = () => {
+    window.location.href = `/api/admin/nrpx/registrations/export`;
+  };
+
+  const stats = data?.stats;
+  const regs = data?.registrations || [];
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Phoenix Registrations</h2>
+          <p className="text-muted-foreground text-sm">Nursing Rocks Phoenix — May 16, 2026</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4 mr-1" /> Refresh
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-1" /> Export CSV
+          </Button>
+          <Button size="sm" onClick={() => window.open("/phoenix-register", "_blank")}>
+            <Ticket className="h-4 w-4 mr-1" /> View Reg Page
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats cards */}
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: "Total Registered", value: stats.total, icon: Users, color: "text-blue-600" },
+            { label: "Emails Sent", value: stats.emailsSent, icon: Mail, color: "text-green-600" },
+            { label: "Checked In", value: stats.checkedIn, icon: UserCheck, color: "text-emerald-600" },
+            { label: "Remaining", value: stats.remaining, icon: Ticket, color: "text-orange-600" },
+          ].map(({ label, value, icon: Icon, color }) => (
+            <Card key={label}>
+              <CardContent className="pt-4 pb-3">
+                <div className="flex items-center gap-2">
+                  <Icon className={`h-5 w-5 ${color}`} />
+                  <div>
+                    <p className={`text-2xl font-bold ${color}`}>{value}</p>
+                    <p className="text-xs text-muted-foreground">{label}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-48">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search name, email, ticket code…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 text-sm border rounded-md outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+        <select
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value as any)}
+          className="text-sm border rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-ring"
+        >
+          <option value="all">All</option>
+          <option value="checked_in">Checked In</option>
+          <option value="not_checked_in">Not Checked In</option>
+        </select>
+        <select
+          value={sort}
+          onChange={e => setSort(e.target.value as any)}
+          className="text-sm border rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-ring"
+        >
+          <option value="date">Sort: Newest</option>
+          <option value="name">Sort: Name</option>
+        </select>
+      </div>
+
+      {/* Table */}
+      {isLoading ? (
+        <div className="text-center py-12 text-muted-foreground">Loading registrations…</div>
+      ) : regs.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">No registrations found.</div>
+      ) : (
+        <div className="rounded-lg border overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50">
+                <tr>
+                  {["Name", "Email", "Employer", "Ticket Code", "Registered", "Email", "Checked In", "Actions"].map(h => (
+                    <th key={h} className="text-left px-4 py-3 font-medium text-muted-foreground whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {regs.map(reg => (
+                  <tr key={reg.id} className="hover:bg-muted/20">
+                    <td className="px-4 py-3 whitespace-nowrap font-medium">
+                      {reg.first_name} {reg.last_name}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{reg.email}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{reg.employer || "—"}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{reg.ticket_code}</td>
+                    <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                      {reg.registered_at ? new Date(reg.registered_at).toLocaleDateString() : "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge variant={reg.email_sent ? "default" : "secondary"} className="text-xs">
+                        {reg.email_sent ? "Sent" : "Pending"}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      {reg.checked_in ? (
+                        <div>
+                          <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
+                            <CheckCircle className="h-3 w-3 mr-1" /> In
+                          </Badge>
+                          {reg.checked_in_at && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {new Date(reg.checked_in_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <Badge variant="outline" className="text-xs text-muted-foreground">Not In</Badge>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={resendingId === reg.id}
+                        onClick={() => handleResend(reg.id)}
+                        className="h-7 text-xs"
+                      >
+                        {resendingId === reg.id ? (
+                          <RefreshCw className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <><Mail className="h-3 w-3 mr-1" />Resend</>
+                        )}
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="px-4 py-2 border-t bg-muted/20 text-xs text-muted-foreground">
+            Showing {regs.length} of {stats?.total ?? 0} registrations
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, date, decimal, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, date, decimal, varchar, uuid } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -777,3 +777,33 @@ export type InsertStoreOrderItem = z.infer<typeof insertStoreOrderItemSchema>;
 
 export type VideoSubmission = typeof videoSubmissions.$inferSelect;
 export type InsertVideoSubmission = z.infer<typeof insertVideoSubmissionSchema>;
+
+// ========== NRPX PHOENIX NURSE REGISTRATION ==========
+
+export const nrpxRegistrations = pgTable("nrpx_registrations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  ticket_code: varchar("ticket_code", { length: 12 }).unique().notNull(),
+  first_name: varchar("first_name", { length: 100 }).notNull(),
+  last_name: varchar("last_name", { length: 100 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  employer: varchar("employer", { length: 255 }),
+  registered_at: timestamp("registered_at", { withTimezone: true }).defaultNow(),
+  checked_in: boolean("checked_in").default(false),
+  checked_in_at: timestamp("checked_in_at", { withTimezone: true }),
+  email_sent: boolean("email_sent").default(false),
+  email_sent_at: timestamp("email_sent_at", { withTimezone: true }),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const insertNrpxRegistrationSchema = createInsertSchema(nrpxRegistrations).omit({
+  id: true,
+  registered_at: true,
+  checked_in: true,
+  checked_in_at: true,
+  email_sent: true,
+  email_sent_at: true,
+  created_at: true,
+});
+
+export type NrpxRegistration = typeof nrpxRegistrations.$inferSelect;
+export type InsertNrpxRegistration = z.infer<typeof insertNrpxRegistrationSchema>;

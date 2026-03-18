@@ -405,3 +405,130 @@ export async function sendEventReminderEmail(data: EventReminderEmailData): Prom
     return { success: false, error: error.message || 'Failed to send email' };
   }
 }
+
+// ========== NRPX PHOENIX TICKET EMAIL ==========
+
+export interface NrpxTicketEmailData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  ticketCode: string;
+  qrBuffer: Buffer;
+}
+
+/**
+ * Send QR ticket email for NRPX Phoenix event registration
+ */
+export async function sendNrpxTicketEmail(data: NrpxTicketEmailData): Promise<{ success: boolean; error?: string }> {
+  if (!resend) {
+    console.warn('Resend API key not configured - skipping NRPX ticket email');
+    return { success: false, error: 'Email service not configured' };
+  }
+
+  const qrBase64 = data.qrBuffer.toString('base64');
+
+  const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #1a1a1a; margin: 0; padding: 0; background: #f4f4f4; }
+    .wrapper { background: #f4f4f4; padding: 24px 0; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 40px 32px; text-align: center; }
+    .header img { height: 48px; margin-bottom: 16px; }
+    .header h1 { margin: 0 0 8px; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+    .header p { margin: 0; font-size: 16px; opacity: 0.85; }
+    .rock-accent { color: #e94560; }
+    .content { padding: 32px; }
+    .greeting { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+    .event-card { background: #f8f9ff; border: 2px solid #e94560; border-radius: 10px; padding: 20px 24px; margin: 24px 0; }
+    .event-card h2 { margin: 0 0 16px; font-size: 20px; color: #0f3460; }
+    .event-detail { display: flex; align-items: flex-start; margin-bottom: 10px; font-size: 15px; }
+    .event-detail .icon { font-size: 18px; margin-right: 10px; flex-shrink: 0; }
+    .qr-section { text-align: center; padding: 24px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee; margin: 24px 0; }
+    .qr-section h3 { margin: 0 0 16px; font-size: 16px; color: #555; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+    .qr-section img { width: 220px; height: 220px; border: 4px solid #1a1a2e; border-radius: 8px; display: block; margin: 0 auto 16px; }
+    .ticket-code { font-family: 'Courier New', monospace; font-size: 22px; font-weight: 700; letter-spacing: 3px; color: #0f3460; background: #f0f4ff; border: 2px dashed #0f3460; border-radius: 8px; padding: 12px 20px; display: inline-block; margin-top: 4px; }
+    .backup-info { background: #fff8e1; border-left: 4px solid #f9a825; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 20px 0; font-size: 14px; color: #5a4000; }
+    .backup-info strong { display: block; margin-bottom: 6px; font-size: 15px; }
+    .footer { background: #1a1a2e; color: #aaa; text-align: center; padding: 24px 32px; font-size: 13px; }
+    .footer a { color: #e94560; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <h1>🎸 Nursing Rocks Phoenix</h1>
+        <p>Your ticket is confirmed — see you at the show!</p>
+      </div>
+
+      <div class="content">
+        <p class="greeting">Hi ${data.firstName},</p>
+        <p>You're registered for <strong>Nursing Rocks Phoenix</strong>! Show this QR code at the door for entry. No printing needed — your phone works great.</p>
+
+        <div class="event-card">
+          <h2>🎤 Event Details</h2>
+          <div class="event-detail"><span class="icon">📅</span><div><strong>Date:</strong> Friday, May 16, 2026</div></div>
+          <div class="event-detail"><span class="icon">📍</span><div><strong>Venue:</strong> The Walter Studio, Phoenix, AZ</div></div>
+          <div class="event-detail"><span class="icon">🎵</span><div><strong>Featuring:</strong> PsychoStar + special guests</div></div>
+          <div class="event-detail"><span class="icon">🎟️</span><div><strong>Ticket:</strong> Free — registered nurses only</div></div>
+        </div>
+
+        <div class="qr-section">
+          <h3>Your Entry QR Code</h3>
+          <img src="data:image/png;base64,${qrBase64}" alt="QR Code for entry" />
+          <div class="ticket-code">${data.ticketCode}</div>
+        </div>
+
+        <div class="backup-info">
+          <strong>Can't scan? No problem.</strong>
+          Give the door volunteer your name: <strong>${data.firstName} ${data.lastName}</strong><br>
+          Or your ticket code: <strong>${data.ticketCode}</strong>
+        </div>
+
+        <p style="font-size: 14px; color: #666;">Questions? Reach us at <a href="mailto:hello@nursingrocksconcerts.com" style="color: #e94560;">hello@nursingrocksconcerts.com</a></p>
+        <p style="font-size: 14px; color: #666;">See you on May 16th! 🤘<br><strong>— The Nursing Rocks Team</strong></p>
+      </div>
+
+      <div class="footer">
+        <p><strong style="color: #fff;">Nursing Rocks Concert Series</strong></p>
+        <p>Benefiting Gateway Community College Scholarships</p>
+        <p style="margin-top: 12px; font-size: 11px; color: #666;">This is a transactional email confirming your event registration.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  try {
+    const response = await resend.emails.send({
+      from: 'Nursing Rocks <tickets@nursingrocksconcerts.com>',
+      to: data.email,
+      subject: 'Your Nursing Rocks Phoenix Ticket 🎸',
+      html: emailHtml,
+      attachments: [
+        {
+          filename: 'ticket-qr.png',
+          content: data.qrBuffer,
+          contentType: 'image/png',
+        },
+      ],
+    });
+
+    if (response.error) {
+      console.error('[NRPX] Resend error:', response.error);
+      return { success: false, error: response.error.message };
+    }
+
+    console.log('[NRPX] Ticket email sent:', response.data?.id, 'to', data.email);
+    return { success: true };
+  } catch (error: any) {
+    console.error('[NRPX] Error sending ticket email:', error);
+    return { success: false, error: error.message || 'Failed to send email' };
+  }
+}

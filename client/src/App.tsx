@@ -35,6 +35,8 @@ import ProductSyncPage from "@/pages/product-sync";
 import UploadUtilityPage from "@/pages/upload-utility";
 import ThanksPage from "@/pages/thanks";
 import ContactPage from "@/pages/contact";
+import PhoenixRegisterPage from "@/pages/phoenix-register";
+import ScanPage from "@/pages/scan";
 
 // Import the pages that were previously lazy loaded
 import TermsPage from "@/pages/terms";
@@ -51,12 +53,19 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { AuthProvider } from "@/hooks/use-auth";
 
 function Router() {
-  // Use window.location to check if we're on the admin page
+  // Use window.location to check if we're on the admin page or scanner
   const isAdminPage = window.location.pathname === '/admin';
-  
+  const isScanPage = window.location.pathname === '/scan';
+  const isChromelessPage = isAdminPage || isScanPage;
+
+  // Scanner gets full-screen, no chrome
+  if (isScanPage) {
+    return <ScanPage />;
+  }
+
   return (
     <>
-      {!isAdminPage && <Header />}
+      {!isChromelessPage && <Header />}
       <main className="page-container content-wrapper">
         <div className="w-full max-w-6xl mx-auto">
           <Switch>
@@ -100,11 +109,12 @@ function Router() {
             <Route path="/privacy" component={PrivacyPage} />
             <Route path="/faq" component={FAQPage} />
             <Route path="/contact" component={ContactPage} />
+            <Route path="/phoenix-register" component={PhoenixRegisterPage} />
             <Route component={NotFound} />
           </Switch>
         </div>
       </main>
-      {!isAdminPage && <Footer />}
+      {!isChromelessPage && <Footer />}
     </>
   );
 }
