@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import {
   Briefcase,
   Building2,
@@ -15,16 +18,67 @@ import {
   CreditCard,
   AlertTriangle,
   Loader2,
+  Pencil,
+  Trash2,
+  FileText,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { apiRequest } from "@/lib/queryClient";
 import { Elements, CardElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { Helmet } from "react-helmet";
+
+// Schema for posting/editing a job
+const jobFormSchema = z.object({
+  title: z.string().min(3, "Title is required"),
+  description: z.string().min(20, "Description must be at least 20 characters"),
+  location: z.string().min(2, "Location is required"),
+  job_type: z.string().min(1, "Job type is required"),
+  work_arrangement: z.string().min(1, "Work arrangement is required"),
+  specialty: z.string().min(1, "Specialty is required"),
+  experience_level: z.string().min(1, "Experience level is required"),
+  responsibilities: z.string().optional(),
+  requirements: z.string().optional(),
+  benefits: z.string().optional(),
+  salary_min: z.string().optional(),
+  salary_max: z.string().optional(),
+  salary_period: z.string().optional(),
+  application_url: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  contact_email: z.string().email("Must be a valid email").optional().or(z.literal("")),
+});
+type JobFormValues = z.infer<typeof jobFormSchema>;
+
+const JOB_TYPES = ["Full-time", "Part-time", "Contract", "Per Diem", "Travel"];
+const WORK_ARRANGEMENTS = ["On-site", "Remote", "Hybrid"];
+const EXPERIENCE_LEVELS = ["Entry", "Mid", "Senior"];
+const SPECIALTIES = [
+  "ICU", "ER/Trauma", "OR", "PACU", "Labor & Delivery", "NICU", "Pediatrics",
+  "Med-Surg", "Oncology", "Cardiac", "Neurology", "Psych", "Home Health",
+  "Long-Term Care", "Telemetry", "Float Pool", "Other",
+];
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || "");
 
@@ -224,6 +278,22 @@ export default function EmployerDashboard() {
   const queryClient = useQueryClient();
   const [selectedPurchaseType, setSelectedPurchaseType] = useState<PurchaseType>("perPost");
   const [perPostQuantity, setPerPostQuantity] = useState(1);
+
+  // Job management modal state
+  const [postJobOpen, setPostJobOpen] = useState(false);
+  const [editJobTarget, setEditJobTarget] = useState<any | null>(null);
+  const [viewAppsJobId, setViewAppsJobId] = useState<number | null>(null);
+
+  // Job form
+  const jobForm = useForm<JobFormValues>({
+    resolver: zodResolver(jobFormSchema),
+    defaultValues: {
+      title: "", description: "", location: "", job_type: "", work_arrangement: "",
+      specialty: "", experience_level: "", responsibilities: "", requirements: "",
+      benefits: "", salary_min: "", salary_max: "", salary_period: "annual",
+      application_url: "", contact_email: "",
+    },
+  });
   
   // Fetch employer profile
   const { data: employer, isLoading: isLoadingEmployer, error: employerError } = useQuery({
@@ -336,6 +406,136 @@ export default function EmployerDashboard() {
     retry: false,
   });
   
+  // Fetch all applications for employer
+  const { data: allApplications, isLoading: isLoadingApplications } = useQuery({
+    queryKey: ["/api/employer/applications"],
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      const res = await apiRequest("GET", "/api/employer/applications", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    retry: false,
+  });
+
+  // Fetch applications for a specific job (for the per-job modal)
+  const { data: jobApplicationsData, isLoading: isLoadingJobApps } = useQuery({
+    queryKey: ["/api/employer/jobs", viewAppsJobId, "applications"],
+    queryFn: async () => {
+      if (!viewAppsJobId) return [];
+      const token = localStorage.getItem("token");
+      const res = await apiRequest("GET", `/api/employer/jobs/${viewAppsJobId}/applications`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: viewAppsJobId != null,
+    retry: false,
+  });
+
+  // Post new job mutation
+  const postJobMutation = useMutation({
+    mutationFn: async (data: JobFormValues) => {
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || "Failed to post job");
+      return json;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employer/jobs"] });
+      setPostJobOpen(false);
+      jobForm.reset();
+      toast({ title: "Job posted", description: "Your listing is pending admin approval." });
+    },
+    onError: (err: any) => {
+      toast({ variant: "destructive", title: "Error", description: err.message });
+    },
+  });
+
+  // Edit job mutation
+  const editJobMutation = useMutation({
+    mutationFn: async (data: JobFormValues) => {
+      if (!editJobTarget) return;
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/employer/jobs/${editJobTarget.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || "Failed to update job");
+      return json;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employer/jobs"] });
+      setEditJobTarget(null);
+      jobForm.reset();
+      toast({ title: "Job updated", description: "Your changes are pending re-approval." });
+    },
+    onError: (err: any) => {
+      toast({ variant: "destructive", title: "Error", description: err.message });
+    },
+  });
+
+  // Deactivate job mutation
+  const deactivateJobMutation = useMutation({
+    mutationFn: async (jobId: number) => {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/employer/jobs/${jobId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.message || "Failed to deactivate job");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employer/jobs"] });
+      toast({ title: "Job deactivated", description: "The listing has been deactivated." });
+    },
+    onError: (err: any) => {
+      toast({ variant: "destructive", title: "Error", description: err.message });
+    },
+  });
+
+  function openEditJob(job: any) {
+    jobForm.reset({
+      title: job.title || "",
+      description: job.description || "",
+      location: job.location || "",
+      job_type: job.job_type || "",
+      work_arrangement: job.work_arrangement || "",
+      specialty: job.specialty || "",
+      experience_level: job.experience_level || "",
+      responsibilities: job.responsibilities || "",
+      requirements: job.requirements || "",
+      benefits: job.benefits || "",
+      salary_min: job.salary_min ? String(job.salary_min) : "",
+      salary_max: job.salary_max ? String(job.salary_max) : "",
+      salary_period: job.salary_period || "annual",
+      application_url: job.application_url || "",
+      contact_email: job.contact_email || "",
+    });
+    setEditJobTarget(job);
+  }
+
+  function onJobFormSubmit(data: JobFormValues) {
+    if (editJobTarget) {
+      editJobMutation.mutate(data);
+    } else {
+      postJobMutation.mutate(data);
+    }
+  }
+
   // Logout handler
   function handleLogout() {
     localStorage.removeItem("token");
@@ -594,7 +794,14 @@ export default function EmployerDashboard() {
                     <CardTitle>Job Listings</CardTitle>
                     <CardDescription>Manage your active and inactive job postings</CardDescription>
                   </div>
-                  <Button disabled={employer.account_status !== 'active' || !entitlementsData?.entitlements?.canPost}>
+                  <Button
+                    disabled={employer.account_status !== 'active' || !entitlementsData?.entitlements?.canPost}
+                    onClick={() => {
+                      jobForm.reset();
+                      setEditJobTarget(null);
+                      setPostJobOpen(true);
+                    }}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Post New Job
                   </Button>
@@ -651,9 +858,28 @@ export default function EmployerDashboard() {
                                 </div>
                               </div>
                             </div>
-                            <Button variant="outline" size="sm">
-                              View Applications
-                            </Button>
+                            <div className="flex gap-2 flex-wrap">
+                              <Button variant="outline" size="sm" onClick={() => setViewAppsJobId(job.id)}>
+                                <FileText className="h-3 w-3 mr-1" />
+                                Applications ({job.applications_count || 0})
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => openEditJob(job)}>
+                                <Pencil className="h-3 w-3 mr-1" />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                                disabled={deactivateJobMutation.isPending}
+                                onClick={() => {
+                                  if (confirm("Deactivate this job listing?")) deactivateJobMutation.mutate(job.id);
+                                }}
+                              >
+                                <Trash2 className="h-3 w-3 mr-1" />
+                                Deactivate
+                              </Button>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -678,13 +904,59 @@ export default function EmployerDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>All Applications</CardTitle>
-                <CardDescription>View anonymized applications across all your job listings</CardDescription>
+                <CardDescription>Anonymized applications across all your job listings</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-12 text-muted-foreground">
-                  <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Applications view will be implemented in the next phase</p>
-                </div>
+                {isLoadingApplications ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full" />)}
+                  </div>
+                ) : Array.isArray(allApplications) && allApplications.length > 0 ? (
+                  <div className="space-y-3">
+                    {allApplications.map((app: any) => (
+                      <Card key={app.id} className="border">
+                        <CardContent className="pt-4 pb-4">
+                          <div className="flex justify-between items-start gap-4">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-sm truncate">{app.job_title}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                Application #{app.id} · {new Date(app.application_date).toLocaleDateString()}
+                              </p>
+                              {app.cover_letter && (
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{app.cover_letter}</p>
+                              )}
+                            </div>
+                            <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                              <Badge variant={
+                                app.status === "hired" ? "default" :
+                                app.status === "rejected" ? "destructive" :
+                                app.is_withdrawn ? "secondary" : "outline"
+                              }>
+                                {app.is_withdrawn ? "Withdrawn" : app.status}
+                              </Badge>
+                              {app.resume_url && (
+                                <a
+                                  href={app.resume_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-600 hover:underline"
+                                >
+                                  View Resume
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No applications yet</p>
+                    <p className="text-sm mt-1">Applications to your job listings will appear here</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -756,6 +1028,235 @@ export default function EmployerDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Post / Edit Job Dialog */}
+      <Dialog
+        open={postJobOpen || editJobTarget != null}
+        onOpenChange={(open) => {
+          if (!open) { setPostJobOpen(false); setEditJobTarget(null); jobForm.reset(); }
+        }}
+      >
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editJobTarget ? "Edit Job Listing" : "Post New Job"}</DialogTitle>
+            <DialogDescription>
+              {editJobTarget
+                ? "Update the job listing. Edited listings require re-approval."
+                : "Fill in the details for your new job listing. It will be reviewed before going live."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={jobForm.handleSubmit(onJobFormSubmit)} className="space-y-4 mt-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="jf-title">Job Title *</Label>
+              <Input id="jf-title" placeholder="e.g. ICU Registered Nurse" {...jobForm.register("title")} />
+              {jobForm.formState.errors.title && (
+                <p className="text-xs text-destructive">{jobForm.formState.errors.title.message}</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Job Type *</Label>
+                <Select
+                  value={jobForm.watch("job_type")}
+                  onValueChange={v => jobForm.setValue("job_type", v, { shouldValidate: true })}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                  <SelectContent>{JOB_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                </Select>
+                {jobForm.formState.errors.job_type && (
+                  <p className="text-xs text-destructive">{jobForm.formState.errors.job_type.message}</p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label>Work Arrangement *</Label>
+                <Select
+                  value={jobForm.watch("work_arrangement")}
+                  onValueChange={v => jobForm.setValue("work_arrangement", v, { shouldValidate: true })}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select arrangement" /></SelectTrigger>
+                  <SelectContent>{WORK_ARRANGEMENTS.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
+                </Select>
+                {jobForm.formState.errors.work_arrangement && (
+                  <p className="text-xs text-destructive">{jobForm.formState.errors.work_arrangement.message}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Specialty *</Label>
+                <Select
+                  value={jobForm.watch("specialty")}
+                  onValueChange={v => jobForm.setValue("specialty", v, { shouldValidate: true })}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select specialty" /></SelectTrigger>
+                  <SelectContent>{SPECIALTIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+                {jobForm.formState.errors.specialty && (
+                  <p className="text-xs text-destructive">{jobForm.formState.errors.specialty.message}</p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label>Experience Level *</Label>
+                <Select
+                  value={jobForm.watch("experience_level")}
+                  onValueChange={v => jobForm.setValue("experience_level", v, { shouldValidate: true })}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select level" /></SelectTrigger>
+                  <SelectContent>{EXPERIENCE_LEVELS.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent>
+                </Select>
+                {jobForm.formState.errors.experience_level && (
+                  <p className="text-xs text-destructive">{jobForm.formState.errors.experience_level.message}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="jf-location">Location *</Label>
+              <Input id="jf-location" placeholder="e.g. Phoenix, AZ" {...jobForm.register("location")} />
+              {jobForm.formState.errors.location && (
+                <p className="text-xs text-destructive">{jobForm.formState.errors.location.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="jf-description">Description *</Label>
+              <Textarea id="jf-description" rows={4} placeholder="Describe the role..." {...jobForm.register("description")} />
+              {jobForm.formState.errors.description && (
+                <p className="text-xs text-destructive">{jobForm.formState.errors.description.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="jf-responsibilities">Responsibilities</Label>
+              <Textarea id="jf-responsibilities" rows={3} placeholder="Key responsibilities..." {...jobForm.register("responsibilities")} />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="jf-requirements">Requirements</Label>
+              <Textarea id="jf-requirements" rows={3} placeholder="Required qualifications..." {...jobForm.register("requirements")} />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="jf-benefits">Benefits</Label>
+              <Textarea id="jf-benefits" rows={2} placeholder="Benefits offered..." {...jobForm.register("benefits")} />
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="jf-salmin">Salary Min</Label>
+                <Input id="jf-salmin" type="number" placeholder="65000" {...jobForm.register("salary_min")} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="jf-salmax">Salary Max</Label>
+                <Input id="jf-salmax" type="number" placeholder="95000" {...jobForm.register("salary_max")} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Period</Label>
+                <Select
+                  value={jobForm.watch("salary_period") || "annual"}
+                  onValueChange={v => jobForm.setValue("salary_period", v)}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="annual">Annual</SelectItem>
+                    <SelectItem value="hourly">Hourly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="jf-appurl">Application URL</Label>
+              <Input id="jf-appurl" type="url" placeholder="https://..." {...jobForm.register("application_url")} />
+              {jobForm.formState.errors.application_url && (
+                <p className="text-xs text-destructive">{jobForm.formState.errors.application_url.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="jf-email">Contact Email</Label>
+              <Input id="jf-email" type="email" placeholder="hr@hospital.com" {...jobForm.register("contact_email")} />
+              {jobForm.formState.errors.contact_email && (
+                <p className="text-xs text-destructive">{jobForm.formState.errors.contact_email.message}</p>
+              )}
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" onClick={() => { setPostJobOpen(false); setEditJobTarget(null); jobForm.reset(); }}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={postJobMutation.isPending || editJobMutation.isPending}
+              >
+                {(postJobMutation.isPending || editJobMutation.isPending) && (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                )}
+                {editJobTarget ? "Save Changes" : "Submit Listing"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Applications for a Job Dialog */}
+      <Dialog open={viewAppsJobId != null} onOpenChange={(open) => { if (!open) setViewAppsJobId(null); }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Applications</DialogTitle>
+            <DialogDescription>
+              {viewAppsJobId && Array.isArray(jobListings) &&
+                (jobListings.find((j: any) => j.id === viewAppsJobId)?.title || `Job #${viewAppsJobId}`)}
+            </DialogDescription>
+          </DialogHeader>
+
+          {isLoadingJobApps ? (
+            <div className="space-y-3 mt-2">
+              {[1, 2, 3].map(i => <Skeleton key={i} className="h-14 w-full" />)}
+            </div>
+          ) : Array.isArray(jobApplicationsData) && jobApplicationsData.length > 0 ? (
+            <div className="space-y-3 mt-2">
+              {jobApplicationsData.map((app: any) => (
+                <Card key={app.id} className="border">
+                  <CardContent className="pt-3 pb-3">
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">Application #{app.id}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(app.application_date).toLocaleDateString()}
+                        </p>
+                        {app.cover_letter && (
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-3">{app.cover_letter}</p>
+                        )}
+                        {app.resume_url && (
+                          <a href={app.resume_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline mt-1 inline-block">
+                            View Resume
+                          </a>
+                        )}
+                      </div>
+                      <Badge variant={
+                        app.status === "hired" ? "default" :
+                        app.status === "rejected" ? "destructive" :
+                        app.is_withdrawn ? "secondary" : "outline"
+                      }>
+                        {app.is_withdrawn ? "Withdrawn" : app.status}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-10 text-muted-foreground mt-2">
+              <Users className="h-10 w-10 mx-auto mb-3 opacity-50" />
+              <p>No applications yet for this listing</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

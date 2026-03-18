@@ -4,7 +4,7 @@ import Stripe from "stripe";
 import path from "path";
 import fs from "fs";
 import { db } from "./db";
-import { eq, sql, and, desc, ilike, or } from "drizzle-orm";
+import { eq, sql, and, desc, ilike, or, inArray } from "drizzle-orm";
 import { storage } from "./storage";
 import { approvedVideos, gallery, mediaFolders, events, nrpxRegistrations } from "@shared/schema";
 import QRCode from "qrcode";
@@ -890,6 +890,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Employer: update own job listing
+  app.patch("/api/employer/jobs/:id", requireEmployerToken, async (req: Request, res: Response) => {
+    try {
+      const employer = (req as any).employer;
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid job ID" });
+
+      const job = await storage.getJobListingById(id);
+      if (!job) return res.status(404).json({ message: "Job not found" });
+      if (job.employer_id !== employer.id) return res.status(403).json({ message: "Not your job listing" });
+
+      // Only allow editing certain fields; strip admin-only fields
+      const { title, description, responsibilities, requirements, benefits, location,
+        job_type, work_arrangement, specialty, experience_level, education_required,
+        certification_required, shift_type, salary_min, salary_max, salary_period,
+        application_url, contact_email, expiry_date } = req.body;
+
+      const updated = await storage.updateJobListing(id, {
+        title, description, responsibilities, requirements, benefits, location,
+        job_type, work_arrangement, specialty, experience_level, education_required,
+        certification_required, shift_type, salary_min, salary_max, salary_period,
+        application_url, contact_email, expiry_date,
+        // editing a job resets approval (needs re-review)
+        is_approved: false,
+        approved_at: undefined,
+        approved_by: undefined,
+        approval_notes: undefined,
+      });
+      return res.json(updated);
+    } catch (error) {
+      console.error("Error updating employer job:", error);
+      return res.status(500).json({ message: "Failed to update job listing" });
+    }
+  });
+
+  // Employer: deactivate/delete own job listing
+  app.delete("/api/employer/jobs/:id", requireEmployerToken, async (req: Request, res: Response) => {
+    try {
+      const employer = (req as any).employer;
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid job ID" });
+
+      const job = await storage.getJobListingById(id);
+      if (!job) return res.status(404).json({ message: "Job not found" });
+      if (job.employer_id !== employer.id) return res.status(403).json({ message: "Not your job listing" });
+
+      // Soft-delete: set inactive rather than hard delete (preserves applications)
+      await storage.updateJobListing(id, { is_active: false });
+      return res.json({ message: "Job listing deactivated" });
+    } catch (error) {
+      console.error("Error deactivating employer job:", error);
+      return res.status(500).json({ message: "Failed to deactivate job listing" });
+    }
+  });
+
+  // Employer: all applications across employer's jobs (anonymized)
+  app.get("/api/employer/applications", requireEmployerToken, async (req: Request, res: Response) => {
+    try {
+      const employer = (req as any).employer;
+      const jobs = await storage.getEmployerJobListings(employer.id);
+      const jobIds = jobs.map(j => j.id);
+
+      if (jobIds.length === 0) return res.json([]);
+
+      const rows = await db
+        .select({
+          id: jobApplications.id,
+          job_id: jobApplications.job_id,
+          cover_letter: jobApplications.cover_letter,
+          resume_url: jobApplications.resume_url,
+          status: jobApplications.status,
+          application_date: jobApplications.application_date,
+          last_updated: jobApplications.last_updated,
+          employer_notes: jobApplications.employer_notes,
+          is_withdrawn: jobApplications.is_withdrawn,
+          job_title: jobListings.title,
+        })
+        .from(jobApplications)
+        .innerJoin(jobListings, eq(jobApplications.job_id, jobListings.id))
+        .where(inArray(jobApplications.job_id, jobIds))
+        .orderBy(desc(jobApplications.application_date));
+
+      return res.json(rows);
+    } catch (error) {
+      console.error("Error fetching employer applications:", error);
+      return res.status(500).json({ message: "Failed to fetch applications" });
+    }
+  });
+
+  // Employer: applications for a specific job
+  app.get("/api/employer/jobs/:id/applications", requireEmployerToken, async (req: Request, res: Response) => {
+    try {
+      const employer = (req as any).employer;
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid job ID" });
+
+      const job = await storage.getJobListingById(id);
+      if (!job) return res.status(404).json({ message: "Job not found" });
+      if (job.employer_id !== employer.id) return res.status(403).json({ message: "Not your job listing" });
+
+      const applications = await storage.getJobApplicationsByJobId(id);
+      return res.json(applications);
+    } catch (error) {
+      console.error("Error fetching job applications:", error);
+      return res.status(500).json({ message: "Failed to fetch applications" });
+    }
+  });
+
   // Employer contact requests
   app.get("/api/employer/contact-requests", requireEmployerToken, async (req: Request, res: Response) => {
     try {
@@ -1609,11 +1717,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin: Get all jobs
+  // Admin: Get all jobs (with employer name joined)
   app.get("/api/admin/jobs", requireAdminToken, async (_req: Request, res: Response) => {
     try {
-      const jobs = await storage.getAllJobListings();
-      return res.json(jobs);
+      const rows = await db
+        .select({
+          id: jobListings.id,
+          title: jobListings.title,
+          employer_id: jobListings.employer_id,
+          employer_name: employers.name,
+          description: jobListings.description,
+          location: jobListings.location,
+          job_type: jobListings.job_type,
+          work_arrangement: jobListings.work_arrangement,
+          specialty: jobListings.specialty,
+          experience_level: jobListings.experience_level,
+          is_active: jobListings.is_active,
+          is_approved: jobListings.is_approved,
+          is_featured: jobListings.is_featured,
+          posted_date: jobListings.posted_date,
+          views_count: jobListings.views_count,
+          applications_count: jobListings.applications_count,
+          approved_at: jobListings.approved_at,
+          approval_notes: jobListings.approval_notes,
+        })
+        .from(jobListings)
+        .leftJoin(employers, eq(jobListings.employer_id, employers.id))
+        .orderBy(desc(jobListings.posted_date));
+
+      return res.json(rows.map(r => ({
+        ...r,
+        employer: r.employer_name ? { name: r.employer_name } : null,
+      })));
     } catch (error) {
       console.error("Error fetching jobs:", error);
       return res.status(500).json({ message: "Failed to fetch jobs" });
