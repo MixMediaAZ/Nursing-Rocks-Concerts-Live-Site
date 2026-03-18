@@ -204,14 +204,9 @@ export default function DashboardPage() {
                   <CheckCircle className="mr-2 h-4 w-4" />
                   License Verification
                 </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start opacity-60 cursor-not-allowed" 
-                  disabled
-                  title="Coming Soon"
-                >
+                <Button variant="outline" className="w-full justify-start" onClick={() => window.location.href = "/store"}>
                   <Store className="mr-2 h-4 w-4" />
-                  Shop Merchandise (Coming Soon)
+                  Shop Merchandise
                 </Button>
                 <Button variant="outline" className="w-full justify-start text-destructive hover:text-destructive" onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />

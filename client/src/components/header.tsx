@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Menu, X, User, HeartPulse, Map, PlayCircle, Video, Briefcase } from "lucide-react";
+import { Menu, X, User, HeartPulse, Map, PlayCircle, Video, Briefcase, ShieldCheck } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // Define the type for navigation links
@@ -23,6 +23,7 @@ export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const isMobile = useIsMobile();
   const [location] = useLocation();
   // Cart functionality removed as store is non-functioning
@@ -35,7 +36,9 @@ export function Header() {
     if (token && userData) {
       setIsLoggedIn(true);
       try {
-        setUser(JSON.parse(userData));
+        const parsed = JSON.parse(userData);
+        setUser(parsed);
+        setIsAdmin(parsed?.is_admin === true || localStorage.getItem("isAdmin") === "true");
       } catch (e) {
         console.error("Failed to parse user data", e);
       }
@@ -174,6 +177,14 @@ export function Header() {
                     <DropdownMenuItem asChild>
                       <Link href="/employer-dashboard">Employer Dashboard</Link>
                     </DropdownMenuItem>
+                    {isAdmin && (
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin">
+                          <ShieldCheck size={14} className="mr-1.5 text-primary" />
+                          Admin Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem onClick={() => window.location.href = "/license-verification"}>
                       License Verification
                     </DropdownMenuItem>
@@ -277,6 +288,17 @@ export function Header() {
                       Employer Dashboard
                     </div>
                   </Link>
+                  {isAdmin && (
+                    <Link href="/admin">
+                      <div
+                        className="flex items-center justify-center gap-2 p-3 rounded-md text-primary/80 hover:bg-primary/10 transition-colors font-medium"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <ShieldCheck size={18} />
+                        Admin Dashboard
+                      </div>
+                    </Link>
+                  )}
                   <div
                     className="flex items-center justify-center gap-2 p-3 rounded-md text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
                     onClick={() => {
