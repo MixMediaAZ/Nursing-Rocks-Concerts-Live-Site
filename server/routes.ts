@@ -74,6 +74,7 @@ import {
   insertJobApplicationSchema,
   insertJobAlertSchema,
   jobApplications,
+  jobListings,
   contactRequests,
   employers,
   insertStoreProductSchema,
@@ -907,17 +908,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         certification_required, shift_type, salary_min, salary_max, salary_period,
         application_url, contact_email, expiry_date } = req.body;
 
-      const updated = await storage.updateJobListing(id, {
+      // Update editable fields
+      await storage.updateJobListing(id, {
         title, description, responsibilities, requirements, benefits, location,
         job_type, work_arrangement, specialty, experience_level, education_required,
         certification_required, shift_type, salary_min, salary_max, salary_period,
         application_url, contact_email, expiry_date,
-        // editing a job resets approval (needs re-review)
-        is_approved: false,
-        approved_at: undefined,
-        approved_by: undefined,
-        approval_notes: undefined,
       });
+
+      // Reset approval separately (is_approved is not in InsertJobListing type)
+      const [updated] = await db
+        .update(jobListings)
+        .set({ is_approved: false, approved_at: null, approved_by: null, approval_notes: null })
+        .where(eq(jobListings.id, id))
+        .returning();
       return res.json(updated);
     } catch (error) {
       console.error("Error updating employer job:", error);
@@ -1725,7 +1729,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: jobListings.id,
           title: jobListings.title,
           employer_id: jobListings.employer_id,
-          employer_name: employers.name,
+          employer_name: employers.company_name,
+          employer_name_fallback: employers.name,
           description: jobListings.description,
           location: jobListings.location,
           job_type: jobListings.job_type,
@@ -1745,10 +1750,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .leftJoin(employers, eq(jobListings.employer_id, employers.id))
         .orderBy(desc(jobListings.posted_date));
 
-      return res.json(rows.map(r => ({
-        ...r,
-        employer: r.employer_name ? { name: r.employer_name } : null,
-      })));
+      return res.json(rows.map(r => {
+        const { employer_name, employer_name_fallback, ...rest } = r;
+        const displayName = employer_name || employer_name_fallback;
+        return { ...rest, employer: displayName ? { name: displayName } : null };
+      }));
     } catch (error) {
       console.error("Error fetching jobs:", error);
       return res.status(500).json({ message: "Failed to fetch jobs" });

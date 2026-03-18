@@ -339,10 +339,7 @@ export default function EmployerDashboard() {
         },
       });
       if (!res.ok) {
-        if (res.status === 404) {
-          // Endpoint doesn't exist yet
-          return [];
-        }
+        if (res.status === 404) return [];
         throw new Error("Failed to fetch job listings");
       }
       return res.json();
@@ -817,8 +814,8 @@ export default function EmployerDashboard() {
                 ) : jobsError ? (
                   <div className="text-center py-12 text-muted-foreground">
                     <Briefcase className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="mb-2">Job listings feature is coming soon</p>
-                    <p className="text-sm">This feature is currently under development</p>
+                    <p className="mb-2">Unable to load job listings</p>
+                    <p className="text-sm">Please refresh the page or try again later</p>
                   </div>
                 ) : Array.isArray(jobListings) && jobListings.length > 0 ? (
                   <div className="space-y-4">
