@@ -53,6 +53,9 @@
     "@replit/vite-plugin-cartographer": "^0.0.11",
     "@replit/vite-plugin-runtime-error-modal": "^0.0.3",
     "@replit/vite-plugin-shadcn-theme-json": "^0.0.4",
+    "@sentry/node": "^10.44.0",
+    "@sentry/react": "^10.44.0",
+    "@sentry/tracing": "^7.120.4",
     "@stripe/react-stripe-js": "^3.6.0",
     "@stripe/stripe-js": "^7.1.0",
     "@tailwindcss/typography": "^0.5.15",
@@ -133,6 +136,7 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@sentry/cli": "^3.3.3",
     "@types/connect-pg-simple": "^7.0.3",
     "@types/express-session": "^1.18.0",
     "@types/fluent-ffmpeg": "^2.1.28",

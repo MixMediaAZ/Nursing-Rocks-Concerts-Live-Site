@@ -1,6 +1,19 @@
 import { createRoot } from "react-dom/client";
+import * as Sentry from "@sentry/react";
 import App from "./App";
 import "./index.css";
+
+// Initialize Sentry on client
+if (
+  import.meta.env.VITE_SENTRY_DSN &&
+  import.meta.env.MODE === "production"
+) {
+  Sentry.init({
+    dsn: import.meta.env.VITE_SENTRY_DSN,
+    environment: import.meta.env.MODE,
+    tracesSampleRate: 0.1,
+  });
+}
 
 // Add custom styles for the font families
 const styleId = 'app-custom-styles';
@@ -44,4 +57,9 @@ if (!rootElement) {
   throw new Error("Root element not found");
 }
 
-createRoot(rootElement).render(<App />);
+const SentryApp = Sentry.withProfiler(App);
+createRoot(rootElement).render(
+  <Sentry.ErrorBoundary>
+    <SentryApp />
+  </Sentry.ErrorBoundary>
+);
