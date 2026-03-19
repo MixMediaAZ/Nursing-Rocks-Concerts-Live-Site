@@ -551,8 +551,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             for (const event of eventsToUpdate) {
               await db.update(events)
                 .set({
-                  image_url: processedImage.original,
-                  updated_at: new Date()
+                  image_url: processedImage.original
                 })
                 .where(eq(events.id, event.id));
               
@@ -2918,20 +2917,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const result = await fetchCustomCatProducts(apiKeyValue);
         
         if (result.success) {
-          return res.json({ 
-            success: true, 
-            message: "Connected successfully to CustomCat API", 
-            productCount: result.products ? result.products.length : 0,
+          return res.json({
+            success: true,
+            message: "Connected successfully to CustomCat API",
+            productCount: (result as any).products ? (result as any).products.length : 0,
             configured: true,
             status: "connected"
           });
         } else {
-          console.error("CustomCat API verification failed:", result.message || result.errors);
-          
-          return res.status(400).json({ 
-            success: false, 
-            message: result.message || "Failed to connect to CustomCat API. Please check your API key.",
-            errors: result.errors,
+          console.error("CustomCat API verification failed:", (result as any).message || (result as any).errors);
+
+          return res.status(400).json({
+            success: false,
+            message: (result as any).message || "Failed to connect to CustomCat API. Please check your API key.",
+            errors: (result as any).errors,
             configured: false,
             status: "error",
             apiKeyProvided: !!apiKeyValue,

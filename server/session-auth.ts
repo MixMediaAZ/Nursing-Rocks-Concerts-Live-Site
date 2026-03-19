@@ -150,7 +150,7 @@ export function setupAuth(app: Express) {
           if (!user || !(await comparePasswords(password, user.password_hash))) {
             return done(null, false, { message: "Invalid email or password" });
           }
-          return done(null, user);
+          return done(null, user as any);
         } catch (error) {
           return done(error);
         }
@@ -158,13 +158,22 @@ export function setupAuth(app: Express) {
     )
   );
 
-  passport.serializeUser((user, done) => {
-    done(null, user.id);
+  passport.serializeUser((user: any, done) => {
+    done(null, user.id || user.userId);
   });
-  
+
   passport.deserializeUser(async (id: number, done) => {
     try {
-      const user = await storage.getUserById(id);
+      const dbUser = await storage.getUserById(id);
+      if (!dbUser) return done(null, false);
+      // Map snake_case DB user to Express.User format
+      const user: Express.User = {
+        id: dbUser.id,
+        userId: dbUser.id,
+        email: dbUser.email,
+        isVerified: dbUser.is_verified ?? false,
+        isAdmin: dbUser.is_admin ?? false,
+      };
       done(null, user);
     } catch (error) {
       done(error);
@@ -192,7 +201,7 @@ export function setupAuth(app: Express) {
       );
       
       // Log in the new user
-      req.login(user, (err) => {
+      req.login(user as any, (err) => {
         if (err) return next(err);
         return res.status(201).json(user);
       });

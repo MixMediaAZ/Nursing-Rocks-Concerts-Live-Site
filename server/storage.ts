@@ -1975,6 +1975,24 @@ export class MemStorage implements IStorage {
     return limit ? sortedJobs.slice(0, limit) : sortedJobs;
   }
 
+  async getEmployerJobListings(employerId: number): Promise<JobListing[]> {
+    return Array.from(this.jobListings.values()).filter(job => job.employer_id === employerId);
+  }
+
+  async createContactRequest(requestData: InsertContactRequest): Promise<ContactRequest> {
+    const id = 1; // Placeholder ID
+    const request: ContactRequest = { ...requestData, id } as ContactRequest;
+    return request;
+  }
+
+  async getContactRequestsByEmployer(employerId: number): Promise<ContactRequest[]> {
+    return [];
+  }
+
+  async getContactRequestById(requestId: number): Promise<ContactRequest | undefined> {
+    return undefined;
+  }
+
 }
 
 // Using database storage for this implementation

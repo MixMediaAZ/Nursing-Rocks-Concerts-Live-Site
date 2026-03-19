@@ -65,7 +65,9 @@ See `.env.example` for all required environment variables.
 
 ## Deployment
 
-See `VERCEL_DEPLOYMENT.md` for detailed deployment instructions.
+See `VERCEL_DEPLOYMENT.md` (root) and **`docs/VERCEL_DEPLOYMENT.md`** (stack-specific checklist). Env var names must match **`.env.example`** (e.g. `VIDEO_B2_BUCKET`, `VIDEO_CDN_BASE_URL`).
+
+Forge / doc consistency: **`.forge/DOCS_RECONCILIATION.md`**
 
 **Updating the site with Git (e.g. Git Desktop):** User data (login, dashboard, tickets, licenses) is stored in the database and is **not** modified by the build. See [DEPLOY.md](./DEPLOY.md) for how updates affect (or don’t affect) existing user info.
 

@@ -1,6 +1,8 @@
 # Nursing Rocks! Concert Series - Project State Audit
 **Generated:** March 17, 2026
 
+> **⚠️ Stale / contradictory sections below:** This file mixes an older audit (TypeScript errors, jobs board “broken,” security checklist) with a later “build success” note. **Do not trust the deployment table or summary at the bottom without re-verifying.** For current security and env requirements use **`SECURITY.md`** and **`DEPLOY.md`**. For jobs board post-fix status use **`NRCS_JOBS_BOARD_AUDIT.md`**. For a cross-check of all Markdown + `.forge` docs see **`.forge/DOCS_RECONCILIATION.md`**.
+
 ---
 
 ## TECHNOLOGY STACK
@@ -322,37 +324,29 @@ npm run build: ✅ PASSED
 - IDOR in store orders endpoint (enforced user ID validation)
 - JWT secret fallback now required in production
 - Admin PIN no longer logged
-- Admin passwords moved to environment variables
-- CustomCat API key no longer logged
+- Admin script passwords: use `ADMIN_PASSWORD_1` / `ADMIN_PASSWORD_2` env vars (no secrets in repo)
+- CustomCat API key no longer logged; `CUSTOMCAT_API_KEY` setting treated as sensitive in API
 
 ### ⚠️ Open Issues (From SECURITY.md)
 
 **High Priority:**
-1. **Plaintext Passwords in Repo** (scripts/create-admin-users.js)
-   - Passwords hardcoded in script if not using env vars
-   - Recommendation: Use environment variables only, remove script from repo
-
-2. **Rate Limiting Missing**
+1. **Rate Limiting Missing**
    - `/api/auth/login` vulnerable to brute force
    - `/api/admin/token` vulnerable to PIN brute force
    - Need: Express-rate-limit middleware
 
 **Medium Priority:**
-3. **Sensitive Settings Access Control**
-   - If `CUSTOMCAT_API_KEY` created with `is_sensitive: false`, leakable to unauthenticated users
-   - Need: Enforce `is_sensitive: true` on all API keys, or default to sensitive
-
-4. **CORS & CSP**
+2. **CORS & CSP**
    - CORS configuration not explicitly restricted in production
    - No Content-Security-Policy headers
    - Need: Configure CORS whitelist, add CSP headers
 
 **Low Priority:**
-5. **localStorage Admin Flag**
+1. **localStorage Admin Flag**
    - Client stores `isAdmin` in localStorage (low risk, server-side enforcement exists)
    - Nice-to-have: Remove client-side flag, derive from auth endpoint
 
-6. **Dependency Management**
+2. **Dependency Management**
    - Regular `npm audit` recommended
    - No evidence of dependency pinning or review process
 
@@ -360,15 +354,7 @@ npm run build: ✅ PASSED
 
 ## MODIFIED FILES (Uncommitted)
 
-```
-M DEPLOY.md                    - Documentation updated
-M scripts/create-admin-users.js - Admin password handling
-M server/customcat-api.ts      - CustomCat integration
-M server/jwt.ts                - JWT secret handling
-M server/routes.ts             - Route updates & security fixes
-?? .env.example                - Environment template
-?? SECURITY.md                 - Security review document
-```
+*Removed: this list was a one-time snapshot and is never reliable. Use `git status`.*
 
 ---
 
@@ -397,12 +383,14 @@ M server/routes.ts             - Route updates & security fixes
 | Aspect | Status | Notes |
 |--------|--------|-------|
 | Local Development | ✅ Works | `npm run dev` functional |
-| TypeScript Check | ❌ Fails | 104 compilation errors |
-| Production Build | ❌ Blocked | Cannot build while errors exist |
-| Vercel Deployment | ❌ Blocked | Build fails in CI/CD |
+| TypeScript Check | ⚠️ Run `npm run check` | May still report warnings; verify locally |
+| Production Build | ⚠️ Run `npm run build` | Earlier audit claimed success after TS fixes; re-run to confirm |
+| Vercel Deployment | ⚠️ Depends on env | Set `JWT_SECRET`, `ADMIN_PIN` (prod), B2 vars per `.env.example` |
 | Database Setup | ✅ Ready | PostgreSQL/Neon configured |
-| Environment Vars | ⚠️ Partial | JWT_SECRET, ADMIN_PIN required for prod |
-| API Endpoints | ✅ Most Work | Except those with type errors |
+| Environment Vars | See **DEPLOY.md** | Production requires secure `JWT_SECRET`; admin PIN for admin token flow |
+| API Endpoints | ⚠️ Verify | Jobs board and store flows should be re-tested after changes |
+
+*This table was updated to remove a direct contradiction with the “BUILD SUCCESS” section above; treat both as time-stamped notes, not live CI status.*
 
 ---
 
@@ -465,32 +453,9 @@ M server/routes.ts             - Route updates & security fixes
 
 ## SUMMARY
 
-**Project Status: 60% Complete**
+**This section is not authoritative.** Earlier paragraphs describe historical issues (TS errors, jobs board broken) that may already be fixed. For a reconciled list of doc/code mismatches see **`.forge/DOCS_RECONCILIATION.md`**.
 
-**What Works Well:**
-- Core authentication and user management
-- Event and ticket systems
-- Gallery and media management
-- Admin controls and moderation
-- Database schema is well-designed
-- UI component library comprehensive
-
-**What Needs Work:**
-- Job board frontend (type errors prevent usage)
-- Video processing automation
-- Admin editing interface (type errors)
-- Testing suite (entirely missing)
-- Rate limiting on auth endpoints
-- Production monitoring
-
-**Blocking Issues:**
-- 104 TypeScript compilation errors prevent build
-- Cannot deploy to production until resolved
-- Job board and admin features non-functional due to errors
-
-**Estimated Effort to Production-Ready:**
-- Fix TypeScript errors: 6-12 hours
-- Add rate limiting & security hardening: 2-4 hours
-- Basic test coverage: 20-30 hours
-- Fix video processing: 8-16 hours
-- **Total: 36-62 hours (1-2 weeks for 1 developer)**
+**Ongoing themes (verify in code):**
+- Rate limiting on `/api/auth/login` and `/api/admin/token` (still open per `SECURITY.md`)
+- Video HLS pipeline / backfill may need ops attention
+- Automated tests still largely absent

@@ -29,7 +29,10 @@
       "Bash(grep -E \"routes\\\\.ts\\\\\\(\\(8[0-9][0-9]|[0-9]{4}\\),|session-auth\\\\.ts|media\\\\.ts\")",
       "Bash(node -e \":*)",
       "Bash(curl -s -X GET \"https://nursing-rocks-concerts-live-site-30-890df484q.vercel.app/api/cron/job-alerts\" -H \"Content-Type: application/json\")",
-      "Bash(curl -s -X GET \"http://localhost:5000/api/cron/job-alerts\" -H \"Content-Type: application/json\")"
+      "Bash(curl -s -X GET \"http://localhost:5000/api/cron/job-alerts\" -H \"Content-Type: application/json\")",
+      "Bash(curl -s -X POST \"https://nursing-rocks-concerts-live-site-30-890df484q.vercel.app/api/admin/token\" -H \"Content-Type: application/json\" -d '{\"\"pin\"\":\"\"9661814\"\"}')",
+      "Bash(curl -s -X POST \"http://localhost:5000/api/admin/token\" -H \"Content-Type: application/json\" -d '{\"\"pin\"\":\"\"9661814\"\"}' --max-time 5)",
+      "Bash(curl -s -X POST \"http://localhost:5000/api/admin/email/schedule\" -H \"Content-Type: application/json\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjk5OTk5OSwiZW1haWwiOiJhZG1pbkBudXJzaW5ncm9ja3MuY29tIiwiaXNWZXJpZmllZCI6dHJ1ZSwiaXNBZG1pbiI6dHJ1ZSwiaWF0IjoxNzczOTAwNjk4LCJleHAiOjE3NzM5ODcwOTh9.Ra2ivT8Q9DOAu0QbcA7CW0tIFroc8pIiq7fIlFbwNI0\")"
     ]
   }
 }

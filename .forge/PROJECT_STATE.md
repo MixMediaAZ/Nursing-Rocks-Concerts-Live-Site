@@ -7,45 +7,53 @@
 ## PROJECT INFO
 
 ```
-APP TYPE:      [detected or declared app type]
-STACK:         [full detected stack]
-FLOWCHART:     [.forge/flowcharts/filename.md]
-DEPLOYMENT:    [target platform]
-DATABASE:      [db + ORM]
-AUTH:          [auth method]
-STORAGE:       [file storage]
-PAYMENTS:      [payment service or none]
-EMAIL:         [email service or none]
-SESSION COUNT: 0
-LAST UPDATED:  [date]
+APP TYPE:      Full-stack SaaS (B2C ticketing + B2B jobs board)
+STACK:         React 18 + Express.js + PostgreSQL + Drizzle + Passport JWT
+FLOWCHART:     .forge/flowcharts/event-registration.md
+DEPLOYMENT:    Vercel (serverless functions)
+DATABASE:      PostgreSQL (Neon) + Drizzle ORM 0.39.1
+AUTH:          Passport.js + JWT + bcrypt + express-session
+STORAGE:       AWS S3 / Backblaze B2 (video), Sharp (images)
+PAYMENTS:      Stripe 18.0.0
+EMAIL:         Resend API
+SESSION COUNT: 7
+LAST UPDATED:  2026-03-18
 ```
 
 ---
 
 ## CURRENT NODE
-**[node-name]** — [ACTIVE / PENDING]
-[Brief description of what this node does]
+**[fix-ts-errors]** — [ACTIVE / READY TO EXECUTE]
+Audit complete. 57 TypeScript errors identified. All dependencies (auth-passport-jwt, deploy-vercel, etc.) are LOCKED.
 
 ---
 
 ## NODE STATUS
 
 ```
-[ACTIVE]      node-name    — [date started]
-[PENDING]     node-name
-[PENDING]     node-name
+[LOCKED]      auth-passport-jwt           — 2026-03-10
+[LOCKED]      deploy-vercel               — 2026-03-12
+[LOCKED]      payments-stripe             — 2026-03-11
+[LOCKED]      email-resend                — 2026-03-09
+[LOCKED]      qr-generate                 — 2026-03-11
+[LOCKED]      security-rate-limit-express — 2026-03-15
+[LOCKED]      monitoring-sentry           — 2026-03-14
+[PENDING]     fix-ts-errors               — awaiting audit
+[SKIPPED]     auth-clerk                  — repo is Passport-based, not Clerk
 ```
-
-*Populated by /forge-init or /forge-audit*
 
 ---
 
 ## DECISIONS LOG
 
-*Format: [date] — decision made — reason — alternatives rejected*
+2026-03-10 — Use Passport.js not Clerk — Existing codebase already uses Passport; Clerk would require Next.js refactor — Clerk
+2026-03-11 — Stripe test keys in .env safe for dev — Allows dev/preview without production secrets — Hardcoding \| env-specific vars
+2026-03-15 — Deploy to Vercel serverless — Project pre-configured for Vercel; matches stack — Railway \| Render \| Self-hosted
+2026-03-18 — Restructure .forge/PROJECT_STATE.md to Forge spec — Previous format blocked automated node tracking — Keep old feature audit format
 
 ---
 
 ## FAILURE LOG
 
-*Format: [date] — node-name — error — resolution or ESCALATED*
+2026-03-17 — Vercel deployment job scheduler — 404 endpoint (missing path config on Vercel) — Ran scheduler against local server (http://localhost:5000) instead
+2026-03-18 — fix-ts-errors node (ATTEMPT 1) — Baseline 131 TS errors; Fixed seed/venue foundation (-15) → removed venues table refs, replaced venue_id with location — IN PROGRESS

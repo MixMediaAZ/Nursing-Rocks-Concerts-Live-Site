@@ -10,8 +10,9 @@ Set these in **Vercel → Project → Settings → Environment Variables**
 for **Production**, **Preview**, and **Development**.
 
 - `DATABASE_URL` (Neon Postgres connection string)
-- `JWT_SECRET` (32+ chars; used for JWT auth)
+- `JWT_SECRET` (32+ chars; **required in production** — app throws at startup if missing or dev-default)
 - `SESSION_SECRET` (32+ chars; session fallback)
+- `ADMIN_PIN` (required in production if you use admin PIN login at `/api/admin/token`)
 - `VIDEO_B2_ACCESS_KEY_ID`
 - `VIDEO_B2_SECRET_ACCESS_KEY`
 - `VIDEO_B2_BUCKET`
