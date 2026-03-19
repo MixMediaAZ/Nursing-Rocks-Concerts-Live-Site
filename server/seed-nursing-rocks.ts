@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { artists, events, venues, gallery } from "@shared/schema";
+import { artists, events, gallery } from "@shared/schema";
 
 // SAFETY: Do not run in production — clears events, artists, gallery. User accounts are NOT touched, but content is.
 if (process.env.NODE_ENV === "production") {
@@ -11,12 +11,11 @@ async function seedNursingRocks() {
   console.log("🌱 Starting Nursing Rocks seed process...");
 
   try {
-    // Clear existing data 
+    // Clear existing data
     console.log("Clearing existing data...");
     await db.delete(gallery);
     await db.delete(events);
     await db.delete(artists);
-    await db.delete(venues);
     
     console.log("Creating new artists...");
     // Create new artists with Nursing Rocks branding
@@ -64,38 +63,6 @@ async function seedNursingRocks() {
       song_duration: "4:45"
     }).returning();
 
-    console.log("Creating new venues...");
-    // Create venues with nursing/medical themes
-    const [nurseMemorialHall] = await db.insert(venues).values({
-      name: "Nightingale Hall",
-      location: "New York, NY",
-      capacity: 1800,
-      image_url: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
-      description: "Named after Florence Nightingale, this modern concert hall celebrates nursing innovation and excellence. The venue features exceptional acoustics and comfortable seating with proceeds supporting nursing scholarships.",
-      rating: 5,
-      seating_chart_url: "#"
-    }).returning();
-
-    const [medicalCenterArena] = await db.insert(venues).values({
-      name: "Nursing Rock Arena",
-      location: "Chicago, IL",
-      capacity: 1100,
-      image_url: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
-      description: "This dedicated venue for the Nursing Rocks concert series features excellent sound engineering and an intimate atmosphere perfect for celebrating healthcare heroes through music.",
-      rating: 4,
-      seating_chart_url: "#"
-    }).returning();
-
-    const [healthcareHeroesStage] = await db.insert(venues).values({
-      name: "Healthcare Heroes Stage",
-      location: "Los Angeles, CA",
-      capacity: 750,
-      image_url: "https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
-      description: "A venue created by nurses for nurses, featuring memorabilia from nursing history alongside state-of-the-art performance facilities. The perfect place to celebrate nursing through music.",
-      rating: 4,
-      seating_chart_url: "#"
-    }).returning();
-
     console.log("Creating new events...");
     // Create events with Nursing Rocks branding
     const [featuredEvent] = await db.insert(events).values({
@@ -103,7 +70,7 @@ async function seedNursingRocks() {
       subtitle: "Beyond the Call of Duty Tour",
       description: "Experience an electrifying night of music performed by nurses who are using their musical talents to celebrate the nursing profession. This flagship event of the Nursing Rocks Concert Series features stunning performances and special guests. Proceeds support nursing scholarships and initiatives.",
       date: new Date("2023-10-21T20:00:00"),
-      venue_id: nurseMemorialHall.id,
+      location: "New York, NY",
       artist_id: nursingRocksAllStars.id,
       image_url: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
       start_time: "8:00 PM",
@@ -119,7 +86,7 @@ async function seedNursingRocks() {
       subtitle: "Vital Signs Tour",
       description: "Join the Night Shift Nurses for an energetic rock performance celebrating the dedication and resilience of nurses working the overnight hours. Their authentic lyrics and powerful performances showcase the unique perspective of frontline healthcare workers.",
       date: new Date("2023-10-28T19:30:00"),
-      venue_id: medicalCenterArena.id,
+      location: "Chicago, IL",
       artist_id: nightShiftNurses.id,
       image_url: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
       start_time: "7:30 PM",
@@ -135,7 +102,7 @@ async function seedNursingRocks() {
       subtitle: "Healing Rhythms Tour",
       description: "Experience the soulful sounds of Nursing Beat as they blend R&B with stories from nursing. This group of ICU and ER nurses brings passion and artistry to their performances while celebrating the nursing profession.",
       date: new Date("2023-11-04T21:00:00"),
-      venue_id: healthcareHeroesStage.id,
+      location: "Los Angeles, CA",
       artist_id: nursingBeat.id,
       image_url: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
       start_time: "9:00 PM",
@@ -151,7 +118,7 @@ async function seedNursingRocks() {
       subtitle: "Nursing Notes Benefit",
       description: "An evening of soulful jazz performed by nurses united by their passion for music and healing. Scrubs & Soul delivers powerful performances that celebrate nursing excellence while raising funds for nursing education initiatives.",
       date: new Date("2023-11-11T20:30:00"),
-      venue_id: nurseMemorialHall.id,
+      location: "New York, NY",
       artist_id: scrubsAndSoul.id,
       image_url: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
       start_time: "8:30 PM",
