@@ -63,13 +63,23 @@ A full-stack web application for managing and showcasing the Nursing Rocks! Conc
 
 See `.env.example` for all required environment variables.
 
-## Deployment
+## Deployment & Documentation
 
-See `VERCEL_DEPLOYMENT.md` (root) and **`docs/VERCEL_DEPLOYMENT.md`** (stack-specific checklist). Env var names must match **`.env.example`** (e.g. `VIDEO_B2_BUCKET`, `VIDEO_CDN_BASE_URL`).
+### Quick Links
+- **Project Status (Current):** [PROJECT_COMPLETION_SUMMARY.md](./PROJECT_COMPLETION_SUMMARY.md) — **98%+ complete, production-ready**
+- **Deployment Guide:** [DEPLOY.md](./DEPLOY.md) + [docs/VERCEL_DEPLOYMENT.md](./docs/VERCEL_DEPLOYMENT.md)
+- **Environment Variables:** [.env.example](./.env.example)
+- **Security:** [SECURITY.md](./SECURITY.md)
+- **Jobs Board Status:** [NRCS_JOBS_BOARD_AUDIT.md](./NRCS_JOBS_BOARD_AUDIT.md)
+- **Documentation Reconciliation:** [.forge/DOCS_RECONCILIATION.md](./.forge/DOCS_RECONCILIATION.md)
+- **Forge Workflow:** [.forge/FORGE_PROTOCOL.md](./.forge/FORGE_PROTOCOL.md)
 
-Forge / doc consistency: **`.forge/DOCS_RECONCILIATION.md`**
+### Deploying
+1. Set environment variables per [DEPLOY.md](./DEPLOY.md)
+2. Run `npm run build` (should succeed)
+3. Deploy to Vercel with `vercel deploy --prod`
 
-**Updating the site with Git (e.g. Git Desktop):** User data (login, dashboard, tickets, licenses) is stored in the database and is **not** modified by the build. See [DEPLOY.md](./DEPLOY.md) for how updates affect (or don’t affect) existing user info.
+**User Data:** Login, tickets, licenses, and orders are in the database and persist across deployments. See [DEPLOY.md](./DEPLOY.md) for details.
 
 ## Features
 

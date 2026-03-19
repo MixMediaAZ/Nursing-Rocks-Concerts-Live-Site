@@ -315,8 +315,10 @@ const GalleryImageManager: React.FC<GalleryImageManagerProps> = ({
   const updateMutation = useMutation({
     mutationFn: (data: { id: number; alt_text?: string; event_id?: number | null }) => {
       return apiRequest("PATCH", `/api/gallery/${data.id}`, {
-        alt_text: data.alt_text,
-        event_id: data.event_id,
+        body: JSON.stringify({
+          alt_text: data.alt_text,
+          event_id: data.event_id,
+        }),
       });
     },
     onSuccess: () => {

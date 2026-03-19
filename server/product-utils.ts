@@ -13,9 +13,9 @@ import { StoreProduct } from '@shared/schema';
  * @param product The CustomCat product to process
  * @returns A new product object with image URLs set
  */
-export function processCustomCatProductImages(product: StoreProduct): StoreProduct {
+export function processCustomCatProductImages(product: StoreProduct): StoreProduct & { thumbnail_url?: string } {
   // Make a copy of the product to avoid modifying the original
-  const processedProduct = { ...product };
+  const processedProduct = { ...product } as StoreProduct & { thumbnail_url?: string };
   
   // Skip processing if not a CustomCat product
   if (product.external_source !== 'customcat') {
@@ -24,7 +24,7 @@ export function processCustomCatProductImages(product: StoreProduct): StoreProdu
   
   // Extract image from metadata if available
   if (product.metadata && typeof product.metadata === 'object') {
-    const metadata = product.metadata;
+    const metadata = product.metadata as any;
     
     // First, try to get images directly from the CustomCat API response format
     if (metadata.colors && Array.isArray(metadata.colors) && metadata.colors.length > 0) {

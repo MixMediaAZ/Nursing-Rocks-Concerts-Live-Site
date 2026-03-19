@@ -150,7 +150,7 @@ export async function fetchCustomCatProducts(apiKey: string) {
       } else {
         // Handle error response
         let errorMessage = `API Error (${response.status})`;
-        let errorData = {};
+        let errorData: any = {};
         
         try {
           const errorText = await response.text();

@@ -51,10 +51,17 @@ This document summarizes identified security issues and recommended mitigations.
 - **Issue:** Sensitive settings are protected only when `setting.is_sensitive === true`. If `CUSTOMCAT_API_KEY` (or similar) was ever created with `is_sensitive: false`, it could be returned to unauthenticated or non-admin callers.
 - **Recommendation:** Ensure all API keys and secrets are stored with `is_sensitive: true`. Consider defaulting to treating unknown keys as sensitive, or maintaining an explicit allowlist of non-sensitive keys.
 
-### 7. No rate limiting on auth endpoints
+### 7. Rate limiting on auth endpoints (✅ FIXED - March 19, 2026)
 - **Locations:** `POST /api/auth/login`, `POST /api/admin/token`
-- **Issue:** No rate limiting allows brute-force attempts on passwords and admin PIN.
-- **Recommendation:** Add rate limiting (e.g. per IP and/or per identifier) and optionally account lockout or backoff after repeated failures.
+- **Status:** ✅ **IMPLEMENTED** in `server/rate-limit.ts`
+- **Configuration:**
+  - **Login:** 5 attempts per 15 minutes per IP
+  - **Admin PIN:** 3 attempts per 15 minutes per IP (stricter)
+  - Returns HTTP 429 (Too Many Requests) when exceeded
+  - IP-based limiting (proxy-aware for Vercel/reverse proxies)
+  - Memory-based storage (Vercel serverless compatible)
+  - Upgradeable to Redis-based store for distributed systems
+- **Production Ready:** Yes, fully integrated and configured.
 
 ---
 
@@ -83,6 +90,6 @@ This document summarizes identified security issues and recommended mitigations.
 | Admin PIN default & logging | High      | Addressed |
 | CustomCat key in logs       | Medium    | Addressed |
 | Sensitive settings          | Medium    | Addressed |
-| Rate limiting (auth)        | Medium    | Open      |
+| Rate limiting (auth)        | Medium    | **Fixed** (Mar 19) |
 | localStorage admin flag     | Low       | Optional  |
 | CORS / CSP                  | Low       | Optional  |

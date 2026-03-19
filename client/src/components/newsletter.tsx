@@ -29,7 +29,9 @@ const Newsletter = () => {
   
   const subscribe = useMutation({
     mutationFn: async (values: FormValues) => {
-      const res = await apiRequest("POST", "/api/subscribe", values);
+      const res = await apiRequest("POST", "/api/subscribe", {
+        body: JSON.stringify(values),
+      });
       return res.json();
     },
     onSuccess: () => {

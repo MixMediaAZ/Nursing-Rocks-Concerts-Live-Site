@@ -57,8 +57,7 @@ export function LicenseForm({ onSuccess }: LicenseFormProps) {
         throw new Error("You must be logged in to submit a license");
       }
       
-      const response = await apiRequest("/api/license/submit", {
-        method: "POST",
+      const response = await apiRequest("POST", "/api/license/submit", {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
