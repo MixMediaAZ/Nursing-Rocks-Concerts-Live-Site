@@ -10,6 +10,9 @@
     "dev": "cross-env NODE_ENV=development tsx server/index.ts",
     "build": "vite build && node scripts/copy-public.cjs && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --external:vite --external:rollup --external:@rollup/* && esbuild server/vercel-handler.ts --platform=node --bundle --format=cjs --outfile=.vercel-build/vercel-handler.cjs --external:sharp --external:better-sqlite3 --external:pg-native --external:ws --external:bufferutil --external:utf-8-validate --external:path --external:fs --external:crypto --external:stream --external:http --external:https --external:url --external:util --external:os --external:net --external:tls --external:zlib --external:events --external:child_process --external:memorystore --minify",
     "start": "cross-env NODE_ENV=production node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "check": "tsc",
     "db:push": "drizzle-kit push",
     "db:fix": "node scripts/apply-schema-fixes.js",
@@ -143,9 +146,11 @@
     "@types/passport": "^1.0.16",
     "@types/passport-local": "^1.0.38",
     "@types/ws": "^8.5.13",
+    "@vitest/coverage-v8": "^4.1.1",
     "cross-env": "^10.1.0",
     "drizzle-kit": "^0.31.8",
-    "tsx": "^4.19.1"
+    "tsx": "^4.19.1",
+    "vitest": "^4.1.1"
   },
   "optionalDependencies": {
     "@rollup/rollup-darwin-arm64": "^4.0.0",

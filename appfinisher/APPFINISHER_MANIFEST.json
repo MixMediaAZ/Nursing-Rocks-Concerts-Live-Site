@@ -1,0 +1,27 @@
+{
+  "phase": 1,
+  "manifest_timestamp": "2026-03-23T00:01:00Z",
+  "app_purpose": "AppFinisher Runner — a Node.js CLI utility that orchestrates an autonomous build-completion loop. It validates required AppFinisher framework files exist, builds a prompt for Claude Code, runs Claude Code via execSync, checks whether enforcement criteria (test pass rate + coverage) are met, and retries up to MAX_RETRIES (10) times until enforcement passes or retries are exhausted.",
+  "critical_paths": [
+    "1. Setup validation: validateSetup() checks /appfinisher/ folder exists and required files are present; fails fast with process.exit(1) if not.",
+    "2. Prompt generation: buildPrompt(retryCount) constructs the Claude Code prompt string with iteration context.",
+    "3. Claude execution: runClaude(prompt) invokes `claude code` via execSync with prompt on stdin; logs warning on error but does not abort loop.",
+    "4. Enforcement check: enforcementCheck() reads APPFINISHER_STATE.json + APPFINISHER_ENFORCEMENT.json; returns pass=false if pass_rate < 1 or coverage < threshold.",
+    "5. Run loop: runLoop() iterates 1..MAX_RETRIES, calling runClaude then enforcementCheck; exits on pass or after max retries."
+  ],
+  "known_limitations": [
+    "main() called unconditionally at module bottom — must guard for testability",
+    "enforce.required_checks.coverage_minimum does not exist (BUG): coverage enforcement silently broken",
+    "runClaude() swallows execSync errors with only a warning — Claude failure is non-fatal",
+    "No structured logging/output beyond chalk console messages"
+  ],
+  "external_dependencies": [
+    "fs-extra (file operations)",
+    "chalk (terminal colors)",
+    "Node.js built-in: child_process.execSync",
+    "External: claude code CLI (must be installed and on PATH)"
+  ],
+  "source_inferred": true,
+  "user_confirmation_required": false,
+  "status": "COMPLETE"
+}

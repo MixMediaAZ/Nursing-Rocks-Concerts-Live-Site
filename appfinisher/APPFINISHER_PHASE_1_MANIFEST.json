@@ -1,0 +1,124 @@
+{
+  "phase": 1,
+  "manifest_timestamp": "2026-03-23T20:30:00Z",
+  "app_purpose": "Nursing Rocks! Concert Series — Full-stack web application for managing and showcasing concert events, featuring video streaming, event management, job board, artist profiles, email subscriptions, and admin/employer dashboards.",
+  "app_description": "React + TypeScript frontend (Vite) + Express.js/Fastify backend with PostgreSQL database (Drizzle ORM). Supports video uploads via Backblaze B2, JWT authentication, Sentry error tracking, and multi-role access (public users, employers, admins).",
+  "critical_user_paths": [
+    {
+      "path_id": "CRITICAL-PATH-1",
+      "name": "Public User: Browse Concerts and Event Details",
+      "description": "User visits home page, browses concert list, clicks on concert, views event details",
+      "user_role": "public",
+      "steps": ["Load homepage", "Fetch concerts/events from /api/concerts or /api/events", "Click concert", "Load concert details page", "Display event info (date, artist, description)"],
+      "dependencies": ["Database (concerts table)", "API endpoints for concert queries"],
+      "external_services": "None (read-only)"
+    },
+    {
+      "path_id": "CRITICAL-PATH-2",
+      "name": "User Registration and Login",
+      "description": "New user signs up, creates profile, logs in with JWT",
+      "user_role": "public → authenticated",
+      "steps": ["Signup form submission", "POST /api/auth/register", "Create user record", "Generate JWT token", "Login with credentials", "POST /api/auth/login", "Validate JWT", "Return authenticated session"],
+      "dependencies": ["Database (users table)", "/api/auth/register", "/api/auth/login", "JWT token generation"],
+      "external_services": "None"
+    },
+    {
+      "path_id": "CRITICAL-PATH-3",
+      "name": "User Profile Creation and Management",
+      "description": "Authenticated user creates or updates profile (name, email, specialties, years of experience)",
+      "user_role": "authenticated",
+      "steps": ["Load profile form", "POST/PUT /api/profile", "Store profile data in database", "Upload optional resume to S3/B2", "Save profile updates"],
+      "dependencies": ["Database (profiles table)", "JWT authentication", "/api/profile endpoints", "File storage (S3/B2)"],
+      "external_services": "S3/B2 file upload"
+    },
+    {
+      "path_id": "CRITICAL-PATH-4",
+      "name": "Browse and Apply for Jobs",
+      "description": "User finds jobs on job board, applies for position",
+      "user_role": "authenticated",
+      "steps": ["Load jobs board", "GET /api/jobs (with filters)", "Click job listing", "View job details", "POST /api/jobs/{id}/apply", "Submit application"],
+      "dependencies": ["Database (jobs table)", "/api/jobs endpoints", "Authentication required for apply"],
+      "external_services": "None"
+    },
+    {
+      "path_id": "CRITICAL-PATH-5",
+      "name": "Admin: Upload and Manage Videos",
+      "description": "Admin user uploads concert videos for streaming",
+      "user_role": "admin",
+      "steps": ["Admin login", "Load video management dashboard", "POST /api/admin/videos with file", "Upload video to Backblaze B2", "Generate HLS stream", "Save video metadata in database", "List uploaded videos"],
+      "dependencies": ["Database (videos table)", "/api/admin/videos endpoints", "File storage (B2)", "HLS stream generation", "Admin authentication"],
+      "external_services": "Backblaze B2, FFmpeg for HLS conversion"
+    },
+    {
+      "path_id": "CRITICAL-PATH-6",
+      "name": "Employer: Post Job and Review Applications",
+      "description": "Employer posts new job listing, reviews and manages applications",
+      "user_role": "employer",
+      "steps": ["Employer login", "Load job posting form", "POST /api/employer/jobs", "Create job listing", "View applications on /api/employer/applications", "Review applicant profiles", "Accept/reject applications"],
+      "dependencies": ["Database (jobs, applications tables)", "/api/employer/* endpoints", "Employer authentication", "Email notifications for applicants"],
+      "external_services": "Email service (sendgrid/nodemailer)"
+    },
+    {
+      "path_id": "CRITICAL-PATH-7",
+      "name": "Email Subscription and Notifications",
+      "description": "User subscribes to email updates (job alerts, event reminders)",
+      "user_role": "public or authenticated",
+      "steps": ["Subscribe form (email input)", "POST /api/subscribers", "Store subscription in database", "Cron job /api/cron/job-alerts triggers periodically", "Send matching job emails", "Cron job /api/cron/event-reminders for upcoming events"],
+      "dependencies": ["Database (subscribers, jobs, events tables)", "Email service integration", "Cron scheduling"],
+      "external_services": "Email service (SMTP/Sendgrid)"
+    }
+  ],
+  "known_limitations": [
+    "Database state management: Tests must manage migrations and clean up between runs (use test database or transactions)",
+    "External services (S3/B2, email, Sentry): May require mocking or test credentials",
+    "Video upload/HLS processing: Slow operation, may need to mock or use test fixtures",
+    "JWT token generation: Tests should use fixed secret keys for reproducibility",
+    "File uploads: Tests cannot realistically test large file uploads; mock file I/O",
+    "Email sending: Must mock email service to avoid sending test emails",
+    "Rate limiting: Rate limit middleware may interfere with test execution; may need to disable in test mode"
+  ],
+  "external_dependencies": [
+    {
+      "name": "PostgreSQL Database",
+      "purpose": "Persistent data storage (users, profiles, jobs, concerts, videos, etc.)",
+      "test_strategy": "Use test database or in-memory SQLite for unit tests; Docker for integration tests"
+    },
+    {
+      "name": "Backblaze B2 / AWS S3",
+      "purpose": "Video and file storage",
+      "test_strategy": "Mock B2 SDK calls; use fake/test credentials for integration tests"
+    },
+    {
+      "name": "Email Service (Sendgrid/SMTP)",
+      "purpose": "Send job alerts and event reminders",
+      "test_strategy": "Mock email service; verify email payload without sending"
+    },
+    {
+      "name": "Sentry (Error Tracking)",
+      "purpose": "Error monitoring and reporting",
+      "test_strategy": "Mock Sentry SDK; verify error capture without network calls"
+    },
+    {
+      "name": "FFmpeg (Video Processing)",
+      "purpose": "HLS stream generation for video uploads",
+      "test_strategy": "Mock FFmpeg calls; test with pre-generated HLS fixtures"
+    },
+    {
+      "name": "Claude Code CLI",
+      "purpose": "External tool for autonomous build completion",
+      "test_strategy": "Mock if called; verify integration points"
+    }
+  ],
+  "testing_strategy": {
+    "unit_tests": "Pure function tests (auth, validation, formatting)",
+    "integration_tests": "API endpoint tests with mocked database and external services",
+    "critical_path_tests": "End-to-end flows for all 7 critical user paths",
+    "fraud_prevention": "Verify tests are real (not empty, mocked, or skipped)",
+    "coverage_target": "98%+ line + branch coverage"
+  },
+  "estimated_test_count": 250,
+  "estimated_assertions": 400,
+  "source_inferred": true,
+  "user_confirmation_required": false,
+  "status": "COMPLETE"
+}

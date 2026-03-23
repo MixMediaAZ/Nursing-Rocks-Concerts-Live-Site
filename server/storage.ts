@@ -1804,9 +1804,8 @@ export class MemStorage implements IStorage {
       ...alert,
       id,
       user_id: userId,
-      created_at: new Date(),
-      updated_at: new Date()
-    };
+      created_at: new Date()
+    } as JobAlert;
     this.jobAlerts.set(id, newAlert);
     return newAlert;
   }
@@ -1814,9 +1813,11 @@ export class MemStorage implements IStorage {
   async getJobAlertsByUserId(userId: number): Promise<JobAlert[]> {
     return Array.from(this.jobAlerts.values())
       .filter(alert => alert.user_id === userId)
-      .sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
+      .sort((a, b) => {
+        const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return bTime - aTime;
+      });
   }
   
   async updateJobAlert(id: number, data: Partial<InsertJobAlert>): Promise<JobAlert> {
@@ -1824,11 +1825,10 @@ export class MemStorage implements IStorage {
     if (!alert) {
       throw new Error("Job alert not found");
     }
-    
+
     const updatedAlert: JobAlert = {
       ...alert,
-      ...data,
-      updated_at: new Date()
+      ...data
     };
     this.jobAlerts.set(id, updatedAlert);
     return updatedAlert;
@@ -1858,10 +1858,12 @@ export class MemStorage implements IStorage {
     if (filters) {
       // Apply additional filters similar to getAllJobListings method
     }
-    
-    return jobs.sort((a, b) => 
-      new Date(b.posted_date).getTime() - new Date(a.posted_date).getTime()
-    );
+
+    return jobs.sort((a, b) => {
+      const aTime = a.posted_date ? new Date(a.posted_date).getTime() : 0;
+      const bTime = b.posted_date ? new Date(b.posted_date).getTime() : 0;
+      return bTime - aTime;
+    });
   }
   
   async getRecommendedJobs(userId: number, limit?: number): Promise<JobListing[]> {
@@ -1877,9 +1879,9 @@ export class MemStorage implements IStorage {
     // Score jobs based on profile match
     const scoredJobs = jobs.map(job => {
       let score = 0;
-      
+
       // Match specialty (highest weight)
-      if (profile.specialties.includes(job.specialty)) {
+      if (profile.specialties && Array.isArray(profile.specialties) && profile.specialties.includes(job.specialty)) {
         score += 5;
       }
       
@@ -1897,28 +1899,30 @@ export class MemStorage implements IStorage {
         score += 2;
       }
       
-      // Match job type
-      if (profile.preferred_job_type && 
+      // Match job type (if property exists)
+      if ('preferred_job_type' in profile && profile.preferred_job_type &&
           profile.preferred_job_type === job.job_type) {
         score += 2;
       }
       
       return { job, score };
     });
-    
+
     // Sort by score (highest first) and then by date (newest first)
     const sortedJobs = scoredJobs
       .sort((a, b) => {
         if (b.score !== a.score) {
           return b.score - a.score;
         }
-        return new Date(b.job.posted_date).getTime() - new Date(a.job.posted_date).getTime();
+        const aTime = a.job.posted_date ? new Date(a.job.posted_date).getTime() : 0;
+        const bTime = b.job.posted_date ? new Date(b.job.posted_date).getTime() : 0;
+        return bTime - aTime;
       })
       .map(item => item.job);
-    
+
     return limit ? sortedJobs.slice(0, limit) : sortedJobs;
   }
-  
+
   async getSimilarJobs(jobId: number, limit?: number): Promise<JobListing[]> {
     const job = await this.getJobListingById(jobId);
     if (!job) {
@@ -1968,10 +1972,12 @@ export class MemStorage implements IStorage {
         if (b.score !== a.score) {
           return b.score - a.score;
         }
-        return new Date(b.job.posted_date).getTime() - new Date(a.job.posted_date).getTime();
+        const aTime = a.job.posted_date ? new Date(a.job.posted_date).getTime() : 0;
+        const bTime = b.job.posted_date ? new Date(b.job.posted_date).getTime() : 0;
+        return bTime - aTime;
       })
       .map(item => item.job);
-    
+
     return limit ? sortedJobs.slice(0, limit) : sortedJobs;
   }
 

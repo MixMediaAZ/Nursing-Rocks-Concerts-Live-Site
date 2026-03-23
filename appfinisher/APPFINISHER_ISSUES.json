@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "issues_timestamp": "2026-03-23T12:06:15Z",
+  "issues": [
+    {
+      "id": "ISSUE-001",
+      "type": "CODE_BUG",
+      "severity": "HIGH",
+      "title": "enforcementCheck() reads wrong JSON property for coverage threshold",
+      "description": "Line 116: enforce.required_checks.coverage_minimum does not exist in APPFINISHER_ENFORCEMENT.json. Correct path is enforce.thresholds.minimum_coverage_percent. Bug caused coverage enforcement to silently always pass (coverage < undefined evaluates to false in JS).",
+      "code_location": "runner.js:116-117",
+      "effort": "TRIVIAL",
+      "status": "FIXED",
+      "attempts": 1,
+      "fix_applied": "Changed enforce.required_checks.coverage_minimum → enforce.thresholds.minimum_coverage_percent on lines 116 and 117.",
+      "reason_unfixable": null,
+      "created_phase": 0,
+      "fixed_phase": 2,
+      "notes": "This was a silent failure — the coverage check always passed regardless of actual coverage because undefined comparisons evaluate to false. Critical enforcement gap."
+    },
+    {
+      "id": "ISSUE-002",
+      "type": "CODE_BUG",
+      "severity": "MEDIUM",
+      "title": "main() called unconditionally at module bottom — prevents testability",
+      "description": "The module called main() at the bottom without an ESM main guard. Any import of runner.js would trigger main() → validateSetup() → fail() if appfinisher/ dir not found. This made the module impossible to import in tests without crashing.",
+      "code_location": "runner.js:161",
+      "effort": "TRIVIAL",
+      "status": "FIXED",
+      "attempts": 1,
+      "fix_applied": "Added 'import { fileURLToPath } from url', defined __filename constant, replaced main() call with ESM main guard: if (process.argv[1] && path.resolve(process.argv[1]) === __filename) { main(); }. Added exports for all functions.",
+      "reason_unfixable": null,
+      "created_phase": 0,
+      "fixed_phase": 2,
+      "notes": "Standard ESM entry-point pattern. Also added exports to enable unit testing of individual functions."
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "fixed": 2,
+    "unfixable": 0,
+    "pending": 0,
+    "in_progress": 0
+  }
+}
