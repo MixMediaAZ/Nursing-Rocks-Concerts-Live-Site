@@ -79,14 +79,10 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/">
-                  <div className="inline-block text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">Concerts</div>
-                </Link>
+                <a href="/#concerts" className="inline-block text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">Concerts</a>
               </li>
               <li>
-                <a href="https://nurse-appreciation-platform-mixmediaaz.replit.app/" target="_blank" rel="noopener noreferrer">
-                  <div className="inline-block text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">NursingRocks.org</div>
-                </a>
+                <a href="https://nursingrocks.org" target="_blank" rel="noopener noreferrer" className="inline-block text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">NursingRocks.org</a>
               </li>
             </ul>
           </div>
