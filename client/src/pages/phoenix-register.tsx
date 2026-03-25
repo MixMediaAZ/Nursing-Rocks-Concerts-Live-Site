@@ -81,7 +81,7 @@ export default function PhoenixRegisterPage() {
               </div>
               <div className="flex items-center gap-3 text-gray-700">
                 <MapPin className="h-5 w-5 text-red-500 flex-shrink-0" />
-                <span>The Walter Studio, Phoenix, AZ</span>
+                <a href="https://walterstudios.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">The Walter Studio, Phoenix, AZ</a>
               </div>
               <div className="flex items-center gap-3 text-gray-700">
                 <Music className="h-5 w-5 text-red-500 flex-shrink-0" />
@@ -132,7 +132,7 @@ export default function PhoenixRegisterPage() {
             </span>
             <span className="flex items-center gap-1.5">
               <MapPin className="h-4 w-4 text-red-500" />
-              The Walter Studio, Phoenix AZ
+              <a href="https://walterstudios.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">The Walter Studio, Phoenix AZ</a>
             </span>
             <span className="flex items-center gap-1.5">
               <Music className="h-4 w-4 text-red-500" />
