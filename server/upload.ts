@@ -23,14 +23,14 @@ const cityBackgroundsStorage = multer.diskStorage({
   }
 });
 
-// File filter to allow only jpg/jpeg files for city backgrounds
+// File filter to allow jpg/jpeg and png files for city backgrounds
 const cityBackgroundsFileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowedMimeTypes = ['image/jpeg', 'image/jpg'];
-  
+  const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+
   if (allowedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Only JPEG/JPG images are allowed for city backgrounds'));
+    cb(new Error('Only JPEG/JPG and PNG images are allowed for city backgrounds'));
   }
 };
 
