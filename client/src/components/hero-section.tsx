@@ -118,15 +118,23 @@ const HeroSection = () => {
   // Always render the hero section even if no featured event is found
   // This ensures the hero section is always displayed
 
+  const defaultHeroBackground =
+    "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&h=800&q=80";
+  const heroBackgroundSrc =
+    featuredEvent?.image_url?.trim() || defaultHeroBackground;
+  const heroBackgroundAlt = featuredEvent?.title
+    ? `${featuredEvent.title} — event poster`
+    : "Concert crowd with hands raised";
+
   return (
     <section className="relative overflow-hidden bg-[#333333] text-white min-h-[800px] sm:min-h-[600px]">
       <div className="absolute inset-0 z-0">
-        {/* Editable background image - layer 1 */}
+        {/* Editable background image — uses featured event poster from DB when set (e.g. /assets/...) */}
         <EditableElement
           type="image"
           id="hero-background"
-          src="https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&h=800&q=80"
-          alt="Concert crowd with hands raised"
+          src={heroBackgroundSrc}
+          alt={heroBackgroundAlt}
           className="w-full h-full object-cover object-[center_20%] sm:object-center"
           onUpdate={handleContentUpdate}
         />

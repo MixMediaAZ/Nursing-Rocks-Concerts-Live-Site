@@ -78,7 +78,8 @@ async function seed() {
         date: new Date("2023-10-21T20:00:00"),
         location: "New York, NY",
         artist_id: artistsInserted[0].id,
-        image_url: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
+        image_url:
+          "/assets/NRCS%20Phoenix%20Poster%201.PNG",
         start_time: "8:00 PM",
         doors_time: "7:00 PM",
         price: "$45-$120",
