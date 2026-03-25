@@ -12,6 +12,8 @@ const FeaturedArtist = () => {
     { type: "dj", name: "DJ Casual Alien", url: "https://casualalien.bandzoogle.com/" },
     { type: "dj", name: "DJ Oppsie Daisy", url: "https://www.instagram.com/nickbornhoft/" }
   ];
+  const bandLineup = lineup.filter((artist) => artist.type === "band");
+  const djLineup = lineup.filter((artist) => artist.type === "dj");
 
   return (
     <section id="artists" className="py-16 bg-gradient-to-br from-[#5D3FD3]/5 to-[#FF3366]/5">
@@ -76,30 +78,57 @@ const FeaturedArtist = () => {
               Featuring
             </h4>
 
-            {/* Lineup in Order */}
-            <div className="space-y-3">
-              {lineup.map((artist, index) => (
-                <div key={artist.name} className="flex items-center gap-3 pb-3 border-b border-gray-200 last:border-b-0">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-semibold text-sm">
-                    {index + 1}
-                  </div>
-                  <a
-                    href={artist.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-gray-700 hover:text-red-600 font-medium transition-colors flex-grow"
-                  >
-                    <span className="text-lg">{artist.type === "band" ? "♪" : "🎧"}</span>
-                    <span className="hover:underline">{artist.name}</span>
-                  </a>
-                  {artist.type === "band" && index === 0 && (
-                    <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-semibold">Headliner</span>
-                  )}
-                  {artist.type === "dj" && index === 5 && (
-                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-semibold">MC/DJ</span>
-                  )}
+            {/* Lineup in fixed display order */}
+            <div className="space-y-5">
+              <div>
+                <h5 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">Live Bands</h5>
+                <div className="space-y-3">
+                  {bandLineup.map((artist, index) => (
+                    <div key={artist.name} className="flex items-center gap-3 pb-3 border-b border-gray-200 last:border-b-0">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-semibold text-sm">
+                        {index + 1}
+                      </div>
+                      <a
+                        href={artist.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-gray-700 hover:text-red-600 font-medium transition-colors flex-grow"
+                      >
+                        <span className="text-lg">♪</span>
+                        <span className="hover:underline">{artist.name}</span>
+                      </a>
+                      {index === 0 && (
+                        <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-semibold">Headliner</span>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              <div>
+                <h5 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">DJs</h5>
+                <div className="space-y-3">
+                  {djLineup.map((artist, index) => (
+                    <div key={artist.name} className="flex items-center gap-3 pb-3 border-b border-gray-200 last:border-b-0">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-semibold text-sm">
+                        {index + 1}
+                      </div>
+                      <a
+                        href={artist.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-gray-700 hover:text-purple-700 font-medium transition-colors flex-grow"
+                      >
+                        <span className="text-lg">🎧</span>
+                        <span className="hover:underline">{artist.name}</span>
+                      </a>
+                      {index === 0 && (
+                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-semibold">MC/DJ</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
