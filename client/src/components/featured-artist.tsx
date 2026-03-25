@@ -3,17 +3,14 @@ import { Button } from "./ui/button";
 import { Link } from "wouter";
 
 const FeaturedArtist = () => {
-  const artistLinks = [
-    { name: "The Black Moods", url: "https://theblackmoods.com/" },
-    { name: "The Central Line", url: "https://azpbs.org/horizon/2023/12/all-doctor-band-the-central-line-made-up-of-phoenix-childrens-hospital-doctors/" },
-    { name: "Jane 'n the Jungle", url: "https://www.janenthejungle.com/" },
-    { name: "PsychoStar", url: "https://linktr.ee/psychostar" },
-    { name: "My Upside Down", url: "https://linktr.ee/myupsidedown?utm_source=ig&utm_medium=social&utm_content=link_in_bio&fbclid=PAZXh0bgNhZW0CMTEAc3J0YwZhcHBfaWQMMjU2MjgxMDQwNTU4AAGnMjHDfeOnXd7lbqhPbfsQzdUxgvFu46D58LJjH2KOfvVwopesIARMimTBETU_aem_eimjH1K9n_Kz-aRWTR0izg" }
-  ];
-
-  const djLinks = [
-    { name: "DJ Casual Alien", url: "https://casualalien.bandzoogle.com/" },
-    { name: "DJ Oppsie Daisy", url: "https://www.instagram.com/nickbornhoft/" }
+  const lineup = [
+    { type: "band", name: "The Black Moods", url: "https://theblackmoods.com/" },
+    { type: "band", name: "The Central Line", url: "https://azpbs.org/horizon/2023/12/all-doctor-band-the-central-line-made-up-of-phoenix-childrens-hospital-doctors/" },
+    { type: "band", name: "Jane 'n the Jungle", url: "https://www.janenthejungle.com/" },
+    { type: "band", name: "PsychoStar", url: "https://linktr.ee/psychostar" },
+    { type: "band", name: "My Upside Down", url: "https://linktr.ee/myupsidedown?utm_source=ig&utm_medium=social&utm_content=link_in_bio&fbclid=PAZXh0bgNhZW0CMTEAc3J0YwZhcHBfaWQMMjU2MjgxMDQwNTU4AAGnMjHDfeOnXd7lbqhPbfsQzdUxgvFu46D58LJjH2KOfvVwopesIARMimTBETU_aem_eimjH1K9n_Kz-aRWTR0izg" },
+    { type: "dj", name: "DJ Casual Alien", url: "https://casualalien.bandzoogle.com/" },
+    { type: "dj", name: "DJ Oppsie Daisy", url: "https://www.instagram.com/nickbornhoft/" }
   ];
 
   return (
@@ -36,7 +33,7 @@ const FeaturedArtist = () => {
               <div className="flex flex-col justify-center space-y-4">
                 <div>
                   <h3 className="text-3xl font-bold mb-2">Nursing Rocks Phoenix</h3>
-                  <p className="text-lg text-gray-600 font-medium">A sponsored concert celebrating healthcare heroes 🤘</p>
+                  <p className="text-lg text-gray-600 font-medium">A sponsored concert event celebrating nurses and the nursing profession!</p>
                 </div>
 
                 <div className="space-y-3 py-4 border-y border-gray-200">
@@ -72,49 +69,37 @@ const FeaturedArtist = () => {
             </div>
           </div>
 
-          {/* Artists & Performers */}
+          {/* Artists & Performers - Complete Lineup */}
           <div className="border border-gray-200 rounded-lg bg-white shadow-md p-6">
-            <h4 className="text-2xl font-bold mb-4 flex items-center gap-2">
+            <h4 className="text-2xl font-bold mb-6 flex items-center gap-2">
               <Music className="h-6 w-6 text-red-500" />
               Featuring
             </h4>
 
-            {/* Main Bands */}
-            <div className="mb-6">
-              <h5 className="font-bold text-gray-800 mb-3 text-sm uppercase tracking-wide">Live Bands</h5>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {artistLinks.map((artist) => (
+            {/* Lineup in Order */}
+            <div className="space-y-3">
+              {lineup.map((artist, index) => (
+                <div key={artist.name} className="flex items-center gap-3 pb-3 border-b border-gray-200 last:border-b-0">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-semibold text-sm">
+                    {index + 1}
+                  </div>
                   <a
-                    key={artist.name}
                     href={artist.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-gray-700 hover:text-red-600 font-medium transition-colors"
+                    className="flex items-center gap-2 text-gray-700 hover:text-red-600 font-medium transition-colors flex-grow"
                   >
-                    <span className="text-red-500">♪</span>
+                    <span className="text-lg">{artist.type === "band" ? "♪" : "🎧"}</span>
                     <span className="hover:underline">{artist.name}</span>
                   </a>
-                ))}
-              </div>
-            </div>
-
-            {/* DJs */}
-            <div>
-              <h5 className="font-bold text-gray-800 mb-3 text-sm uppercase tracking-wide">DJs</h5>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {djLinks.map((dj) => (
-                  <a
-                    key={dj.name}
-                    href={dj.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-gray-700 hover:text-red-600 font-medium transition-colors"
-                  >
-                    <span className="text-red-500">🎧</span>
-                    <span className="hover:underline">{dj.name}</span>
-                  </a>
-                ))}
-              </div>
+                  {artist.type === "band" && index === 0 && (
+                    <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-semibold">Headliner</span>
+                  )}
+                  {artist.type === "dj" && index === 5 && (
+                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-semibold">MC/DJ</span>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
 

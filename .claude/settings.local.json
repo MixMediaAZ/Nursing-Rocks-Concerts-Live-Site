@@ -69,7 +69,11 @@
       "Bash(find ./client ./server ./shared -type f -name *.ts -o -name *.tsx -o -name *.js -o -name *.jsx)",
       "Bash(find ./server/routes -type f -name *.ts)",
       "Bash(ls -la server/*.ts)",
-      "Bash(grep -r \"type JobAlert\\\\|interface JobAlert\" . --include=*.ts --include=*.d.ts)"
+      "Bash(grep -r \"type JobAlert\\\\|interface JobAlert\" . --include=*.ts --include=*.d.ts)",
+      "Bash(curl -s https://nursingrocksconcerts.com/)",
+      "Bash(curl -s -I https://nursingrocksconcerts.com/)",
+      "Bash(curl -s -X GET \"https://nursingrocksconcerts.com/api/cron/job-alerts\" -H \"x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee\" -H \"Content-Type: application/json\" --max-time 30)",
+      "Bash(curl -s -L -X GET \"https://nursingrocksconcerts.com/api/cron/job-alerts\" -H \"x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee\" -H \"Content-Type: application/json\" --max-time 30)"
     ]
   }
 }
