@@ -55,6 +55,14 @@ const FeaturedArtist = () => {
                     <Gift className="h-5 w-5 text-red-500 flex-shrink-0" />
                     <span className="font-semibold">Sponsored by <a href="https://phoenixchildrens.org/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Phoenix Children's Hospital</a></span>
                   </div>
+                  <div className="flex items-center gap-3 text-gray-700">
+                    <Gift className="h-5 w-5 text-red-500 flex-shrink-0" />
+                    <span className="font-semibold">Presented by <a href="https://lucidmotors.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Lucid Motors</a></span>
+                  </div>
+                  <div className="flex items-center gap-3 text-gray-700">
+                    <Gift className="h-5 w-5 text-red-500 flex-shrink-0" />
+                    <span className="font-semibold">Benefiting <a href="https://www.gatewaycc.edu/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Gateway Community College Nursing Program</a></span>
+                  </div>
                 </div>
 
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
