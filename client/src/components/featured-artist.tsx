@@ -36,7 +36,7 @@ const FeaturedArtist = () => {
               <div className="flex flex-col justify-center space-y-4">
                 <div>
                   <h3 className="text-3xl font-bold mb-2">Nursing Rocks Phoenix</h3>
-                  <p className="text-lg text-gray-600 font-medium">A free concert celebrating healthcare heroes 🤘</p>
+                  <p className="text-lg text-gray-600 font-medium">A sponsored concert celebrating healthcare heroes 🤘</p>
                 </div>
 
                 <div className="space-y-3 py-4 border-y border-gray-200">
