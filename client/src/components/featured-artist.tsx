@@ -61,7 +61,7 @@ const FeaturedArtist = () => {
                   </p>
                   <Button asChild className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold">
                     <Link href="/phoenix-register">
-                      Get My Free Ticket
+                      Nurses, Get Your Free Ticket!
                     </Link>
                   </Button>
                 </div>
