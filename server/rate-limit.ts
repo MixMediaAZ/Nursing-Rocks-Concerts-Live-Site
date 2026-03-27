@@ -53,6 +53,50 @@ export const adminPinRateLimiter = rateLimit({
 });
 
 /**
+ * Rate limiter for registration endpoint
+ * More lenient than login (account creation is less brute-force-prone)
+ *
+ * Configuration:
+ * - 10 attempts per hour per IP address
+ */
+export const registerRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10,
+  message: {
+    success: false,
+    message: 'Too many registration attempts from this IP. Please try again later.',
+  },
+  statusCode: 429,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req, _res) => {
+    return req.ip || req.socket.remoteAddress || 'unknown';
+  },
+});
+
+/**
+ * Rate limiter for password reset request endpoint
+ * Strict to prevent email flooding
+ *
+ * Configuration:
+ * - 3 attempts per 15 minutes per IP address
+ */
+export const passwordResetRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 3,
+  message: {
+    success: false,
+    message: 'Too many password reset requests. Please try again later.',
+  },
+  statusCode: 429,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req, _res) => {
+    return req.ip || req.socket.remoteAddress || 'unknown';
+  },
+});
+
+/**
  * Rate limiter for general API endpoints
  * Optional limiter for other API routes to prevent abuse
  *

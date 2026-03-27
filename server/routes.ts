@@ -94,8 +94,12 @@ import {
   authenticateToken,
   registerValidation,
   loginValidation,
+  requestPasswordResetValidation,
+  resetPasswordValidation,
   register,
   login,
+  requestPasswordReset,
+  resetPassword,
   requireEmployerToken
 } from "./auth";
 import { setupAuth, requireAuth, requireVerifiedUser, requireAdmin } from "./session-auth";
@@ -108,7 +112,7 @@ import {
   updateMedia,
   deleteMedia
 } from "./media";
-import { authRateLimiter, adminPinRateLimiter } from "./rate-limit";
+import { authRateLimiter, adminPinRateLimiter, registerRateLimiter, passwordResetRateLimiter } from "./rate-limit";
 import { runAllEmailSchedules, getEmailScheduleStatus } from "./email-scheduler";
 import { searchJobs, searchEvents, searchNurses, getSearchSuggestions } from "./search";
 import { handleJobAlertsCron, handleEventRemindersCron, handleCronHealth } from "./cron-handlers";
@@ -620,8 +624,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Authentication routes are now handled by setupAuth
   // We'll keep these routes for backward compatibility
-  app.post("/api/auth/register", registerValidation, register);
+  app.post("/api/auth/register", registerRateLimiter, registerValidation, register);
   app.post("/api/auth/login", authRateLimiter, loginValidation, login);
+  app.post("/api/auth/forgot-password", passwordResetRateLimiter, requestPasswordResetValidation, requestPasswordReset);
+  app.post("/api/auth/reset-password", resetPasswordValidation, resetPassword);
 
   // Protected routes (require authentication)
   app.post("/api/license/submit", requireAuth, licenseValidation, submitNurseLicense);

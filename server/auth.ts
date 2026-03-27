@@ -6,9 +6,20 @@ import { v4 as uuidv4 } from 'uuid';
 import fetch from 'node-fetch';
 import { storage } from './storage';
 import { generateToken, verifyToken, getUserIdFromRequest, isUserVerified } from './jwt';
-import { sendTicketConfirmationEmail } from './email';
+import { sendTicketConfirmationEmail, sendPasswordResetEmail } from './email';
 
 const SALT_ROUNDS = 10;
+
+// In-memory store for password reset tokens: token -> { userId, expiry }
+const resetTokens = new Map<string, { userId: number; expiry: number }>();
+
+// Purge expired tokens periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [token, data] of resetTokens.entries()) {
+    if (data.expiry < now) resetTokens.delete(token);
+  }
+}, 10 * 60 * 1000); // every 10 minutes
 
 // API key should be stored as an environment variable
 const VERIFICATION_API_KEY = process.env.VERIFICATION_API_KEY || '';
@@ -542,4 +553,70 @@ function simulateVerification(licenseNumber: string, state: string) {
           reason: 'License not found in database'
         }
   };
+}
+
+// Validation rules
+export const requestPasswordResetValidation = [
+  body('email').isEmail().withMessage('Please provide a valid email'),
+];
+
+export const resetPasswordValidation = [
+  body('token').notEmpty().withMessage('Reset token is required'),
+  body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+];
+
+export async function requestPasswordReset(req: Request, res: Response) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { email } = req.body;
+
+  // Always respond with success to prevent email enumeration
+  const genericResponse = { message: 'If an account with that email exists, a reset link has been sent.' };
+
+  try {
+    const user = await storage.getUserByEmail(email.toLowerCase().trim());
+    if (!user) {
+      return res.status(200).json(genericResponse);
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    resetTokens.set(token, { userId: user.id, expiry: Date.now() + 60 * 60 * 1000 }); // 1 hour
+
+    const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+    await sendPasswordResetEmail(user.email, user.first_name, token, baseUrl);
+
+    return res.status(200).json(genericResponse);
+  } catch (error) {
+    console.error('Password reset request error:', error);
+    // Still return generic success to avoid leaking info
+    return res.status(200).json(genericResponse);
+  }
+}
+
+export async function resetPassword(req: Request, res: Response) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { token, password } = req.body;
+
+  const entry = resetTokens.get(token);
+  if (!entry || entry.expiry < Date.now()) {
+    return res.status(400).json({ message: 'Invalid or expired reset link. Please request a new one.' });
+  }
+
+  try {
+    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+    await storage.updateUser(entry.userId, { password_hash: passwordHash } as any);
+    resetTokens.delete(token);
+
+    return res.status(200).json({ message: 'Password updated successfully. You can now log in.' });
+  } catch (error) {
+    console.error('Password reset error:', error);
+    return res.status(500).json({ message: 'Server error. Please try again.' });
+  }
 }

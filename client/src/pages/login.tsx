@@ -112,9 +112,10 @@ export default function LoginPage() {
   }
   
   return (
-    <div className="container max-w-md py-8">
-      <Card>
-        <CardHeader className="space-y-1">
+    <div className="w-full min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <div className="w-full max-w-md">
+        <Card>
+          <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
           <CardDescription className="text-center">
             Enter your credentials to access your account
@@ -130,7 +131,7 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="john.doe@example.com" {...field} />
+                      <Input placeholder="john.doe@example.com" autoComplete="email" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -146,9 +147,10 @@ export default function LoginPage() {
                     <FormControl>
                       <div className="relative">
                         <Input 
-                          type={showPassword ? "text" : "password"} 
-                          placeholder="••••••••" 
-                          {...field} 
+                          type={showPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          autoComplete="current-password"
+                          {...field}
                         />
                         <Button
                           type="button"
@@ -212,7 +214,8 @@ export default function LoginPage() {
             </Button>
           </div>
         </CardFooter>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -532,3 +532,88 @@ export async function sendNrpxTicketEmail(data: NrpxTicketEmailData): Promise<{ 
     return { success: false, error: error.message || 'Failed to send email' };
   }
 }
+
+/**
+ * Send password reset email with a one-time link
+ */
+export async function sendPasswordResetEmail(
+  userEmail: string,
+  firstName: string,
+  resetToken: string,
+  baseUrl: string
+): Promise<{ success: boolean; error?: string }> {
+  if (!resend) {
+    console.warn('Resend API key not configured - skipping password reset email');
+    return { success: false, error: 'Email service not configured' };
+  }
+
+  const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
+
+  const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f4f4f4; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 40px 32px; text-align: center; }
+    .header h1 { margin: 0 0 8px; font-size: 26px; font-weight: 800; }
+    .header p { margin: 0; font-size: 15px; opacity: 0.85; }
+    .content { padding: 32px; }
+    .reset-button { display: inline-block; background: #e94560; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px; margin: 24px 0; }
+    .warning { background: #fff8e1; border-left: 4px solid #f9a825; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 20px 0; font-size: 14px; color: #5a4000; }
+    .footer { background: #1a1a2e; color: #aaa; text-align: center; padding: 24px 32px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div style="background: #f4f4f4; padding: 24px 0;">
+    <div class="container">
+      <div class="header">
+        <h1>Password Reset</h1>
+        <p>Nursing Rocks Concert Series</p>
+      </div>
+      <div class="content">
+        <p>Hi ${firstName},</p>
+        <p>We received a request to reset the password for your Nursing Rocks account. Click the button below to choose a new password.</p>
+        <div style="text-align: center;">
+          <a href="${resetUrl}" class="reset-button">Reset My Password</a>
+        </div>
+        <div class="warning">
+          <strong>This link expires in 1 hour.</strong> If you did not request a password reset, you can safely ignore this email — your password will not change.
+        </div>
+        <p style="font-size: 13px; color: #888;">If the button doesn't work, copy and paste this link into your browser:<br>
+        <a href="${resetUrl}" style="color: #e94560; word-break: break-all;">${resetUrl}</a></p>
+        <p>— The Nursing Rocks Team</p>
+      </div>
+      <div class="footer">
+        <p><strong style="color: #fff;">Nursing Rocks Concert Series</strong></p>
+        <p style="font-size: 11px; margin-top: 8px;">If you didn't request this, no action is needed.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  try {
+    const response = await resend.emails.send({
+      from: 'Nursing Rocks <noreply@nursingrocksconcerts.com>',
+      to: userEmail,
+      subject: 'Reset your Nursing Rocks password',
+      html: emailHtml,
+    });
+
+    if (response.error) {
+      console.error('Password reset email error:', response.error);
+      return { success: false, error: response.error.message };
+    }
+
+    console.log('Password reset email sent:', response.data?.id);
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error sending password reset email:', error);
+    return { success: false, error: error.message || 'Failed to send email' };
+  }
+}

@@ -145,24 +145,25 @@ export default function RegisterPage() {
   }
   
   return (
-    <div className="container max-w-lg py-8">
-      <Card>
-        <CardHeader className="space-y-1">
-          <div className="flex items-center justify-center mb-2">
-            <div className="rounded-full bg-primary/10 p-2">
-              <ShieldCheck className="h-6 w-6 text-primary" />
+    <div className="w-full min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <div className="w-full max-w-lg">
+        <Card>
+          <CardHeader className="space-y-1">
+            <div className="flex items-center justify-center mb-2">
+              <div className="rounded-full bg-primary/10 p-2">
+                <ShieldCheck className="h-6 w-6 text-primary" />
+              </div>
             </div>
-          </div>
-          <CardTitle className="text-2xl font-bold text-center">Nurse Registration</CardTitle>
-          <CardDescription className="text-center">
-            Create an account to join the Nursing Rocks community
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
+            <CardTitle className="text-2xl font-bold text-center">Nurse Registration</CardTitle>
+            <CardDescription className="text-center">
+              Create an account to join the Nursing Rocks community
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField
                   control={form.control}
                   name="first_name"
                   render={({ field }) => (
@@ -198,13 +199,13 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="john.doe@example.com" {...field} />
+                      <Input placeholder="john.doe@example.com" autoComplete="email" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="password"
@@ -212,7 +213,7 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
+                      <Input type="password" placeholder="••••••••" autoComplete="new-password" {...field} />
                     </FormControl>
                     <FormDescription>
                       Must be at least 8 characters
@@ -221,7 +222,7 @@ export default function RegisterPage() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="confirm_password"
@@ -229,7 +230,7 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
+                      <Input type="password" placeholder="••••••••" autoComplete="new-password" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -268,7 +269,8 @@ export default function RegisterPage() {
             </Button>
           </div>
         </CardFooter>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }
