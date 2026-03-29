@@ -58,26 +58,37 @@ export default function LoginPage() {
       return data;
     },
     onSuccess: (data) => {
-      // Store token and user data
-      if (data.token) {
+      try {
+        // Validate response data before storing
+        if (!data.token || !data.user) {
+          throw new Error("Invalid response format from server - missing credentials");
+        }
+
+        // Store token and user data
         localStorage.setItem("token", data.token);
-      }
-      if (data.user) {
         localStorage.setItem("user", JSON.stringify(data.user));
+
         // Set isAdmin flag for admin page access
         if (data.user.is_admin) {
           localStorage.setItem("isAdmin", "true");
         } else {
           localStorage.removeItem("isAdmin");
         }
+
+        toast({
+          title: "Login Successful",
+          description: "Welcome back to Nursing Rocks!",
+        });
+
+        handleLoginSuccess();
+      } catch (error) {
+        // If validation fails, show error
+        toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: error instanceof Error ? error.message : "Failed to process login response",
+        });
       }
-      
-      toast({
-        title: "Login Successful",
-        description: "Welcome back to Nursing Rocks!",
-      });
-      
-      handleLoginSuccess();
     },
     onError: (error: Error) => {
       toast({

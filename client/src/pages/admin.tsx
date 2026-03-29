@@ -533,8 +533,9 @@ export default function AdminPage() {
         // Parse user data
         const userData = JSON.parse(userDataStr);
         
-        // Check if user is an admin
-        if (!isAdmin && !userData.is_admin) {
+        // Check if user is an admin (verify both storage flag and user data)
+        const hasAdminAccess = isAdmin === 'true' && userData.is_admin === true;
+        if (!hasAdminAccess) {
           // User is not an admin, redirect to regular dashboard
           setAuthenticated(false);
           setLoading(false);
@@ -572,24 +573,33 @@ export default function AdminPage() {
   }, [toast]);
 
   const handleLogout = () => {
-    // Clear all authentication state
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    localStorage.removeItem("isAdmin");
-    localStorage.removeItem("adminPinVerified");
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("editMode");
-    
-    toast({
-      title: "Logged Out",
-      description: "You have been logged out successfully.",
-      variant: "default",
-    });
-    
-    // Redirect to login page
-    setTimeout(() => {
-      window.location.href = "/login";
-    }, 1000);
+    try {
+      // Clear all authentication state
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("isAdmin");
+      localStorage.removeItem("adminPinVerified");
+      localStorage.removeItem("adminToken");
+      localStorage.removeItem("editMode");
+
+      toast({
+        title: "Logged Out",
+        description: "You have been logged out successfully.",
+        variant: "default",
+      });
+
+      // Redirect to login page
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 800);
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Logout Error",
+        description: "Failed to log out properly. Please clear your browser data.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Loading screen while checking authentication
