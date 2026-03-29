@@ -73,6 +73,24 @@ export default function AdminPage() {
     JOB_POST_PASS_DURATION_DAYS: "",
     JOB_POST_PRICE_LIFETIME_CENTS: "",
   });
+  const [showAddEventDialog, setShowAddEventDialog] = useState(false);
+  const [addEventForm, setAddEventForm] = useState({
+    title: "",
+    subtitle: "",
+    description: "",
+    date: "",
+    start_time: "",
+    doors_time: "",
+    location: "",
+    artist_id: "",
+    image_url: "",
+    price: "",
+    genre: "",
+    tickets_url: "",
+    is_featured: false,
+    has_presale_tickets: false,
+    tickets_at_door_only: false,
+  });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -429,6 +447,62 @@ export default function AdminPage() {
         variant: "destructive",
       });
       // Don't close dialog on error so user can see what went wrong
+    },
+  });
+
+  const addEventMutation = useMutation({
+    mutationFn: async () => {
+      const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+      const response = await fetch('/api/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ...addEventForm,
+          artist_id: parseInt(addEventForm.artist_id),
+          date: new Date(addEventForm.date).toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create event');
+      }
+      return response.json();
+    },
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ['/api/events'] });
+      toast({
+        title: "Event Created",
+        description: "New event has been added successfully.",
+      });
+      setShowAddEventDialog(false);
+      setAddEventForm({
+        title: "",
+        subtitle: "",
+        description: "",
+        date: "",
+        start_time: "",
+        doors_time: "",
+        location: "",
+        artist_id: "",
+        image_url: "",
+        price: "",
+        genre: "",
+        tickets_url: "",
+        is_featured: false,
+        has_presale_tickets: false,
+        tickets_at_door_only: false,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Creation Failed",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -1791,16 +1865,12 @@ export default function AdminPage() {
                   </div>
                 )}
                 
-                <Button 
+                <Button
                   className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white mt-4"
-                  onClick={() => {
-                    toast({
-                      title: "Feature Coming Soon",
-                      description: "Event creation functionality is under development.",
-                    });
-                  }}
+                  onClick={() => setShowAddEventDialog(true)}
+                  disabled={addEventMutation.isPending}
                 >
-                  Add New Event
+                  {addEventMutation.isPending ? "Creating..." : "Add New Event"}
                 </Button>
               </CardContent>
             </Card>
@@ -2440,6 +2510,187 @@ export default function AdminPage() {
                     disabled={!selectedEmployer || updateEmployerJobPostOptionsMutation.isPending}
                   >
                     {updateEmployerJobPostOptionsMutation.isPending ? "Saving..." : "Save"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={showAddEventDialog} onOpenChange={setShowAddEventDialog}>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Add New Event</DialogTitle>
+                  <DialogDescription>
+                    Create a new concert event with all the details.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="title">Event Title *</Label>
+                    <Input
+                      id="title"
+                      value={addEventForm.title}
+                      onChange={(e) => setAddEventForm({...addEventForm, title: e.target.value})}
+                      placeholder="e.g., Jazz Night Live"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="subtitle">Subtitle</Label>
+                    <Input
+                      id="subtitle"
+                      value={addEventForm.subtitle}
+                      onChange={(e) => setAddEventForm({...addEventForm, subtitle: e.target.value})}
+                      placeholder="Optional subtitle"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="artist_id">Artist ID *</Label>
+                    <Input
+                      id="artist_id"
+                      type="number"
+                      value={addEventForm.artist_id}
+                      onChange={(e) => setAddEventForm({...addEventForm, artist_id: e.target.value})}
+                      placeholder="Artist ID"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="location">Location *</Label>
+                    <Input
+                      id="location"
+                      value={addEventForm.location}
+                      onChange={(e) => setAddEventForm({...addEventForm, location: e.target.value})}
+                      placeholder="e.g., The Walter Studio"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="date">Date *</Label>
+                      <Input
+                        id="date"
+                        type="date"
+                        value={addEventForm.date}
+                        onChange={(e) => setAddEventForm({...addEventForm, date: e.target.value})}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="start_time">Start Time *</Label>
+                      <Input
+                        id="start_time"
+                        type="time"
+                        value={addEventForm.start_time}
+                        onChange={(e) => setAddEventForm({...addEventForm, start_time: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="doors_time">Doors Time</Label>
+                    <Input
+                      id="doors_time"
+                      type="time"
+                      value={addEventForm.doors_time}
+                      onChange={(e) => setAddEventForm({...addEventForm, doors_time: e.target.value})}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="description">Description</Label>
+                    <textarea
+                      id="description"
+                      value={addEventForm.description}
+                      onChange={(e) => setAddEventForm({...addEventForm, description: e.target.value})}
+                      placeholder="Event description"
+                      className="min-h-20 p-2 border rounded"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="price">Price</Label>
+                      <Input
+                        id="price"
+                        value={addEventForm.price}
+                        onChange={(e) => setAddEventForm({...addEventForm, price: e.target.value})}
+                        placeholder="e.g., $25"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="genre">Genre</Label>
+                      <Input
+                        id="genre"
+                        value={addEventForm.genre}
+                        onChange={(e) => setAddEventForm({...addEventForm, genre: e.target.value})}
+                        placeholder="e.g., Jazz"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="image_url">Image URL</Label>
+                    <Input
+                      id="image_url"
+                      value={addEventForm.image_url}
+                      onChange={(e) => setAddEventForm({...addEventForm, image_url: e.target.value})}
+                      placeholder="https://example.com/image.jpg"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="tickets_url">Tickets URL</Label>
+                    <Input
+                      id="tickets_url"
+                      value={addEventForm.tickets_url}
+                      onChange={(e) => setAddEventForm({...addEventForm, tickets_url: e.target.value})}
+                      placeholder="https://tickets.example.com"
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="is_featured"
+                        type="checkbox"
+                        checked={addEventForm.is_featured}
+                        onChange={(e) => setAddEventForm({...addEventForm, is_featured: e.target.checked})}
+                      />
+                      <Label htmlFor="is_featured" className="cursor-pointer">Featured</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="has_presale_tickets"
+                        type="checkbox"
+                        checked={addEventForm.has_presale_tickets}
+                        onChange={(e) => setAddEventForm({...addEventForm, has_presale_tickets: e.target.checked})}
+                      />
+                      <Label htmlFor="has_presale_tickets" className="cursor-pointer">Presale</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="tickets_at_door_only"
+                        type="checkbox"
+                        checked={addEventForm.tickets_at_door_only}
+                        onChange={(e) => setAddEventForm({...addEventForm, tickets_at_door_only: e.target.checked})}
+                      />
+                      <Label htmlFor="tickets_at_door_only" className="cursor-pointer">Door Only</Label>
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowAddEventDialog(false)}
+                    disabled={addEventMutation.isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (!addEventForm.title || !addEventForm.date || !addEventForm.artist_id || !addEventForm.start_time || !addEventForm.location) {
+                        toast({
+                          title: "Missing Required Fields",
+                          description: "Please fill in all required fields (marked with *).",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      addEventMutation.mutate();
+                    }}
+                    disabled={addEventMutation.isPending}
+                  >
+                    {addEventMutation.isPending ? "Creating..." : "Create Event"}
                   </Button>
                 </DialogFooter>
               </DialogContent>

@@ -58,3 +58,9 @@ coverage
 *.bak
 *.old
 .cache
+
+# AppFinisher (automation/development tool)
+appfinisher/
+
+# Claude Code worktrees (temporary development branches)
+.claude/worktrees/

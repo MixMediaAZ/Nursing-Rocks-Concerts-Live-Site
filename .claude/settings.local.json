@@ -88,7 +88,12 @@
       "Bash(curl -s -w \"\\\\n%{http_code}\" \"https://nursingrocksconcerts.com/api/cron/job-alerts\" -H \"x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee\")",
       "Bash(curl -s -X GET \"https://nursingrocksconcerts.com/api/cron/job-alerts\" -H \"Content-Type: application/json\" --max-time 60)",
       "Bash(else echo:*)",
-      "Bash(fi)"
+      "Bash(fi)",
+      "Bash(xargs grep:*)",
+      "Bash(curl -s -w \"\\\\nHTTP_STATUS:%{http_code}\" -X GET \"https://nursingrocksconcerts.com/api/cron/job-alerts\" -H \"Content-Type: application/json\" --max-time 60)",
+      "Bash(curl -s -L -w \"\\\\nHTTP_STATUS:%{http_code}\" -X GET \"https://nursingrocksconcerts.com/api/cron/job-alerts\" -H \"Content-Type: application/json\" --max-time 60)",
+      "Bash(curl -s -X GET \"https://nursingrocksconcerts.com/api/cron/event-reminders\" -H \"x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee\" -H \"Content-Type: application/json\" --max-time 30)",
+      "Bash(curl -s -L -X GET \"https://nursingrocksconcerts.com/api/cron/event-reminders\" -H \"x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee\" -H \"Content-Type: application/json\" --max-time 60)"
     ]
   }
 }

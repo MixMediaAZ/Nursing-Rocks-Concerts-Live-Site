@@ -39,7 +39,13 @@ export default function PhoenixRegisterPage() {
         body: JSON.stringify(data),
       });
 
-      const json = await res.json();
+      let json;
+      try {
+        json = await res.json();
+      } catch {
+        // If response isn't JSON, create a default error object
+        json = { success: false, message: "Invalid response from server" };
+      }
 
       if (res.ok && json.success) {
         setStatus("success");
@@ -48,9 +54,10 @@ export default function PhoenixRegisterPage() {
         setStatus("error");
         setMessage(json.message || "Registration failed. Please try again.");
       }
-    } catch {
+    } catch (err) {
       setStatus("error");
-      setMessage("Network error. Please check your connection and try again.");
+      const message = err instanceof Error ? err.message : "Network error. Please check your connection and try again.";
+      setMessage(message);
     }
   };
 

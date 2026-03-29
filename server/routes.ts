@@ -151,15 +151,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid event ID" });
       }
-      
+
       const event = await storage.getEvent(id);
       if (!event) {
         return res.status(404).json({ message: "Event not found" });
       }
-      
+
       res.json(event);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch event" });
+    }
+  });
+
+  app.post("/api/events", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { title, subtitle, description, date, artist_id, image_url, start_time, doors_time, price, is_featured, genre, tickets_url, location, has_presale_tickets, tickets_at_door_only } = req.body;
+
+      if (!title || !date || !artist_id || !start_time || !location) {
+        return res.status(400).json({ message: "Missing required fields: title, date, artist_id, start_time, location" });
+      }
+
+      const newEvent = await storage.createEvent({
+        title,
+        subtitle,
+        description,
+        date: new Date(date),
+        artist_id,
+        image_url,
+        start_time,
+        doors_time,
+        price,
+        is_featured: is_featured || false,
+        genre,
+        tickets_url,
+        location,
+        has_presale_tickets: has_presale_tickets || false,
+        tickets_at_door_only: tickets_at_door_only || false,
+      });
+
+      res.status(201).json(newEvent);
+    } catch (error) {
+      console.error("Error creating event:", error);
+      res.status(500).json({ message: "Failed to create event" });
     }
   });
 

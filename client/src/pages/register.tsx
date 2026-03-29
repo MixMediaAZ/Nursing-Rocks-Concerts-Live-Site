@@ -92,43 +92,33 @@ export default function RegisterPage() {
       }
       
       const userData = await userResponse.json();
-      
-      // Store token and user data
-      localStorage.setItem("token", userData.token);
-      localStorage.setItem("user", JSON.stringify(userData.user));
-      
+
+      // Validate response data exists
+      if (!userData.token || !userData.user) {
+        throw new Error("Invalid response format from server");
+      }
+
       return {
         user: userData.user,
         token: userData.token
       };
     },
     onSuccess: async (data) => {
-      // Store token and user data
-      if (data.token && data.user) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-        
-        toast({
-          title: "Registration Successful",
-          description: "Welcome to Nursing Rocks!",
-        });
-        
-        // Wait a bit for the token to be properly saved
-        setTimeout(() => {
-          // Check for redirect parameter in URL
-          const urlParams = new URLSearchParams(window.location.search);
-          const redirectPath = urlParams.get('redirect');
-          
-          // Force a full page navigation to the dashboard after registration
-          window.location.href = redirectPath || '/dashboard';
-        }, 500);
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Registration Error",
-          description: "There was a problem with your registration. Please try again.",
-        });
-      }
+      // Store token and user data (token/user should already be in storage from mutation)
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      toast({
+        title: "Registration Successful",
+        description: "Welcome to Nursing Rocks!",
+      });
+
+      // Check for redirect parameter in URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectPath = urlParams.get('redirect');
+
+      // Force a full page navigation to the dashboard after registration
+      window.location.href = redirectPath || '/dashboard';
     },
     onError: (error: Error) => {
       toast({
