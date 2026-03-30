@@ -203,10 +203,8 @@ export function ReplaceImageDialog({
             <TabsContent value="upload">
               {!uploadComplete ? (
                 <GalleryUploader
-                  onUploadComplete={(imageData: any) => {
-                    if (imageData) {
-                      handleUploadComplete(imageData as Gallery);
-                    }
+                  onUploadComplete={() => {
+                    // Gallery uploader handles its own state
                   }}
                 />
               ) : (

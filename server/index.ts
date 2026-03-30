@@ -13,9 +13,6 @@ if (process.env.SENTRY_DSN) {
     environment: process.env.NODE_ENV || "development",
     integrations: [
       nodeProfilingIntegration(),
-      new Sentry.Integrations.Http({ tracing: true }),
-      new Sentry.Integrations.OnUncaughtException(),
-      new Sentry.Integrations.OnUnhandledRejection(),
     ],
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
     profilesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
@@ -24,11 +21,7 @@ if (process.env.SENTRY_DSN) {
 
 const app = express();
 
-// Add Sentry request handler (must be before other middleware)
-if (process.env.SENTRY_DSN) {
-  app.use(Sentry.Handlers.requestHandler());
-  app.use(Sentry.Handlers.tracingHandler());
-}
+// Sentry v10 handles request/tracing automatically
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -85,10 +78,7 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // Add Sentry error handler (must be AFTER other middleware but BEFORE app.listen)
-  if (process.env.SENTRY_DSN) {
-    app.use(Sentry.Handlers.errorHandler());
-  }
+  // Sentry error handler is not needed in v10
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route

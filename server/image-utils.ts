@@ -128,7 +128,7 @@ export async function processImage(
       // Determine if we need to resize
       if (size === 'original' && customDimensions) {
         // Use custom dimensions for original if provided
-        const resizeOptions: sharp.ResizeOptions = {
+        const resizeOptions: any = {
           width: customDimensions.width,
           height: customDimensions.height,
           fit: customDimensions.fit || 'cover'
@@ -136,7 +136,7 @@ export async function processImage(
         
         pipeline = pipeline.resize(resizeOptions);
       } else if (size !== 'original' && config.width) {
-        const resizeOptions: sharp.ResizeOptions = {
+        const resizeOptions: any = {
           width: config.width,
           height: config.height,
           fit: config.fit

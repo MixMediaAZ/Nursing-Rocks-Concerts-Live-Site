@@ -1,7 +1,7 @@
-import { 
-  Event, InsertEvent, 
-  Artist, InsertArtist, 
-  Gallery, InsertGallery, 
+import {
+  Event, InsertEvent,
+  Artist, InsertArtist,
+  Gallery, InsertGallery,
   Subscriber, InsertSubscriber,
   User, InsertUser,
   NurseLicense, InsertNurseLicense,
@@ -19,13 +19,14 @@ import {
   AppSetting, InsertAppSetting,
   events, artists, gallery, subscribers,
   users, nurseLicenses, tickets,
-  employers, jobListings, nurseProfiles, 
+  employers, jobListings, nurseProfiles,
   jobApplications, savedJobs, jobAlerts,
   storeProducts, storeOrders, storeOrderItems,
   appSettings
 } from "@shared/schema";
 import { DatabaseStorage } from "./storage-db";
 import session from "express-session";
+import { v4 as uuidv4 } from "uuid";
 
 export interface IStorage {
   sessionStore: any; // Using 'any' to avoid type conflicts between libraries
@@ -80,7 +81,7 @@ export interface IStorage {
   ): Promise<Ticket>;
   getTicketsByUserId(userId: number): Promise<Ticket[]>;
   getTicketByCode(ticketCode: string): Promise<Ticket | undefined>;
-  markTicketAsUsed(ticketId: number): Promise<Ticket>;
+  markTicketAsUsed(ticketId: string): Promise<Ticket>;
   
   // ========== JOB BOARD FUNCTIONS ==========
   
@@ -198,7 +199,7 @@ export class MemStorage implements IStorage {
   private subscribers: Map<number, Subscriber>;
   private users: Map<number, User>;
   private nurseLicenses: Map<number, NurseLicense>;
-  private tickets: Map<number, Ticket>;
+  private tickets: Map<string, Ticket>;
   private employers: Map<number, Employer>;
   private jobListings: Map<number, JobListing>;
   private nurseProfiles: Map<number, NurseProfile>;
@@ -290,8 +291,8 @@ export class MemStorage implements IStorage {
   
   async createEvent(insertEvent: InsertEvent): Promise<Event> {
     const id = this.eventId++;
-    const event: Event = { ...insertEvent, id };
-    this.events.set(id, event);
+    const event: Event = { ...insertEvent, id } as Event;
+    this.events.set(id, event) as any;
     return event;
   }
   
@@ -306,8 +307,8 @@ export class MemStorage implements IStorage {
   
   async createArtist(insertArtist: InsertArtist): Promise<Artist> {
     const id = this.artistId++;
-    const artist: Artist = { ...insertArtist, id };
-    this.artists.set(id, artist);
+    const artist: Artist = { ...insertArtist, id } as Artist;
+    this.artists.set(id, artist) as any;
     return artist;
   }
   
@@ -326,8 +327,13 @@ export class MemStorage implements IStorage {
   
   async createGalleryImage(insertImage: InsertGallery): Promise<Gallery> {
     const id = this.galleryId++;
-    const image: Gallery = { ...insertImage, id };
-    this.gallery.set(id, image);
+    const image: Gallery = {
+      ...insertImage,
+      id,
+      created_at: new Date(),
+      updated_at: new Date(),
+    } as Gallery;
+    this.gallery.set(id, image) as any;
     return image;
   }
   
@@ -351,8 +357,8 @@ export class MemStorage implements IStorage {
 
   async getAllSubscribers(): Promise<Subscriber[]> {
     return Array.from(this.subscribers.values()).sort((a, b) => {
-      const aDate = a.created_at ? new Date(a.created_at).getTime() : 0;
-      const bDate = b.created_at ? new Date(b.created_at).getTime() : 0;
+      const aDate = a.created_at ? new Date(a.created_at as any).getTime() : 0;
+      const bDate = b.created_at ? new Date(b.created_at as any).getTime() : 0;
       return bDate - aDate; // Newest first
     });
   }
@@ -496,8 +502,18 @@ export class MemStorage implements IStorage {
   
   private setupArtist(artist: InsertArtist): Artist {
     const id = this.artistId++;
-    const newArtist: Artist = { ...artist, id };
-    this.artists.set(id, newArtist);
+    const newArtist: Artist = {
+      id,
+      name: artist.name,
+      image_url: artist.image_url ?? null,
+      genre: artist.genre ?? null,
+      bio: artist.bio ?? null,
+      latest_album: artist.latest_album ?? null,
+      social_links: artist.social_links,
+      featured_song: artist.featured_song ?? null,
+      song_duration: artist.song_duration ?? null,
+    };
+    this.artists.set(id, newArtist) as any;
     return newArtist;
   }
   
@@ -505,15 +521,54 @@ export class MemStorage implements IStorage {
   
   private setupEvent(event: InsertEvent): Event {
     const id = this.eventId++;
-    const newEvent: Event = { ...event, id };
-    this.events.set(id, newEvent);
+    const newEvent: Event = {
+      id,
+      date: event.date,
+      title: event.title,
+      subtitle: event.subtitle ?? null,
+      description: event.description ?? null,
+      end_at: event.end_at ?? null,
+      artist_id: event.artist_id,
+      image_url: event.image_url ?? null,
+      start_time: event.start_time,
+      doors_time: event.doors_time ?? null,
+      price: event.price ?? null,
+      is_featured: event.is_featured ?? null,
+      genre: event.genre ?? null,
+      tickets_url: event.tickets_url ?? null,
+      location: event.location,
+      slug: event.slug ?? null,
+      capacity: event.capacity ?? null,
+      status: event.status ?? "active",
+      ticket_expiration_at: event.ticket_expiration_at ?? null,
+      has_presale_tickets: event.has_presale_tickets ?? null,
+      tickets_at_door_only: event.tickets_at_door_only ?? null,
+    };
+    this.events.set(id, newEvent) as any;
     return newEvent;
   }
   
   private setupGalleryImage(image: InsertGallery): Gallery {
     const id = this.galleryId++;
-    const newImage: Gallery = { ...image, id };
-    this.gallery.set(id, newImage);
+    const newImage: Gallery = {
+      id,
+      image_url: image.image_url,
+      created_at: new Date(),
+      updated_at: new Date(),
+      thumbnail_url: image.thumbnail_url ?? null,
+      sort_order: image.sort_order ?? null,
+      alt_text: image.alt_text ?? null,
+      event_id: image.event_id ?? null,
+      folder_id: image.folder_id ?? null,
+      media_type: image.media_type ?? "image",
+      file_size: image.file_size ?? null,
+      dimensions: image.dimensions ?? null,
+      duration: image.duration ?? null,
+      z_index: image.z_index ?? null,
+      tags: image.tags ?? null,
+      metadata: image.metadata,
+    };
+    this.gallery.set(id, newImage) as any;
     return newImage;
   }
   
@@ -553,12 +608,12 @@ export class MemStorage implements IStorage {
     const id = this.storeProductId++;
     const created_at = new Date();
     const updated_at = new Date();
-    const newProduct: StoreProduct = { 
-      ...product, 
-      id, 
-      created_at, 
+    const newProduct: StoreProduct = {
+      ...product,
+      id,
+      created_at,
       updated_at,
-    };
+    } as StoreProduct;
     this.storeProducts.set(id, newProduct);
     return newProduct;
   }
@@ -599,7 +654,7 @@ export class MemStorage implements IStorage {
       id: orderId,
       created_at,
       updated_at
-    };
+    } as StoreOrder;
     
     this.storeOrders.set(orderId, newOrder);
     
@@ -611,7 +666,7 @@ export class MemStorage implements IStorage {
         id: itemId,
         order_id: orderId,
         created_at: new Date()
-      };
+      } as StoreOrderItem;
       
       this.storeOrderItems.set(itemId, orderItem);
     }
@@ -835,11 +890,14 @@ export class MemStorage implements IStorage {
       password_hash: '$2b$10$X/4YF4r7EYeAK6c1x2gkn.Wa3Wx4Bq2YtZIzNSESzwXMJ1vkEJRRm', // 'password123'
       first_name: 'Admin',
       last_name: 'User',
-      created_at: new Date(),
-      updated_at: new Date(),
-      is_admin: true,
-      is_verified: true
-    };
+      created_at: new Date(),      is_admin: true,
+      is_verified: true,
+      is_suspended: false,
+      status: "active",
+      verified_at: new Date(),
+      verification_source: "admin",
+      verification_notes: null
+    } as unknown as User;
     this.users.set(adminUser.id, adminUser);
     
     // Create some demo nurse users
@@ -849,11 +907,14 @@ export class MemStorage implements IStorage {
       password_hash: '$2b$10$X/4YF4r7EYeAK6c1x2gkn.Wa3Wx4Bq2YtZIzNSESzwXMJ1vkEJRRm', // 'password123'
       first_name: 'Jane',
       last_name: 'Doe',
-      created_at: new Date(),
-      updated_at: new Date(),
-      is_admin: false,
-      is_verified: true
-    };
+      created_at: new Date(),      is_admin: false,
+      is_verified: true,
+      is_suspended: false,
+      status: "active",
+      verified_at: new Date(),
+      verification_source: "admin",
+      verification_notes: null
+    } as unknown as User;
     this.users.set(nurseUser1.id, nurseUser1);
     
     const nurseUser2: User = {
@@ -862,11 +923,14 @@ export class MemStorage implements IStorage {
       password_hash: '$2b$10$X/4YF4r7EYeAK6c1x2gkn.Wa3Wx4Bq2YtZIzNSESzwXMJ1vkEJRRm', // 'password123'
       first_name: 'John',
       last_name: 'Smith',
-      created_at: new Date(),
-      updated_at: new Date(),
-      is_admin: false,
-      is_verified: true
-    };
+      created_at: new Date(),      is_admin: false,
+      is_verified: true,
+      is_suspended: false,
+      status: "active",
+      verified_at: new Date(),
+      verification_source: "admin",
+      verification_notes: null
+    } as unknown as User;
     this.users.set(nurseUser2.id, nurseUser2);
     
     // Create sample nurse profiles
@@ -900,11 +964,15 @@ export class MemStorage implements IStorage {
       preferred_shift: "Day",
       preferred_locations: ["New York, NY", "Boston, MA"],
       resume_url: "https://example.com/jane-doe-resume.pdf",
+      profile_image_url: null,
+      availability: "Full-time",
+      preferred_work_arrangement: "On-site",
+      current_employer: null,
       is_public: true,
       created_at: new Date(),
       updated_at: new Date()
     };
-    this.nurseProfiles.set(nurseProfile1.id, nurseProfile1);
+    this.nurseProfiles.set(nurseProfile1.id, nurseProfile1) as any;
     
     const nurseProfile2: NurseProfile = {
       id: this.nurseProfileId++,
@@ -931,11 +999,15 @@ export class MemStorage implements IStorage {
       preferred_shift: "Night",
       preferred_locations: ["Chicago, IL", "Milwaukee, WI"],
       resume_url: "https://example.com/john-smith-resume.pdf",
+      profile_image_url: null,
+      availability: "Full-time",
+      preferred_work_arrangement: "Hybrid",
+      current_employer: null,
       is_public: true,
       created_at: new Date(),
       updated_at: new Date()
     };
-    this.nurseProfiles.set(nurseProfile2.id, nurseProfile2);
+    this.nurseProfiles.set(nurseProfile2.id, nurseProfile2) as any;
     
     // Create sample employers
     const employer1: Employer = {
@@ -952,11 +1024,11 @@ export class MemStorage implements IStorage {
       size: "Large (1000+ employees)",
       founded_year: "1950",
       is_verified: true,
-      verification_date: new Date(),
+      verified_at: new Date(), // was verification_date
       created_at: new Date(),
       updated_at: new Date()
-    };
-    this.employers.set(employer1.id, employer1);
+    } as any;
+    this.employers.set(employer1.id, employer1) as any;
     
     const employer2: Employer = {
       id: this.employerId++,
@@ -972,11 +1044,11 @@ export class MemStorage implements IStorage {
       size: "Medium (100-999 employees)",
       founded_year: "1995",
       is_verified: true,
-      verification_date: new Date(),
+      verified_at: new Date(), // was verification_date
       created_at: new Date(),
       updated_at: new Date()
-    };
-    this.employers.set(employer2.id, employer2);
+    } as any;
+    this.employers.set(employer2.id, employer2) as any;
     
     const employer3: Employer = {
       id: this.employerId++,
@@ -992,11 +1064,11 @@ export class MemStorage implements IStorage {
       size: "Medium (100-999 employees)",
       founded_year: "2005",
       is_verified: true,
-      verification_date: new Date(),
+      verified_at: new Date(), // was verification_date
       created_at: new Date(),
       updated_at: new Date()
-    };
-    this.employers.set(employer3.id, employer3);
+    } as any;
+    this.employers.set(employer3.id, employer3) as any;
     
     // Create sample job listings
     const job1: JobListing = {
@@ -1021,12 +1093,10 @@ export class MemStorage implements IStorage {
       contact_phone: "212-555-1234",
       is_featured: true,
       is_active: true,
-      posted_date: new Date(),
-      updated_at: new Date(),
-      views_count: 125,
+      posted_date: new Date(),      views_count: 125,
       applications_count: 12
-    };
-    this.jobListings.set(job1.id, job1);
+    } as any;
+    this.jobListings.set(job1.id, job1) as any;
     
     const job2: JobListing = {
       id: this.jobListingId++,
@@ -1050,12 +1120,10 @@ export class MemStorage implements IStorage {
       contact_phone: "312-555-2345",
       is_featured: false,
       is_active: true,
-      posted_date: new Date(),
-      updated_at: new Date(),
-      views_count: 98,
+      posted_date: new Date(),      views_count: 98,
       applications_count: 8
-    };
-    this.jobListings.set(job2.id, job2);
+    } as any;
+    this.jobListings.set(job2.id, job2) as any;
     
     const job3: JobListing = {
       id: this.jobListingId++,
@@ -1079,12 +1147,10 @@ export class MemStorage implements IStorage {
       contact_phone: "212-555-1234",
       is_featured: true,
       is_active: true,
-      posted_date: new Date(),
-      updated_at: new Date(),
-      views_count: 110,
+      posted_date: new Date(),      views_count: 110,
       applications_count: 9
-    };
-    this.jobListings.set(job3.id, job3);
+    } as any;
+    this.jobListings.set(job3.id, job3) as any;
     
     const job4: JobListing = {
       id: this.jobListingId++,
@@ -1108,12 +1174,10 @@ export class MemStorage implements IStorage {
       contact_phone: "617-555-3456",
       is_featured: true,
       is_active: true,
-      posted_date: new Date(),
-      updated_at: new Date(),
-      views_count: 205,
+      posted_date: new Date(),      views_count: 205,
       applications_count: 18
-    };
-    this.jobListings.set(job4.id, job4);
+    } as any;
+    this.jobListings.set(job4.id, job4) as any;
     
     const job5: JobListing = {
       id: this.jobListingId++,
@@ -1137,12 +1201,10 @@ export class MemStorage implements IStorage {
       contact_phone: "312-555-2345",
       is_featured: false,
       is_active: true,
-      posted_date: new Date(),
-      updated_at: new Date(),
-      views_count: 87,
+      posted_date: new Date(),      views_count: 87,
       applications_count: 7
-    };
-    this.jobListings.set(job5.id, job5);
+    } as any;
+    this.jobListings.set(job5.id, job5) as any;
     
     // Create a sample job application
     const jobApplication1: JobApplication = {
@@ -1153,7 +1215,7 @@ export class MemStorage implements IStorage {
       resume_url: "https://example.com/jane-doe-resume.pdf",
       status: "submitted",
       application_date: new Date(),
-      updated_at: new Date(),
+      last_updated: new Date(),
       employer_notes: null,
       is_withdrawn: false
     };
@@ -1191,9 +1253,7 @@ export class MemStorage implements IStorage {
       keywords: "cardiac, critical care",
       frequency: "daily",
       is_active: true,
-      created_at: new Date(),
-      updated_at: new Date(),
-      last_sent: null
+      created_at: new Date(),      last_sent: null
     };
     this.jobAlerts.set(jobAlert1.id, jobAlert1);
   }
@@ -1201,14 +1261,18 @@ export class MemStorage implements IStorage {
   // User Management
   async createUser(user: InsertUser, passwordHash: string): Promise<User> {
     const id = this.userId++;
-    const newUser: User = { 
-      ...user, 
-      id, 
+    const newUser: User = {
+      ...user,
+      id,
       password_hash: passwordHash,
       created_at: new Date(),
-      updated_at: new Date(),
       is_admin: false,
-      is_verified: false
+      is_verified: false,
+      status: "active",
+      is_suspended: false,
+      verified_at: null,
+      verification_source: null,
+      verification_notes: null
     };
     this.users.set(id, newUser);
     return newUser;
@@ -1257,9 +1321,9 @@ export class MemStorage implements IStorage {
       ...license,
       id,
       user_id: userId,
-      submission_date: new Date(),
+      created_at: new Date(),
       verification_date: null,
-      verification_status: "pending",
+      status: "pending",
       verification_source: null,
       verification_result: null
     };
@@ -1291,7 +1355,7 @@ export class MemStorage implements IStorage {
     
     const updatedLicense: NurseLicense = {
       ...license,
-      verification_status: status,
+      status: status,
       verification_date: verificationDate,
       verification_source: verificationSource,
       verification_result: verificationResult
@@ -1307,16 +1371,36 @@ export class MemStorage implements IStorage {
     eventId: number,
     ticketCode: string
   ): Promise<Ticket> {
-    const id = this.ticketId++;
+    const id = uuidv4();
     const newTicket: Ticket = {
       ...ticket,
       id,
       user_id: userId,
       event_id: eventId,
       ticket_code: ticketCode,
+      status: "issued",
+      issued_at: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
       purchase_date: new Date(),
-      used: false,
-      used_date: null
+      is_used: false,
+      qr_token: null,
+      qr_image_url: null,
+      emailed_at: null,
+      expires_at: null,
+      checked_in_at: null,
+      revoked_at: null,
+      revoke_reason: null,
+      reissued_from_ticket_id: null,
+      first_scan_ip: null,
+      first_scan_user_agent: null,
+      first_scan_device_fingerprint: null,
+      last_scan_at: null,
+      scan_count: 0,
+      email_status: null,
+      email_error: null,
+      ticket_type: null,
+      price: null
     };
     this.tickets.set(id, newTicket);
     return newTicket;
@@ -1334,16 +1418,18 @@ export class MemStorage implements IStorage {
     );
   }
   
-  async markTicketAsUsed(ticketId: number): Promise<Ticket> {
+  async markTicketAsUsed(ticketId: string): Promise<Ticket> {
     const ticket = this.tickets.get(ticketId);
     if (!ticket) {
       throw new Error("Ticket not found");
     }
-    
+
     const updatedTicket: Ticket = {
       ...ticket,
-      used: true,
-      used_date: new Date()
+      is_used: true,
+      status: "checked_in",
+      checked_in_at: new Date(),
+      updated_at: new Date()
     };
     this.tickets.set(ticketId, updatedTicket);
     return updatedTicket;
@@ -1355,15 +1441,29 @@ export class MemStorage implements IStorage {
   async createEmployer(employer: InsertEmployer, userId: number): Promise<Employer> {
     const id = this.employerId++;
     const newEmployer: Employer = {
-      ...employer,
       id,
+      name: employer.name,
+      company_name: employer.company_name ?? null,
+      description: employer.description ?? null,
+      website: employer.website ?? null,
+      logo_url: employer.logo_url ?? null,
+      address: employer.address ?? null,
+      city: employer.city ?? null,
+      state: employer.state ?? null,
+      zip_code: employer.zip_code ?? null,
+      contact_email: employer.contact_email,
+      contact_phone: employer.contact_phone ?? null,
       user_id: userId,
       created_at: new Date(),
       updated_at: new Date(),
       is_verified: false,
-      verification_date: null
+      account_status: "pending",
+      job_post_credits: 0,
+      job_post_pass_expires_at: null,
+      job_post_lifetime: false,
+      job_post_options: null
     };
-    this.employers.set(id, newEmployer);
+    this.employers.set(id, newEmployer) as any;
     return newEmployer;
   }
   
@@ -1398,7 +1498,7 @@ export class MemStorage implements IStorage {
       ...data,
       updated_at: new Date()
     };
-    this.employers.set(id, updatedEmployer);
+    this.employers.set(id, updatedEmployer) as any;
     return updatedEmployer;
   }
   
@@ -1411,10 +1511,9 @@ export class MemStorage implements IStorage {
     const updatedEmployer: Employer = {
       ...employer,
       is_verified: true,
-      verification_date: new Date(),
       updated_at: new Date()
     };
-    this.employers.set(id, updatedEmployer);
+    this.employers.set(id, updatedEmployer) as any;
     return updatedEmployer;
   }
   
@@ -1422,15 +1521,38 @@ export class MemStorage implements IStorage {
   async createJobListing(jobListing: InsertJobListing, employerId: number): Promise<JobListing> {
     const id = this.jobListingId++;
     const newJobListing: JobListing = {
-      ...jobListing,
       id,
+      title: jobListing.title,
       employer_id: employerId,
+      description: jobListing.description,
+      responsibilities: jobListing.responsibilities ?? null,
+      requirements: jobListing.requirements ?? null,
+      benefits: jobListing.benefits ?? null,
+      location: jobListing.location,
+      job_type: jobListing.job_type,
+      work_arrangement: jobListing.work_arrangement,
+      specialty: jobListing.specialty,
+      experience_level: jobListing.experience_level,
+      education_required: jobListing.education_required ?? null,
+      certification_required: jobListing.certification_required ?? null,
+      shift_type: jobListing.shift_type ?? null,
+      salary_min: jobListing.salary_min ?? null,
+      salary_max: jobListing.salary_max ?? null,
+      salary_period: jobListing.salary_period ?? "annual",
+      application_url: jobListing.application_url ?? null,
+      contact_email: jobListing.contact_email ?? null,
+      is_featured: jobListing.is_featured ?? false,
+      is_active: jobListing.is_active ?? true,
       posted_date: new Date(),
-      updated_at: new Date(),
+      expiry_date: jobListing.expiry_date ?? null,
       views_count: 0,
-      applications_count: 0
+      applications_count: 0,
+      is_approved: false,
+      approved_by: null,
+      approved_at: null,
+      approval_notes: null
     };
-    this.jobListings.set(id, newJobListing);
+    this.jobListings.set(id, newJobListing) as any;
     return newJobListing;
   }
   
@@ -1503,8 +1625,8 @@ export class MemStorage implements IStorage {
       
       // Filter by minimum salary
       if (filters.salaryMin !== undefined) {
-        jobs = jobs.filter(job => 
-          job.salary_min !== null && job.salary_min >= filters.salaryMin!
+        jobs = jobs.filter(job =>
+          job.salary_min !== null && Number(job.salary_min) >= filters.salaryMin!
         );
       }
       
@@ -1522,7 +1644,7 @@ export class MemStorage implements IStorage {
     
     // Sort by posted date (newest first)
     return jobs.sort((a, b) => 
-      new Date(b.posted_date).getTime() - new Date(a.posted_date).getTime()
+      new Date(b.posted_date as any).getTime() - new Date(a.posted_date as any).getTime()
     );
   }
   
@@ -1530,7 +1652,7 @@ export class MemStorage implements IStorage {
     const featuredJobs = Array.from(this.jobListings.values())
       .filter(job => job.is_featured && job.is_active)
       .sort((a, b) => 
-        new Date(b.posted_date).getTime() - new Date(a.posted_date).getTime()
+        new Date(b.posted_date as any).getTime() - new Date(a.posted_date as any).getTime()
       );
     
     return limit ? featuredJobs.slice(0, limit) : featuredJobs;
@@ -1540,7 +1662,7 @@ export class MemStorage implements IStorage {
     const recentJobs = Array.from(this.jobListings.values())
       .filter(job => job.is_active)
       .sort((a, b) => 
-        new Date(b.posted_date).getTime() - new Date(a.posted_date).getTime()
+        new Date(b.posted_date as any).getTime() - new Date(a.posted_date as any).getTime()
       );
     
     return limit ? recentJobs.slice(0, limit) : recentJobs;
@@ -1554,10 +1676,9 @@ export class MemStorage implements IStorage {
     
     const updatedJobListing: JobListing = {
       ...jobListing,
-      ...data,
-      updated_at: new Date()
+      ...data
     };
-    this.jobListings.set(id, updatedJobListing);
+    this.jobListings.set(id, updatedJobListing) as any;
     return updatedJobListing;
   }
   
@@ -1569,23 +1690,23 @@ export class MemStorage implements IStorage {
     
     const updatedJobListing: JobListing = {
       ...jobListing,
-      views_count: jobListing.views_count + 1
+      views_count: (jobListing.views_count ?? 0) + 1
     };
-    this.jobListings.set(id, updatedJobListing);
+    this.jobListings.set(id, updatedJobListing) as any;
     return updatedJobListing;
   }
-  
+
   async incrementJobApplicationsCount(id: number): Promise<JobListing> {
     const jobListing = this.jobListings.get(id);
     if (!jobListing) {
       throw new Error("Job listing not found");
     }
-    
+
     const updatedJobListing: JobListing = {
       ...jobListing,
-      applications_count: jobListing.applications_count + 1
+      applications_count: (jobListing.applications_count ?? 0) + 1
     };
-    this.jobListings.set(id, updatedJobListing);
+    this.jobListings.set(id, updatedJobListing) as any;
     return updatedJobListing;
   }
 
@@ -1597,13 +1718,27 @@ export class MemStorage implements IStorage {
   async createNurseProfile(profile: InsertNurseProfile, userId: number): Promise<NurseProfile> {
     const id = this.nurseProfileId++;
     const newProfile: NurseProfile = {
-      ...profile,
       id,
       user_id: userId,
+      headline: profile.headline ?? null,
+      summary: profile.summary ?? null,
+      years_of_experience: profile.years_of_experience ?? null,
+      specialties: profile.specialties ?? null,
+      skills: profile.skills ?? null,
+      certifications: profile.certifications,
+      education: profile.education,
+      resume_url: profile.resume_url ?? null,
+      profile_image_url: profile.profile_image_url ?? null,
+      availability: profile.availability ?? null,
+      preferred_shift: profile.preferred_shift ?? null,
+      preferred_work_arrangement: profile.preferred_work_arrangement ?? null,
+      preferred_locations: profile.preferred_locations ?? null,
+      current_employer: profile.current_employer ?? null,
+      is_public: profile.is_public ?? false,
       created_at: new Date(),
       updated_at: new Date()
     };
-    this.nurseProfiles.set(id, newProfile);
+    this.nurseProfiles.set(id, newProfile) as any;
     return newProfile;
   }
   
@@ -1628,7 +1763,7 @@ export class MemStorage implements IStorage {
       ...data,
       updated_at: new Date()
     };
-    this.nurseProfiles.set(id, updatedProfile);
+    this.nurseProfiles.set(id, updatedProfile) as any;
     return updatedProfile;
   }
   
@@ -1640,7 +1775,7 @@ export class MemStorage implements IStorage {
     preferredShift?: string;
   }): Promise<NurseProfile[]> {
     let profiles = Array.from(this.nurseProfiles.values())
-      .filter(profile => profile.public_profile);
+      .filter(profile => profile.is_public);
     
     if (filters) {
       // Filter by specialties
@@ -1649,7 +1784,7 @@ export class MemStorage implements IStorage {
           ? filters.specialties 
           : [filters.specialties];
         profiles = profiles.filter(profile => 
-          profile.specialties.some(specialty => 
+          profile.specialties && profile.specialties.some(specialty => 
             specialtiesArray.includes(specialty)
           )
         );
@@ -1670,7 +1805,7 @@ export class MemStorage implements IStorage {
       // Filter by years of experience
       if (filters.yearsOfExperience !== undefined) {
         profiles = profiles.filter(profile => 
-          profile.years_experience >= filters.yearsOfExperience!
+          profile.years_of_experience !== null && profile.years_of_experience >= filters.yearsOfExperience!
         );
       }
       
@@ -1706,10 +1841,13 @@ export class MemStorage implements IStorage {
       user_id: userId,
       job_id: jobId,
       application_date: new Date(),
-      status: "submitted",
-      updated_at: new Date(),
-      employer_notes: null
-    };
+      last_updated: new Date(),
+      status: "pending",
+      cover_letter: application.cover_letter ?? null,
+      resume_url: application.resume_url ?? null,
+      employer_notes: null,
+      is_withdrawn: false,
+    } as JobApplication;
     this.jobApplications.set(id, newApplication);
     return newApplication;
   }
@@ -1722,7 +1860,7 @@ export class MemStorage implements IStorage {
     return Array.from(this.jobApplications.values())
       .filter(app => app.user_id === userId)
       .sort((a, b) => 
-        new Date(b.application_date).getTime() - new Date(a.application_date).getTime()
+(b.application_date ? new Date(b.application_date as any).getTime() : 0) - (a.application_date ? new Date(a.application_date as any).getTime() : 0)
       );
   }
   
@@ -1730,7 +1868,7 @@ export class MemStorage implements IStorage {
     return Array.from(this.jobApplications.values())
       .filter(app => app.job_id === jobId)
       .sort((a, b) => 
-        new Date(b.application_date).getTime() - new Date(a.application_date).getTime()
+(b.application_date ? new Date(b.application_date as any).getTime() : 0) - (a.application_date ? new Date(a.application_date as any).getTime() : 0)
       );
   }
   
@@ -1744,8 +1882,8 @@ export class MemStorage implements IStorage {
       ...application,
       status,
       employer_notes: notes || application.employer_notes,
-      updated_at: new Date()
-    };
+      last_updated: new Date()
+    } as JobApplication;
     this.jobApplications.set(id, updatedApplication);
     return updatedApplication;
   }
@@ -1758,9 +1896,9 @@ export class MemStorage implements IStorage {
     
     const updatedApplication: JobApplication = {
       ...application,
-      status: "withdrawn",
-      updated_at: new Date()
-    };
+      is_withdrawn: true,
+      last_updated: new Date()
+    } as JobApplication;
     this.jobApplications.set(id, updatedApplication);
     return updatedApplication;
   }
@@ -1793,7 +1931,7 @@ export class MemStorage implements IStorage {
     return Array.from(this.savedJobs.values())
       .filter(saved => saved.user_id === userId)
       .sort((a, b) => 
-        new Date(b.saved_date).getTime() - new Date(a.saved_date).getTime()
+        new Date(b.saved_date as any).getTime() - new Date(a.saved_date as any).getTime()
       );
   }
   
@@ -1814,8 +1952,8 @@ export class MemStorage implements IStorage {
     return Array.from(this.jobAlerts.values())
       .filter(alert => alert.user_id === userId)
       .sort((a, b) => {
-        const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
-        const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+        const aTime = a.created_at ? new Date(a.created_at as any).getTime() : 0;
+        const bTime = b.created_at ? new Date(b.created_at as any).getTime() : 0;
         return bTime - aTime;
       });
   }
@@ -1860,8 +1998,8 @@ export class MemStorage implements IStorage {
     }
 
     return jobs.sort((a, b) => {
-      const aTime = a.posted_date ? new Date(a.posted_date).getTime() : 0;
-      const bTime = b.posted_date ? new Date(b.posted_date).getTime() : 0;
+      const aTime = a.posted_date ? new Date(a.posted_date as any).getTime() : 0;
+      const bTime = b.posted_date ? new Date(b.posted_date as any).getTime() : 0;
       return bTime - aTime;
     });
   }

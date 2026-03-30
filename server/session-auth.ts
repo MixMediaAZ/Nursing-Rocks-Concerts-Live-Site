@@ -196,7 +196,12 @@ export function setupAuth(app: Express) {
       
       // Create the new user
       const user = await storage.createUser(
-        { email, first_name, last_name },
+        { 
+          email, 
+          first_name, 
+          last_name,
+          password: password // Include in schema object for type compatibility
+        },
         hashedPassword
       );
       

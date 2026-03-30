@@ -118,3 +118,28 @@ export const generalApiRateLimiter = rateLimit({
     return req.ip || req.socket.remoteAddress || 'unknown';
   },
 });
+
+/**
+ * Rate limiter for ticket scanning endpoint
+ * FIX: Prevents DOS and brute force attacks on public gate scanning
+ *
+ * Configuration:
+ * - 30 scans per minute per IP address
+ * - Suitable for high-throughput gate operations
+ * - Prevents scanning thousands of invalid tickets rapidly
+ */
+export const scanRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30, // 30 requests per minute per IP
+  message: {
+    ok: false,
+    reason: "rate_limited",
+    message: 'Too many scan attempts. Please try again in a moment.',
+  },
+  statusCode: 429,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req, _res) => {
+    return req.ip || req.socket.remoteAddress || 'unknown';
+  },
+});

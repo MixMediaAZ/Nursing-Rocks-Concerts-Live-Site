@@ -4,30 +4,67 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Gallery } from '@shared/schema';
 
 export function DemoImageReplacement() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [refreshKey, setRefreshKey] = useState(Date.now());
   
   // Sample images for demonstration
-  const demoImages = [
+  const demoImages: Gallery[] = [
     {
       id: 1,
-      src: "/uploads/gallery/sample-1.jpg",
-      alt: "Concert Image 1",
-      className: "w-full h-64 object-cover rounded-md"
+      image_url: "/uploads/gallery/sample-1.jpg",
+      thumbnail_url: "/uploads/gallery/sample-1-thumb.jpg",
+      alt_text: "Concert Image 1",
+      event_id: null,
+      folder_id: null,
+      media_type: "image",
+      file_size: null,
+      dimensions: null,
+      duration: null,
+      sort_order: 0,
+      created_at: null,
+      updated_at: null,
+      z_index: 0,
+      tags: null,
+      metadata: null,
     },
     {
       id: 2,
-      src: "/uploads/gallery/sample-2.jpg",
-      alt: "Concert Image 2",
-      className: "w-full h-64 object-cover rounded-md"
+      image_url: "/uploads/gallery/sample-2.jpg",
+      thumbnail_url: "/uploads/gallery/sample-2-thumb.jpg",
+      alt_text: "Concert Image 2",
+      event_id: null,
+      folder_id: null,
+      media_type: "image",
+      file_size: null,
+      dimensions: null,
+      duration: null,
+      sort_order: 1,
+      created_at: null,
+      updated_at: null,
+      z_index: 0,
+      tags: null,
+      metadata: null,
     },
     {
       id: 3, 
-      src: "/uploads/gallery/sample-3.jpg",
-      alt: "Concert Image 3",
-      className: "w-full h-64 object-cover rounded-md"
+      image_url: "/uploads/gallery/sample-3.jpg",
+      thumbnail_url: "/uploads/gallery/sample-3-thumb.jpg",
+      alt_text: "Concert Image 3",
+      event_id: null,
+      folder_id: null,
+      media_type: "image",
+      file_size: null,
+      dimensions: null,
+      duration: null,
+      sort_order: 2,
+      created_at: null,
+      updated_at: null,
+      z_index: 0,
+      tags: null,
+      metadata: null,
     }
   ];
   
@@ -67,15 +104,12 @@ export function DemoImageReplacement() {
                 {demoImages.map((image) => (
                   <div key={`${image.id}-${refreshKey}`} className="relative">
                     <AdminImage
-                      src={image.src}
-                      alt={image.alt}
-                      className={image.className}
-                      showLoadingIndicator={true}
+                      imageData={image}
+                      className="w-full h-64 object-cover rounded-md"
                       isAdmin={isAdmin}
-                      imageId={image.id}
                     />
                     <div className="mt-2 text-sm text-center text-gray-500">
-                      {image.alt}
+                      {image.alt_text}
                     </div>
                   </div>
                 ))}
@@ -85,15 +119,12 @@ export function DemoImageReplacement() {
             <TabsContent value="single">
               <div className="max-w-xl mx-auto">
                 <AdminImage
-                  src={demoImages[0].src}
-                  alt={demoImages[0].alt}
+                  imageData={demoImages[0]}
                   className="w-full h-96 object-cover rounded-md"
-                  showLoadingIndicator={true}
                   isAdmin={isAdmin}
-                  imageId={demoImages[0].id}
                 />
                 <div className="mt-2 text-center text-gray-500">
-                  {demoImages[0].alt}
+                  {demoImages[0].alt_text}
                 </div>
               </div>
             </TabsContent>
@@ -101,10 +132,12 @@ export function DemoImageReplacement() {
         </CardContent>
         
         <CardFooter>
-          <p className="text-sm text-gray-500 mb-4">
-            When admin mode is enabled, hover over the images to see the replacement option. 
-            Click "Replace" to open the gallery selection dialog.
-          </p>
+          <button
+            onClick={refreshImages}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Refresh Images
+          </button>
         </CardFooter>
       </Card>
     </div>

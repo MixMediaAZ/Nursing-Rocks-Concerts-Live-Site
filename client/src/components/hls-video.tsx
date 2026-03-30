@@ -15,6 +15,8 @@ type Props = {
   onLoaded?: () => void;
   onLoadedMetadata?: (e: React.SyntheticEvent<HTMLVideoElement>) => void;
   onVolumeChange?: (isMuted: boolean) => void;
+  shouldLoad?: boolean;
+  paused?: boolean;
 };
 
 export function HlsVideo({

@@ -6,7 +6,7 @@ import fs from "fs";
 import { db } from "./db";
 import { eq, sql, and, desc, ilike, or, inArray } from "drizzle-orm";
 import { storage } from "./storage";
-import { approvedVideos, gallery, mediaFolders, events, nrpxRegistrations } from "@shared/schema";
+import { approvedVideos, gallery, mediaFolders, events, nrpxRegistrations, users } from "@shared/schema";
 import QRCode from "qrcode";
 import { sendNrpxTicketEmail } from "./email";
 import { processImage } from "./image-utils";
@@ -62,7 +62,7 @@ const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 let stripe: Stripe | undefined;
 if (stripeSecretKey) {
   stripe = new Stripe(stripeSecretKey, {
-    apiVersion: "2023-10-16", // Use the latest supported API version
+    // Uses the default API version configured in the Stripe account
   });
 }
 // Silent fallback for Stripe - will be configured later
@@ -112,7 +112,7 @@ import {
   updateMedia,
   deleteMedia
 } from "./media";
-import { authRateLimiter, adminPinRateLimiter, registerRateLimiter, passwordResetRateLimiter } from "./rate-limit";
+import { authRateLimiter, adminPinRateLimiter, registerRateLimiter, passwordResetRateLimiter, scanRateLimiter } from "./rate-limit";
 import { runAllEmailSchedules, getEmailScheduleStatus } from "./email-scheduler";
 import { searchJobs, searchEvents, searchNurses, getSearchSuggestions } from "./search";
 import { handleJobAlertsCron, handleEventRemindersCron, handleCronHealth } from "./cron-handlers";
@@ -229,15 +229,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { q, specialty, location, salaryMin, salaryMax, sortBy, limit, offset } = req.query;
 
+      // FIX: Add bounds checking for numeric inputs
+      const parsedLimit = limit ? Math.min(Math.max(parseInt(limit as string) || 20, 1), 100) : 20;
+      const parsedOffset = offset ? Math.max(parseInt(offset as string) || 0, 0) : 0;
+      const parsedSalaryMin = salaryMin ? Math.max(parseInt(salaryMin as string) || 0, 0) : undefined;
+      const parsedSalaryMax = salaryMax ? Math.max(parseInt(salaryMax as string) || 0, 0) : undefined;
+
       const results = await searchJobs({
         query: q as string,
         specialty: specialty ? (Array.isArray(specialty) ? specialty as string[] : [specialty as string]) : undefined,
         location: location as string,
-        salaryMin: salaryMin ? parseInt(salaryMin as string) : undefined,
-        salaryMax: salaryMax ? parseInt(salaryMax as string) : undefined,
+        salaryMin: parsedSalaryMin,
+        salaryMax: parsedSalaryMax,
         sortBy: (sortBy as any) || 'relevance',
-        limit: limit ? parseInt(limit as string) : 20,
-        offset: offset ? parseInt(offset as string) : 0,
+        limit: parsedLimit,
+        offset: parsedOffset,
       });
 
       res.json(results);
@@ -747,19 +753,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/jobs", async (req: Request, res: Response) => {
     try {
       const filters: any = {};
-      
+
       // Extract filter parameters from query
       if (req.query.specialty) filters.specialty = req.query.specialty;
       if (req.query.location) filters.location = req.query.location;
       if (req.query.jobType) filters.jobType = req.query.jobType;
       if (req.query.experienceLevel) filters.experienceLevel = req.query.experienceLevel;
       if (req.query.keywords) filters.keywords = req.query.keywords as string;
-      if (req.query.salaryMin) filters.salaryMin = parseInt(req.query.salaryMin as string);
-      if (req.query.employerId) filters.employerId = parseInt(req.query.employerId as string);
-      
+      // FIX: Add bounds checking for numeric inputs
+      if (req.query.salaryMin) {
+        const parsed = parseInt(req.query.salaryMin as string);
+        filters.salaryMin = !isNaN(parsed) ? Math.max(parsed, 0) : undefined;
+      }
+      if (req.query.employerId) {
+        const parsed = parseInt(req.query.employerId as string);
+        filters.employerId = !isNaN(parsed) ? Math.max(parsed, 1) : undefined;
+      }
+
       // Default to active jobs only
       filters.isActive = req.query.showInactive ? undefined : true;
-      
+
       const jobs = await storage.getAllJobListings(filters);
       res.json(jobs);
     } catch (error) {
@@ -770,7 +783,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/jobs/featured", async (req: Request, res: Response) => {
     try {
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : 3;
+      // FIX: Add bounds checking for limit parameter
+      const limit = req.query.limit ? Math.min(Math.max(parseInt(req.query.limit as string) || 3, 1), 100) : 3;
       const featuredJobs = await storage.getFeaturedJobListings(limit);
       res.json(featuredJobs);
     } catch (error) {
@@ -1725,8 +1739,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ========== VIDEO APPROVAL API (Admin only) ==========
 
-  const requireAdminToken = (req: Request, res: Response, next: any) => {
+  // FIX: Re-check admin privileges for sensitive operations
+  const requireAdminToken = async (req: Request, res: Response, next: any) => {
     if (!isUserAdmin(req)) return res.status(403).json({ message: "Admin privileges required" });
+
+    // FIX: Verify admin is still valid in database (not suspended/disabled)
+    const userId = (req as any).user?.userId;
+    if (!userId) {
+      return res.status(403).json({ message: "Admin user ID not found" });
+    }
+
+    const adminUser = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!adminUser.length || !adminUser[0].is_admin) {
+      return res.status(403).json({ message: "Admin privileges revoked" });
+    }
+
     return next();
   };
 
@@ -1742,19 +1769,239 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin: Update user
+  // ========== INPUT VALIDATION HELPERS ==========
+  const isValidUUID = (id: string): boolean => {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  };
+
+  // ========== USER VERIFICATION & TICKETING ROUTES ==========
+
+  // Admin: Verify/unverify user (triggers ticket creation and emails)
+  app.patch("/api/admin/users/:id/verify", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const { verifyUser, unverifyUser, getUserVerificationStatus } = await import("./services/verification");
+
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) return res.status(400).json({ message: "Invalid user ID" });
+
+      const adminUserId = (req as any).user?.userId;
+      if (!adminUserId) return res.status(401).json({ message: "Admin user not found" });
+
+      const { verified, notes } = req.body;
+
+      if (verified === true) {
+        await verifyUser(userId, adminUserId);
+      } else if (verified === false) {
+        await unverifyUser(userId, adminUserId);
+      } else {
+        return res.status(400).json({ message: "verified must be boolean" });
+      }
+
+      // Return updated verification status
+      const status = await getUserVerificationStatus(userId);
+      // FIX: Don't leak sensitive user data like password_hash, phone, email in response
+      const { user, ...safeStatus } = status;
+      return res.json({
+        ...safeStatus,
+        userId: user.id,
+        userName: user.first_name + " " + user.last_name,
+      });
+    } catch (error) {
+      console.error("Error verifying user:", error);
+      const message = error instanceof Error ? error.message : "Failed to verify user";
+      return res.status(500).json({ message });
+    }
+  });
+
+  // Admin: Get user's tickets
+  app.get("/api/admin/users/:id/tickets", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const { getUserTickets } = await import("./services/tickets");
+
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) return res.status(400).json({ message: "Invalid user ID" });
+
+      const userTickets = await getUserTickets(userId);
+      return res.json(userTickets);
+    } catch (error) {
+      console.error("Error fetching user tickets:", error);
+      return res.status(500).json({ message: "Failed to fetch tickets" });
+    }
+  });
+
+  // Admin: Resend ticket email
+  app.post("/api/admin/tickets/:id/resend-email", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const { resendTicketEmail } = await import("./services/email");
+
+      const ticketId = req.params.id;
+      // FIX: Validate ticket ID is proper UUID format
+      if (!isValidUUID(ticketId)) {
+        return res.status(400).json({ message: "Invalid ticket ID format" });
+      }
+
+      const result = await resendTicketEmail(ticketId);
+
+      return res.json(result);
+    } catch (error) {
+      console.error("Error resending ticket email:", error);
+      const message = error instanceof Error ? error.message : "Failed to resend email";
+      return res.status(500).json({ message });
+    }
+  });
+
+  // Admin: Get QR code details for a ticket (for viewing/resending)
+  app.get("/api/admin/tickets/:id/qr", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const { getTicketQrCode } = await import("./services/email");
+
+      const ticketId = req.params.id;
+      // FIX: Validate ticket ID is proper UUID format
+      if (!isValidUUID(ticketId)) {
+        return res.status(400).json({ message: "Invalid ticket ID format" });
+      }
+
+      const qrData = await getTicketQrCode(ticketId);
+
+      return res.json(qrData);
+    } catch (error) {
+      console.error("Error fetching QR code:", error);
+      const message = error instanceof Error ? error.message : "Failed to fetch QR code";
+      return res.status(500).json({ message });
+    }
+  });
+
+  // Admin: Get email delivery status for a ticket
+  app.get("/api/admin/tickets/:id/email-status", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const { getTicketEmailHistory } = await import("./services/email");
+
+      const ticketId = req.params.id;
+      // FIX: Validate ticket ID is proper UUID format
+      if (!isValidUUID(ticketId)) {
+        return res.status(400).json({ message: "Invalid ticket ID format" });
+      }
+
+      const history = await getTicketEmailHistory(ticketId);
+
+      return res.json(history);
+    } catch (error) {
+      console.error("Error fetching email history:", error);
+      const message = error instanceof Error ? error.message : "Failed to fetch email history";
+      return res.status(500).json({ message });
+    }
+  });
+
+  // Admin: Revoke ticket
+  app.post("/api/admin/tickets/:id/revoke", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const { revokeTicket } = await import("./services/tickets");
+
+      const ticketId = req.params.id;
+      // FIX: Validate ticket ID is proper UUID format
+      if (!isValidUUID(ticketId)) {
+        return res.status(400).json({ message: "Invalid ticket ID format" });
+      }
+
+      // FIX: Validate revocation reason
+      let reason = req.body.reason || "Revoked by admin";
+      if (typeof reason !== "string") {
+        return res.status(400).json({ message: "reason must be a string" });
+      }
+      reason = reason.trim();
+      if (reason.length > 500) {
+        return res.status(400).json({ message: "reason must be less than 500 characters" });
+      }
+
+      // FIX: Pass adminUserId to create audit log
+      const adminUserId = (req as any).user?.userId;
+      if (!adminUserId) {
+        return res.status(401).json({ message: "Admin user not found" });
+      }
+
+      const revoked = await revokeTicket(ticketId, reason, adminUserId);
+      return res.json(revoked);
+    } catch (error) {
+      console.error("Error revoking ticket:", error);
+      const message = error instanceof Error ? error.message : "Failed to revoke ticket";
+      return res.status(500).json({ message });
+    }
+  });
+
+  // Public/Auth: Scan ticket QR code (gate scanning)
+  // FIX: Apply rate limiting to prevent DOS and brute force attacks on public endpoint
+  app.post("/api/tickets/scan", scanRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const { scanTicket } = await import("./services/scan");
+
+      const { qrToken, eventId, deviceFingerprint } = req.body;
+
+      // FIX: Validate required fields
+      if (!qrToken || !eventId) {
+        return res.status(400).json({ message: "Missing qrToken or eventId" });
+      }
+
+      // FIX: Validate eventId is a number and positive
+      if (typeof eventId !== "number" || !Number.isInteger(eventId) || eventId <= 0) {
+        return res.status(400).json({ message: "eventId must be a positive integer" });
+      }
+
+      // FIX: Validate qrToken is a string
+      if (typeof qrToken !== "string") {
+        return res.status(400).json({ message: "qrToken must be a string" });
+      }
+
+      // FIX: Extract and validate IP address
+      const ip = req.ip || req.connection?.remoteAddress || null;
+      if (!ip) {
+        console.warn("[Scan] Unable to determine request IP address");
+      }
+
+      // Build scan context from request
+      const scanContext = {
+        ip: ip || "127.0.0.1", // Use loopback as fallback, not "unknown"
+        userAgent: req.get("user-agent") || "unknown",
+        deviceFingerprint: deviceFingerprint,
+        scannerUserId: (req as any).user?.userId, // Optional if staff authenticated
+      };
+
+      const result = await scanTicket({ qrToken, eventId, deviceFingerprint }, scanContext);
+      return res.status(result.ok ? 200 : 400).json(result);
+    } catch (error) {
+      console.error("Error scanning ticket:", error);
+      const message = error instanceof Error ? error.message : "Failed to scan ticket";
+      return res.status(500).json({ message });
+    }
+  });
+
+  // User: Get my tickets
+  app.get("/api/me/tickets", async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.userId;
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+
+      const { getUserTickets } = await import("./services/tickets");
+      const myTickets = await getUserTickets(userId);
+
+      return res.json(myTickets);
+    } catch (error) {
+      console.error("Error fetching my tickets:", error);
+      return res.status(500).json({ message: "Failed to fetch tickets" });
+    }
+  });
+
+  // Admin: Update user (legacy - kept for compatibility)
   app.patch("/api/admin/users/:id", requireAdminToken, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) return res.status(400).json({ message: "Invalid user ID" });
-      
+
       const user = await storage.getUserById(id);
       if (!user) return res.status(404).json({ message: "User not found" });
 
-      const { is_admin, is_verified, is_suspended } = req.body;
+      const { is_admin, is_suspended } = req.body;
       const updates: any = {};
       if (typeof is_admin === 'boolean') updates.is_admin = is_admin;
-      if (typeof is_verified === 'boolean') updates.is_verified = is_verified;
       if (typeof is_suspended === 'boolean') updates.is_suspended = is_suspended;
 
       const updated = await storage.updateUser(id, updates);
@@ -2472,7 +2719,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Check stock availability
-        if (product.stock_quantity < item.quantity) {
+        if ((product.stock_quantity ?? 0) < item.quantity) {
           return res.status(400).json({ 
             message: `Insufficient stock for product ${product.name}` 
           });
@@ -2717,7 +2964,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const setting = await storage.createOrUpdateAppSetting(
         validatedData.key,
         validatedData.value,
-        validatedData.description || null,
+        validatedData.description ?? undefined,
         validatedData.is_sensitive
       );
       
@@ -3035,17 +3282,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const result = await fetchCustomCatProducts(apiKeyValue);
         
         if (!result.success) {
-          console.error("CustomCat API connection failed:", result.errors || result.message);
+          console.error("CustomCat API connection failed:", (result as any).errors || (result as any).message);
           return res.status(400).json({ 
             success: false, 
-            message: result.message || "Failed to connect to CustomCat API. Please check your API key.",
-            errors: result.errors,
+            message: (result as any).message || "Failed to connect to CustomCat API. Please check your API key.",
+            errors: (result as any).errors,
             statusCode: 400
           });
         }
         
         // Get products from the result
-        const rawProductsData = result.products || [];
+        const rawProductsData = (result as any).products || [];
         
         if (!Array.isArray(rawProductsData) || rawProductsData.length === 0) {
           console.log("No products received from CustomCat API");
@@ -3104,14 +3351,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 price: product.price,
                 image_url: product.image_url,
                 category: product.category,
-                metadata: product.metadata, // This contains all the original CustomCat data
+                metadata: product.metadata as any, // This contains all the original CustomCat data
                 is_featured: existingProduct.is_featured, // Preserve featured status
                 is_available: product.is_available
-              });
+              } as any);
               syncResults.updated++;
             } else {
               // Create new product
-              await storage.createStoreProduct(product);
+              await storage.createStoreProduct({ ...product, metadata: product.metadata as any });
               syncResults.added++;
             }
           } catch (err) {

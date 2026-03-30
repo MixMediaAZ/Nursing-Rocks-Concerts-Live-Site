@@ -251,7 +251,7 @@ export class DatabaseStorage implements IStorage {
     eventId: number, 
     ticketCode: string
   ): Promise<Ticket> {
-    const [newTicket] = await db
+    const result = await db
       .insert(tickets)
       .values({
         user_id: userId,
@@ -262,6 +262,7 @@ export class DatabaseStorage implements IStorage {
         is_used: false
       })
       .returning();
+    const newTicket = Array.isArray(result) ? result[0] : result;
     return newTicket;
   }
   
@@ -280,7 +281,7 @@ export class DatabaseStorage implements IStorage {
     return ticket;
   }
   
-  async markTicketAsUsed(ticketId: number): Promise<Ticket> {
+  async markTicketAsUsed(ticketId: string): Promise<Ticket> {
     const [updatedTicket] = await db
       .update(tickets)
       .set({ is_used: true })
@@ -582,7 +583,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFeaturedJobListings(limit?: number): Promise<JobListing[]> {
-    let query = db
+    let query: any = db
       .select()
       .from(jobListings)
       .where(eq(jobListings.is_featured, true));
@@ -595,7 +596,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getRecentJobListings(limit?: number): Promise<JobListing[]> {
-    let query = db
+    let query: any = db
       .select()
       .from(jobListings)
       .orderBy(desc(jobListings.posted_date));

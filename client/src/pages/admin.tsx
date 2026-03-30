@@ -377,9 +377,48 @@ export default function AdminPage() {
     },
   });
 
-  // Update user mutation
+  // Verify user mutation (NEW - for ticketing system)
+  const verifyUserMutation = useMutation({
+    mutationFn: async ({ userId, verified }: { userId: number; verified: boolean }) => {
+      const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+      const response = await fetch(`/api/admin/users/${userId}/verify`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ verified }),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to verify user');
+      }
+      return response.json();
+    },
+    onSuccess: async (result) => {
+      await queryClient.refetchQueries({ queryKey: ['/api/admin/users'] });
+      if (selectedUser) {
+        setSelectedUser({ ...selectedUser, is_verified: result.isVerified, verified_at: result.verifiedAt });
+      }
+      const action = result.isVerified ? "Verified" : "Unverified";
+      const ticketCount = result.activeTicketCount || 0;
+      toast({
+        title: `User ${action}`,
+        description: `${result.activeTicketCount} tickets created, emails sent.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Verification Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update user mutation (for other fields like is_admin, is_suspended)
   const updateUserMutation = useMutation({
-    mutationFn: async ({ userId, updates }: { userId: number; updates: { is_admin?: boolean; is_verified?: boolean; is_suspended?: boolean } }) => {
+    mutationFn: async ({ userId, updates }: { userId: number; updates: { is_admin?: boolean; is_suspended?: boolean } }) => {
       const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
       const response = await fetch(`/api/admin/users/${userId}`, {
         method: 'PATCH',
@@ -404,7 +443,6 @@ export default function AdminPage() {
         title: "User Updated",
         description: "User information has been updated successfully.",
       });
-      // Keep dialog open so admin can make more changes
     },
     onError: (error: Error) => {
       toast({
@@ -534,7 +572,7 @@ export default function AdminPage() {
         const userData = JSON.parse(userDataStr);
         
         // Check if user is an admin (verify both storage flag and user data)
-        const hasAdminAccess = isAdmin === 'true' && userData.is_admin === true;
+        const hasAdminAccess = isAdmin && userData.is_admin === true;
         if (!hasAdminAccess) {
           // User is not an admin, redirect to regular dashboard
           setAuthenticated(false);
@@ -2270,12 +2308,12 @@ export default function AdminPage() {
                                     variant="ghost" 
                                     size="sm"
                                     onClick={() => {
-                                      updateUserMutation.mutate({
+                                      verifyUserMutation.mutate({
                                         userId: user.id,
-                                        updates: { is_verified: !user.is_verified }
+                                        verified: !user.is_verified
                                       });
                                     }}
-                                    disabled={updateUserMutation.isPending}
+                                    disabled={verifyUserMutation.isPending}
                                     className={user.is_verified ? "text-amber-600 hover:text-amber-700" : "text-green-600 hover:text-green-700"}
                                   >
                                     {user.is_verified ? "Unverify" : "Verify"}
@@ -2368,13 +2406,12 @@ export default function AdminPage() {
                           id="verified-toggle"
                           checked={selectedUser.is_verified}
                           onCheckedChange={(checked) => {
-                            updateUserMutation.mutate({
+                            verifyUserMutation.mutate({
                               userId: selectedUser.id,
-                              updates: { is_verified: checked }
+                              verified: checked
                             });
-                            setSelectedUser({ ...selectedUser, is_verified: checked });
                           }}
-                          disabled={updateUserMutation.isPending}
+                          disabled={verifyUserMutation.isPending}
                         />
                       </div>
                       

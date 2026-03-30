@@ -10,6 +10,7 @@ export const events = pgTable("events", {
   subtitle: text("subtitle"),
   description: text("description"),
   date: timestamp("date").notNull(),
+  end_at: timestamp("end_at"),
   artist_id: integer("artist_id").notNull(),
   image_url: text("image_url"),
   start_time: text("start_time").notNull(),
@@ -19,6 +20,10 @@ export const events = pgTable("events", {
   genre: text("genre"),
   tickets_url: text("tickets_url"),
   location: text("location").notNull(), // Main location reference
+  slug: text("slug"),
+  capacity: integer("capacity"),
+  status: text("status").default("published"), // published, active, cancelled, completed, postponed, draft
+  ticket_expiration_at: timestamp("ticket_expiration_at"),
   // Ticket availability: not every event has online sales; some presale, some door-only
   has_presale_tickets: boolean("has_presale_tickets").default(false),
   tickets_at_door_only: boolean("tickets_at_door_only").default(false),
@@ -196,8 +201,12 @@ export const users = pgTable("users", {
   last_name: text("last_name").notNull(),
   created_at: timestamp("created_at").defaultNow(),
   is_verified: boolean("is_verified").default(false),
+  verified_at: timestamp("verified_at"),
+  verification_source: text("verification_source"),
+  verification_notes: text("verification_notes"),
   is_admin: boolean("is_admin").default(false),
   is_suspended: boolean("is_suspended").default(false),
+  status: text("status").default("active"), // active, suspended, inactive
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -231,29 +240,106 @@ export const insertNurseLicenseSchema = createInsertSchema(nurseLicenses).omit({
   created_at: true,
 });
 
-// Tickets model
+// Tickets model - COMPLETE SCHEMA WITH ALL FIELDS
 export const tickets = pgTable("tickets", {
-  id: serial("id").primaryKey(),
+  id: uuid("id").primaryKey().defaultRandom(),
   user_id: integer("user_id").notNull(),
   event_id: integer("event_id").notNull(),
-  purchase_date: timestamp("purchase_date").defaultNow(),
-  ticket_type: text("ticket_type").notNull(),
-  price: text("price").notNull(),
-  is_used: boolean("is_used").default(false),
-  ticket_code: text("ticket_code").notNull().unique(),
+  ticket_code: varchar("ticket_code", { length: 50 }).notNull().unique(),
+  // FIX: Use text() for qr_token since JWT tokens can exceed 255 chars (base64 expansion of payload + signature)
+  qr_token: text("qr_token").unique(),
+  qr_image_url: text("qr_image_url"),
+  status: text("status").default("issued"), // issued, checked_in, revoked, expired, reissued
+  issued_at: timestamp("issued_at", { withTimezone: true }).defaultNow(),
+  emailed_at: timestamp("emailed_at", { withTimezone: true }),
+  expires_at: timestamp("expires_at", { withTimezone: true }),
+  checked_in_at: timestamp("checked_in_at", { withTimezone: true }),
+  revoked_at: timestamp("revoked_at", { withTimezone: true }),
+  revoke_reason: text("revoke_reason"),
+  reissued_from_ticket_id: uuid("reissued_from_ticket_id"),
+  first_scan_ip: varchar("first_scan_ip", { length: 45 }),
+  first_scan_user_agent: text("first_scan_user_agent"),
+  first_scan_device_fingerprint: text("first_scan_device_fingerprint"),
+  last_scan_at: timestamp("last_scan_at", { withTimezone: true }),
+  scan_count: integer("scan_count").default(0),
+  email_status: text("email_status").default("pending"), // pending, sent, failed, bounced
+  email_error: text("email_error"),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  // Legacy fields for compatibility
+  purchase_date: timestamp("purchase_date"),
+  ticket_type: text("ticket_type"),
+  price: text("price"),
+  is_used: boolean("is_used"),
 });
 
 export const insertTicketSchema = createInsertSchema(tickets).omit({
   id: true,
-  purchase_date: true,
-  is_used: true,
-  ticket_code: true,
+  issued_at: true,
+  emailed_at: true,
+  checked_in_at: true,
+  revoked_at: true,
+  created_at: true,
+  updated_at: true,
+  last_scan_at: true,
+});
+
+// Ticket Scan Logs
+export const ticketScanLogs = pgTable("ticket_scan_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  ticket_id: uuid("ticket_id").notNull(),
+  user_id: integer("user_id"),
+  event_id: integer("event_id").notNull(),
+  scanned_at: timestamp("scanned_at", { withTimezone: true }).defaultNow(),
+  scanner_user_id: integer("scanner_user_id"),
+  scanner_device_id: varchar("scanner_device_id", { length: 255 }),
+  ip_address: varchar("ip_address", { length: 45 }),
+  user_agent: text("user_agent"),
+  device_fingerprint: text("device_fingerprint"),
+  result: text("result"), // success, invalid, expired, revoked, duplicate
+  reason: text("reason"),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const insertTicketScanLogSchema = createInsertSchema(ticketScanLogs).omit({
+  id: true,
+  scanned_at: true,
+  created_at: true,
+});
+
+// Verification Audit Logs
+export const verificationAuditLogs = pgTable("verification_audit_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  user_id: integer("user_id").notNull(),
+  admin_user_id: integer("admin_user_id"),
+  action: text("action").notNull(), // verified, unverified, suspended, reinstated
+  previous_verified_state: boolean("previous_verified_state"),
+  new_verified_state: boolean("new_verified_state"),
+  notes: text("notes"),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const insertVerificationAuditLogSchema = createInsertSchema(verificationAuditLogs).omit({
+  id: true,
+  created_at: true,
 });
 
 // Relations
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ many, one }) => ({
   licenses: many(nurseLicenses),
   tickets: many(tickets),
+  profile: one(nurseProfiles, {
+    fields: [users.id],
+    references: [nurseProfiles.user_id],
+  }),
+  jobApplications: many(jobApplications),
+  savedJobs: many(savedJobs),
+  jobAlerts: many(jobAlerts),
+  employer: one(employers, {
+    fields: [users.id],
+    references: [employers.user_id],
+  }),
+  storeOrders: many(storeOrders),
 }));
 
 export const nurseLicensesRelations = relations(nurseLicenses, ({ one }) => ({
@@ -300,6 +386,12 @@ export type InsertNurseLicense = z.infer<typeof insertNurseLicenseSchema>;
 
 export type Ticket = typeof tickets.$inferSelect;
 export type InsertTicket = z.infer<typeof insertTicketSchema>;
+
+export type TicketScanLog = typeof ticketScanLogs.$inferSelect;
+export type InsertTicketScanLog = z.infer<typeof insertTicketScanLogSchema>;
+
+export type VerificationAuditLog = typeof verificationAuditLogs.$inferSelect;
+export type InsertVerificationAuditLog = z.infer<typeof insertVerificationAuditLogSchema>;
 
 // Media Assets for file uploads
 export const mediaAssets = pgTable("media_assets", {
@@ -601,21 +693,7 @@ export const contactRequestsRelations = relations(contactRequests, ({ one }) => 
 }));
 
 // Update user relations to include jobs relationships
-export const updatedUsersRelations = relations(users, ({ many, one }) => ({
-  licenses: many(nurseLicenses),
-  tickets: many(tickets),
-  profile: one(nurseProfiles, {
-    fields: [users.id],
-    references: [nurseProfiles.user_id],
-  }),
-  jobApplications: many(jobApplications),
-  savedJobs: many(savedJobs),
-  jobAlerts: many(jobAlerts),
-  employer: one(employers, {
-    fields: [users.id],
-    references: [employers.user_id],
-  }),
-}));
+// Note: usersRelations consolidated above with all relationships
 
 // Job board types
 export type Employer = typeof employers.$inferSelect;
@@ -748,22 +826,7 @@ export const storeOrderItemsRelations = relations(storeOrderItems, ({ one }) => 
 }));
 
 // Update user relations to include store relationships
-export const updatedUsersRelationsWithStore = relations(users, ({ many, one }) => ({
-  licenses: many(nurseLicenses),
-  tickets: many(tickets),
-  profile: one(nurseProfiles, {
-    fields: [users.id],
-    references: [nurseProfiles.user_id],
-  }),
-  jobApplications: many(jobApplications),
-  savedJobs: many(savedJobs),
-  jobAlerts: many(jobAlerts),
-  employer: one(employers, {
-    fields: [users.id],
-    references: [employers.user_id],
-  }),
-  storeOrders: many(storeOrders),
-}));
+// Note: usersRelations consolidated above with all relationships including storeOrders
 
 // Store types
 export type StoreProduct = typeof storeProducts.$inferSelect;

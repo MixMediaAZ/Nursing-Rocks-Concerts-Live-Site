@@ -94,7 +94,26 @@
       "Bash(curl -s -L -w \"\\\\nHTTP_STATUS:%{http_code}\" -X GET \"https://nursingrocksconcerts.com/api/cron/job-alerts\" -H \"Content-Type: application/json\" --max-time 60)",
       "Bash(curl -s -X GET \"https://nursingrocksconcerts.com/api/cron/event-reminders\" -H \"x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee\" -H \"Content-Type: application/json\" --max-time 30)",
       "Bash(curl -s -L -X GET \"https://nursingrocksconcerts.com/api/cron/event-reminders\" -H \"x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee\" -H \"Content-Type: application/json\" --max-time 60)",
-      "mcp__bbb7e4d9-48d1-4584-9ef5-c334117800ca__get_deployment"
+      "mcp__bbb7e4d9-48d1-4584-9ef5-c334117800ca__get_deployment",
+      "Bash(node apply-migration.js)",
+      "Read(//tmp/**)",
+      "Bash(tee /tmp/errors.txt)",
+      "Bash(grep -n \"interface Props\\\\|type Props\" client/src/components/admin/*.tsx client/src/components/*.tsx)",
+      "Bash(python3:*)",
+      "Bash(ls -la \"/c/Users/Dave/Downloads/Nursing-Rocks-Concerts-Live-Site - 3.0/server/\"*.ts)",
+      "Bash(curl -s http://localhost:5000/api/health)",
+      "Bash(curl -s http://localhost:3000/api/health)",
+      "Bash(pkill -f \"tsx server/index.ts\")",
+      "Bash(grep -r \"TODO\\\\|FIXME\\\\|BUG\\\\|HACK\" server/services/*.ts --color=never)",
+      "Bash(grep -n \"email_status.*pending\\\\|email_status.*sent\\\\|email_status.*failed\" server/services/*.ts)",
+      "Bash(grep -n \"new Date\\(\\)\\\\|Date.now\\(\\)\\\\|getTime\\(\\)\" server/services/*.ts)",
+      "Bash(grep -n \"\\\\.returning\\(\\)\\\\|\\\\.returning\" server/services/*.ts)",
+      "Bash(grep -n \"async createTicket\" server/*.ts)",
+      "Bash(grep -rn \"transaction\\\\|await.*await\\\\|Promise\\\\.all\" server/services/*.ts)",
+      "Bash(grep -n \"verificationAuditLogs\\\\|ticketScanLogs\" server/services/*.ts)",
+      "Bash(grep -rn \"user\\\\.email\\\\|\\\\.email\" server/services/*.ts)",
+      "Bash(grep -rn \"console\\\\.log\" server/services/*.ts)",
+      "Bash(grep -n \"export.*isUserAdmin\\\\|function.*isUserAdmin\" server/*.ts)"
     ]
   }
 }

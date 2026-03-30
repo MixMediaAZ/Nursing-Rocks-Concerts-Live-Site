@@ -217,7 +217,7 @@ export async function purchaseTicket(req: Request, res: Response) {
 
     // Create ticket
     const ticket = await storage.createTicket(
-      { ticket_type, price },
+      { ticket_type, price, event_id, user_id: userId, ticket_code: ticketCode },
       userId,
       event_id,
       ticketCode
@@ -299,7 +299,7 @@ export async function validateTicketByCode(req: Request, res: Response) {
     }
 
     // Get event details for the ticket
-    const event = await storage.getEvent(ticket.event_id);
+    const event = await storage.getEvent(ticket.event_id as number);
 
     return res.status(200).json({
       valid: true,
@@ -351,7 +351,7 @@ export async function markTicketUsed(req: Request, res: Response) {
     }
 
     // Mark ticket as used
-    const updatedTicket = await storage.markTicketAsUsed(ticket.id);
+    const updatedTicket = await storage.markTicketAsUsed(ticket.id as any);
 
     return res.status(200).json({
       success: true,
@@ -361,7 +361,7 @@ export async function markTicketUsed(req: Request, res: Response) {
         type: updatedTicket.ticket_type,
         price: updatedTicket.price,
         is_used: updatedTicket.is_used,
-        usage_date: updatedTicket.usage_date,
+        checked_in_at: updatedTicket.checked_in_at,
       }
     });
   } catch (error) {
@@ -386,7 +386,7 @@ export async function requireEmployerToken(req: Request, res: Response, next: Fu
     }
 
     // Fetch employer by user id
-    const employer = await storage.getEmployerByUserId(decoded.userId);
+    const employer = await storage.getEmployerByUserId(decoded.userId as any);
     if (!employer) {
       return res.status(403).json({ message: "Employer profile not found" });
     }
@@ -444,7 +444,7 @@ export async function authenticateToken(req: Request, res: Response, next: Funct
     }
     
     // For regular user tokens, fetch the complete user to get the latest isAdmin status
-    const user = await storage.getUserById(decoded.userId);
+    const user = await storage.getUserById(decoded.userId as any);
     if (!user) {
       return res.status(403).json({ message: 'User not found' });
     }
@@ -472,7 +472,7 @@ async function verifyNurseLicense(licenseId: number) {
       throw new Error('License not found');
     }
 
-    let verificationResult;
+    let verificationResult: any;
     let status = 'invalid';
 
     // In a real implementation, this would make a call to the actual nursing board API
@@ -491,8 +491,8 @@ async function verifyNurseLicense(licenseId: number) {
           })
         });
         
-        verificationResult = await response.json();
-        status = verificationResult.isValid ? 'verified' : 'invalid';
+        verificationResult = await response.json() as any;
+        status = verificationResult?.isValid ? 'verified' : 'invalid';
       } catch (error) {
         console.error('External API verification error:', error);
         // Fall back to simulated verification
