@@ -95,12 +95,12 @@ export function Footer() {
               </div>
             </Link>
             <div className="space-y-2 flex flex-col items-center">
-              <Link href="/contact">
+              <a href="mailto:NursingRocksConcerts@gmail.com">
                 <div className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors cursor-pointer">
                   <Mail className="h-4 w-4" />
-                  <span className="text-sm">Bernd Haber worldstringspromotion@gmail.com</span>
+                  <span className="text-sm">NursingRocksConcerts@gmail.com</span>
                 </div>
-              </Link>
+              </a>
             </div>
           </div>
           

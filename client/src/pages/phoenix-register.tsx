@@ -84,7 +84,7 @@ export default function PhoenixRegisterPage() {
               <p className="font-semibold text-gray-800 text-center mb-4">Event Details</p>
               <div className="flex items-center gap-3 text-gray-700">
                 <Calendar className="h-5 w-5 text-red-500 flex-shrink-0" />
-                <span>Friday, May 16, 2026</span>
+                <span>Saturday, May 16, 2026</span>
               </div>
               <div className="flex items-center gap-3 text-gray-700">
                 <MapPin className="h-5 w-5 text-red-500 flex-shrink-0" />
@@ -125,7 +125,7 @@ export default function PhoenixRegisterPage() {
     <>
       <Helmet>
         <title>Register — Nursing Rocks Phoenix 2026</title>
-        <meta name="description" content="Register for free tickets to Nursing Rocks Phoenix — Friday, May 16, 2026 at The Walter Studio." />
+        <meta name="description" content="Register for free tickets to Nursing Rocks Phoenix — Saturday, May 16, 2026 at The Walter Studio." />
       </Helmet>
 
       <div className="min-h-screen flex flex-col items-center justify-center px-4 py-10">
@@ -142,7 +142,7 @@ export default function PhoenixRegisterPage() {
 
           <div className="mt-6 w-full bg-white rounded-lg p-6 space-y-4 shadow-sm border border-gray-200">
             <div className="text-center">
-              <p className="text-lg font-semibold text-gray-900">Friday, May 16, 2026</p>
+              <p className="text-lg font-semibold text-gray-900">Saturday, May 16, 2026</p>
               <p className="text-lg text-gray-700">The Walter Studio, Phoenix AZ</p>
             </div>
 

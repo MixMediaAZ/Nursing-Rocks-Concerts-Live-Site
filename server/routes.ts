@@ -2114,6 +2114,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bootstrap: Set admin user by email (for initial setup only)
+  app.post("/api/bootstrap/set-admin", async (req: Request, res: Response) => {
+    try {
+      const { email } = req.body;
+
+      if (!email || typeof email !== 'string') {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      // Check if any admins already exist (security: prevent overwriting existing setup)
+      const existingAdmins = await db
+        .select()
+        .from(users)
+        .where(eq(users.is_admin, true))
+        .limit(1);
+
+      if (existingAdmins.length > 0) {
+        return res.status(403).json({ message: "Admin already configured. Use admin interface to manage users." });
+      }
+
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Set user as admin
+      const updated = await storage.updateUser(user.id, { is_admin: true });
+      const { password_hash: _p, ...safe } = updated;
+
+      return res.json({
+        message: "User set as admin successfully",
+        user: safe
+      });
+    } catch (error) {
+      console.error("Error setting admin user:", error);
+      return res.status(500).json({ message: "Failed to set admin user" });
+    }
+  });
+
   // Admin: Get all jobs (with employer name joined)
   app.get("/api/admin/jobs", requireAdminToken, async (_req: Request, res: Response) => {
     try {

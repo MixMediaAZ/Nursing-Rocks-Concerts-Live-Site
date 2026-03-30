@@ -122,7 +122,9 @@
       "Bash(find 'C:\\\\Users\\\\Dave\\\\Downloads\\\\Nursing-Rocks-Concerts-Live-Site - 3.0' -name schema* -type f)",
       "Bash(curl -s -L -X GET \"https://nursingrocksconcerts.com/api/cron/job-alerts\" -H \"x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee\" -H \"Content-Type: application/json\" --max-time 60)",
       "mcp__scheduled-tasks__list_scheduled_tasks",
-      "mcp__Claude_Preview__preview_start"
+      "mcp__Claude_Preview__preview_start",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjk5OTk5OSwiZW1haWwiOiJhZG1pbkBudXJzaW5ncm9ja3MuY29tIiwiaXNWZXJpZmllZCI6dHJ1ZSwiaXNBZG1pbiI6dHJ1ZSwiaWF0IjoxNzc0ODg2OTQzLCJleHAiOjE3NzQ5NzMzNDN9.jyoWnOVCuYmMtV81iAk5cw865lsCIQXtsGQShr7dpeY\")",
+      "Bash(curl -s -X POST \"http://localhost:5000/api/admin/email/schedule\" -H \"Content-Type: application/json\" -H \"Authorization: Bearer $TOKEN\")"
     ]
   }
 }
