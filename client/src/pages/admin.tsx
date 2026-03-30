@@ -124,6 +124,36 @@ export default function AdminPage() {
     staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
+    retry: (failureCount, error: any) => {
+      if (error?.message?.includes('403') || error?.message?.includes('Admin privileges')) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+    queryFn: async () => {
+      const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+      const userDataStr = localStorage.getItem('user');
+      const isAdmin = localStorage.getItem('isAdmin') === 'true';
+
+      if (!token || !userDataStr || !isAdmin) {
+        setAuthenticated(false);
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch('/api/admin/tickets/pending-approvals', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        if (response.status === 403) {
+          setAuthenticated(false);
+          throw new Error('Admin privileges required');
+        }
+        throw new Error('Failed to fetch pending approvals');
+      }
+      return response.json();
+    },
   });
 
   const { data: usersData, isLoading: usersLoading } = useQuery({
