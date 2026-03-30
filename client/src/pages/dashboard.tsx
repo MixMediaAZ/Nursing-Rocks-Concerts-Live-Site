@@ -37,20 +37,24 @@ export default function DashboardPage() {
         // Simplified auth checking using token from localStorage
         const token = localStorage.getItem("token");
         const storedUser = localStorage.getItem("user");
-        
+
         if (!token || !storedUser) {
-          // No token or user data found, redirect to login
-          setIsAuthenticated(false);
-          toast({
-            variant: "destructive",
-            title: "Authentication Required",
-            description: "Please login to view your dashboard.",
-          });
-          // Redirect to login page with redirect back to dashboard after login
-          window.location.href = "/login?redirect=/dashboard";
+          // No token or user data found, wait a moment before redirecting (in case auth is processing)
+          setTimeout(() => {
+            setIsAuthenticated(false);
+            toast({
+              variant: "destructive",
+              title: "Authentication Required",
+              description: "Please login to view your dashboard.",
+            });
+            // Redirect to login page with redirect back to dashboard after login
+            setTimeout(() => {
+              window.location.href = "/login?redirect=/dashboard";
+            }, 1500);
+          }, 500);
           return;
         }
-        
+
         // We have token and user data in localStorage
         setIsAuthenticated(true);
         try {
@@ -61,17 +65,23 @@ export default function DashboardPage() {
           // Bad user data in localStorage, clear and redirect
           localStorage.removeItem("token");
           localStorage.removeItem("user");
-          window.location.href = "/login?redirect=/dashboard";
+          setTimeout(() => {
+            window.location.href = "/login?redirect=/dashboard";
+          }, 500);
         }
       } catch (error) {
         console.error("Error checking authentication:", error);
-        setIsAuthenticated(false);
-        window.location.href = "/login?redirect=/dashboard";
+        setTimeout(() => {
+          setIsAuthenticated(false);
+          setTimeout(() => {
+            window.location.href = "/login?redirect=/dashboard";
+          }, 500);
+        }, 500);
       }
     };
-    
+
     checkAuth();
-  }, []);
+  }, [toast]);
   
   // Fetch licenses
   const { data: licenses = { licenses: [] } } = useQuery<{ licenses: any[] }>({
