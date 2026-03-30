@@ -90,9 +90,19 @@ export default function PhoenixRegisterPage() {
                 <MapPin className="h-5 w-5 text-red-500 flex-shrink-0" />
                 <a href="https://walterstudios.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">The Walter Studio, Phoenix, AZ</a>
               </div>
-              <div className="flex items-center gap-3 text-gray-700">
-                <Music className="h-5 w-5 text-red-500 flex-shrink-0" />
-                <span>PsychoStar + special guests</span>
+              <div className="space-y-2">
+                <p className="flex items-center gap-3 text-gray-700 font-semibold">
+                  <Music className="h-5 w-5 text-red-500 flex-shrink-0" />
+                  Featuring:
+                </p>
+                <ul className="ml-8 space-y-1 text-gray-700">
+                  <li>The Black Moods</li>
+                  <li>The Central Line</li>
+                  <li>Jane 'N The Jungle</li>
+                  <li>PsychoStar</li>
+                  <li>My Upside Down + Casual Alien</li>
+                  <li>Oppsie Daisey</li>
+                </ul>
               </div>
             </div>
             <p className="text-sm text-gray-500">
@@ -129,22 +139,23 @@ export default function PhoenixRegisterPage() {
           <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 leading-tight">
             Nursing Rocks Phoenix
           </h1>
-          <p className="mt-2 text-xl text-gray-600">
-            A free concert for nurses 🤘
-          </p>
-          <div className="mt-4 flex flex-wrap justify-center gap-4 text-sm text-gray-600">
-            <span className="flex items-center gap-1.5">
-              <Calendar className="h-4 w-4 text-red-500" />
-              Friday, May 16, 2026
-            </span>
-            <span className="flex items-center gap-1.5">
-              <MapPin className="h-4 w-4 text-red-500" />
-              <a href="https://walterstudios.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">The Walter Studio, Phoenix AZ</a>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Music className="h-4 w-4 text-red-500" />
-              PsychoStar + special guests
-            </span>
+
+          <div className="mt-6 w-full bg-white rounded-lg p-6 space-y-4 shadow-sm border border-gray-200">
+            <div className="text-center">
+              <p className="text-lg font-semibold text-gray-900">Friday, May 16, 2026</p>
+              <p className="text-lg text-gray-700">The Walter Studio, Phoenix AZ</p>
+            </div>
+
+            <div className="border-t border-gray-200 pt-4">
+              <p className="font-semibold text-gray-800 text-center mb-3">Featuring:</p>
+              <p className="text-sm text-gray-700 text-center leading-relaxed">
+                The Black Moods, The Central Line, Jane 'N The Jungle, PsychoStar, My Upside Down + Casual Alien and Oppsie Daisey
+              </p>
+            </div>
+
+            <p className="text-center text-sm text-gray-600 pt-2">
+              A free concert for nurses 🤘
+            </p>
           </div>
         </div>
 

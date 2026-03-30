@@ -119,7 +119,10 @@
       "Bash(curl -s https://nursingrocksconcerts.com/sponsors)",
       "Bash(curl -s https://nursingrocksconcerts.com/api/health)",
       "Bash(curl -s -L -X GET \"https://nursingrocksconcerts.com/api/cron/job-alerts\" -H \"Content-Type: application/json\" -H \"x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee\" --max-time 60)",
-      "Bash(find 'C:\\\\Users\\\\Dave\\\\Downloads\\\\Nursing-Rocks-Concerts-Live-Site - 3.0' -name schema* -type f)"
+      "Bash(find 'C:\\\\Users\\\\Dave\\\\Downloads\\\\Nursing-Rocks-Concerts-Live-Site - 3.0' -name schema* -type f)",
+      "Bash(curl -s -L -X GET \"https://nursingrocksconcerts.com/api/cron/job-alerts\" -H \"x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee\" -H \"Content-Type: application/json\" --max-time 60)",
+      "mcp__scheduled-tasks__list_scheduled_tasks",
+      "mcp__Claude_Preview__preview_start"
     ]
   }
 }
