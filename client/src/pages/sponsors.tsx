@@ -2,7 +2,8 @@ import { Helmet } from "react-helmet";
 import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
-// Pitch deck slides (12)
+// Pitch deck slides (13)
+import phoenixLogo from "@assets/pitch-deck/phoenix-logo.jpg";
 import slide0 from "@assets/pitch-deck/0_1758828531029-hvQgIknr.jpg";
 import slide1 from "@assets/pitch-deck/1_1758828531031-DMgzRFvL.jpg";
 import slide2 from "@assets/pitch-deck/2_1758828531031-frBdoLW9.jpg";
@@ -19,6 +20,7 @@ import slide11 from "@assets/pitch-deck/11_1758828531039-DWoUwVdw.jpg";
 export default function SponsorsPage() {
   const slides = useMemo(
     () => [
+      phoenixLogo,
       slide0,
       slide1,
       slide2,

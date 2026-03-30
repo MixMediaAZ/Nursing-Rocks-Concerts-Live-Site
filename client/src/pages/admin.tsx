@@ -91,6 +91,12 @@ export default function AdminPage() {
     has_presale_tickets: false,
     tickets_at_door_only: false,
   });
+  const [editorSettings, setEditorSettings] = useState({
+    highlightOnHover: true,
+    showControlPanel: true,
+    directImageReplacement: true,
+    confirmBeforeSaving: true,
+  });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -1755,31 +1761,79 @@ export default function AdminPage() {
                         <Label>Highlight Elements on Hover</Label>
                         <p className="text-sm text-muted-foreground">Show highlight box around elements when hovering</p>
                       </div>
-                      <Switch defaultChecked />
+                      <Switch
+                        checked={editorSettings.highlightOnHover}
+                        onCheckedChange={(checked) => {
+                          setEditorSettings(prev => ({
+                            ...prev,
+                            highlightOnHover: checked
+                          }));
+                          toast({
+                            title: checked ? "Hover highlighting enabled" : "Hover highlighting disabled",
+                            description: checked ? "Elements will be highlighted on hover" : "Hover highlighting is off",
+                          });
+                        }}
+                      />
                     </div>
-                    
+
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label>Show Control Panel</Label>
                         <p className="text-sm text-muted-foreground">Display editing controls when element is selected</p>
                       </div>
-                      <Switch defaultChecked />
+                      <Switch
+                        checked={editorSettings.showControlPanel}
+                        onCheckedChange={(checked) => {
+                          setEditorSettings(prev => ({
+                            ...prev,
+                            showControlPanel: checked
+                          }));
+                          toast({
+                            title: checked ? "Control panel enabled" : "Control panel disabled",
+                            description: checked ? "Editing controls will appear when elements are selected" : "Control panel is hidden",
+                          });
+                        }}
+                      />
                     </div>
-                    
+
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label>Direct Image Replacement</Label>
                         <p className="text-sm text-muted-foreground">Allow replacing images with gallery selection</p>
                       </div>
-                      <Switch defaultChecked />
+                      <Switch
+                        checked={editorSettings.directImageReplacement}
+                        onCheckedChange={(checked) => {
+                          setEditorSettings(prev => ({
+                            ...prev,
+                            directImageReplacement: checked
+                          }));
+                          toast({
+                            title: checked ? "Direct image replacement enabled" : "Direct image replacement disabled",
+                            description: checked ? "You can replace images directly from the gallery" : "Direct image replacement is off",
+                          });
+                        }}
+                      />
                     </div>
-                    
+
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label>Confirm Before Saving</Label>
                         <p className="text-sm text-muted-foreground">Show confirmation dialog before saving changes</p>
                       </div>
-                      <Switch defaultChecked />
+                      <Switch
+                        checked={editorSettings.confirmBeforeSaving}
+                        onCheckedChange={(checked) => {
+                          setEditorSettings(prev => ({
+                            ...prev,
+                            confirmBeforeSaving: checked
+                          }));
+                          toast({
+                            title: checked ? "Save confirmation enabled" : "Save confirmation disabled",
+                            description: checked ? "A confirmation dialog will appear before saving" : "Changes will save without confirmation",
+                          });
+                        }}
+                      />
                     </div>
                     
                     <div className="mt-4 pt-4 border-t border-gray-100">

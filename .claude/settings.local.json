@@ -113,7 +113,8 @@
       "Bash(grep -n \"verificationAuditLogs\\\\|ticketScanLogs\" server/services/*.ts)",
       "Bash(grep -rn \"user\\\\.email\\\\|\\\\.email\" server/services/*.ts)",
       "Bash(grep -rn \"console\\\\.log\" server/services/*.ts)",
-      "Bash(grep -n \"export.*isUserAdmin\\\\|function.*isUserAdmin\" server/*.ts)"
+      "Bash(grep -n \"export.*isUserAdmin\\\\|function.*isUserAdmin\" server/*.ts)",
+      "Bash(grep -r @assets 'C:\\\\Users\\\\Dave\\\\Downloads\\\\Nursing-Rocks-Concerts-Live-Site - 3.0' --include=*.config.*)"
     ]
   }
 }
