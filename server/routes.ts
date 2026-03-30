@@ -6,7 +6,7 @@ import fs from "fs";
 import { db } from "./db";
 import { eq, sql, and, desc, ilike, or, inArray } from "drizzle-orm";
 import { storage } from "./storage";
-import { approvedVideos, gallery, mediaFolders, events, nrpxRegistrations, users } from "@shared/schema";
+import { approvedVideos, gallery, mediaFolders, events, nrpxRegistrations, users, tickets } from "@shared/schema";
 import QRCode from "qrcode";
 import { sendNrpxTicketEmail } from "./email";
 import { processImage } from "./image-utils";
@@ -1846,6 +1846,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error resending ticket email:", error);
       const message = error instanceof Error ? error.message : "Failed to resend email";
+      return res.status(500).json({ message });
+    }
+  });
+
+  // Admin: Approve and send pending ticket confirmation email
+  // FIX: Safety-first approval system - emails only sent with explicit admin approval
+  app.post("/api/admin/tickets/:id/approve-and-send-email", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const { approveAndSendTicketEmail } = await import("./services/email");
+
+      const ticketId = req.params.id;
+      const adminUserId = (req as any).user?.userId;
+
+      // FIX: Validate ticket ID is proper UUID format
+      if (!isValidUUID(ticketId)) {
+        return res.status(400).json({ message: "Invalid ticket ID format" });
+      }
+
+      // FIX: Verify admin user still has privileges
+      if (!adminUserId) {
+        return res.status(401).json({ message: "Admin user not found" });
+      }
+
+      const adminResult = await db.select().from(users).where(eq(users.id, adminUserId)).limit(1);
+      if (!adminResult.length || !adminResult[0].is_admin) {
+        return res.status(403).json({ message: "Admin privileges required" });
+      }
+
+      const result = await approveAndSendTicketEmail(ticketId, adminUserId);
+
+      return res.json(result);
+    } catch (error) {
+      console.error("Error approving and sending ticket email:", error);
+      const message = error instanceof Error ? error.message : "Failed to approve and send email";
+      return res.status(500).json({ message });
+    }
+  });
+
+  // Admin: Get pending ticket approvals
+  // FIX: List all tickets awaiting email approval
+  app.get("/api/admin/tickets/pending-approvals", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const adminUserId = (req as any).user?.userId;
+
+      // FIX: Verify admin user still has privileges
+      if (!adminUserId) {
+        return res.status(401).json({ message: "Admin user not found" });
+      }
+
+      const adminResult = await db.select().from(users).where(eq(users.id, adminUserId)).limit(1);
+      if (!adminResult.length || !adminResult[0].is_admin) {
+        return res.status(403).json({ message: "Admin privileges required" });
+      }
+
+      // Get all tickets pending email approval
+      const pendingTickets = await db
+        .select({
+          id: tickets.id,
+          ticket_code: tickets.ticket_code,
+          status: tickets.status,
+          email_status: tickets.email_status,
+          created_at: tickets.created_at,
+          user: {
+            id: users.id,
+            email: users.email,
+            first_name: users.first_name,
+            last_name: users.last_name,
+          },
+          event: {
+            id: events.id,
+            title: events.title,
+            date: events.date,
+          },
+        })
+        .from(tickets)
+        .innerJoin(users, eq(tickets.user_id, users.id))
+        .innerJoin(events, eq(tickets.event_id, events.id))
+        .where(eq(tickets.email_status, 'pending_approval'))
+        .orderBy(tickets.created_at);
+
+      return res.json({ tickets: pendingTickets });
+    } catch (error) {
+      console.error("Error fetching pending approvals:", error);
+      const message = error instanceof Error ? error.message : "Failed to fetch pending approvals";
       return res.status(500).json({ message });
     }
   });

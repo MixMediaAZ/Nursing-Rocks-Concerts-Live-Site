@@ -406,3 +406,194 @@ export async function getTicketEmailHistory(ticketId: string) {
     attempts,
   };
 }
+
+/**
+ * Admin approval endpoint: Approve and send pending ticket confirmation email
+ * FIX: Safety-first design - requires explicit admin action to send emails
+ *
+ * Validates:
+ * - Ticket exists and is in pending_approval state
+ * - User and event data is valid
+ * - Email service is available
+ * - Updates email_status to "sent" only after successful delivery
+ * - Logs audit trail of approval
+ */
+export async function approveAndSendTicketEmail(ticketId: string, adminUserId: number): Promise<{ success: boolean; message: string; emailStatus?: string; error?: string }> {
+  // FIX: Validate all input parameters
+  if (!isValidUUID(ticketId)) {
+    throw new Error("Invalid ticket ID format");
+  }
+  if (!Number.isInteger(adminUserId) || adminUserId <= 0) {
+    throw new Error("Invalid admin user ID");
+  }
+
+  // FIX: Fetch ticket and validate it exists
+  const ticketResult = await db.select().from(tickets).where(eq(tickets.id, ticketId)).limit(1);
+  if (!ticketResult.length) {
+    throw new Error("Ticket not found");
+  }
+
+  const ticket = ticketResult[0];
+
+  // FIX: Safety check - only approve if in pending_approval state
+  if (ticket.email_status !== "pending_approval") {
+    return {
+      success: false,
+      message: `Ticket email is not pending approval (current status: ${ticket.email_status})`,
+      emailStatus: ticket.email_status,
+    };
+  }
+
+  // FIX: Fetch user and event data with validation
+  const userResult = await db.select().from(users).where(eq(users.id, ticket.user_id)).limit(1);
+  if (!userResult.length) {
+    throw new Error("User not found for ticket");
+  }
+  const user = userResult[0];
+
+  const eventResult = await db.select().from(events).where(eq(events.id, ticket.event_id)).limit(1);
+  if (!eventResult.length) {
+    throw new Error("Event not found for ticket");
+  }
+  const event = eventResult[0];
+
+  try {
+    // Initialize Resend client
+    const resend = await initializeResendClient();
+    if (!resend) {
+      throw new Error("Email service not configured");
+    }
+
+    // Prepare email data
+    const eventDate = new Date(event.date);
+    const formattedDate = eventDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    const nurseName = `${user.first_name} ${user.last_name}`;
+
+    // Build HTML email
+    const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+    .header h1 { margin: 0; font-size: 28px; }
+    .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+    .event-details { background: white; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #667eea; }
+    .event-details h3 { margin-top: 0; color: #667eea; }
+    .event-details p { margin: 8px 0; }
+    .label { font-weight: bold; color: #555; display: inline-block; width: 120px; }
+    .ticket-code {
+      background: #667eea;
+      color: white;
+      padding: 20px;
+      border-radius: 6px;
+      text-align: center;
+      margin: 20px 0;
+      font-size: 24px;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+    .footer { text-align: center; padding: 20px; font-size: 12px; color: #888; border-top: 1px solid #ddd; }
+    .important { background: #fffbea; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #ffa500; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>✓ Ticket Confirmed</h1>
+      <p>Your Nursing Rocks! Concert Series ticket is ready</p>
+    </div>
+
+    <div class="content">
+      <p>Hi ${nurseName},</p>
+
+      <p>Thank you for purchasing your ticket to the Nursing Rocks! Concert Series! We're excited to see you at the event.</p>
+
+      <div class="event-details">
+        <h3>${event.title}</h3>
+        <p><span class="label">Date:</span> ${formattedDate}</p>
+        <p><span class="label">Time:</span> ${event.start_time || 'TBD'}</p>
+        <p><span class="label">Location:</span> ${event.location}</p>
+        <p><span class="label">Ticket Type:</span> ${ticket.ticket_type || 'General Admission'}</p>
+        <p><span class="label">Price:</span> ${ticket.price || 'Free'}</p>
+      </div>
+
+      <div class="ticket-code">
+        ${ticket.ticket_code}
+      </div>
+
+      <div class="important">
+        <strong>Important:</strong> Please save your ticket code or bring this email with you. You'll need to present this code at the venue to check in.
+      </div>
+
+      <p>If you have any questions about the event or your ticket, please don't hesitate to reach out to us.</p>
+
+      <p>See you at the show!<br>
+      <strong>The Nursing Rocks! Team</strong></p>
+    </div>
+
+    <div class="footer">
+      <p>Nursing Rocks! Concert Series | For Healthcare Professionals</p>
+      <p>&copy; ${new Date().getFullYear()} All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+    `;
+
+    // FIX: Send email via Resend
+    const emailResult = await resend.emails.send({
+      from: SENDER_EMAIL,
+      to: user.email,
+      subject: `Your Nursing Rocks! Ticket for ${event.title}`,
+      html: emailHtml,
+    });
+
+    if (!emailResult || emailResult.error) {
+      throw new Error(`Failed to send email: ${emailResult?.error?.message || 'Unknown error'}`);
+    }
+
+    // FIX: Update ticket status to "sent" after successful delivery
+    const now = new Date();
+    await db
+      .update(tickets)
+      .set({
+        email_status: "sent",
+        emailed_at: now,
+        updated_at: now,
+      })
+      .where(eq(tickets.id, ticketId));
+
+    console.log(`✅ Ticket email approved and sent for ticket ${ticketId} by admin ${adminUserId}`);
+
+    return {
+      success: true,
+      message: `Ticket confirmation email sent to ${user.email}`,
+      emailStatus: "sent",
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error(`❌ Failed to send ticket email for ticket ${ticketId}:`, errorMessage);
+
+    // FIX: Mark email as failed in database
+    await db
+      .update(tickets)
+      .set({
+        email_status: "failed",
+        email_error: errorMessage,
+        updated_at: new Date(),
+      })
+      .where(eq(tickets.id, ticketId));
+
+    throw new Error(errorMessage);
+  }
+}

@@ -114,7 +114,12 @@
       "Bash(grep -rn \"user\\\\.email\\\\|\\\\.email\" server/services/*.ts)",
       "Bash(grep -rn \"console\\\\.log\" server/services/*.ts)",
       "Bash(grep -n \"export.*isUserAdmin\\\\|function.*isUserAdmin\" server/*.ts)",
-      "Bash(grep -r @assets 'C:\\\\Users\\\\Dave\\\\Downloads\\\\Nursing-Rocks-Concerts-Live-Site - 3.0' --include=*.config.*)"
+      "Bash(grep -r @assets 'C:\\\\Users\\\\Dave\\\\Downloads\\\\Nursing-Rocks-Concerts-Live-Site - 3.0' --include=*.config.*)",
+      "Bash(npx -y vercel list --prod)",
+      "Bash(curl -s https://nursingrocksconcerts.com/sponsors)",
+      "Bash(curl -s https://nursingrocksconcerts.com/api/health)",
+      "Bash(curl -s -L -X GET \"https://nursingrocksconcerts.com/api/cron/job-alerts\" -H \"Content-Type: application/json\" -H \"x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee\" --max-time 60)",
+      "Bash(find 'C:\\\\Users\\\\Dave\\\\Downloads\\\\Nursing-Rocks-Concerts-Live-Site - 3.0' -name schema* -type f)"
     ]
   }
 }

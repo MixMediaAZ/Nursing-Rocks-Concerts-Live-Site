@@ -215,45 +215,30 @@ export async function purchaseTicket(req: Request, res: Response) {
     // Generate unique ticket code
     const ticketCode = `NR-${uuidv4().substring(0, 8).toUpperCase()}`;
 
-    // Create ticket
+    // Create ticket with email status set to pending approval
+    // Emails will only be sent after admin approval
     const ticket = await storage.createTicket(
-      { ticket_type, price, event_id, user_id: userId, ticket_code: ticketCode },
+      {
+        ticket_type,
+        price,
+        event_id,
+        user_id: userId,
+        ticket_code: ticketCode,
+        email_status: 'pending_approval'  // FIX: Require admin approval before sending email
+      },
       userId,
       event_id,
       ticketCode
     );
 
-    // Send confirmation email asynchronously (don't block the response)
-    try {
-      const eventDate = new Date(event.date);
-      const formattedDate = eventDate.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-
-      const nurseName = `${user.first_name} ${user.last_name}`;
-
-      await sendTicketConfirmationEmail({
-        nurseName,
-        userEmail: user.email,
-        eventTitle: event.title,
-        eventDate: formattedDate,
-        eventTime: event.start_time || 'TBD',
-        eventLocation: event.location,
-        ticketCode,
-        ticketType: ticket_type || 'General Admission',
-        price: price || 'Free'
-      });
-    } catch (emailError) {
-      // Log email error but don't fail the ticket purchase
-      console.error('Failed to send ticket confirmation email:', emailError);
-    }
+    // FIX: Do NOT send email immediately - wait for admin approval
+    // Email will be sent via admin approval endpoint: /api/admin/tickets/:id/approve-and-send-email
+    console.log(`Ticket created with pending approval for email: ${ticket.id}`);
 
     return res.status(201).json({
-      message: 'Ticket purchased successfully',
-      ticket
+      message: 'Ticket requested successfully. Awaiting admin approval to send confirmation email.',
+      ticket,
+      emailStatus: 'pending_approval'
     });
   } catch (error) {
     console.error('Ticket purchase error:', error);

@@ -117,6 +117,15 @@ export default function AdminPage() {
     refetchOnWindowFocus: true,
   });
 
+  // FIX: Fetch pending ticket email approvals
+  const { data: pendingApprovalsData, isLoading: pendingApprovalsLoading, refetch: refetchPendingApprovals } = useQuery({
+    queryKey: ['/api/admin/tickets/pending-approvals'],
+    enabled: authenticated && !loading,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+  });
+
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ['/api/admin/users'],
     enabled: authenticated && !loading,
@@ -491,6 +500,40 @@ export default function AdminPage() {
         variant: "destructive",
       });
       // Don't close dialog on error so user can see what went wrong
+    },
+  });
+
+  // FIX: Approve and send ticket email mutation
+  const approveTicketEmailMutation = useMutation({
+    mutationFn: async (ticketId: string) => {
+      const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+      const response = await fetch(`/api/admin/tickets/${ticketId}/approve-and-send-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to approve and send email');
+      }
+      return response.json();
+    },
+    onSuccess: async () => {
+      // Refetch pending approvals to update dashboard
+      await refetchPendingApprovals();
+      toast({
+        title: "Email Sent",
+        description: "Ticket confirmation email has been approved and sent.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Approval Failed",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -979,6 +1022,11 @@ export default function AdminPage() {
             <TabsTrigger value="nrpx">
               <div className="flex items-center gap-1">
                 <Ticket className="h-4 w-4" /> Phoenix
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="approvals">
+              <div className="flex items-center gap-1">
+                <CheckCircle className="h-4 w-4" /> Approvals
               </div>
             </TabsTrigger>
           </TabsList>
@@ -1619,6 +1667,115 @@ export default function AdminPage() {
 
           <TabsContent value="nrpx">
             <NrpxRegistrationsTab />
+          </TabsContent>
+
+          {/* FIX: Pending Email Approvals Tab */}
+          <TabsContent value="approvals">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5" /> Pending Email Approvals
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="mb-4 text-muted-foreground">
+                  Review and approve pending ticket confirmation emails before they are sent to users.
+                </p>
+
+                {pendingApprovalsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    <span className="ml-2 text-muted-foreground">Loading pending approvals...</span>
+                  </div>
+                ) : (() => {
+                  const tickets = pendingApprovalsData?.tickets ?? [];
+                  return tickets.length > 0 ? (
+                    <div className="space-y-4">
+                      <div className="text-sm text-muted-foreground">
+                        {tickets.length} ticket{tickets.length !== 1 ? 's' : ''} awaiting email approval
+                      </div>
+                      <div className="border rounded-md overflow-hidden">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                User
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Event
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Ticket Code
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Requested
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {tickets.map((ticket: any) => (
+                              <tr key={ticket.id}>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {ticket.user.first_name} {ticket.user.last_name}
+                                  </div>
+                                  <div className="text-xs text-gray-500">{ticket.user.email}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm text-gray-900">{ticket.event.title}</div>
+                                  <div className="text-xs text-gray-500">
+                                    {new Date(ticket.event.date).toLocaleDateString()}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <code className="text-sm bg-gray-100 px-2 py-1 rounded">
+                                    {ticket.ticket_code}
+                                  </code>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {new Date(ticket.created_at).toLocaleDateString()}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                  <Button
+                                    onClick={() => {
+                                      approveTicketEmailMutation.mutate(ticket.id);
+                                    }}
+                                    disabled={approveTicketEmailMutation.isPending}
+                                    className="bg-green-600 hover:bg-green-700 text-white"
+                                    size="sm"
+                                  >
+                                    {approveTicketEmailMutation.isPending ? (
+                                      <>
+                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
+                                        Sending...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <CheckCircle className="h-4 w-4 mr-1" />
+                                        Approve & Send
+                                      </>
+                                    )}
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
+                      <p className="text-muted-foreground">No pending approvals</p>
+                      <p className="text-sm text-muted-foreground mt-1">All ticket emails have been processed</p>
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="editor">
