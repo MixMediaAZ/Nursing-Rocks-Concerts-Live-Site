@@ -64,6 +64,15 @@ export default function LoginPage() {
           throw new Error("Invalid response format from server - missing credentials");
         }
 
+        // Log received data for debugging
+        console.log('[Login] Response received:', {
+          hasToken: !!data.token,
+          userEmail: data.user.email,
+          userHasIsAdmin: 'is_admin' in data.user,
+          isAdminValue: data.user.is_admin,
+          fullUser: JSON.stringify(data.user).substring(0, 200)
+        });
+
         // Store token and user data
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
@@ -71,8 +80,10 @@ export default function LoginPage() {
         // Set isAdmin flag for admin page access
         if (data.user.is_admin) {
           localStorage.setItem("isAdmin", "true");
+          console.log('[Login] isAdmin set to true');
         } else {
           localStorage.removeItem("isAdmin");
+          console.log('[Login] isAdmin not set or false');
         }
 
         toast({

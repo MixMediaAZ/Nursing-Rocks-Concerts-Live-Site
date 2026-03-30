@@ -632,11 +632,14 @@ export default function AdminPage() {
         const userDataStr = localStorage.getItem("user");
         const isAdmin = localStorage.getItem("isAdmin") === "true";
 
+        console.log('[Admin Auth] Check - token:', !!token, 'user:', !!userDataStr, 'isAdmin:', isAdmin);
+
         if (!token || !userDataStr) {
           // No authentication found, wait a moment before showing error (in case auth is processing)
           setLoading(false);
           setTimeout(() => {
             setAuthenticated(false);
+            console.log('[Admin Auth] No token or user data, redirecting to login');
             toast({
               variant: "destructive",
               title: "Authentication Required",
@@ -654,11 +657,14 @@ export default function AdminPage() {
 
         // Check if user is an admin (verify both storage flag and user data)
         const hasAdminAccess = isAdmin && userData.is_admin === true;
+        console.log('[Admin Auth] Admin check - isAdmin:', isAdmin, 'userData.is_admin:', userData.is_admin, 'hasAccess:', hasAdminAccess);
+
         if (!hasAdminAccess) {
           // User is not an admin, wait a moment before redirecting (in case auth is processing)
           setLoading(false);
           setTimeout(() => {
             setAuthenticated(false);
+            console.log('[Admin Auth] User not admin, redirecting to dashboard');
             toast({
               variant: "destructive",
               title: "Access Denied",

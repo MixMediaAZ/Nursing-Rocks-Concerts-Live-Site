@@ -151,6 +151,12 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(users)
         .where(sql`LOWER(${users.email}) = LOWER(${normalizedEmail})`);
+
+      // Ensure is_admin field is included for login responses
+      if (user && !('is_admin' in user)) {
+        console.warn('[getUserByEmail] User object missing is_admin field:', { email: user.email });
+      }
+
       return user;
     } catch (error) {
       console.error('[getUserByEmail] Database error:', error);
