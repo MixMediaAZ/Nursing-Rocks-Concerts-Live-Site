@@ -558,61 +558,68 @@ export default function AdminPage() {
         const token = localStorage.getItem("token");
         const userDataStr = localStorage.getItem("user");
         const isAdmin = localStorage.getItem("isAdmin") === "true";
-        
+
         if (!token || !userDataStr) {
-          // No authentication found, redirect to login
-          setAuthenticated(false);
+          // No authentication found, wait a moment before showing error (in case auth is processing)
           setLoading(false);
-          toast({
-            variant: "destructive",
-            title: "Authentication Required",
-            description: "Please login with an admin account to access this page.",
-          });
           setTimeout(() => {
-            window.location.href = "/login?redirect=/admin";
-          }, 1500);
+            setAuthenticated(false);
+            toast({
+              variant: "destructive",
+              title: "Authentication Required",
+              description: "Please login with an admin account to access this page.",
+            });
+            setTimeout(() => {
+              window.location.href = "/login?redirect=/admin";
+            }, 1500);
+          }, 500);
           return;
         }
-        
+
         // Parse user data
         const userData = JSON.parse(userDataStr);
-        
+
         // Check if user is an admin (verify both storage flag and user data)
         const hasAdminAccess = isAdmin && userData.is_admin === true;
         if (!hasAdminAccess) {
-          // User is not an admin, redirect to regular dashboard
-          setAuthenticated(false);
+          // User is not an admin, wait a moment before redirecting (in case auth is processing)
           setLoading(false);
-          toast({
-            variant: "destructive",
-            title: "Access Denied",
-            description: "You do not have admin privileges.",
-          });
           setTimeout(() => {
-            window.location.href = "/dashboard";
-          }, 1500);
+            setAuthenticated(false);
+            toast({
+              variant: "destructive",
+              title: "Access Denied",
+              description: "You do not have admin privileges.",
+            });
+            setTimeout(() => {
+              window.location.href = "/dashboard";
+            }, 1500);
+          }, 500);
           return;
         }
-        
+
         // User is authenticated as admin
         setUserEmail(userData.email);
         setAuthenticated(true);
         setLoading(false);
       } catch (error) {
         console.error("Admin auth check error:", error);
-        setAuthenticated(false);
-        setLoading(false);
-        toast({
-          variant: "destructive",
-          title: "Authentication Error",
-          description: "Please login again.",
-        });
+        // Wait before showing error to allow auth to process
         setTimeout(() => {
-          window.location.href = "/login";
-        }, 1500);
+          setAuthenticated(false);
+          setLoading(false);
+          toast({
+            variant: "destructive",
+            title: "Authentication Error",
+            description: "Please login again.",
+          });
+          setTimeout(() => {
+            window.location.href = "/login";
+          }, 1500);
+        }, 500);
       }
     };
-    
+
     checkAdminAuth();
   }, [toast]);
 
