@@ -148,7 +148,7 @@ export default function PhoenixRegisterPage() {
 
             <div className="border-t border-gray-200 pt-4">
               <p className="font-semibold text-gray-800 text-center mb-3">Featuring:</p>
-              <p className="text-xs text-gray-700 text-center leading-relaxed whitespace-nowrap overflow-hidden text-ellipsis px-2">
+              <p className="text-xs text-gray-700 text-center whitespace-nowrap overflow-x-auto">
                 The Black Moods, The Central Line, Jane 'N The Jungle, PsychoStar, My Upside Down + Casual Alien and Oppsie Daisey
               </p>
             </div>
