@@ -72,7 +72,7 @@ export default function FAQPage() {
             <AccordionTrigger>Can I submit my own video of appreciation?</AccordionTrigger>
             <AccordionContent>
               Yes! We encourage nursing professionals to share their stories and experiences. 
-              You can upload your video of appreciation through our <a href="https://nursingrocksconcerts3.replit.app/thanks" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">video upload page</a>. 
+              You can upload your video of appreciation through our <a href="https://www.nursingrocksconcerts.com/thanks" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">video upload page</a>. 
               Selected videos may be featured on our website and during concert events.
             </AccordionContent>
           </AccordionItem>
