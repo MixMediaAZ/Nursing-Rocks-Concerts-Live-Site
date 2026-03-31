@@ -3761,7 +3761,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .where(eq(nrpxRegistrations.id, reg.id));
       }
 
-      console.log(`[NRPX] Registered: ${reg.email} → ${ticketCode} | email: ${emailResult.success}`);
+      console.log(`[NRPX] Registration successful - ticket ${ticketCode} | email: ${emailResult.success}`);
       res.status(201).json({ success: true, message: "Check your email for your ticket! 🎸" });
     } catch (error) {
       console.error("[NRPX] Registration error:", error);
