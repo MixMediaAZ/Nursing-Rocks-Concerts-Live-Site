@@ -188,6 +188,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing required fields: title, date, artist_id, start_time, location" });
       }
 
+      // Validate text field lengths (prevent DoS via unbounded storage)
+      const validateTextField = (field: string, value: string, maxLen: number): boolean => {
+        return !value || value.length <= maxLen;
+      };
+
+      if (!validateTextField('title', title, 500)) {
+        return res.status(400).json({ message: 'Event title too long (max 500 characters)' });
+      }
+      if (!validateTextField('subtitle', subtitle, 500)) {
+        return res.status(400).json({ message: 'Event subtitle too long (max 500 characters)' });
+      }
+      if (!validateTextField('description', description, 5000)) {
+        return res.status(400).json({ message: 'Event description too long (max 5000 characters)' });
+      }
+      if (!validateTextField('location', location, 500)) {
+        return res.status(400).json({ message: 'Event location too long (max 500 characters)' });
+      }
+      if (!validateTextField('genre', genre, 200)) {
+        return res.status(400).json({ message: 'Genre too long (max 200 characters)' });
+      }
+
       const newEvent = await storage.createEvent({
         title,
         subtitle,
@@ -274,15 +295,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { q, startDate, endDate, location, featured, sortBy, limit, offset } = req.query;
 
+      // Validate search query length (max 500 chars to prevent ReDoS/DoS)
+      const searchQuery = (q as string || '').trim();
+      if (searchQuery.length > 500) {
+        return res.status(400).json({ message: 'Search query too long (max 500 characters)' });
+      }
+
+      const parsedLimit = limit ? Math.min(Math.max(parseInt(limit as string) || 20, 1), 100) : 20;
+      const parsedOffset = offset ? Math.min(Math.max(parseInt(offset as string) || 0, 0), 10000) : 0;
+
       const results = await searchEvents({
-        query: q as string,
+        query: searchQuery,
         startDate: startDate ? new Date(startDate as string) : undefined,
         endDate: endDate ? new Date(endDate as string) : undefined,
         location: location as string,
         isFeatured: featured === 'true' ? true : featured === 'false' ? false : undefined,
         sortBy: (sortBy as any) || 'relevance',
-        limit: limit ? parseInt(limit as string) : 20,
-        offset: offset ? parseInt(offset as string) : 0,
+        limit: parsedLimit,
+        offset: parsedOffset,
       });
 
       res.json(results);
@@ -296,14 +326,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { q, specialty, experience, certifications, sortBy, limit, offset } = req.query;
 
+      // Validate search query length (max 500 chars to prevent ReDoS/DoS)
+      const searchQuery = (q as string || '').trim();
+      if (searchQuery.length > 500) {
+        return res.status(400).json({ message: 'Search query too long (max 500 characters)' });
+      }
+
+      const parsedLimit = limit ? Math.min(Math.max(parseInt(limit as string) || 20, 1), 100) : 20;
+      const parsedOffset = offset ? Math.min(Math.max(parseInt(offset as string) || 0, 0), 10000) : 0;
+
       const results = await searchNurses({
-        query: q as string,
+        query: searchQuery,
         specialty: specialty as string,
         experience: experience ? parseInt(experience as string) : undefined,
         certifications: certifications ? (Array.isArray(certifications) ? certifications as string[] : [certifications as string]) : undefined,
         sortBy: (sortBy as any) || 'relevance',
-        limit: limit ? parseInt(limit as string) : 20,
-        offset: offset ? parseInt(offset as string) : 0,
+        limit: parsedLimit,
+        offset: parsedOffset,
       });
 
       res.json(results);
@@ -874,8 +913,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid job ID" });
       }
-      
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : 3;
+
+      // Bound similar jobs limit to prevent excessive query
+      const limit = req.query.limit ? Math.min(Math.max(parseInt(req.query.limit as string) || 3, 1), 50) : 3;
       const similarJobs = await storage.getSimilarJobs(id, limit);
       res.json(similarJobs);
     } catch (error) {

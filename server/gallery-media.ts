@@ -108,24 +108,39 @@ export async function updateMediaFolder(req: Request, res: Response) {
   try {
     const { id } = req.params;
     const { name, description, folder_type, parent_id, is_featured, sort_order } = req.body;
-    
+
     if (!id || isNaN(parseInt(id, 10))) {
       return res.status(400).json({ error: 'Invalid folder ID' });
     }
-    
+
     const folderId = parseInt(id, 10);
-    
+
     // Check if folder exists
     const [existingFolder] = await db.select().from(mediaFolders).where(eq(mediaFolders.id, folderId));
     if (!existingFolder) {
       return res.status(404).json({ error: 'Folder not found' });
     }
-    
+
+    // Validate name length (max 255 chars)
+    let validatedName = name !== undefined ? String(name || '').trim() : existingFolder.name;
+    if (!validatedName) {
+      return res.status(400).json({ error: 'Folder name cannot be empty' });
+    }
+    if (validatedName.length > 255) {
+      return res.status(400).json({ error: 'Folder name too long (max 255 characters)' });
+    }
+
+    // Validate description length (max 2000 chars)
+    let validatedDescription = description !== undefined ? String(description || '').trim() : existingFolder.description;
+    if (validatedDescription && validatedDescription.length > 2000) {
+      return res.status(400).json({ error: 'Description too long (max 2000 characters)' });
+    }
+
     // Update the folder
     const updatedFolder = await db.update(mediaFolders)
       .set({
-        name: name !== undefined ? name.trim() : existingFolder.name,
-        description: description !== undefined ? (description.trim() || null) : existingFolder.description,
+        name: validatedName,
+        description: validatedDescription || null,
         folder_type: folder_type || existingFolder.folder_type,
         parent_id: parent_id !== undefined ? parent_id : existingFolder.parent_id,
         is_featured: is_featured !== undefined ? is_featured : existingFolder.is_featured,
@@ -134,7 +149,7 @@ export async function updateMediaFolder(req: Request, res: Response) {
       })
       .where(eq(mediaFolders.id, folderId))
       .returning();
-    
+
     res.json(updatedFolder[0]);
   } catch (error) {
     console.error('Error updating media folder:', error);
@@ -200,7 +215,16 @@ export async function uploadGalleryImages(req: Request, res: Response) {
     
     const event_id = req.body.event_id ? parseInt(req.body.event_id, 10) : null;
     const folder_id = req.body.folder_id ? parseInt(req.body.folder_id, 10) : null;
-    const alt_text = req.body.alt_text || '';
+    let alt_text = (req.body.alt_text || '').trim();
+
+    // Validate alt_text length (max 1000 chars) - prevents DoS via unbounded text storage
+    if (alt_text.length > 1000) {
+      return res.status(400).json({
+        error: 'Alt text too long (max 1000 characters)',
+        failedUploads: uploadedFiles.map(f => ({ filename: f.originalname, reason: 'Alt text exceeds max length' }))
+      });
+    }
+
     const media_type = req.body.media_type || 'image';
     
     const uploadResults = [];
@@ -340,30 +364,41 @@ export async function deleteGalleryImage(req: Request, res: Response) {
 export async function updateGalleryImage(req: Request, res: Response) {
   try {
     const { id } = req.params;
-    const { 
-      alt_text, 
-      event_id, 
-      folder_id, 
+    const {
+      alt_text,
+      event_id,
+      folder_id,
       sort_order,
       z_index,
       metadata
     } = req.body;
-    
+
     if (!id || isNaN(parseInt(id, 10))) {
       return res.status(400).json({ error: 'Invalid image ID' });
     }
-    
+
     const imageId = parseInt(id, 10);
-    
+
     // Check if image exists
     const [existingImage] = await db.select().from(gallery).where(eq(gallery.id, imageId));
     if (!existingImage) {
       return res.status(404).json({ error: 'Image not found' });
     }
-    
+
+    // Validate alt_text length (max 1000 chars) - prevents DoS via unbounded text storage
+    let validatedAltText = alt_text !== undefined ? String(alt_text || '').trim() : (existingImage.alt_text || '');
+    if (validatedAltText.length > 1000) {
+      return res.status(400).json({ error: 'Alt text too long (max 1000 characters)' });
+    }
+
+    // Validate metadata object size (prevent bloat)
+    if (metadata && JSON.stringify(metadata).length > 10000) {
+      return res.status(400).json({ error: 'Metadata too large (max 10000 characters)' });
+    }
+
     // Update the image using parameterized query to prevent SQL injection
-    const updatedAltText = alt_text !== undefined ? alt_text : (existingImage.alt_text || '');
-    const updatedEventId = alt_text !== undefined ? event_id : (existingImage.event_id ?? null);
+    const updatedAltText = validatedAltText;
+    const updatedEventId = event_id !== undefined ? event_id : (existingImage.event_id ?? null);
     const updatedFolderId = folder_id !== undefined ? folder_id : (existingImage.folder_id ?? null);
     const updatedSortOrder = sort_order !== undefined ? sort_order : (existingImage.sort_order || 0);
     const updatedZIndex = z_index !== undefined ? z_index : (existingImage.z_index || 0);
@@ -382,9 +417,9 @@ export async function updateGalleryImage(req: Request, res: Response) {
       WHERE id = ${imageId}
       RETURNING *
     `;
-    
+
     const result = await db.execute(rawUpdateQuery);
-    
+
     // Extract the first row from the result
     if (result && result.rows && result.rows.length > 0) {
       res.json(result.rows[0]);
