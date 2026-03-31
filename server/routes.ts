@@ -1742,20 +1742,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ========== VIDEO APPROVAL API (Admin only) ==========
 
-  // FIX: Re-check admin privileges for sensitive operations
+  // Re-check admin privileges for sensitive operations
   const requireAdminToken = async (req: Request, res: Response, next: any) => {
-    if (!isUserAdmin(req)) return res.status(403).json({ message: "Admin privileges required" });
-
-    // FIX: Verify admin is still valid in database (not suspended/disabled)
-    const userId = (req as any).user?.userId;
-    if (!userId) {
-      return res.status(403).json({ message: "Admin user ID not found" });
+    // Extract payload directly from JWT — req.user is not set on these routes
+    const payload = getPayloadFromRequest(req);
+    if (!payload || !payload.isAdmin) {
+      return res.status(403).json({ message: "Admin privileges required" });
     }
 
-    const adminUser = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    // Verify admin is still valid in database (handles revocation)
+    const adminUser = await db.select().from(users).where(eq(users.id, payload.userId)).limit(1);
     if (!adminUser.length || !adminUser[0].is_admin) {
       return res.status(403).json({ message: "Admin privileges revoked" });
     }
+
+    // Populate req.user so downstream handlers can use it
+    (req as any).user = { userId: payload.userId, email: payload.email, isAdmin: true };
 
     return next();
   };
