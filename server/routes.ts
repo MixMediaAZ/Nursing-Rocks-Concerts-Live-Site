@@ -1958,8 +1958,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error verifying user:", error);
-      const message = error instanceof Error ? error.message : "Failed to verify user";
-      return res.status(500).json({ message });
+      return res.status(500).json({ message: "Failed to verify user" });
     }
   });
 
@@ -3409,8 +3408,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error running email schedules:", error);
       res.status(500).json({
         success: false,
-        message: "Failed to run email schedules",
-        error: error instanceof Error ? error.message : 'Unknown error',
+        message: "Failed to run email schedules"
       });
     }
   });
@@ -3427,8 +3425,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error getting email schedule status:", error);
       res.status(500).json({
         success: false,
-        message: "Failed to get email schedule status",
-        error: error instanceof Error ? error.message : 'Unknown error',
+        message: "Failed to get email schedule status"
       });
     }
   });
