@@ -525,7 +525,7 @@ export async function sendNrpxTicketEmail(data: NrpxTicketEmailData): Promise<{ 
       return { success: false, error: response.error.message };
     }
 
-    console.log('[NRPX] Ticket email sent:', response.data?.id, 'to', data.email);
+    if (process.env.NODE_ENV !== 'production') console.log('[NRPX] Ticket email sent:', response.data?.id);
     return { success: true };
   } catch (error: any) {
     console.error('[NRPX] Error sending ticket email:', error);

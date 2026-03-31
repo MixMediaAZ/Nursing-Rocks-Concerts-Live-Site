@@ -708,7 +708,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/licenses", requireAuth, licenseValidation, submitNurseLicense);
 
   // Stripe Payment Integration
-  app.post("/api/create-payment-intent", async (req: Request, res: Response) => {
+  app.post("/api/create-payment-intent", authenticateToken, async (req: Request, res: Response) => {
     try {
       const { amount, items } = req.body;
       
@@ -2019,7 +2019,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Public/Auth: Scan ticket QR code (gate scanning)
   // FIX: Apply rate limiting to prevent DOS and brute force attacks on public endpoint
-  app.post("/api/tickets/scan", scanRateLimiter, async (req: Request, res: Response) => {
+  app.post("/api/tickets/scan", scanRateLimiter, requireAdminToken, async (req: Request, res: Response) => {
     try {
       const { scanTicket } = await import("./services/scan");
 
@@ -2064,7 +2064,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User: Get my tickets
-  app.get("/api/me/tickets", async (req: Request, res: Response) => {
+  app.get("/api/me/tickets", authenticateToken, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.userId;
       if (!userId) return res.status(401).json({ message: "Not authenticated" });
@@ -2120,43 +2120,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Bootstrap: Set admin user by email (for initial setup only)
-  app.post("/api/bootstrap/set-admin", async (req: Request, res: Response) => {
-    try {
-      const { email } = req.body;
-
-      if (!email || typeof email !== 'string') {
-        return res.status(400).json({ message: "Email is required" });
-      }
-
-      // Check if any admins already exist (security: prevent overwriting existing setup)
-      const existingAdmins = await db
-        .select()
-        .from(users)
-        .where(eq(users.is_admin, true))
-        .limit(1);
-
-      if (existingAdmins.length > 0) {
-        return res.status(403).json({ message: "Admin already configured. Use admin interface to manage users." });
-      }
-
-      // Find user by email
-      const user = await storage.getUserByEmail(email);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Set user as admin
-      const updated = await storage.updateUser(user.id, { is_admin: true });
-      const { password_hash: _p, ...safe } = updated;
-
-      return res.json({
-        message: "User set as admin successfully",
-        user: safe
-      });
-    } catch (error) {
-      console.error("Error setting admin user:", error);
-      return res.status(500).json({ message: "Failed to set admin user" });
-    }
+  // SECURITY: Bootstrap endpoint disabled — admin management must go through the admin dashboard.
+  // Keeping route registered to return 410 Gone so any cached references fail clearly.
+  app.post("/api/bootstrap/set-admin", (_req: Request, res: Response) => {
+    return res.status(410).json({ message: "This endpoint has been disabled. Manage admins via the admin dashboard." });
   });
 
   // Admin: Get all jobs (with employer name joined)
@@ -3238,16 +3205,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Admin logout endpoint
-  app.post("/api/admin/logout", (_req: Request, res: Response) => {
-    try {
-      // Since we're using JWT tokens, we only need to return success
-      // The actual token invalidation happens client-side by removing the token
-      res.status(200).json({ message: "Admin logout successful" });
-    } catch (error) {
-      console.error("Error in admin logout:", error);
-      res.status(500).json({ message: "Failed to process logout" });
-    }
-  });
+  // REMOVED: /api/admin/logout was a no-op that didn't blacklist tokens.
+  // All logout now goes through POST /api/auth/logout which properly invalidates the token.
 
   // Email Scheduler Endpoints (Admin Only)
   // Manually trigger email schedules for job alerts and event reminders

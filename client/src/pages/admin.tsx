@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Helmet } from "react-helmet";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -100,6 +100,23 @@ export default function AdminPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Shared admin fetch — single place to handle 401/403 so individual
+  // queries don't each call setAuthenticated(false) and race each other.
+  const adminFetch = useCallback(async (url: string) => {
+    const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+    if (!token || localStorage.getItem('isAdmin') !== 'true') {
+      setAuthenticated(false);
+      throw new Error('Not authenticated');
+    }
+    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+    if (res.status === 401 || res.status === 403) {
+      setAuthenticated(false);
+      throw new Error('Admin privileges required');
+    }
+    if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+    return res.json();
+  }, []);
+
   // Fetch real data from API with automatic refetching
   const { data: eventsData, isLoading: eventsLoading } = useQuery({
     queryKey: ['/api/events'],
@@ -117,43 +134,15 @@ export default function AdminPage() {
     refetchOnWindowFocus: true,
   });
 
-  // FIX: Fetch pending ticket email approvals
+  // Fetch pending ticket email approvals
   const { data: pendingApprovalsData, isLoading: pendingApprovalsLoading, refetch: refetchPendingApprovals } = useQuery({
     queryKey: ['/api/admin/tickets/pending-approvals'],
     enabled: authenticated && !loading,
     staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    retry: (failureCount, error: any) => {
-      if (error?.message?.includes('403') || error?.message?.includes('Admin privileges')) {
-        return false;
-      }
-      return failureCount < 2;
-    },
-    queryFn: async () => {
-      const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
-      const userDataStr = localStorage.getItem('user');
-      const isAdmin = localStorage.getItem('isAdmin') === 'true';
-
-      if (!token || !userDataStr || !isAdmin) {
-        setAuthenticated(false);
-        throw new Error('Not authenticated');
-      }
-
-      const response = await fetch('/api/admin/tickets/pending-approvals', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) {
-        if (response.status === 403) {
-          setAuthenticated(false);
-          throw new Error('Admin privileges required');
-        }
-        throw new Error('Failed to fetch pending approvals');
-      }
-      return response.json();
-    },
+    retry: (_count: number, error: any) => !error?.message?.includes('Admin privileges') && _count < 2,
+    queryFn: () => adminFetch('/api/admin/tickets/pending-approvals'),
   });
 
   const { data: usersData, isLoading: usersLoading } = useQuery({
@@ -162,38 +151,9 @@ export default function AdminPage() {
     staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    retry: (failureCount, error: any) => {
-      // Don't retry on 403 (authentication errors)
-      if (error?.message?.includes('403') || error?.message?.includes('Admin privileges')) {
-        return false;
-      }
-      return failureCount < 2;
-    },
+    retry: (_count: number, error: any) => !error?.message?.includes('Admin privileges') && _count < 2,
     queryFn: async () => {
-      // Double-check authentication before making request
-      const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
-      const userDataStr = localStorage.getItem('user');
-      const isAdmin = localStorage.getItem('isAdmin') === 'true';
-      
-      if (!token || !userDataStr || !isAdmin) {
-        setAuthenticated(false);
-        throw new Error('Not authenticated');
-      }
-      
-      const response = await fetch('/api/admin/users', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) {
-        if (response.status === 403) {
-          setAuthenticated(false);
-          throw new Error('Admin privileges required');
-        }
-        throw new Error('Failed to fetch users');
-      }
-      const data = await response.json();
-      // API returns array; support object shape for robustness
+      const data = await adminFetch('/api/admin/users');
       return Array.isArray(data) ? data : (data?.users ?? []);
     },
   });
@@ -204,37 +164,8 @@ export default function AdminPage() {
     staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    retry: (failureCount, error: any) => {
-      if (error?.message?.includes('403') || error?.message?.includes('Admin privileges')) {
-        return false;
-      }
-      return failureCount < 2;
-    },
-    queryFn: async () => {
-      // Double-check authentication before making request
-      const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
-      const userDataStr = localStorage.getItem('user');
-      const isAdmin = localStorage.getItem('isAdmin') === 'true';
-      
-      if (!token || !userDataStr || !isAdmin) {
-        setAuthenticated(false);
-        throw new Error('Not authenticated');
-      }
-      
-      const response = await fetch('/api/admin/jobs', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) {
-        if (response.status === 403) {
-          setAuthenticated(false);
-          throw new Error('Admin privileges required');
-        }
-        throw new Error('Failed to fetch jobs');
-      }
-      return response.json();
-    },
+    retry: (_count: number, error: any) => !error?.message?.includes('Admin privileges') && _count < 2,
+    queryFn: () => adminFetch('/api/admin/jobs'),
   });
 
   const { data: employersData, isLoading: employersLoading } = useQuery({
@@ -243,37 +174,8 @@ export default function AdminPage() {
     staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    retry: (failureCount, error: any) => {
-      if (error?.message?.includes('403') || error?.message?.includes('Admin privileges')) {
-        return false;
-      }
-      return failureCount < 2;
-    },
-    queryFn: async () => {
-      // Double-check authentication before making request
-      const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
-      const userDataStr = localStorage.getItem('user');
-      const isAdmin = localStorage.getItem('isAdmin') === 'true';
-      
-      if (!token || !userDataStr || !isAdmin) {
-        setAuthenticated(false);
-        throw new Error('Not authenticated');
-      }
-      
-      const response = await fetch('/api/admin/employers', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) {
-        if (response.status === 403) {
-          setAuthenticated(false);
-          throw new Error('Admin privileges required');
-        }
-        throw new Error('Failed to fetch employers');
-      }
-      return response.json();
-    },
+    retry: (_count: number, error: any) => !error?.message?.includes('Admin privileges') && _count < 2,
+    queryFn: () => adminFetch('/api/admin/employers'),
   });
 
   // Global app settings (admin-only via JWT)
@@ -283,37 +185,8 @@ export default function AdminPage() {
     staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    retry: (failureCount, error: any) => {
-      if (error?.message?.includes('403') || error?.message?.includes('Invalid or expired token')) {
-        return false;
-      }
-      return failureCount < 2;
-    },
-    queryFn: async () => {
-      // Double-check authentication before making request
-      const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
-      const userDataStr = localStorage.getItem('user');
-      const isAdmin = localStorage.getItem('isAdmin') === 'true';
-      
-      if (!token || !userDataStr || !isAdmin) {
-        setAuthenticated(false);
-        throw new Error('Not authenticated');
-      }
-      
-      const response = await fetch('/api/settings', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) {
-        if (response.status === 403) {
-          setAuthenticated(false);
-          throw new Error('Invalid or expired token');
-        }
-        throw new Error('Failed to fetch settings');
-      }
-      return response.json();
-    },
+    retry: (_count: number, error: any) => !error?.message?.includes('Admin privileges') && _count < 2,
+    queryFn: () => adminFetch('/api/settings'),
   });
 
   useEffect(() => {
