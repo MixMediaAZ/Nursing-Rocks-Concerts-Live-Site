@@ -124,8 +124,7 @@ export async function uploadMediaFiles(req: Request, res: Response) {
     console.error('Media upload error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error uploading files',
-      error: error.message,
+      message: 'Error uploading files'
     });
   }
 }
@@ -183,8 +182,7 @@ export async function getMediaList(_req: Request, res: Response) {
     console.error('Error getting media list:', error);
     res.status(500).json({
       success: false,
-      message: 'Error retrieving media assets',
-      error: error.message,
+      message: 'Error retrieving media assets'
     });
   }
 }
@@ -221,8 +219,7 @@ export async function deleteMedia(req: Request, res: Response) {
     console.error('Error deleting media:', error);
     res.status(500).json({
       success: false,
-      message: 'Error deleting media asset',
-      error: error.message,
+      message: 'Error deleting media asset'
     });
   }
 }
@@ -278,8 +275,7 @@ export async function getMediaById(req: Request, res: Response) {
     console.error('Error getting media by ID:', error);
     res.status(500).json({
       success: false,
-      message: 'Error retrieving media asset',
-      error: error.message,
+      message: 'Error retrieving media asset'
     });
   }
 }
@@ -351,8 +347,7 @@ export async function updateMedia(req: Request, res: Response) {
     console.error('Error updating media:', error);
     res.status(500).json({
       success: false,
-      message: 'Error updating media asset',
-      error: error.message,
+      message: 'Error updating media asset'
     });
   }
 }

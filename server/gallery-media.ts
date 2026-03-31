@@ -302,9 +302,8 @@ export async function uploadGalleryImages(req: Request, res: Response) {
     });
   } catch (error) {
     console.error('Error uploading gallery images:', error);
-    res.status(500).json({ 
-      error: 'Failed to upload gallery images',
-      message: error instanceof Error ? error.message : 'Unknown error'
+    res.status(500).json({
+      error: 'Failed to upload gallery images'
     });
   }
 }

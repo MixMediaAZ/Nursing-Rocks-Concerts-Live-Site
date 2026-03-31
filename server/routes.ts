@@ -1994,8 +1994,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json(result);
     } catch (error) {
       console.error("Error resending ticket email:", error);
-      const message = error instanceof Error ? error.message : "Failed to resend email";
-      return res.status(500).json({ message });
+      return res.status(500).json({ message: "Failed to resend email" });
     }
   });
 
@@ -2028,8 +2027,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json(result);
     } catch (error) {
       console.error("Error approving and sending ticket email:", error);
-      const message = error instanceof Error ? error.message : "Failed to approve and send email";
-      return res.status(500).json({ message });
+      return res.status(500).json({ message: "Failed to approve and send email" });
     }
   });
 
@@ -2078,8 +2076,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json({ tickets: pendingTickets });
     } catch (error) {
       console.error("Error fetching pending approvals:", error);
-      const message = error instanceof Error ? error.message : "Failed to fetch pending approvals";
-      return res.status(500).json({ message });
+      return res.status(500).json({ message: "Failed to fetch pending approvals" });
     }
   });
 
@@ -2099,8 +2096,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json(qrData);
     } catch (error) {
       console.error("Error fetching QR code:", error);
-      const message = error instanceof Error ? error.message : "Failed to fetch QR code";
-      return res.status(500).json({ message });
+      return res.status(500).json({ message: "Failed to fetch QR code" });
     }
   });
 
@@ -2120,8 +2116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json(history);
     } catch (error) {
       console.error("Error fetching email history:", error);
-      const message = error instanceof Error ? error.message : "Failed to fetch email history";
-      return res.status(500).json({ message });
+      return res.status(500).json({ message: "Failed to fetch email history" });
     }
   });
 
@@ -2156,8 +2151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json(revoked);
     } catch (error) {
       console.error("Error revoking ticket:", error);
-      const message = error instanceof Error ? error.message : "Failed to revoke ticket";
-      return res.status(500).json({ message });
+      return res.status(500).json({ message: "Failed to revoke ticket" });
     }
   });
 
@@ -2202,8 +2196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(result.ok ? 200 : 400).json(result);
     } catch (error) {
       console.error("Error scanning ticket:", error);
-      const message = error instanceof Error ? error.message : "Failed to scan ticket";
-      return res.status(500).json({ message });
+      return res.status(500).json({ message: "Failed to scan ticket" });
     }
   });
 
@@ -3501,8 +3494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           success: false,
           message: "Network error connecting to CustomCat API. Please check your internet connection and try again.",
           configured: false,
-          status: "error",
-          error: error instanceof Error ? error.message : "Unknown error"
+          status: "error"
         });
       }
     } catch (error) {
@@ -3660,10 +3652,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } catch (error) {
         console.error("Error during CustomCat API request:", error);
-        return res.status(500).json({ 
-          success: false, 
+        return res.status(500).json({
+          success: false,
           message: "Failed to connect to CustomCat API. Check your network connection and try again.",
-          error: error instanceof Error ? error.message : "Unknown error",
           apiKeyConfigured: !!apiKeyValue
         });
       }
