@@ -98,6 +98,7 @@ import {
   resetPasswordValidation,
   register,
   login,
+  logout,
   requestPasswordReset,
   resetPassword,
   requireEmployerToken
@@ -665,6 +666,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // We'll keep these routes for backward compatibility
   app.post("/api/auth/register", registerRateLimiter, registerValidation, register);
   app.post("/api/auth/login", authRateLimiter, loginValidation, login);
+  // SAFETY FIX: Logout endpoint to invalidate tokens server-side
+  app.post("/api/auth/logout", authenticateToken, logout);
   app.post("/api/auth/forgot-password", passwordResetRateLimiter, requestPasswordResetValidation, requestPasswordReset);
   app.post("/api/auth/reset-password", resetPasswordValidation, resetPassword);
 

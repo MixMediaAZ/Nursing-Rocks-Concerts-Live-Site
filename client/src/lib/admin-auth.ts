@@ -21,7 +21,7 @@ export async function adminFetch(
   const token = getAdminToken();
 
   const headers = new Headers(options.headers);
-  
+
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
@@ -36,12 +36,27 @@ export async function adminFetch(
     headers,
   });
 
-  // If unauthorized, clear admin token and redirect to admin login
+  // SAFETY FIX: Handle unauthorized/forbidden responses (token revoked or expired)
   if (response.status === 401 || response.status === 403) {
+    // Call server logout endpoint to clean up blacklist
+    if (token) {
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+      } catch (err) {
+        // Silently fail - server endpoint might not be available
+      }
+    }
+
+    // Clear all admin authentication
     localStorage.removeItem('adminToken');
+    localStorage.removeItem('token');
     localStorage.removeItem('isAdmin');
     localStorage.removeItem('adminPinVerified');
-    
+    localStorage.removeItem('user');
+
     // Only redirect if we're on an admin page
     if (window.location.pathname.startsWith('/admin')) {
       window.location.reload();

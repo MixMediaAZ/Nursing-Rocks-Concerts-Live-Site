@@ -702,8 +702,25 @@ export default function AdminPage() {
     checkAdminAuth();
   }, [toast]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     try {
+      const token = localStorage.getItem("token") || localStorage.getItem("adminToken");
+
+      // SAFETY FIX: Call server logout endpoint to blacklist the token
+      if (token) {
+        try {
+          await fetch("/api/auth/logout", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+            },
+          });
+        } catch (err) {
+          // Server logout failed, but still clear client-side
+          console.error("[Logout] Server logout failed:", err);
+        }
+      }
+
       // Clear all authentication state
       localStorage.removeItem("token");
       localStorage.removeItem("user");

@@ -10,6 +10,11 @@ import { sendTicketConfirmationEmail, sendPasswordResetEmail } from './email';
 
 const SALT_ROUNDS = 10;
 
+// SAFETY FIX: Token blacklist for logout/revocation
+// Stores invalidated tokens to prevent reuse after logout
+// Structure: token -> expiry timestamp
+const tokenBlacklist = new Map<string, number>();
+
 // In-memory store for password reset tokens: token -> { userId, expiry }
 const resetTokens = new Map<string, { userId: number; expiry: number }>();
 
@@ -18,6 +23,10 @@ setInterval(() => {
   const now = Date.now();
   for (const [token, data] of resetTokens.entries()) {
     if (data.expiry < now) resetTokens.delete(token);
+  }
+  // SAFETY FIX: Also purge expired blacklisted tokens
+  for (const [token, expiry] of tokenBlacklist.entries()) {
+    if (expiry < now) tokenBlacklist.delete(token);
   }
 }, 10 * 60 * 1000); // every 10 minutes
 
@@ -412,35 +421,35 @@ export async function authenticateToken(req: Request, res: Response, next: Funct
   }
 
   try {
+    // SAFETY FIX: Check if token has been blacklisted (logged out)
+    if (isTokenBlacklisted(token)) {
+      return res.status(401).json({ message: 'Session has been terminated. Please log in again.' });
+    }
+
     const decoded = verifyToken(token);
     if (!decoded) {
       return res.status(403).json({ message: 'Invalid or expired token' });
     }
-    
-    // For admin tokens generated directly, use the token's isAdmin flag
-    if (decoded.isAdmin) {
-      (req as any).user = {
-        userId: decoded.userId,
-        email: decoded.email,
-        isVerified: decoded.isVerified,
-        isAdmin: decoded.isAdmin
-      };
-      return next();
-    }
-    
-    // For regular user tokens, fetch the complete user to get the latest isAdmin status
+
+    // SAFETY FIX: Always fetch the latest user data to verify current permissions
+    // This ensures revoked admins cannot perform privileged operations
     const user = await storage.getUserById(decoded.userId as any);
     if (!user) {
-      return res.status(403).json({ message: 'User not found' });
+      return res.status(403).json({ message: 'User not found or has been deleted' });
     }
-    
+
+    // SAFETY FIX: Check if user account is still active (prevent use of revoked accounts)
+    if (user.is_suspended || !user.email) {
+      return res.status(403).json({ message: 'Account is no longer active' });
+    }
+
     (req as any).user = {
       userId: decoded.userId,
       email: decoded.email,
-      isVerified: decoded.isVerified,
-      isAdmin: user.is_admin // Set isAdmin property consistently
+      isVerified: user.is_verified,
+      isAdmin: user.is_admin // Always use database value, not token claim
     };
-    
+
     next();
   } catch (error) {
     console.error('Token verification error:', error);
@@ -604,4 +613,55 @@ export async function resetPassword(req: Request, res: Response) {
     console.error('Password reset error:', error);
     return res.status(500).json({ message: 'Server error. Please try again.' });
   }
+}
+
+/**
+ * SAFETY FIX: Logout endpoint that invalidates the user's token
+ * Prevents reuse of tokens after logout
+ */
+export async function logout(req: Request, res: Response) {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+      return res.status(400).json({ message: 'No token to logout' });
+    }
+
+    // Get the token's expiry time
+    try {
+      const decoded = verifyToken(token);
+      if (decoded && decoded.exp) {
+        // Add token to blacklist with its expiration time
+        const tokenExpiry = decoded.exp * 1000; // exp is in seconds
+        tokenBlacklist.set(token, tokenExpiry);
+        console.log('[AUTH] Token blacklisted for logout');
+      }
+    } catch (err) {
+      // Token is already invalid, that's fine
+      console.log('[AUTH] Token already invalid');
+    }
+
+    return res.status(200).json({ message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    return res.status(500).json({ message: 'Server error during logout' });
+  }
+}
+
+/**
+ * SAFETY FIX: Check if a token is blacklisted (revoked/logged out)
+ */
+export function isTokenBlacklisted(token: string): boolean {
+  const expiry = tokenBlacklist.get(token);
+  if (!expiry) return false;
+
+  // Token is blacklisted if expiry hasn't passed yet
+  if (expiry > Date.now()) {
+    return true;
+  }
+
+  // Token is expired, remove from blacklist
+  tokenBlacklist.delete(token);
+  return false;
 }
