@@ -267,15 +267,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { q, specialty, location, salaryMin, salaryMax, sortBy, limit, offset } = req.query;
 
+      // Validate search query length (max 500 chars to prevent ReDoS/DoS)
+      const searchQuery = (q as string || '').trim();
+      if (searchQuery.length > 500) {
+        return res.status(400).json({ message: 'Search query too long (max 500 characters)' });
+      }
+
       // FIX: Add bounds checking for numeric inputs
       const parsedLimit = limit ? Math.min(Math.max(parseInt(limit as string) || 20, 1), 100) : 20;
-      const parsedOffset = offset ? Math.max(parseInt(offset as string) || 0, 0) : 0;
+      const parsedOffset = offset ? Math.min(Math.max(parseInt(offset as string) || 0, 0), 10000) : 0;
       const parsedSalaryMin = salaryMin ? Math.max(parseInt(salaryMin as string) || 0, 0) : undefined;
       const parsedSalaryMax = salaryMax ? Math.max(parseInt(salaryMax as string) || 0, 0) : undefined;
 
+      // Normalize and validate specialty array (max 20 items to prevent DoS)
+      let specialtyArray: string[] | undefined;
+      if (specialty) {
+        if (Array.isArray(specialty)) {
+          specialtyArray = specialty.slice(0, 20) as string[];
+        } else {
+          specialtyArray = [specialty as string];
+        }
+        // Filter empty strings
+        specialtyArray = specialtyArray.filter(s => typeof s === 'string' && s.trim().length > 0);
+        if (specialtyArray.length === 0) specialtyArray = undefined;
+      }
+
       const results = await searchJobs({
-        query: q as string,
-        specialty: specialty ? (Array.isArray(specialty) ? specialty as string[] : [specialty as string]) : undefined,
+        query: searchQuery,
+        specialty: specialtyArray,
         location: location as string,
         salaryMin: parsedSalaryMin,
         salaryMax: parsedSalaryMax,
@@ -335,11 +354,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const parsedLimit = limit ? Math.min(Math.max(parseInt(limit as string) || 20, 1), 100) : 20;
       const parsedOffset = offset ? Math.min(Math.max(parseInt(offset as string) || 0, 0), 10000) : 0;
 
+      // Normalize and validate certifications array (max 20 items to prevent DoS)
+      let certificationsArray: string[] | undefined;
+      if (certifications) {
+        if (Array.isArray(certifications)) {
+          certificationsArray = certifications.slice(0, 20) as string[];
+        } else {
+          certificationsArray = [certifications as string];
+        }
+        // Filter empty strings
+        certificationsArray = certificationsArray.filter(c => typeof c === 'string' && c.trim().length > 0);
+        if (certificationsArray.length === 0) certificationsArray = undefined;
+      }
+
       const results = await searchNurses({
         query: searchQuery,
         specialty: specialty as string,
         experience: experience ? parseInt(experience as string) : undefined,
-        certifications: certifications ? (Array.isArray(certifications) ? certifications as string[] : [certifications as string]) : undefined,
+        certifications: certificationsArray,
         sortBy: (sortBy as any) || 'relevance',
         limit: parsedLimit,
         offset: parsedOffset,
@@ -1019,6 +1051,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         job_type, work_arrangement, specialty, experience_level, education_required,
         certification_required, shift_type, salary_min, salary_max, salary_period,
         application_url, contact_email, expiry_date } = req.body;
+
+      // Validate text field lengths (prevent DoS via unbounded storage)
+      const validateTextField = (field: string, value: string, maxLen: number): string | null => {
+        if (!value) return null;
+        if (typeof value !== 'string') return null;
+        if (value.length > maxLen) return `${field} exceeds max length of ${maxLen}`;
+        return null;
+      };
+
+      const titleErr = validateTextField('Title', title, 500);
+      if (titleErr) return res.status(400).json({ message: titleErr });
+
+      const descErr = validateTextField('Description', description, 5000);
+      if (descErr) return res.status(400).json({ message: descErr });
+
+      const respErr = validateTextField('Responsibilities', responsibilities, 5000);
+      if (respErr) return res.status(400).json({ message: respErr });
+
+      const reqErr = validateTextField('Requirements', requirements, 5000);
+      if (reqErr) return res.status(400).json({ message: reqErr });
+
+      const benErr = validateTextField('Benefits', benefits, 5000);
+      if (benErr) return res.status(400).json({ message: benErr });
+
+      const locErr = validateTextField('Location', location, 500);
+      if (locErr) return res.status(400).json({ message: locErr });
+
+      // Validate URLs (prevent SSRF/open redirects)
+      if (application_url && typeof application_url === 'string') {
+        const urlTrimmed = application_url.trim();
+        if (urlTrimmed) {
+          try {
+            // Validate that it's a proper URL format
+            new URL(urlTrimmed);
+            if (urlTrimmed.length > 2000) {
+              return res.status(400).json({ message: 'Application URL too long (max 2000 characters)' });
+            }
+          } catch {
+            return res.status(400).json({ message: 'Application URL must be a valid URL' });
+          }
+        }
+      }
+
+      // Validate email format if provided
+      if (contact_email && typeof contact_email === 'string') {
+        const emailTrimmed = contact_email.trim();
+        if (emailTrimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+          return res.status(400).json({ message: 'Contact email must be a valid email address' });
+        }
+      }
 
       // Update editable fields
       await storage.updateJobListing(id, {
@@ -2323,12 +2405,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const job = await storage.getJobListingById(id);
       if (!job) return res.status(404).json({ message: "Job not found" });
 
+      // Validate approval notes length (max 1000 chars)
+      const notes = req.body?.notes;
+      if (notes && typeof notes === 'string' && notes.length > 1000) {
+        return res.status(400).json({ message: 'Approval notes too long (max 1000 characters)' });
+      }
+
       const adminId = (req as any).user?.userId;
       const updated = await storage.updateJobListing(id, {
         is_approved: true,
         approved_by: adminId,
         approved_at: new Date(),
-        approval_notes: req.body?.notes,
+        approval_notes: notes,
         is_active: true,
       });
       return res.json(updated);
@@ -2345,12 +2433,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const job = await storage.getJobListingById(id);
       if (!job) return res.status(404).json({ message: "Job not found" });
 
+      // Validate denial notes length (max 1000 chars)
+      const notes = req.body?.notes;
+      if (notes && typeof notes === 'string' && notes.length > 1000) {
+        return res.status(400).json({ message: 'Denial notes too long (max 1000 characters)' });
+      }
+
       const adminId = (req as any).user?.userId;
       const updated = await storage.updateJobListing(id, {
         is_approved: false,
         approved_by: adminId,
         approved_at: new Date(),
-        approval_notes: req.body?.notes,
+        approval_notes: notes,
         is_active: false,
       });
       return res.json(updated);
@@ -2380,6 +2474,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       if (isNaN(id)) return res.status(400).json({ message: "Invalid contact request ID" });
 
+      // Validate admin notes length (max 1000 chars)
+      const notes = req.body?.notes;
+      if (notes && typeof notes === 'string' && notes.length > 1000) {
+        return res.status(400).json({ message: 'Admin notes too long (max 1000 characters)' });
+      }
+
       const adminId = (req as any).user?.userId;
       const [updated] = await db
         .update(contactRequests)
@@ -2388,7 +2488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           reviewed_at: new Date(),
           reviewed_by: adminId,
           contact_revealed_at: new Date(),
-          admin_notes: req.body?.notes,
+          admin_notes: notes,
         })
         .where(eq(contactRequests.id, id))
         .returning();
@@ -2406,6 +2506,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       if (isNaN(id)) return res.status(400).json({ message: "Invalid contact request ID" });
 
+      // Validate admin notes and denial reason length (max 1000 chars each)
+      const notes = req.body?.notes;
+      const reason = req.body?.reason;
+      if (notes && typeof notes === 'string' && notes.length > 1000) {
+        return res.status(400).json({ message: 'Admin notes too long (max 1000 characters)' });
+      }
+      if (reason && typeof reason === 'string' && reason.length > 1000) {
+        return res.status(400).json({ message: 'Denial reason too long (max 1000 characters)' });
+      }
+
       const adminId = (req as any).user?.userId;
       const [updated] = await db
         .update(contactRequests)
@@ -2413,8 +2523,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: "denied",
           reviewed_at: new Date(),
           reviewed_by: adminId,
-          admin_notes: req.body?.notes,
-          denial_reason: req.body?.reason,
+          admin_notes: notes,
+          denial_reason: reason,
         })
         .where(eq(contactRequests.id, id))
         .returning();
