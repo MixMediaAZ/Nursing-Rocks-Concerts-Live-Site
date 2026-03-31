@@ -16,9 +16,15 @@ const cityBackgroundsStorage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename: (_req, file, cb) => {
-    // Generate a unique filename with the original extension
+    // Derive extension from the validated MIME type — never from originalname,
+    // which is attacker-controlled and could be spoofed (e.g. evil.php → image/jpeg).
+    const mimeToExt: Record<string, string> = {
+      'image/jpeg': '.jpg',
+      'image/jpg': '.jpg',
+      'image/png': '.png',
+    };
+    const ext = mimeToExt[file.mimetype] ?? '.jpg';
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
     cb(null, file.fieldname + '-' + uniqueSuffix + ext);
   }
 });

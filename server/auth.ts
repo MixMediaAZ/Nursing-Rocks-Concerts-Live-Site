@@ -5,6 +5,9 @@ import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import fetch from 'node-fetch';
 import { storage } from './storage';
+import { db } from './db';
+import { eq } from 'drizzle-orm';
+import { users } from '@shared/schema';
 import { generateToken, verifyToken, getUserIdFromRequest, isUserVerified } from './jwt';
 import { sendTicketConfirmationEmail, sendPasswordResetEmail } from './email';
 
@@ -15,16 +18,9 @@ const SALT_ROUNDS = 10;
 // Structure: token -> expiry timestamp
 const tokenBlacklist = new Map<string, number>();
 
-// In-memory store for password reset tokens: token -> { userId, expiry }
-const resetTokens = new Map<string, { userId: number; expiry: number }>();
-
-// Purge expired tokens periodically
+// Purge expired blacklisted tokens periodically
 setInterval(() => {
   const now = Date.now();
-  for (const [token, data] of resetTokens.entries()) {
-    if (data.expiry < now) resetTokens.delete(token);
-  }
-  // SAFETY FIX: Also purge expired blacklisted tokens
   for (const [token, expiry] of tokenBlacklist.entries()) {
     if (expiry < now) tokenBlacklist.delete(token);
   }
@@ -577,7 +573,10 @@ export async function requestPasswordReset(req: Request, res: Response) {
     }
 
     const token = crypto.randomBytes(32).toString('hex');
-    resetTokens.set(token, { userId: user.id, expiry: Date.now() + 60 * 60 * 1000 }); // 1 hour
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    await db.update(users)
+      .set({ reset_token: token, reset_token_expires_at: expiresAt })
+      .where(eq(users.id, user.id));
 
     const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
     await sendPasswordResetEmail(user.email, user.first_name, token, baseUrl);
@@ -598,15 +597,20 @@ export async function resetPassword(req: Request, res: Response) {
 
   const { token, password } = req.body;
 
-  const entry = resetTokens.get(token);
-  if (!entry || entry.expiry < Date.now()) {
+  const [userRow] = await db.select()
+    .from(users)
+    .where(eq(users.reset_token, token))
+    .limit(1);
+
+  if (!userRow || !userRow.reset_token_expires_at || userRow.reset_token_expires_at < new Date()) {
     return res.status(400).json({ message: 'Invalid or expired reset link. Please request a new one.' });
   }
 
   try {
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-    await storage.updateUser(entry.userId, { password_hash: passwordHash } as any);
-    resetTokens.delete(token);
+    await db.update(users)
+      .set({ password_hash: passwordHash, reset_token: null, reset_token_expires_at: null })
+      .where(eq(users.id, userRow.id));
 
     return res.status(200).json({ message: 'Password updated successfully. You can now log in.' });
   } catch (error) {

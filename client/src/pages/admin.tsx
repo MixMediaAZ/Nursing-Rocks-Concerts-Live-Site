@@ -104,7 +104,7 @@ export default function AdminPage() {
   // queries don't each call setAuthenticated(false) and race each other.
   const adminFetch = useCallback(async (url: string) => {
     const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
-    if (!token || localStorage.getItem('isAdmin') !== 'true') {
+    if (!token) {
       setAuthenticated(false);
       throw new Error('Not authenticated');
     }

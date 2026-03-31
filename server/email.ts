@@ -3,6 +3,10 @@ import { Resend } from 'resend';
 const resendApiKey = process.env.RESEND_API_KEY;
 const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
+// Strip CR/LF from any user-supplied string used in email headers.
+// Prevents CRLF header injection (BCC injection, subject hijacking, etc.)
+const hdr = (s: unknown): string => String(s ?? '').replace(/[\r\n]+/g, ' ').trim();
+
 export interface TicketEmailData {
   nurseName: string;
   userEmail: string;
@@ -102,7 +106,7 @@ export async function sendTicketConfirmationEmail(data: TicketEmailData): Promis
     const response = await resend.emails.send({
       from: 'tickets@nursingrocks.com',
       to: data.userEmail,
-      subject: `Your ${data.eventTitle} Ticket - Nursing Rocks!`,
+      subject: `Your ${hdr(data.eventTitle)} Ticket - Nursing Rocks!`,
       html: emailHtml,
     });
 
@@ -282,7 +286,7 @@ export async function sendJobAlertEmail(data: JobAlertEmailData): Promise<{ succ
     const response = await resend.emails.send({
       from: 'jobs@nursingrocks.com',
       to: data.userEmail,
-      subject: `New Job Alert: ${data.jobTitle} at ${data.employer}`,
+      subject: `New Job Alert: ${hdr(data.jobTitle)} at ${hdr(data.employer)}`,
       html: emailHtml,
     });
 
@@ -389,7 +393,7 @@ export async function sendEventReminderEmail(data: EventReminderEmailData): Prom
     const response = await resend.emails.send({
       from: 'events@nursingrocks.com',
       to: data.userEmail,
-      subject: `Reminder: ${data.eventTitle} - ${data.daysUntilEvent} Days Away!`,
+      subject: `Reminder: ${hdr(data.eventTitle)} - ${data.daysUntilEvent} Days Away!`,
       html: emailHtml,
     });
 

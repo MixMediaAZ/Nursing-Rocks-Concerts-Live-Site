@@ -207,6 +207,8 @@ export const users = pgTable("users", {
   is_admin: boolean("is_admin").default(false),
   is_suspended: boolean("is_suspended").default(false),
   status: text("status").default("active"), // active, suspended, inactive
+  reset_token: text("reset_token"),
+  reset_token_expires_at: timestamp("reset_token_expires_at"),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
