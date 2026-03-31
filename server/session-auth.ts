@@ -184,13 +184,18 @@ export function setupAuth(app: Express) {
   app.post("/api/auth/register", async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { email, password, first_name, last_name } = req.body;
-      
+
+      // Validate password strength (minimum 8 characters)
+      if (!password || typeof password !== 'string' || password.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters long" });
+      }
+
       // Check if email is already registered
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
         return res.status(400).json({ message: "Email already registered" });
       }
-      
+
       // Hash the password
       const hashedPassword = await hashPassword(password);
       
