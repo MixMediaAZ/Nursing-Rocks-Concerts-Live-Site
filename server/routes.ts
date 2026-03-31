@@ -648,8 +648,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/media-folders/:id", requireAdminToken, updateMediaFolder);
   app.delete("/api/media-folders/:id", requireAdminToken, deleteMediaFolder);
 
-  // Newsletter subscription
-  app.post("/api/subscribe", async (req: Request, res: Response) => {
+  // Newsletter subscription (rate-limited to prevent spam/DoS)
+  app.post("/api/subscribe", authRateLimiter, async (req: Request, res: Response) => {
     try {
       const validationResult = insertSubscriberSchema.safeParse(req.body);
       
@@ -685,7 +685,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // SAFETY FIX: Logout endpoint to invalidate tokens server-side
   app.post("/api/auth/logout", authenticateToken, logout);
   app.post("/api/auth/forgot-password", passwordResetRateLimiter, requestPasswordResetValidation, requestPasswordReset);
-  app.post("/api/auth/reset-password", resetPasswordValidation, resetPassword);
+  app.post("/api/auth/reset-password", passwordResetRateLimiter, resetPasswordValidation, resetPassword);
 
   // Protected routes (require authentication)
   app.post("/api/license/submit", requireAuth, licenseValidation, submitNurseLicense);
