@@ -727,8 +727,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/create-payment-intent", authenticateToken, async (req: Request, res: Response) => {
     try {
       const { amount, items } = req.body;
-      
-      if (!amount || amount <= 0) {
+      const MAX_AMOUNT_CENTS = 9999999; // $99,999.99 — hard ceiling
+      if (!amount || amount <= 0 || amount > MAX_AMOUNT_CENTS || !Number.isFinite(amount)) {
         return res.status(400).json({ message: "Invalid amount" });
       }
 
@@ -813,7 +813,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/jobs/recent", async (req: Request, res: Response) => {
     try {
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
+      const limitRaw = parseInt(req.query.limit as string);
+      const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(1, limitRaw), 100) : 5;
       const recentJobs = await storage.getRecentJobListings(limit);
       res.json(recentJobs);
     } catch (error) {
@@ -904,27 +905,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Employer account is not active. Please wait for approval." });
       }
 
-      const credits = (employer as any).job_post_credits ?? 0;
       const passExpiresAt = (employer as any).job_post_pass_expires_at ?? null;
       const lifetime = !!(employer as any).job_post_lifetime;
       const passActive = !!passExpiresAt && new Date(passExpiresAt).getTime() > Date.now();
-      const canPost = lifetime || passActive || credits > 0;
-      if (!canPost) {
-        return res.status(402).json({ message: "Payment required to post jobs (no active entitlement)" });
-      }
-      
-      const jobListing = await storage.createJobListing(validationResult.data, employer.id);
 
-      // Consume one credit when applicable
+      // For credit-based posting: atomically decrement BEFORE creating the job.
+      // The WHERE credits > 0 ensures a concurrent request cannot consume the same credit.
       if (!lifetime && !passActive) {
-        await db
+        const [decremented] = await db
           .update(employers)
-          .set({
-            job_post_credits: sql`${employers.job_post_credits} - 1`,
-            updated_at: new Date(),
-          })
-          .where(eq(employers.id, employer.id));
+          .set({ job_post_credits: sql`${employers.job_post_credits} - 1`, updated_at: new Date() })
+          .where(and(eq(employers.id, employer.id), sql`${employers.job_post_credits} > 0`))
+          .returning({ id: employers.id });
+
+        if (!decremented) {
+          return res.status(402).json({ message: "Payment required to post jobs (no active entitlement)" });
+        }
       }
+
+      const jobListing = await storage.createJobListing(validationResult.data, employer.id);
 
       res.status(201).json({ 
         id: jobListing.id,
@@ -1222,7 +1221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Job posting price is not configured yet" });
       }
 
-      const finalQty = purchaseType === "perPost" ? Math.max(1, quantity || 1) : 1;
+      const finalQty = purchaseType === "perPost" ? Math.min(Math.max(1, quantity || 1), 100) : 1;
       const amountCents = unit * finalQty;
 
       // If Stripe is not initialized, simulate for development.
@@ -1274,7 +1273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Simulation mode
         purchaseType = String(req.body?.purchaseType || "");
         const q = parseInt(String(req.body?.quantity || "1"), 10);
-        quantity = Number.isFinite(q) && q > 0 ? q : 1;
+        quantity = Number.isFinite(q) && q > 0 ? Math.min(q, 100) : 1;
       } else {
         const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
         if (!pi) return res.status(404).json({ message: "PaymentIntent not found" });
@@ -1284,7 +1283,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(403).json({ message: "PaymentIntent does not belong to this employer" });
         }
         purchaseType = meta.purchaseType || null;
-        quantity = parseInt(meta.quantity || "1", 10) || 1;
+        const qMeta = parseInt(meta.quantity || "1", 10);
+        quantity = Number.isFinite(qMeta) && qMeta > 0 ? Math.min(qMeta, 100) : 1;
       }
 
       if (!purchaseType || !["perPost", "pass", "lifetime"].includes(purchaseType)) {
@@ -3592,35 +3592,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/nrpx/verify/:code — QR scanner verification (marks check-in)
-  app.get("/api/nrpx/verify/:code", async (req: Request, res: Response) => {
+  // GET /api/nrpx/verify/:code — QR scanner verification (marks check-in, admin only)
+  app.get("/api/nrpx/verify/:code", requireAdminToken, async (req: Request, res: Response) => {
     try {
       const code = req.params.code?.toUpperCase().trim();
       if (!code) return res.status(400).json({ valid: false, message: "No ticket code provided." });
 
-      const [reg] = await db.select().from(nrpxRegistrations)
-        .where(eq(nrpxRegistrations.ticket_code, code)).limit(1);
+      // Atomic check-and-mark: only succeeds if ticket exists AND is not yet checked in.
+      // This eliminates the TOCTOU race where two concurrent scans could both succeed.
+      const [updated] = await db.update(nrpxRegistrations)
+        .set({ checked_in: true, checked_in_at: new Date() })
+        .where(and(
+          eq(nrpxRegistrations.ticket_code, code),
+          eq(nrpxRegistrations.checked_in, false)
+        ))
+        .returning();
 
-      if (!reg) return res.status(404).json({ valid: false, message: "Ticket not found." });
-
-      if (reg.checked_in) {
-        const checkedInAt = reg.checked_in_at
-          ? new Date(reg.checked_in_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-          : 'earlier';
-        return res.json({
-          valid: false,
-          alreadyUsed: true,
-          message: `Already checked in at ${checkedInAt}`,
-          name: `${reg.first_name} ${reg.last_name}`,
-        });
+      if (updated) {
+        console.log(`[NRPX] Checked in: ${updated.first_name} ${updated.last_name} (${code})`);
+        return res.json({ valid: true, name: `${updated.first_name} ${updated.last_name}`, message: "Welcome!" });
       }
 
-      await db.update(nrpxRegistrations)
-        .set({ checked_in: true, checked_in_at: new Date() })
-        .where(eq(nrpxRegistrations.id, reg.id));
+      // Nothing updated — ticket either not found or already used; look up for message
+      const [existing] = await db.select().from(nrpxRegistrations)
+        .where(eq(nrpxRegistrations.ticket_code, code)).limit(1);
 
-      console.log(`[NRPX] Checked in: ${reg.first_name} ${reg.last_name} (${code})`);
-      res.json({ valid: true, name: `${reg.first_name} ${reg.last_name}`, message: "Welcome!" });
+      if (!existing) return res.status(404).json({ valid: false, message: "Ticket not found." });
+
+      const checkedInAt = existing.checked_in_at
+        ? new Date(existing.checked_in_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+        : 'earlier';
+      return res.json({
+        valid: false,
+        alreadyUsed: true,
+        message: `Already checked in at ${checkedInAt}`,
+        name: `${existing.first_name} ${existing.last_name}`,
+      });
     } catch (error) {
       console.error("[NRPX] Verify error:", error);
       res.status(500).json({ valid: false, message: "Verification error. Please try again." });
