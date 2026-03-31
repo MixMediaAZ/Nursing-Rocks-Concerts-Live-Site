@@ -701,8 +701,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/media", getMediaList);
   app.get("/api/media/:id", getMediaById);
   app.post("/api/media/upload", requireAdminToken, upload.array('files'), uploadMediaFiles);
-  app.patch("/api/media/:id", requireAuth, updateMedia);
-  app.delete("/api/media/:id", requireAuth, deleteMedia);
+  // IDOR fix: Media delete/update not fully implemented with DB ownership checks.
+  // Restrict to admin-only until media_assets DB integration is complete.
+  app.patch("/api/media/:id", requireAdminToken, updateMedia);
+  app.delete("/api/media/:id", requireAdminToken, deleteMedia);
 
   // Nurse License API Routes
   app.get("/api/licenses", requireAuth, async (req: Request, res: Response) => {
@@ -1541,6 +1543,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Job Alerts
   app.post("/api/jobs/alerts", requireAuth, async (req: Request, res: Response) => {
     try {
+      // Limit: max 10 active alerts per user to prevent DoS via cron email spam
+      const existingAlerts = await storage.getJobAlertsByUserId(req.user!.userId);
+      if (existingAlerts.length >= 10) {
+        return res.status(429).json({
+          message: "Maximum 10 job alerts allowed per user"
+        });
+      }
+
       // Validate alert data
       const validationResult = insertJobAlertSchema.safeParse(req.body);
       if (!validationResult.success) {
@@ -1549,9 +1559,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           errors: validationResult.error.format()
         });
       }
-      
+
       const alert = await storage.createJobAlert(validationResult.data, req.user!.userId);
-      res.status(201).json({ 
+      res.status(201).json({
         id: alert.id,
         message: "Job alert created successfully"
       });
@@ -1576,7 +1586,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid alert ID" });
       }
-      
+
+      // IDOR fix: verify alert belongs to current user before deleting
+      const alerts = await storage.getJobAlertsByUserId(req.user!.userId);
+      if (!alerts.find(a => a.id === id)) {
+        return res.status(403).json({ message: "Unauthorized: Cannot delete another user's alert" });
+      }
+
       await storage.deleteJobAlert(id);
       res.json({ message: "Job alert deleted successfully" });
     } catch (error) {
