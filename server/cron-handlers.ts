@@ -40,8 +40,9 @@ export async function handleJobAlertsCron(req: Request, res: Response) {
     const cronSecret = process.env.CRON_SECRET;
     const providedSecret = req.headers['x-cron-secret'] || req.query.secret;
 
-    if (cronSecret && providedSecret !== cronSecret) {
-      console.warn('[CRON] Invalid cron secret provided');
+    // Fail closed: if CRON_SECRET is not configured, deny all requests
+    if (!cronSecret || providedSecret !== cronSecret) {
+      console.warn('[CRON] Unauthorized cron request (invalid or missing secret)');
       return res.status(401).json({
         success: false,
         message: 'Unauthorized cron request',
@@ -97,8 +98,9 @@ export async function handleEventRemindersCron(req: Request, res: Response) {
     const cronSecret = process.env.CRON_SECRET;
     const providedSecret = req.headers['x-cron-secret'] || req.query.secret;
 
-    if (cronSecret && providedSecret !== cronSecret) {
-      console.warn('[CRON] Invalid cron secret provided');
+    // Fail closed: if CRON_SECRET is not configured, deny all requests
+    if (!cronSecret || providedSecret !== cronSecret) {
+      console.warn('[CRON] Unauthorized cron request (invalid or missing secret)');
       return res.status(401).json({
         success: false,
         message: 'Unauthorized cron request',

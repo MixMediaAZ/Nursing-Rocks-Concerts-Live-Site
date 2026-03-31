@@ -27,25 +27,29 @@ const registerSchema = z.object({
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
+// SECURITY: only allow same-origin relative paths — reject anything with a host
+const isSafeRedirect = (path: string | null): path is string =>
+  !!path && path.startsWith('/') && !path.startsWith('//');
+
 export default function RegisterPage() {
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
-  
+
   // Check if user is already logged in on mount - with improved error handling
   useEffect(() => {
     const token = localStorage.getItem("token");
     const user = localStorage.getItem("user");
-    
+
     // Check for redirect parameter in URL
     const urlParams = new URLSearchParams(window.location.search);
     const redirectPath = urlParams.get('redirect');
-    
+
     if (token && user) {
       try {
         // Parse user data to validate it (catches corrupted data)
         JSON.parse(user);
         // User is already logged in, redirect to dashboard or specified redirect path
-        window.location.href = redirectPath || "/dashboard";
+        window.location.href = isSafeRedirect(redirectPath) ? redirectPath : "/dashboard";
       } catch (error) {
         console.error("Error parsing user data during auth check:", error);
         // Clear invalid data
@@ -118,7 +122,7 @@ export default function RegisterPage() {
       const redirectPath = urlParams.get('redirect');
 
       // Force a full page navigation to the dashboard after registration
-      window.location.href = redirectPath || '/dashboard';
+      window.location.href = isSafeRedirect(redirectPath) ? redirectPath : '/dashboard';
     },
     onError: (error: Error) => {
       toast({
@@ -247,8 +251,8 @@ export default function RegisterPage() {
                 const urlParams = new URLSearchParams(window.location.search);
                 const redirectPath = urlParams.get('redirect');
                 
-                if (redirectPath) {
-                  window.location.href = `/login?redirect=${redirectPath}`;
+                if (isSafeRedirect(redirectPath)) {
+                  window.location.href = `/login?redirect=${encodeURIComponent(redirectPath)}`;
                 } else {
                   window.location.href = "/login";
                 }

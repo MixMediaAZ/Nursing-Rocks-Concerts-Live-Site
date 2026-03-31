@@ -377,7 +377,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/upload/city-backgrounds/bulk", requireAdminToken, uploadMultipleCityBackgrounds);
   
   // Replace one gallery image with another
-  app.post("/api/gallery/:id/replace-with/:replacementId", async (req: Request, res: Response) => {
+  app.post("/api/gallery/:id/replace-with/:replacementId", requireAdminToken, async (req: Request, res: Response) => {
     try {
       const { id, replacementId } = req.params;
       const originalUrl = req.body.originalUrl; // Capture original URL if provided
@@ -762,7 +762,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error("Error creating payment intent:", error);
-      res.status(500).json({ message: error.message || "Failed to create payment intent" });
+      res.status(500).json({ message: "Failed to create payment intent" });
     }
   });
 
@@ -1178,7 +1178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error("Error fetching employer job-post entitlements:", error);
-      return res.status(500).json({ message: error.message || "Failed to fetch entitlements" });
+      return res.status(500).json({ message: "Failed to fetch entitlements" });
     }
   });
 
@@ -1253,7 +1253,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error("Error creating employer job-post PaymentIntent:", error);
-      return res.status(500).json({ message: error.message || "Failed to create payment intent" });
+      return res.status(500).json({ message: "Failed to create payment intent" });
     }
   });
 
@@ -1323,7 +1323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json({ success: true });
     } catch (error: any) {
       console.error("Error confirming employer job-post payment:", error);
-      return res.status(500).json({ message: error.message || "Failed to confirm payment" });
+      return res.status(500).json({ message: "Failed to confirm payment" });
     }
   });
   
@@ -2634,7 +2634,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, videoId, key: Key, url: publicUrlForKey(Key) });
     } catch (error) {
       console.error("Error generating thumbnail:", error);
-      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to generate thumbnail" });
+      res.status(500).json({ message: "Failed to generate thumbnail" });
     }
   });
 
