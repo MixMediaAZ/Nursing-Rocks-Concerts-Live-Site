@@ -1480,44 +1480,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Job Applications
-  app.post("/api/jobs/apply", requireAuth, async (req: Request, res: Response) => {
+  app.post("/api/jobs/apply", authRateLimiter, requireAuth, async (req: Request, res: Response) => {
     try {
       if (!req.user?.isVerified) {
         return res.status(403).json({ message: "You must be verified to apply for jobs" });
       }
-      
+
       const { jobId, coverLetter, resumeUrl } = req.body;
       if (!jobId) {
         return res.status(400).json({ message: "Job ID is required" });
       }
-      
+
+      // Validate cover letter length (max 5000 chars) - prevents DoS via unbounded storage
+      if (coverLetter && typeof coverLetter === 'string' && coverLetter.length > 5000) {
+        return res.status(400).json({ message: "Cover letter too long (max 5000 characters)" });
+      }
+
       // Check if job exists
       const job = await storage.getJobListingById(parseInt(jobId));
       if (!job) {
         return res.status(404).json({ message: "Job not found" });
       }
-      
+
       // Check if user has already applied
       const applications = await storage.getJobApplicationsByUserId(req.user.userId);
       if (applications.some(app => app.job_id === parseInt(jobId))) {
         return res.status(409).json({ message: "You have already applied for this job" });
       }
-      
+
       // Create application
       const application = await storage.createJobApplication(
-        { 
-          cover_letter: coverLetter, 
+        {
+          cover_letter: coverLetter,
           resume_url: resumeUrl,
           status: "pending",
-        }, 
-        req.user.userId, 
+        },
+        req.user.userId,
         parseInt(jobId)
       );
-      
+
       // Increment job application count
       await storage.incrementJobApplicationsCount(parseInt(jobId));
-      
-      res.status(201).json({ 
+
+      res.status(201).json({
         id: application.id,
         message: "Application submitted successfully"
       });
@@ -1537,31 +1542,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Saved Jobs
-  app.post("/api/jobs/save", requireAuth, async (req: Request, res: Response) => {
+  app.post("/api/jobs/save", authRateLimiter, requireAuth, async (req: Request, res: Response) => {
     try {
       const { jobId, notes } = req.body;
       if (!jobId) {
         return res.status(400).json({ message: "Job ID is required" });
       }
-      
+
+      // Validate notes length (max 2000 chars) - prevents DoS via unbounded storage
+      if (notes && typeof notes === 'string' && notes.length > 2000) {
+        return res.status(400).json({ message: "Notes too long (max 2000 characters)" });
+      }
+
       // Check if job exists
       const job = await storage.getJobListingById(parseInt(jobId));
       if (!job) {
         return res.status(404).json({ message: "Job not found" });
       }
-      
+
       // Check if already saved and remove if it is (toggle behavior)
       const savedJobs = await storage.getSavedJobsByUserId(req.user!.userId);
       const existingSaved = savedJobs.find(saved => saved.job_id === parseInt(jobId));
-      
+
       if (existingSaved) {
         await storage.unsaveJob(req.user!.userId, parseInt(jobId));
         return res.json({ message: "Job removed from saved jobs" });
       }
-      
+
       // Save the job
       const savedJob = await storage.saveJob(req.user!.userId, parseInt(jobId), notes);
-      res.status(201).json({ 
+      res.status(201).json({
         id: savedJob.id,
         message: "Job saved successfully"
       });
@@ -2828,27 +2838,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Orders
-  app.post("/api/store/orders", requireAuth, async (req: Request, res: Response) => {
+  app.post("/api/store/orders", authRateLimiter, requireAuth, async (req: Request, res: Response) => {
     try {
       const { order, items } = req.body;
-      
+
       if (!order || !items || !Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ message: "Invalid order data" });
       }
-      
+
+      // Validate order items count (max 100 items per order) - prevents DoS via massive orders
+      if (items.length > 100) {
+        return res.status(400).json({ message: "Too many items in order (max 100 items)" });
+      }
+
       // Validate order data
       const orderValidation = insertStoreOrderSchema.safeParse({
         ...order,
         user_id: req.user!.userId
       });
-      
+
       if (!orderValidation.success) {
         return res.status(400).json({
           message: "Invalid order data",
           errors: orderValidation.error.format()
         });
       }
-      
+
       // Validate order items
       for (const item of items) {
         const itemValidation = insertStoreOrderItemSchema.safeParse(item);
@@ -2858,29 +2873,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
             errors: itemValidation.error.format()
           });
         }
-        
+
+        // Validate quantity bounds (1-1000 per item) - prevents negative/zero quantities and extremely large orders
+        const qty = item.quantity;
+        if (!Number.isInteger(qty) || qty < 1 || qty > 1000) {
+          return res.status(400).json({
+            message: "Invalid item quantity (must be 1-1000)"
+          });
+        }
+
         // Verify product exists
         const product = await storage.getStoreProductById(item.product_id);
         if (!product) {
-          return res.status(404).json({ 
-            message: `Product with ID ${item.product_id} not found` 
+          return res.status(404).json({
+            message: `Product with ID ${item.product_id} not found`
           });
         }
-        
+
         // Check stock availability
         if ((product.stock_quantity ?? 0) < item.quantity) {
-          return res.status(400).json({ 
-            message: `Insufficient stock for product ${product.name}` 
+          return res.status(400).json({
+            message: `Insufficient stock for product ${product.name}`
           });
         }
       }
-      
+
       const createdOrder = await storage.createStoreOrder(
         orderValidation.data,
         items
       );
-      
-      res.status(201).json({ 
+
+      res.status(201).json({
         id: createdOrder.id,
         message: "Order created successfully"
       });
