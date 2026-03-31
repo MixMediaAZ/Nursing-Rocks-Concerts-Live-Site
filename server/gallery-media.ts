@@ -219,19 +219,19 @@ export async function uploadGalleryImages(req: Request, res: Response) {
           path.parse(file.filename).name
         );
         
-        // Use a direct SQL query to avoid schema incompatibility issues
-        const rawInsertQuery = `
+        // Use parameterized query to prevent SQL injection
+        const result = await db.execute(sql`
           INSERT INTO gallery (
             image_url, thumbnail_url, alt_text, event_id, folder_id,
             media_type, file_size, dimensions, sort_order, z_index, metadata,
             created_at, updated_at
           ) VALUES (
-            '${sizes.original.replace(/'/g, "''")}',
-            ${sizes.thumbnail ? `'${sizes.thumbnail.replace(/'/g, "''")}'` : 'NULL'},
-            '${alt_text.replace(/'/g, "''")}',
-            ${event_id === null ? 'NULL' : event_id},
-            ${folder_id === null ? 'NULL' : folder_id},
-            '${media_type.replace(/'/g, "''")}',
+            ${sizes.original},
+            ${sizes.thumbnail ?? null},
+            ${alt_text},
+            ${event_id},
+            ${folder_id},
+            ${media_type},
             ${file.size},
             NULL,
             0,
@@ -240,10 +240,7 @@ export async function uploadGalleryImages(req: Request, res: Response) {
             NOW(),
             NOW()
           ) RETURNING *
-        `;
-        
-        // Execute the raw query
-        const result = await db.execute(rawInsertQuery);
+        `);
         
         if (result && result.rows && result.rows.length > 0) {
           const newImage = result.rows[0];
@@ -364,25 +361,24 @@ export async function updateGalleryImage(req: Request, res: Response) {
       return res.status(404).json({ error: 'Image not found' });
     }
     
-    // Update the image using raw SQL to avoid schema issues
-    const updatedAltText = alt_text !== undefined ? `'${alt_text.replace(/'/g, "''")}'` : `'${existingImage.alt_text?.replace(/'/g, "''") || ''}'`;
-    const updatedEventId = event_id !== undefined ? event_id : (existingImage.event_id || 'NULL');
-    const updatedFolderId = folder_id !== undefined ? folder_id : (existingImage.folder_id || 'NULL');
+    // Update the image using parameterized query to prevent SQL injection
+    const updatedAltText = alt_text !== undefined ? alt_text : (existingImage.alt_text || '');
+    const updatedEventId = alt_text !== undefined ? event_id : (existingImage.event_id ?? null);
+    const updatedFolderId = folder_id !== undefined ? folder_id : (existingImage.folder_id ?? null);
     const updatedSortOrder = sort_order !== undefined ? sort_order : (existingImage.sort_order || 0);
     const updatedZIndex = z_index !== undefined ? z_index : (existingImage.z_index || 0);
-    const updatedMetadata = metadata !== undefined ? `'${JSON.stringify(metadata).replace(/'/g, "''")}'` : `'${JSON.stringify(existingImage.metadata || {}).replace(/'/g, "''")}'`;
-    const now = new Date().toISOString();
-    
-    const rawUpdateQuery = `
+    const updatedMetadata = JSON.stringify(metadata !== undefined ? metadata : (existingImage.metadata || {}));
+
+    const rawUpdateQuery = sql`
       UPDATE gallery
-      SET 
+      SET
         alt_text = ${updatedAltText},
-        event_id = ${updatedEventId === 'NULL' || updatedEventId === null ? 'NULL' : updatedEventId},
-        folder_id = ${updatedFolderId === 'NULL' || updatedFolderId === null ? 'NULL' : updatedFolderId},
+        event_id = ${updatedEventId},
+        folder_id = ${updatedFolderId},
         sort_order = ${updatedSortOrder},
         z_index = ${updatedZIndex},
         metadata = ${updatedMetadata},
-        updated_at = '${now}'
+        updated_at = NOW()
       WHERE id = ${imageId}
       RETURNING *
     `;
@@ -491,15 +487,15 @@ export async function getAllGalleryImages(req: Request, res: Response) {
       if (err.code === '42703' && err.message && err.message.includes('column "tags" does not exist')) {
         console.warn('Tags column not found, using fallback query');
         
-        // Use a raw SQL query that doesn't include the tags column
-        const rawQuery = `
-          SELECT id, image_url, thumbnail_url, alt_text, event_id, folder_id, media_type, 
-                file_size, dimensions, duration, sort_order, created_at, updated_at, z_index, metadata
-          FROM gallery
-          ${mediaType ? `WHERE media_type = '${mediaType}'` : ''}
-          ORDER BY sort_order ASC, id DESC
-        `;
-        
+        // Use parameterized query (no tags column, no SQL injection)
+        const rawQuery = mediaType
+          ? sql`SELECT id, image_url, thumbnail_url, alt_text, event_id, folder_id, media_type,
+                       file_size, dimensions, duration, sort_order, created_at, updated_at, z_index, metadata
+                FROM gallery WHERE media_type = ${mediaType} ORDER BY sort_order ASC, id DESC`
+          : sql`SELECT id, image_url, thumbnail_url, alt_text, event_id, folder_id, media_type,
+                       file_size, dimensions, duration, sort_order, created_at, updated_at, z_index, metadata
+                FROM gallery ORDER BY sort_order ASC, id DESC`;
+
         const images = await db.execute(rawQuery);
         return res.json(images);
       } else {

@@ -121,6 +121,22 @@ import { handleJobAlertsCron, handleEventRemindersCron, handleCronHealth } from 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup session-based authentication
   setupAuth(app);
+
+  // ── Admin auth middleware ─────────────────────────────────────────────────
+  // Defined first so it can be reused on any route in this file.
+  const requireAdminToken = async (req: Request, res: Response, next: any) => {
+    const payload = getPayloadFromRequest(req);
+    if (!payload || !payload.isAdmin) {
+      return res.status(403).json({ message: "Admin privileges required" });
+    }
+    const adminUser = await db.select().from(users).where(eq(users.id, payload.userId)).limit(1);
+    if (!adminUser.length || !adminUser[0].is_admin) {
+      return res.status(403).json({ message: "Admin privileges revoked" });
+    }
+    (req as any).user = { userId: payload.userId, email: payload.email, isAdmin: true };
+    return next();
+  };
+  // ─────────────────────────────────────────────────────────────────────────
   // Events
   app.get("/api/events", async (_req: Request, res: Response) => {
     try {
@@ -349,16 +365,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Gallery media management endpoints
-  app.post("/api/gallery/upload", galleryUpload.array('images', 20), uploadGalleryImages);
-  app.delete("/api/gallery/:id", deleteGalleryImage);
-  app.patch("/api/gallery/:id", updateGalleryImage);
-  app.post("/api/gallery/:id/replace", galleryUpload.single('image'), replaceGalleryImage);
-  app.post("/api/gallery/replace/:id", replaceGalleryImage);
-  
-  // City backgrounds upload
-  app.post("/api/upload/city-background", uploadCityBackground);
-  app.post("/api/upload/city-backgrounds/bulk", uploadMultipleCityBackgrounds);
+  // Gallery media management endpoints — all write operations require admin
+  app.post("/api/gallery/upload", requireAdminToken, galleryUpload.array('images', 20), uploadGalleryImages);
+  app.delete("/api/gallery/:id", requireAdminToken, deleteGalleryImage);
+  app.patch("/api/gallery/:id", requireAdminToken, updateGalleryImage);
+  app.post("/api/gallery/:id/replace", requireAdminToken, galleryUpload.single('image'), replaceGalleryImage);
+  app.post("/api/gallery/replace/:id", requireAdminToken, replaceGalleryImage);
+
+  // City backgrounds upload — admin only
+  app.post("/api/upload/city-background", requireAdminToken, uploadCityBackground);
+  app.post("/api/upload/city-backgrounds/bulk", requireAdminToken, uploadMultipleCityBackgrounds);
   
   // Replace one gallery image with another
   app.post("/api/gallery/:id/replace-with/:replacementId", async (req: Request, res: Response) => {
@@ -626,11 +642,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Media Folders management 
+  // Media Folders management — writes require admin
   app.get("/api/media-folders", getMediaFolders);
-  app.post("/api/media-folders", createMediaFolder);
-  app.patch("/api/media-folders/:id", updateMediaFolder);
-  app.delete("/api/media-folders/:id", deleteMediaFolder);
+  app.post("/api/media-folders", requireAdminToken, createMediaFolder);
+  app.patch("/api/media-folders/:id", requireAdminToken, updateMediaFolder);
+  app.delete("/api/media-folders/:id", requireAdminToken, deleteMediaFolder);
 
   // Newsletter subscription
   app.post("/api/subscribe", async (req: Request, res: Response) => {
@@ -684,7 +700,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Media Management API
   app.get("/api/media", getMediaList);
   app.get("/api/media/:id", getMediaById);
-  app.post("/api/media/upload", upload.array('files'), uploadMediaFiles);
+  app.post("/api/media/upload", requireAdminToken, upload.array('files'), uploadMediaFiles);
   app.patch("/api/media/:id", requireAuth, updateMedia);
   app.delete("/api/media/:id", requireAuth, deleteMedia);
 
@@ -1686,7 +1702,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/videos/upload-url", async (req: Request, res: Response) => {
+  app.post("/api/videos/upload-url", requireAdminToken, async (req: Request, res: Response) => {
     try {
       const provider = getVideoProvider();
       const filename = typeof req.body?.filename === "string" ? req.body.filename : "upload.mp4";
@@ -1741,26 +1757,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ========== VIDEO APPROVAL API (Admin only) ==========
-
-  // Re-check admin privileges for sensitive operations
-  const requireAdminToken = async (req: Request, res: Response, next: any) => {
-    // Extract payload directly from JWT — req.user is not set on these routes
-    const payload = getPayloadFromRequest(req);
-    if (!payload || !payload.isAdmin) {
-      return res.status(403).json({ message: "Admin privileges required" });
-    }
-
-    // Verify admin is still valid in database (handles revocation)
-    const adminUser = await db.select().from(users).where(eq(users.id, payload.userId)).limit(1);
-    if (!adminUser.length || !adminUser[0].is_admin) {
-      return res.status(403).json({ message: "Admin privileges revoked" });
-    }
-
-    // Populate req.user so downstream handlers can use it
-    (req as any).user = { userId: payload.userId, email: payload.email, isAdmin: true };
-
-    return next();
-  };
+  // requireAdminToken is defined at the top of registerRoutes.
 
   // Admin: Get all users (exclude password_hash from response)
   app.get("/api/admin/users", requireAdminToken, async (_req: Request, res: Response) => {

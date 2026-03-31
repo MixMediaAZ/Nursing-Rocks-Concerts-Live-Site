@@ -64,15 +64,6 @@ export default function LoginPage() {
           throw new Error("Invalid response format from server - missing credentials");
         }
 
-        // Log received data for debugging
-        console.log('[Login] Response received:', {
-          hasToken: !!data.token,
-          userEmail: data.user.email,
-          userHasIsAdmin: 'is_admin' in data.user,
-          isAdminValue: data.user.is_admin,
-          fullUser: JSON.stringify(data.user).substring(0, 200)
-        });
-
         // Store token and user data
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
@@ -80,10 +71,8 @@ export default function LoginPage() {
         // Set isAdmin flag for admin page access
         if (data.user.is_admin) {
           localStorage.setItem("isAdmin", "true");
-          console.log('[Login] isAdmin set to true');
         } else {
           localStorage.removeItem("isAdmin");
-          console.log('[Login] isAdmin not set or false');
         }
 
         toast({
@@ -112,19 +101,15 @@ export default function LoginPage() {
   
   // Redirect after successful login with a consistent approach across platforms
   function handleLoginSuccess() {
-    // Check for redirect parameter in URL
     const urlParams = new URLSearchParams(window.location.search);
-    const redirectPath = urlParams.get('redirect');
-    
-    // Add a short timeout to ensure token is properly saved first
+    const redirectParam = urlParams.get('redirect');
+
+    // SECURITY: only allow same-origin relative paths — reject anything with a host
+    const isSafeRedirect = (path: string | null): path is string =>
+      !!path && path.startsWith('/') && !path.startsWith('//');
+
     setTimeout(() => {
-      if (redirectPath) {
-        // Honor the redirect parameter if present
-        window.location.href = redirectPath;
-      } else {
-        // Direct all successful logins to the dashboard
-        window.location.href = "/dashboard";
-      }
+      window.location.href = isSafeRedirect(redirectParam) ? redirectParam : "/dashboard";
     }, 100);
   }
   
