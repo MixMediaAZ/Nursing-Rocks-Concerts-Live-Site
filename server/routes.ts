@@ -1415,6 +1415,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid purchaseType for confirmation" });
       }
 
+      // SECURITY FIX: Prevent duplicate payment confirmations (idempotency)
+      // Track confirmed payments in app settings to prevent double-charging
+      const confirmedPaymentsKey = `CONFIRMED_PAYMENT_${paymentIntentId}`;
+      const existingConfirmation = await storage.getAppSettingByKey(confirmedPaymentsKey);
+
+      if (existingConfirmation) {
+        // Payment already confirmed - return success (idempotent behavior)
+        return res.json({ success: true, message: "Payment already confirmed" });
+      }
+
       if (purchaseType === "perPost") {
         await db
           .update(employers)
@@ -1443,6 +1453,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           })
           .where(eq(employers.id, employerRow.id));
       }
+
+      // SECURITY FIX: Mark this payment as confirmed to prevent future duplicate confirmations
+      await storage.createOrUpdateAppSetting(
+        confirmedPaymentsKey,
+        JSON.stringify({
+          employerId: employerRow.id,
+          paymentIntentId,
+          purchaseType,
+          quantity,
+          confirmedAt: new Date().toISOString()
+        }),
+        "Payment confirmation log entry (idempotency protection)",
+        true
+      );
 
       return res.json({ success: true });
     } catch (error: any) {
