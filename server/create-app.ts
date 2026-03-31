@@ -69,8 +69,8 @@ export function createApp() {
   app.use("/api/auth/register", authLimiter);
   app.use("/api/auth/register-employer", authLimiter);
 
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
   // Serve uploads directory for media files (note: Vercel filesystem is ephemeral)
   app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));

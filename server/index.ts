@@ -23,8 +23,8 @@ const app = express();
 
 // Sentry v10 handles request/tracing automatically
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
 // Serve uploads directory for media files
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));

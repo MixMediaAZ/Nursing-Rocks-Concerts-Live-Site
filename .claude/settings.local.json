@@ -129,7 +129,8 @@
       "Bash(grep -n \"mediaType\\\\|alt_text\\\\|INSERT INTO\\\\|UPDATE.*gallery\\\\|raw.*sql\\\\|\\\\`WHERE\\\\|\\\\`INSERT\\\\|\\\\`UPDATE\" /c/Users/Dave/Downloads/Nursing-Rocks-Concerts-Live-Site - 3.0/server/gallery-media.ts)",
       "Bash(grep -rn \"console.log.*email\\\\|console.log.*token\\\\|console.log.*password\\\\|console.log.*userId\" '/c/Users/Dave/Downloads/Nursing-Rocks-Concerts-Live-Site - 3.0/client/src' --include=*.tsx --include=*.ts)",
       "Bash(curl -s -X GET \"https://www.nursingrocksconcerts.com/api/cron/event-reminders\" -H \"x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee\" -H \"Content-Type: application/json\" --max-time 60)",
-      "Bash(cd /Users/Dave/Downloads/Nursing-Rocks-Concerts-Live-Site - 3.0)"
+      "Bash(cd /Users/Dave/Downloads/Nursing-Rocks-Concerts-Live-Site - 3.0)",
+      "Bash(grep -r \"json\\\\|urlencoded\\\\|limit\" server/*.ts)"
     ]
   }
 }
