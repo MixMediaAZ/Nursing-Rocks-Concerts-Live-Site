@@ -34,9 +34,9 @@ export function createApp() {
       const allowByList = !!origin && allowedOrigins.includes(origin);
 
       // If ALLOWED_ORIGINS is configured, allow same-origin + allowlist.
-      // If not configured, allow by default (safe for single-origin deployments).
+      // If not configured, deny cross-origin requests (secure by default).
       const allowOrigin =
-        !origin || isSameOrigin || allowByList || allowedOrigins.length === 0;
+        !origin || isSameOrigin || allowByList;
 
       callback(null, {
         origin: allowOrigin,
