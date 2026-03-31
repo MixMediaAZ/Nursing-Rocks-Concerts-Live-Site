@@ -1866,7 +1866,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (err) {
       console.error("[videos] presign error:", err);
-      res.status(500).json({ success: false, message: err instanceof Error ? err.message : "Failed to create upload URL" });
+      res.status(500).json({ success: false, message: "Failed to create upload URL" });
     }
   });
 
@@ -1899,7 +1899,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         connected: false,
         status: "error",
         provider: "b2",
-        message: err instanceof Error ? err.message : "Unknown error",
+        message: "Video connection error"
       });
     }
   });
