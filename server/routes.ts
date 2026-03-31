@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import Stripe from "stripe";
 import path from "path";
 import fs from "fs";
+import { randomBytes } from "crypto";
 import { db } from "./db";
 import { eq, sql, and, desc, ilike, or, inArray } from "drizzle-orm";
 import { storage } from "./storage";
@@ -3693,10 +3694,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // ========== NRPX PHOENIX NURSE REGISTRATION ROUTES ==========
 
-  // Ticket code generator — unambiguous chars, collision-safe
+  // Ticket code generator — unambiguous chars, cryptographically secure
+  // SECURITY FIX: Use randomBytes instead of Math.random() for security tokens
   function generateTicketCode(): string {
     const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-    const segment = () => Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    const segment = () => {
+      const randomValues = randomBytes(4);
+      return Array.from(randomValues)
+        .map(byte => chars[byte % chars.length])
+        .join('');
+    };
     return `NRPX-${segment()}-${segment()}`;
   }
 

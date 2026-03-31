@@ -1,10 +1,11 @@
 /**
  * Utility functions for product data processing
- * 
+ *
  * CustomCat API integration - Preserves sizing and art placement details
  */
 
 import { StoreProduct } from '@shared/schema';
+import { randomBytes } from 'crypto';
 
 /**
  * Process a CustomCat product to ensure image URLs are properly set
@@ -236,7 +237,9 @@ export function extractProductColors(product: StoreProduct): string[] {
  */
 function createProductWithId(customCatProduct: any, id: any): StoreProduct | null {
   try {
-    const externalId = id ? id.toString() : `customcat-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    // SECURITY FIX: Use cryptographically secure randomBytes for ID generation
+    const randomPart = randomBytes(4).toString('hex').substring(0, 6);
+    const externalId = id ? id.toString() : `customcat-${Date.now()}-${randomPart}`;
     
     // Create a store product with the CustomCat data
     const product: StoreProduct = {
