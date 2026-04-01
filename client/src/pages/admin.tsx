@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { clearToken, isTokenExpired } from "@/lib/token-utils";
 import { 
   Dialog,
   DialogContent,
@@ -595,9 +596,7 @@ export default function AdminPage() {
       }
 
       // Clear all authentication state
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      localStorage.removeItem("isAdmin");
+      clearToken();
       localStorage.removeItem("adminPinVerified");
       localStorage.removeItem("adminToken");
       localStorage.removeItem("editMode");

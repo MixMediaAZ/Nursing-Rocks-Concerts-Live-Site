@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { formatDate } from "@/lib/utils";
+import { clearToken } from "@/lib/token-utils";
 
 export default function ProfilePage() {
   const { toast } = useToast();
@@ -118,14 +119,39 @@ export default function ProfilePage() {
   });
 
   // Handle logout
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    toast({
-      title: "Logged Out",
-      description: "You have been successfully logged out.",
-    });
-    window.location.href = "/login";
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      // Call server logout endpoint to blacklist the token
+      if (token) {
+        try {
+          await fetch("/api/auth/logout", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+            },
+          });
+        } catch (err) {
+          // Server logout failed, but still clear client-side
+          console.error("[Logout] Server logout failed:", err);
+        }
+      }
+
+      clearToken();
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+      });
+      window.location.href = "/login";
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        variant: "destructive",
+        title: "Logout Error",
+        description: "Failed to log out properly.",
+      });
+    }
   };
   
   if (isAuthenticated === false || !userData) {

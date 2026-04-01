@@ -23,6 +23,7 @@ import {
   Settings,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { clearToken, isTokenExpired } from "@/lib/token-utils";
 
 export default function DashboardPage() {
   const { toast } = useToast();
@@ -56,6 +57,20 @@ export default function DashboardPage() {
         }
 
         // We have token and user data in localStorage
+        // Check if token is expired
+        if (isTokenExpired()) {
+          clearToken();
+          toast({
+            variant: "destructive",
+            title: "Session Expired",
+            description: "Your session has expired. Please log in again.",
+          });
+          setTimeout(() => {
+            window.location.href = "/login?redirect=/dashboard";
+          }, 1500);
+          return;
+        }
+
         setIsAuthenticated(true);
         try {
           setUserData(JSON.parse(storedUser));
@@ -63,8 +78,7 @@ export default function DashboardPage() {
           console.error("Error parsing user data:", error);
           setUserData(null);
           // Bad user data in localStorage, clear and redirect
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
+          clearToken();
           setTimeout(() => {
             window.location.href = "/login?redirect=/dashboard";
           }, 500);
@@ -118,14 +132,39 @@ export default function DashboardPage() {
   });
   
   // Handle logout
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    toast({
-      title: "Logged Out",
-      description: "You have been successfully logged out.",
-    });
-    window.location.href = "/login";
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      // Call server logout endpoint to blacklist the token
+      if (token) {
+        try {
+          await fetch("/api/auth/logout", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+            },
+          });
+        } catch (err) {
+          // Server logout failed, but still clear client-side
+          console.error("[Logout] Server logout failed:", err);
+        }
+      }
+
+      clearToken();
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+      });
+      window.location.href = "/login";
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        variant: "destructive",
+        title: "Logout Error",
+        description: "Failed to log out properly.",
+      });
+    }
   };
   
   if (isAuthenticated === false || !userData) {

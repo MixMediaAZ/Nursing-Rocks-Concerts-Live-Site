@@ -10,6 +10,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Menu, X, User, HeartPulse, Map, PlayCircle, Video, Briefcase, ShieldCheck } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { clearToken } from "@/lib/token-utils";
+import { useToast } from "@/hooks/use-toast";
 
 // Define the type for navigation links
 interface NavLink {
@@ -20,6 +22,7 @@ interface NavLink {
 }
 
 export function Header() {
+  const { toast } = useToast();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -32,7 +35,7 @@ export function Header() {
     // Check if user is logged in
     const token = localStorage.getItem("token");
     const userData = localStorage.getItem("user");
-    
+
     if (token && userData) {
       setIsLoggedIn(true);
       try {
@@ -45,12 +48,43 @@ export function Header() {
     }
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setIsLoggedIn(false);
-    setUser(null);
-    window.location.href = "/";
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      // Call server logout endpoint to blacklist the token
+      if (token) {
+        try {
+          await fetch("/api/auth/logout", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+            },
+          });
+        } catch (err) {
+          // Server logout failed, but still clear client-side
+          console.error("[Logout] Server logout failed:", err);
+        }
+      }
+
+      clearToken();
+      setIsLoggedIn(false);
+      setUser(null);
+
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+      });
+
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        variant: "destructive",
+        title: "Logout Error",
+        description: "Failed to log out properly.",
+      });
+    }
   };
 
   // Navigation links - some links are only for authenticated users

@@ -11,6 +11,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { ShieldCheck } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { setToken } from "@/lib/token-utils";
+import { isSafeRedirect } from "@/lib/redirect-utils";
 
 // Simple registration schema for account information only
 const registerSchema = z.object({
@@ -26,10 +28,6 @@ const registerSchema = z.object({
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
-
-// SECURITY: only allow same-origin relative paths — reject anything with a host
-const isSafeRedirect = (path: string | null): path is string =>
-  !!path && path.startsWith('/') && !path.startsWith('//');
 
 export default function RegisterPage() {
   const { toast } = useToast();
@@ -108,8 +106,8 @@ export default function RegisterPage() {
       };
     },
     onSuccess: async (data) => {
-      // Store token and user data (token/user should already be in storage from mutation)
-      localStorage.setItem("token", data.token);
+      // Store token with expiration tracking and user data
+      setToken(data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
       toast({

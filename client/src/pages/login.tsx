@@ -11,6 +11,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/queryClient";
 import { Eye, EyeOff } from "lucide-react";
+import { setToken } from "@/lib/token-utils";
+import { isSafeRedirect } from "@/lib/redirect-utils";
 
 // Login form validation schema
 const loginSchema = z.object({
@@ -64,8 +66,8 @@ export default function LoginPage() {
           throw new Error("Invalid response format from server - missing credentials");
         }
 
-        // Store token and user data
-        localStorage.setItem("token", data.token);
+        // Store token with expiration tracking
+        setToken(data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
 
         // Set isAdmin flag for admin page access
@@ -103,10 +105,6 @@ export default function LoginPage() {
   function handleLoginSuccess() {
     const urlParams = new URLSearchParams(window.location.search);
     const redirectParam = urlParams.get('redirect');
-
-    // SECURITY: only allow same-origin relative paths — reject anything with a host
-    const isSafeRedirect = (path: string | null): path is string =>
-      !!path && path.startsWith('/') && !path.startsWith('//');
 
     setTimeout(() => {
       window.location.href = isSafeRedirect(redirectParam) ? redirectParam : "/dashboard";
