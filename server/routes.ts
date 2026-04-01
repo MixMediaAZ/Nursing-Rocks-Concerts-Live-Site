@@ -1543,7 +1543,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!profile) {
         return res.status(404).json({ message: "Profile not found" });
       }
-      
+
+      // SECURITY: Set Cache-Control headers to prevent caching of user profile data
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
       res.json(profile);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch profile" });
@@ -1555,7 +1557,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.user?.isVerified) {
         return res.status(403).json({ message: "You must be verified to create a profile" });
       }
-      
+
+      // SECURITY: Set Cache-Control headers to prevent caching of user profile data
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+
       // Validate profile data
       const validationResult = insertNurseProfileSchema.safeParse(req.body);
       if (!validationResult.success) {
@@ -1564,19 +1569,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           errors: validationResult.error.format()
         });
       }
-      
+
       // Check if user already has a profile
       const existingProfile = await storage.getNurseProfileByUserId(req.user.userId);
       if (existingProfile) {
         const updatedProfile = await storage.updateNurseProfile(existingProfile.id, validationResult.data);
-        return res.json({ 
+        return res.json({
           id: updatedProfile.id,
           message: "Profile updated successfully"
         });
       }
-      
+
       const profile = await storage.createNurseProfile(validationResult.data, req.user.userId);
-      res.status(201).json({ 
+      res.status(201).json({
         id: profile.id,
         message: "Profile created successfully"
       });
@@ -1790,6 +1795,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = (req.user as any)?.userId ?? (req.user as any)?.id;
       if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
+      // SECURITY: Set Cache-Control headers to prevent caching of user profile data
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+
       const { first_name, last_name } = req.body;
       const updates: Record<string, string> = {};
       if (typeof first_name === "string" && first_name.trim()) updates.first_name = first_name.trim();
@@ -1935,6 +1943,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin: Get all users (exclude password_hash from response)
   app.get("/api/admin/users", requireAdminToken, async (_req: Request, res: Response) => {
     try {
+      // SECURITY: Set Cache-Control headers to prevent caching of user list
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+
       const users = await storage.getAllUsers();
       const safeUsers = users.map(({ password_hash: _p, ...u }) => u);
       return res.json(safeUsers);

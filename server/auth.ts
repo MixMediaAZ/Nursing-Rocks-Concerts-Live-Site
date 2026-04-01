@@ -57,9 +57,14 @@ export async function register(req: Request, res: Response) {
     const { email, password, first_name, last_name } = req.body;
 
     // Check if user already exists
+    // SECURITY FIX: Don't reveal whether email is registered (prevents account enumeration)
     const existingUser = await storage.getUserByEmail(email);
     if (existingUser) {
-      return res.status(400).json({ message: 'User already exists with this email' });
+      // Return success response to prevent account enumeration attacks
+      return res.status(200).json({
+        message: 'If this email address is not yet registered, a verification email will be sent. Please check your inbox.',
+        user: null // Don't return user data if already exists
+      });
     }
 
     // Hash password
@@ -67,6 +72,9 @@ export async function register(req: Request, res: Response) {
 
     // Create user
     const user = await storage.createUser({ email, first_name, last_name, password }, passwordHash);
+
+    // SECURITY: Set Cache-Control headers to prevent caching of sensitive auth data
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
 
     // Generate JWT token using our helper module
     const token = generateToken(user);
@@ -111,9 +119,12 @@ export async function login(req: Request, res: Response) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    // SECURITY: Set Cache-Control headers to prevent caching of sensitive auth data
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+
     // Generate JWT token using our helper module
     const token = generateToken(user);
-    
+
     // Return user data without password hash
     const { password_hash, ...userData } = user;
     return res.status(200).json({
@@ -566,6 +577,9 @@ export async function requestPasswordReset(req: Request, res: Response) {
   // Always respond with success to prevent email enumeration
   const genericResponse = { message: 'If an account with that email exists, a reset link has been sent.' };
 
+  // SECURITY: Set Cache-Control headers to prevent caching of password reset responses
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+
   try {
     const user = await storage.getUserByEmail(email.toLowerCase().trim());
     if (!user) {
@@ -578,6 +592,11 @@ export async function requestPasswordReset(req: Request, res: Response) {
       .set({ reset_token: token, reset_token_expires_at: expiresAt })
       .where(eq(users.id, user.id));
 
+    // SECURITY FIX: Use configured APP_URL, never trust Host header for password reset
+    // Host headers can be spoofed by attackers to hijack password reset links
+    if (!process.env.APP_URL) {
+      console.warn('[AUTH] WARNING: APP_URL not configured. Password reset links may be vulnerable to Host header injection. Set APP_URL environment variable in production.');
+    }
     const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
     await sendPasswordResetEmail(user.email, user.first_name, token, baseUrl);
 
@@ -612,6 +631,8 @@ export async function resetPassword(req: Request, res: Response) {
       .set({ password_hash: passwordHash, reset_token: null, reset_token_expires_at: null })
       .where(eq(users.id, userRow.id));
 
+    // SECURITY: Set Cache-Control headers to prevent caching of password reset confirmation
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     return res.status(200).json({ message: 'Password updated successfully. You can now log in.' });
   } catch (error) {
     console.error('Password reset error:', error);
@@ -631,6 +652,9 @@ export async function logout(req: Request, res: Response) {
     if (!token) {
       return res.status(400).json({ message: 'No token to logout' });
     }
+
+    // SECURITY: Set Cache-Control headers for logout response
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
 
     // Get the token's expiry time
     try {

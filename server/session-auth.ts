@@ -130,6 +130,8 @@ export function setupAuth(app: Express) {
     store: storage.sessionStore,
     cookie: {
       secure: process.env.NODE_ENV === "production",
+      httpOnly: true, // Prevent JavaScript from accessing the cookie (XSS protection)
+      sameSite: 'strict', // Prevent CSRF attacks by restricting cross-site cookie transmission
       maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
     }
   };
