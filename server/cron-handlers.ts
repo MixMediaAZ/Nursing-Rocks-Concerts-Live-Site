@@ -38,7 +38,9 @@ export async function handleJobAlertsCron(req: Request, res: Response) {
     // Verify this is a valid cron request
     // In production, check for Vercel's X-Vercel-Cron header or API key
     const cronSecret = process.env.CRON_SECRET;
-    const providedSecret = req.headers['x-cron-secret'] || req.query.secret;
+    // SECURITY: Only accept secret from headers, never from query params
+    // Query params are logged and visible in browser history
+    const providedSecret = req.headers['x-cron-secret'];
 
     // Fail closed: if CRON_SECRET is not configured, deny all requests
     if (!cronSecret || providedSecret !== cronSecret) {
@@ -96,7 +98,9 @@ export async function handleEventRemindersCron(req: Request, res: Response) {
 
     // Verify this is a valid cron request
     const cronSecret = process.env.CRON_SECRET;
-    const providedSecret = req.headers['x-cron-secret'] || req.query.secret;
+    // SECURITY: Only accept secret from headers, never from query params
+    // Query params are logged and visible in browser history
+    const providedSecret = req.headers['x-cron-secret'];
 
     // Fail closed: if CRON_SECRET is not configured, deny all requests
     if (!cronSecret || providedSecret !== cronSecret) {
