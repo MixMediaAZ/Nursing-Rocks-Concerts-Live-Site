@@ -132,7 +132,18 @@
       "Bash(cd /Users/Dave/Downloads/Nursing-Rocks-Concerts-Live-Site - 3.0)",
       "Bash(grep -r \"json\\\\|urlencoded\\\\|limit\" server/*.ts)",
       "Bash(grep -rn \"sql\\\\`\\\\|execute.*query\" . --include=\"*.ts\")",
-      "Bash(npm audit:*)"
+      "Bash(npm audit:*)",
+      "Bash(grep -v \"console\\\\|comment\\\\|//\")",
+      "Bash(grep -r \"localStorage.getItem.*token\\\\|localStorage.removeItem\" client/src/pages/*.tsx)",
+      "Bash(grep -r \"localStorage.removeItem.*token\\\\|localStorage.removeItem.*user\" client/src/components --include=*.tsx)",
+      "Bash(curl -s -X GET \"https://nursingrocksconcerts.com/api/cron/job-alerts\" -H \"x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee\" -H \"Content-Type: application/json\" --max-time 60 -w \"\\\\nHTTP_STATUS:%{http_code}\")",
+      "Bash(curl -s -L -X GET \"https://nursingrocksconcerts.com/api/cron/job-alerts\" -H \"x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee\" -H \"Content-Type: application/json\" --max-time 60 -w \"\\\\nHTTP_STATUS:%{http_code}\")",
+      "Bash(curl -s -L -X GET \"https://nursingrocksconcerts.com/api/cron/event-reminders\" -H \"x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee\" -H \"Content-Type: application/json\" --max-time 30)",
+      "Bash(curl -s -X GET \"https://nursingrocksconcerts.com/api/cron/job-alerts\" -H \"Content-Type: application/json\" -H \"x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee\" --max-time 60)",
+      "Bash(DATABASE_URL='postgresql://neondb_owner:npg_eESDud9K3Zwh@ep-icy-butterfly-afxy9quz-pooler.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require' npx tsx scripts/create-admin.ts)",
+      "Bash(DATABASE_URL='postgresql://neondb_owner:npg_eESDud9K3Zwh@ep-icy-butterfly-afxy9quz-pooler.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require' npm run db:introspect)",
+      "Bash(ADMIN_PASSWORD_1='HomeRunBall1!' npm run db:create-admins)",
+      "Bash(ADMIN_PASSWORD_1='HomeRunBall1!' ADMIN_PASSWORD_2='TempPassword123!' npm run db:create-admins)"
     ]
   }
 }
