@@ -32,7 +32,9 @@ export async function apiRequest(
   options?: Omit<RequestInit, 'method'>
 ): Promise<Response> {
   // Check if token is expired before making request
-  if (typeof window !== "undefined" && isTokenExpired()) {
+  // Skip this check for auth endpoints (login/register/password-reset) where we don't have a token yet
+  const isAuthEndpoint = url.includes("/api/auth/") || url.includes("/api/reset-password");
+  if (typeof window !== "undefined" && !isAuthEndpoint && isTokenExpired()) {
     clearToken();
     if (!window.location.pathname.includes("/login")) {
       window.location.href = "/login?expired=true";

@@ -12,8 +12,8 @@ if (process.env.NODE_ENV === 'production') {
 }
 const JWT_SECRET = process.env.JWT_SECRET || DEV_SECRET;
 
-// Token expiration (24 hours)
-const TOKEN_EXPIRATION = '24h';
+// Token expiration (7 days for admin convenience, 24 hours is too short for production)
+const TOKEN_EXPIRATION = '7d';
 
 // Interfaces for JWT payload
 export interface JwtPayload {
