@@ -440,7 +440,7 @@ export async function approveAndSendTicketEmail(ticketId: string, adminUserId: n
     return {
       success: false,
       message: `Ticket email is not pending approval (current status: ${ticket.email_status})`,
-      emailStatus: ticket.email_status,
+      emailStatus: ticket.email_status ?? undefined,
     };
   }
 

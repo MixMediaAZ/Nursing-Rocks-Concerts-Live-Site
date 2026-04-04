@@ -147,17 +147,12 @@ export class DatabaseStorage implements IStorage {
     try {
       // Normalize email to lowercase for case-insensitive lookup
       const normalizedEmail = email.toLowerCase().trim();
-      const [user] = await db
+      // Case-insensitive match (Neon-safe): avoid nested `LOWER(${param})` in one sql fragment.
+      const rows = await db
         .select()
         .from(users)
-        .where(sql`LOWER(${users.email}) = LOWER(${normalizedEmail})`);
-
-      // Ensure is_admin field is included for login responses
-      if (user && !('is_admin' in user)) {
-        console.warn('[getUserByEmail] User object missing is_admin field:', { email: user.email });
-      }
-
-      return user;
+        .where(sql`lower(${users.email}) = ${normalizedEmail.toLowerCase()}`);
+      return rows[0] as User | undefined;
     } catch (error) {
       console.error('[getUserByEmail] Database error:', error);
       throw error;

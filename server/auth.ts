@@ -8,6 +8,7 @@ import { storage } from './storage';
 import { db } from './db';
 import { eq } from 'drizzle-orm';
 import { users } from '@shared/schema';
+import jwt from 'jsonwebtoken';
 import { generateToken, verifyToken, getUserIdFromRequest, isUserVerified } from './jwt';
 import { sendTicketConfirmationEmail, sendPasswordResetEmail } from './email';
 
@@ -656,14 +657,15 @@ export async function logout(req: Request, res: Response) {
     // SECURITY: Set Cache-Control headers for logout response
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
 
-    // Get the token's expiry time
+    // Get the token's expiry time (standard JWT exp claim; not on our JwtPayload type)
     try {
-      const decoded = verifyToken(token);
-      if (decoded && decoded.exp) {
-        // Add token to blacklist with its expiration time
-        const tokenExpiry = decoded.exp * 1000; // exp is in seconds
-        tokenBlacklist.set(token, tokenExpiry);
-        console.log('[AUTH] Token blacklisted for logout');
+      const decoded = jwt.decode(token);
+      if (decoded && typeof decoded === 'object' && 'exp' in decoded) {
+        const exp = (decoded as { exp?: unknown }).exp;
+        if (typeof exp === 'number') {
+          tokenBlacklist.set(token, exp * 1000);
+          console.log('[AUTH] Token blacklisted for logout');
+        }
       }
     } catch (err) {
       // Token is already invalid, that's fine

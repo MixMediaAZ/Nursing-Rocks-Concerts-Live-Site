@@ -1272,7 +1272,9 @@ export class MemStorage implements IStorage {
       is_suspended: false,
       verified_at: null,
       verification_source: null,
-      verification_notes: null
+      verification_notes: null,
+      reset_token: null,
+      reset_token_expires_at: null,
     };
     this.users.set(id, newUser);
     return newUser;
