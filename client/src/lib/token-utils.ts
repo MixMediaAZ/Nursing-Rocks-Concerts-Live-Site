@@ -50,12 +50,15 @@ export function isTokenValid(): boolean {
 
 /**
  * Check if token is expired
+ * Note: Old tokens without expiry timestamp are considered valid (server will reject if actually expired)
  */
 export function isTokenExpired(): boolean {
   const expiryStr = localStorage.getItem(TOKEN_EXPIRY_KEY);
 
+  // No expiry info means token was stored before expiration tracking was added
+  // Trust the server to validate it - it will return 401 if actually expired
   if (!expiryStr) {
-    return true; // No expiry info, consider expired
+    return false;
   }
 
   const expiresAt = parseInt(expiryStr, 10);
