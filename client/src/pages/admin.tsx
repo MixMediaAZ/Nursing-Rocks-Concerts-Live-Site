@@ -54,6 +54,8 @@ import { NewsletterContacts } from "@/components/admin/newsletter-contacts";
 import VideoSubmissions from "@/components/admin/video-submissions";
 import VideoApproval from "@/components/admin/video-approval";
 import { LicenseManagement } from "@/components/admin/license-management";
+import { AdminCreateEmployer } from "@/components/admin/admin-create-employer";
+import { AdminCreateJob } from "@/components/admin/admin-create-job";
 
 export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -1274,6 +1276,12 @@ export default function AdminPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Admin Creation Tools */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <AdminCreateEmployer />
+                <AdminCreateJob />
+              </div>
 
               {/* Jobs Stats Overview */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

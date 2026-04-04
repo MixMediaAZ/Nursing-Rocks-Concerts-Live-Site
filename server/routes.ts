@@ -2350,6 +2350,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin: Create employer (on behalf of partner)
+  app.post("/api/admin/employers", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      // Validate required fields
+      const { name, contact_email, company_name, contact_phone, website, description, logo_url, address, city, state, zip_code } = req.body;
+
+      if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        return res.status(400).json({ message: "Name is required and must be a non-empty string" });
+      }
+      if (!contact_email || typeof contact_email !== 'string' || !contact_email.includes('@')) {
+        return res.status(400).json({ message: "Valid contact email is required" });
+      }
+
+      // Create employer with admin presets
+      const employer = await storage.createEmployer(
+        {
+          name: name.trim(),
+          company_name: company_name?.trim() || name.trim(), // Default to name if not provided
+          contact_email: contact_email.trim().toLowerCase(),
+          contact_phone: contact_phone?.trim() || null,
+          website: website?.trim() || null,
+          description: description?.trim() || null,
+          logo_url: logo_url?.trim() || null,
+          address: address?.trim() || null,
+          city: city?.trim() || null,
+          state: state?.trim() || null,
+          zip_code: zip_code?.trim() || null,
+        },
+        null // No user_id for admin-created employers
+      );
+
+      // Update to verified and active immediately (admin-created = pre-approved)
+      const verified = await storage.updateEmployer(employer.id, {
+        is_verified: true,
+        account_status: "active",
+      });
+
+      return res.status(201).json({
+        ...verified,
+        message: "Employer created by admin and automatically verified",
+      });
+    } catch (error) {
+      console.error("Error creating employer:", error);
+      return res.status(500).json({ message: "Failed to create employer" });
+    }
+  });
+
+  // Admin: Create job listing (on behalf of employer, free post)
+  app.post("/api/admin/jobs", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const {
+        employer_id,
+        title,
+        description,
+        location,
+        job_type,
+        work_arrangement,
+        specialty,
+        experience_level,
+        responsibilities,
+        requirements,
+        benefits,
+        education_required,
+        certification_required,
+        shift_type,
+        salary_min,
+        salary_max,
+        salary_period,
+        application_url,
+        contact_email,
+        expiry_date,
+        is_featured,
+      } = req.body;
+
+      // Validate required fields
+      if (!employer_id || isNaN(parseInt(employer_id))) {
+        return res.status(400).json({ message: "Valid employer_id is required" });
+      }
+      if (!title || typeof title !== 'string' || title.trim().length === 0) {
+        return res.status(400).json({ message: "Title is required" });
+      }
+      if (!description || typeof description !== 'string' || description.trim().length === 0) {
+        return res.status(400).json({ message: "Description is required" });
+      }
+      if (!location || typeof location !== 'string' || location.trim().length === 0) {
+        return res.status(400).json({ message: "Location is required" });
+      }
+      if (!job_type || typeof job_type !== 'string' || job_type.trim().length === 0) {
+        return res.status(400).json({ message: "Job type is required" });
+      }
+      if (!work_arrangement || typeof work_arrangement !== 'string' || work_arrangement.trim().length === 0) {
+        return res.status(400).json({ message: "Work arrangement is required" });
+      }
+      if (!specialty || typeof specialty !== 'string' || specialty.trim().length === 0) {
+        return res.status(400).json({ message: "Specialty is required" });
+      }
+      if (!experience_level || typeof experience_level !== 'string' || experience_level.trim().length === 0) {
+        return res.status(400).json({ message: "Experience level is required" });
+      }
+
+      // Verify employer exists and is active
+      const employer = await storage.getEmployerById(parseInt(employer_id));
+      if (!employer) {
+        return res.status(404).json({ message: "Employer not found" });
+      }
+      if (employer.account_status !== "active") {
+        return res.status(409).json({ message: "Employer must be active to post jobs" });
+      }
+
+      // Get admin user ID for approval tracking
+      const adminId = (req as any).user?.userId;
+
+      // Create job listing with admin presets (auto-approved, free post)
+      const jobListing = await storage.createJobListing(
+        {
+          title: title.trim(),
+          description: description.trim(),
+          responsibilities: responsibilities?.trim() || null,
+          requirements: requirements?.trim() || null,
+          benefits: benefits?.trim() || null,
+          location: location.trim(),
+          job_type: job_type.trim(),
+          work_arrangement: work_arrangement.trim(),
+          specialty: specialty.trim(),
+          experience_level: experience_level.trim(),
+          education_required: education_required?.trim() || null,
+          certification_required: Array.isArray(certification_required) ? certification_required : null,
+          shift_type: shift_type?.trim() || null,
+          salary_min: salary_min ? parseFloat(salary_min) : null,
+          salary_max: salary_max ? parseFloat(salary_max) : null,
+          salary_period: salary_period?.trim() || "annual",
+          application_url: application_url?.trim() || null,
+          contact_email: contact_email?.trim() || employer.contact_email,
+          expiry_date: expiry_date ? new Date(expiry_date) : null,
+          is_featured: is_featured === true,
+          is_active: true, // Admin posts are immediately active
+          is_approved: true, // Admin posts are immediately approved
+        },
+        parseInt(employer_id)
+      );
+
+      // Update with admin approval metadata
+      const approved = await storage.updateJobListing(jobListing.id, {
+        is_approved: true,
+        approved_by: adminId,
+        approved_at: new Date(),
+        approval_notes: "Posted by admin",
+      });
+
+      return res.status(201).json({
+        ...approved,
+        message: "Job listing created and auto-approved by admin (free post)",
+      });
+    } catch (error) {
+      console.error("Error creating job listing:", error);
+      return res.status(500).json({ message: "Failed to create job listing" });
+    }
+  });
+
   // Admin: Get all newsletter subscribers
   app.get("/api/admin/subscribers", requireAdminToken, async (_req: Request, res: Response) => {
     try {
