@@ -109,19 +109,36 @@ export class DatabaseStorage implements IStorage {
   
   // Subscribers
   async createSubscriber(insertSubscriber: InsertSubscriber): Promise<Subscriber> {
+    // SAFETY: Normalize subscriber email to lowercase before storage
+    // Database has case-insensitive unique index on LOWER(email)
+    const normalizedEmail = insertSubscriber.email.toLowerCase().trim();
+
     const [subscriber] = await db
       .insert(subscribers)
-      .values(insertSubscriber)
+      .values({
+        ...insertSubscriber,
+        email: normalizedEmail
+      })
       .returning();
     return subscriber;
   }
-  
+
   async getSubscriberByEmail(email: string): Promise<Subscriber | undefined> {
-    const [subscriber] = await db
-      .select()
-      .from(subscribers)
-      .where(eq(subscribers.email, email));
-    return subscriber;
+    try {
+      // CRITICAL: Normalize email to lowercase for case-insensitive lookup
+      // Database has case-insensitive unique index on LOWER(email)
+      const normalizedEmail = email.toLowerCase().trim();
+
+      const [subscriber] = await db
+        .select()
+        .from(subscribers)
+        .where(sql`lower(${subscribers.email}) = ${normalizedEmail}`);
+
+      return subscriber;
+    } catch (error) {
+      console.error('[getSubscriberByEmail] Database error:', error);
+      throw error;
+    }
   }
 
   async getAllSubscribers(): Promise<Subscriber[]> {
@@ -130,10 +147,18 @@ export class DatabaseStorage implements IStorage {
   
   // User Management
   async createUser(user: InsertUser, passwordHash: string): Promise<User> {
+    // SAFETY: Ensure email is normalized before storage
+    // This is a defensive check - registration already normalizes, but being explicit here
+    const normalizedEmail = user.email.toLowerCase().trim();
+
+    if (normalizedEmail !== user.email) {
+      console.warn('[createUser] Email was not normalized before storage. This should be normalized in the calling function.');
+    }
+
     const [newUser] = await db
       .insert(users)
       .values({
-        email: user.email,
+        email: normalizedEmail, // Always use normalized email
         first_name: user.first_name,
         last_name: user.last_name,
         password_hash: passwordHash,
@@ -146,12 +171,20 @@ export class DatabaseStorage implements IStorage {
   async getUserByEmail(email: string): Promise<User | undefined> {
     try {
       // Normalize email to lowercase for case-insensitive lookup
+      // Database has case-insensitive unique index on LOWER(email)
       const normalizedEmail = email.toLowerCase().trim();
-      // Case-insensitive match (Neon-safe): avoid nested `LOWER(${param})` in one sql fragment.
+
       const rows = await db
         .select()
         .from(users)
-        .where(sql`lower(${users.email}) = ${normalizedEmail.toLowerCase()}`);
+        .where(sql`lower(${users.email}) = ${normalizedEmail}`);
+
+      if (rows.length > 1) {
+        console.error('[getUserByEmail] CRITICAL: Multiple users found with same email:', normalizedEmail);
+        // This should never happen due to the case-insensitive unique constraint
+        // but log it for debugging if it does
+      }
+
       return rows[0] as User | undefined;
     } catch (error) {
       console.error('[getUserByEmail] Database error:', error);

@@ -733,17 +733,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const { email } = validationResult.data;
-      
+
+      // CRITICAL: Normalize email to lowercase for case-insensitive duplicate check
+      // Database has case-insensitive unique index on LOWER(email)
+      const normalizedEmail = email.toLowerCase().trim();
+
       // Check if user is already subscribed
-      const existingSubscriber = await storage.getSubscriberByEmail(email);
+      const existingSubscriber = await storage.getSubscriberByEmail(normalizedEmail);
       if (existingSubscriber) {
         return res.status(409).json({ message: "Email is already subscribed" });
       }
-      
-      const subscriber = await storage.createSubscriber({ email });
-      res.status(201).json({ 
+
+      const subscriber = await storage.createSubscriber({ email: normalizedEmail });
+      res.status(201).json({
         id: subscriber.id,
-        message: "Successfully subscribed to newsletter" 
+        message: "Successfully subscribed to newsletter"
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to process subscription" });
@@ -970,7 +974,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           errors: validationResult.error.format()
         });
       }
-      
+
+      // CRITICAL: Normalize contact_email to lowercase for case-insensitive consistency
+      const jobData = {
+        ...validationResult.data,
+        contact_email: validationResult.data.contact_email
+          ? validationResult.data.contact_email.toLowerCase().trim()
+          : null
+      };
+
       // Get employer for the user
       const employer = await storage.getEmployerByUserId(req.user.userId);
       if (!employer) {
@@ -998,7 +1010,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const jobListing = await storage.createJobListing(validationResult.data, employer.id);
+      const jobListing = await storage.createJobListing(jobData, employer.id);
 
       res.status(201).json({ 
         id: jobListing.id,
@@ -1095,12 +1107,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Validate email format if provided
+      // Validate and normalize email format if provided
+      let normalizedContactEmail = contact_email;
       if (contact_email && typeof contact_email === 'string') {
         const emailTrimmed = contact_email.trim();
         if (emailTrimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
           return res.status(400).json({ message: 'Contact email must be a valid email address' });
         }
+        // CRITICAL: Normalize contact email to lowercase for case-insensitive consistency
+        normalizedContactEmail = emailTrimmed.toLowerCase();
       }
 
       // Update editable fields
@@ -1108,7 +1123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title, description, responsibilities, requirements, benefits, location,
         job_type, work_arrangement, specialty, experience_level, education_required,
         certification_required, shift_type, salary_min, salary_max, salary_period,
-        application_url, contact_email, expiry_date,
+        application_url, contact_email: normalizedContactEmail, expiry_date,
       });
 
       // Reset approval separately (is_approved is not in InsertJobListing type)
@@ -2462,6 +2477,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get admin user ID for approval tracking
       const adminId = (req as any).user?.userId;
 
+      // CRITICAL: Normalize contact_email if provided, otherwise use employer's normalized email
+      let normalizedContactEmail = employer.contact_email;
+      if (contact_email && typeof contact_email === 'string') {
+        const emailTrimmed = contact_email.trim();
+        if (emailTrimmed) {
+          normalizedContactEmail = emailTrimmed.toLowerCase();
+        }
+      }
+
       // Create job listing with admin presets (auto-approved, free post)
       const jobListing = await storage.createJobListing(
         {
@@ -2482,7 +2506,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           salary_max: salary_max ? parseFloat(salary_max) : null,
           salary_period: salary_period?.trim() || "annual",
           application_url: application_url?.trim() || null,
-          contact_email: contact_email?.trim() || employer.contact_email,
+          contact_email: normalizedContactEmail,
           expiry_date: expiry_date ? new Date(expiry_date) : null,
           is_featured: is_featured === true,
           is_active: true, // Admin posts are immediately active

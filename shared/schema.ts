@@ -132,6 +132,9 @@ export const galleryRelations = relations(gallery, ({ one }) => ({
 // Newsletter subscribers
 export const subscribers = pgTable("subscribers", {
   id: serial("id").primaryKey(),
+  // IMPORTANT: Email must be lowercase and trimmed. Database has case-insensitive unique constraint.
+  // All email lookups must normalize: email.toLowerCase().trim()
+  // See migration: 004_fix_email_case_insensitive_all_tables.sql
   email: text("email").notNull().unique(),
   created_at: timestamp("created_at").defaultNow(),
 });
@@ -145,6 +148,8 @@ export const insertSubscriberSchema = createInsertSchema(subscribers).omit({
 export const videoSubmissions = pgTable("video_submissions", {
   id: serial("id").primaryKey(),
   name: text("name"),
+  // IMPORTANT: Email should be lowercase and trimmed for case-insensitive consistency.
+  // All email values should be normalized: email.toLowerCase().trim()
   email: text("email"),
   location: text("location"),
   connection: text("connection"),
@@ -195,6 +200,9 @@ export type InsertApprovedVideo = z.infer<typeof insertApprovedVideoSchema>;
 // User model
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
+  // IMPORTANT: Email must be lowercase and trimmed. Database has case-insensitive unique constraint.
+  // All email lookups must normalize: email.toLowerCase().trim()
+  // See migration: 003_fix_email_case_insensitive.sql
   email: text("email").notNull().unique(),
   password_hash: text("password_hash").notNull(),
   first_name: text("first_name").notNull(),
@@ -441,6 +449,8 @@ export const employers = pgTable("employers", {
   city: text("city"),
   state: text("state"),
   zip_code: text("zip_code"),
+  // IMPORTANT: Contact email should be lowercase and trimmed for case-insensitive consistency.
+  // All contact_email values must be normalized: email.toLowerCase().trim()
   contact_email: text("contact_email").notNull(),
   contact_phone: text("contact_phone"),
   user_id: integer("user_id").references(() => users.id),
@@ -483,6 +493,8 @@ export const jobListings = pgTable("job_listings", {
   salary_max: decimal("salary_max", { precision: 10, scale: 2 }),
   salary_period: text("salary_period").default("annual"), // annual, hourly, etc.
   application_url: text("application_url"),
+  // IMPORTANT: Contact email should be lowercase and trimmed for case-insensitive consistency.
+  // All contact_email values must be normalized: email.toLowerCase().trim()
   contact_email: text("contact_email"),
   is_featured: boolean("is_featured").default(false),
   is_active: boolean("is_active").default(true),
@@ -773,6 +785,8 @@ export const storeOrders = pgTable("store_orders", {
   status: text("status").default("pending"), // pending, processing, shipped, delivered, cancelled
   payment_status: text("payment_status").default("pending"), // pending, paid, failed, refunded
   shipping_address: jsonb("shipping_address"),
+  // IMPORTANT: Contact email should be lowercase and trimmed for case-insensitive consistency.
+  // All contact_email values must be normalized: email.toLowerCase().trim()
   contact_email: text("contact_email").notNull(),
   contact_phone: text("contact_phone"),
   tracking_number: text("tracking_number"),
@@ -850,6 +864,9 @@ export const nrpxRegistrations = pgTable("nrpx_registrations", {
   ticket_code: varchar("ticket_code", { length: 14 }).unique().notNull(),
   first_name: varchar("first_name", { length: 100 }).notNull(),
   last_name: varchar("last_name", { length: 100 }).notNull(),
+  // IMPORTANT: Email must be lowercase and trimmed. Database has case-insensitive unique constraint.
+  // All email lookups must normalize: email.toLowerCase().trim()
+  // See migration: 004_fix_email_case_insensitive_all_tables.sql
   email: varchar("email", { length: 255 }).notNull().unique(),
   employer: varchar("employer", { length: 255 }),
   registered_at: timestamp("registered_at", { withTimezone: true }).defaultNow(),
