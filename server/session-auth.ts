@@ -6,7 +6,8 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { InsertUser, User } from "@shared/schema";
-import { getPayloadFromRequest } from "./jwt";
+import { getPayloadFromRequest, getTokenFromRequest } from "./jwt";
+import { isTokenRevokedForUser } from "./token-revocation-store";
 
 // Extend Express.User to cover both session auth (Passport/schema User) and JWT auth shapes.
 // JWT middleware (requireAuth) always sets userId, isVerified, isAdmin before protected routes run.
@@ -50,9 +51,13 @@ function getSessionUser(req: Request) {
   return null;
 }
 
-function getJwtUser(req: Request) {
+async function getJwtUser(req: Request) {
+  const token = getTokenFromRequest(req);
   const payload = getPayloadFromRequest(req);
-  if (!payload) return null;
+  if (!payload || !token) return null;
+  if (await isTokenRevokedForUser(payload.userId, token)) {
+    return null;
+  }
   return {
     id: payload.userId,
     email: payload.email,
@@ -61,13 +66,13 @@ function getJwtUser(req: Request) {
   };
 }
 
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
+export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const sessionUser = getSessionUser(req);
   if (sessionUser) {
     return next();
   }
 
-  const jwtUser = getJwtUser(req);
+  const jwtUser = await getJwtUser(req);
   if (jwtUser) {
     (req as any).user = jwtUser;
     return next();
@@ -77,9 +82,9 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
 }
 
 // Middleware to require verified user
-export function requireVerifiedUser(req: Request, res: Response, next: NextFunction) {
+export async function requireVerifiedUser(req: Request, res: Response, next: NextFunction) {
   const sessionUser = getSessionUser(req);
-  const jwtUser = sessionUser ? null : getJwtUser(req);
+  const jwtUser = sessionUser ? null : await getJwtUser(req);
 
   const user = sessionUser ?? jwtUser;
   if (!user) {
@@ -97,9 +102,9 @@ export function requireVerifiedUser(req: Request, res: Response, next: NextFunct
 }
 
 // Middleware to require admin user
-export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+export async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   const sessionUser = getSessionUser(req);
-  const jwtUser = sessionUser ? null : getJwtUser(req);
+  const jwtUser = sessionUser ? null : await getJwtUser(req);
   const user = sessionUser ?? jwtUser;
 
   if (!user) {
@@ -195,7 +200,10 @@ export function setupAuth(app: Express) {
       // Check if email is already registered
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
-        return res.status(400).json({ message: "Email already registered" });
+        return res.status(200).json({
+          message: "If this email address is not yet registered, a verification email will be sent. Please check your inbox.",
+          user: null,
+        });
       }
 
       // Hash the password

@@ -463,7 +463,7 @@ export class DatabaseStorage implements IStorage {
   // ========== JOB BOARD FUNCTIONS ==========
   
   // Employer Management
-  async createEmployer(employer: InsertEmployer, userId: number): Promise<Employer> {
+  async createEmployer(employer: InsertEmployer, userId: number | null): Promise<Employer> {
     const now = new Date();
     const payload = {
       ...employer,
@@ -562,7 +562,10 @@ export class DatabaseStorage implements IStorage {
     keywords?: string;
     employerId?: number;
     isActive?: boolean;
+    isApproved?: boolean;
     isFeatured?: boolean;
+    limit?: number;
+    offset?: number;
   }): Promise<JobListing[]> {
     const conditions = [];
 
@@ -571,6 +574,9 @@ export class DatabaseStorage implements IStorage {
     }
     if (filters?.isActive !== undefined) {
       conditions.push(eq(jobListings.is_active, filters.isActive));
+    }
+    if (filters?.isApproved !== undefined) {
+      conditions.push(eq(jobListings.is_approved, filters.isApproved));
     }
     if (filters?.isFeatured !== undefined) {
       conditions.push(eq(jobListings.is_featured, filters.isFeatured));
@@ -601,11 +607,16 @@ export class DatabaseStorage implements IStorage {
 
     const whereClause = conditions.length ? and(...conditions) : undefined;
 
+    const limit = Math.max(1, Math.min(100, filters?.limit ?? 100));
+    const offset = Math.max(0, filters?.offset ?? 0);
+
     return await db
       .select()
       .from(jobListings)
       .where(whereClause)
-      .orderBy(desc(jobListings.posted_date));
+      .orderBy(desc(jobListings.posted_date))
+      .limit(limit)
+      .offset(offset);
   }
 
   async getEmployerJobListings(employerId: number): Promise<JobListing[]> {
@@ -620,7 +631,7 @@ export class DatabaseStorage implements IStorage {
     let query: any = db
       .select()
       .from(jobListings)
-      .where(eq(jobListings.is_featured, true));
+      .where(and(eq(jobListings.is_featured, true), eq(jobListings.is_active, true), eq(jobListings.is_approved, true)));
 
     if (limit) {
       query = query.limit(limit);
@@ -633,6 +644,7 @@ export class DatabaseStorage implements IStorage {
     let query: any = db
       .select()
       .from(jobListings)
+      .where(and(eq(jobListings.is_active, true), eq(jobListings.is_approved, true)))
       .orderBy(desc(jobListings.posted_date));
 
     if (limit) {

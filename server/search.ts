@@ -2,6 +2,10 @@ import { db } from './db';
 import { eq, and, or, like, ilike, sql, inArray, gte, lte } from 'drizzle-orm';
 import { events, jobListings, nurseProfiles, users } from '@shared/schema';
 
+function escapeLikePattern(input: string): string {
+  return input.replace(/[\\%_]/g, '\\$&');
+}
+
 /**
  * Advanced Search Service
  * Provides full-text and filtered search across jobs, events, and nurses
@@ -45,18 +49,18 @@ export interface NurseSearchFilters {
  */
 export async function searchJobs(filters: JobSearchFilters) {
   try {
-    let baseQuery = db.select().from(jobListings);
-
     const whereConditions: any[] = [eq(jobListings.is_approved, true)];
+    const limit = Math.max(1, Math.min(filters.limit || 20, 100));
+    const offset = Math.max(0, filters.offset || 0);
 
     // Full-text search
     if (filters.query && filters.query.trim()) {
-      const searchQuery = `%${filters.query}%`;
+      const searchQuery = `%${escapeLikePattern(filters.query.trim())}%`;
       whereConditions.push(
         or(
-          ilike(jobListings.title, searchQuery),
-          ilike(jobListings.description, searchQuery),
-          ilike(jobListings.location, searchQuery)
+          sql`${jobListings.title} ILIKE ${searchQuery} ESCAPE '\\'`,
+          sql`${jobListings.description} ILIKE ${searchQuery} ESCAPE '\\'`,
+          sql`${jobListings.location} ILIKE ${searchQuery} ESCAPE '\\'`
         )
       );
     }
@@ -72,7 +76,8 @@ export async function searchJobs(filters: JobSearchFilters) {
 
     // Location filter
     if (filters.location && filters.location.trim()) {
-      whereConditions.push(ilike(jobListings.location, `%${filters.location}%`));
+      const locationQuery = `%${escapeLikePattern(filters.location.trim())}%`;
+      whereConditions.push(sql`${jobListings.location} ILIKE ${locationQuery} ESCAPE '\\'`);
     }
 
     // Salary range filter
@@ -88,8 +93,8 @@ export async function searchJobs(filters: JobSearchFilters) {
       .select()
       .from(jobListings)
       .where(and(...whereConditions))
-      .limit(filters.limit || 20)
-      .offset(filters.offset || 0);
+      .limit(limit)
+      .offset(offset);
 
     // Sort results
     let sorted = jobs;
@@ -121,7 +126,7 @@ export async function searchJobs(filters: JobSearchFilters) {
     return {
       jobs: sorted,
       total: Number(total),
-      hasMore: (filters.offset || 0) + (filters.limit || 20) < Number(total),
+      hasMore: offset + limit < Number(total),
     };
   } catch (error) {
     console.error('Error searching jobs:', error);
@@ -135,16 +140,18 @@ export async function searchJobs(filters: JobSearchFilters) {
 export async function searchEvents(filters: EventSearchFilters) {
   try {
     const whereConditions: any[] = [];
+    const limit = Math.max(1, Math.min(filters.limit || 20, 100));
+    const offset = Math.max(0, filters.offset || 0);
 
     // Full-text search
     if (filters.query && filters.query.trim()) {
-      const searchQuery = `%${filters.query}%`;
+      const searchQuery = `%${escapeLikePattern(filters.query.trim())}%`;
       whereConditions.push(
         or(
-          ilike(events.title, searchQuery),
-          ilike(events.description, searchQuery),
-          ilike(events.location, searchQuery),
-          ilike(events.subtitle, searchQuery)
+          sql`${events.title} ILIKE ${searchQuery} ESCAPE '\\'`,
+          sql`${events.description} ILIKE ${searchQuery} ESCAPE '\\'`,
+          sql`${events.location} ILIKE ${searchQuery} ESCAPE '\\'`,
+          sql`${events.subtitle} ILIKE ${searchQuery} ESCAPE '\\'`
         )
       );
     }
@@ -159,7 +166,8 @@ export async function searchEvents(filters: EventSearchFilters) {
 
     // Location filter
     if (filters.location && filters.location.trim()) {
-      whereConditions.push(ilike(events.location, `%${filters.location}%`));
+      const locationQuery = `%${escapeLikePattern(filters.location.trim())}%`;
+      whereConditions.push(sql`${events.location} ILIKE ${locationQuery} ESCAPE '\\'`);
     }
 
     // Featured filter
@@ -172,8 +180,8 @@ export async function searchEvents(filters: EventSearchFilters) {
       .select()
       .from(events)
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
-      .limit(filters.limit || 20)
-      .offset(filters.offset || 0);
+      .limit(limit)
+      .offset(offset);
 
     // Sort results
     let sorted = eventsList;
@@ -210,7 +218,7 @@ export async function searchEvents(filters: EventSearchFilters) {
     return {
       events: sorted,
       total: Number(total),
-      hasMore: (filters.offset || 0) + (filters.limit || 20) < Number(total),
+      hasMore: offset + limit < Number(total),
     };
   } catch (error) {
     console.error('Error searching events:', error);
@@ -223,16 +231,18 @@ export async function searchEvents(filters: EventSearchFilters) {
  */
 export async function searchNurses(filters: NurseSearchFilters) {
   try {
-    const whereConditions: any[] = [eq(users.is_verified, true)];
+    const whereConditions: any[] = [eq(users.is_verified, true), eq(nurseProfiles.is_public, true)];
+    const limit = Math.max(1, Math.min(filters.limit || 20, 100));
+    const offset = Math.max(0, filters.offset || 0);
 
     // Full-text search in user name
     if (filters.query && filters.query.trim()) {
-      const searchQuery = `%${filters.query}%`;
+      const searchQuery = `%${escapeLikePattern(filters.query.trim())}%`;
       whereConditions.push(
         or(
-          ilike(users.first_name, searchQuery),
-          ilike(users.last_name, searchQuery),
-          ilike(sql`CONCAT(${users.first_name}, ' ', ${users.last_name})`, searchQuery)
+          sql`${users.first_name} ILIKE ${searchQuery} ESCAPE '\\'`,
+          sql`${users.last_name} ILIKE ${searchQuery} ESCAPE '\\'`,
+          sql`CONCAT(${users.first_name}, ' ', ${users.last_name}) ILIKE ${searchQuery} ESCAPE '\\'`
         )
       );
     }
@@ -243,7 +253,6 @@ export async function searchNurses(filters: NurseSearchFilters) {
         userId: users.id,
         firstName: users.first_name,
         lastName: users.last_name,
-        email: users.email,
         specialty: nurseProfiles.specialties,
         experience: nurseProfiles.years_of_experience,
         skills: nurseProfiles.skills,
@@ -252,8 +261,8 @@ export async function searchNurses(filters: NurseSearchFilters) {
       .from(users)
       .leftJoin(nurseProfiles, eq(users.id, nurseProfiles.user_id))
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
-      .limit(filters.limit || 20)
-      .offset(filters.offset || 0);
+      .limit(limit)
+      .offset(offset);
 
     // Apply specialty filter
     let filtered = nurses;
@@ -294,7 +303,7 @@ export async function searchNurses(filters: NurseSearchFilters) {
     return {
       nurses: sorted,
       total: Number(total),
-      hasMore: (filters.offset || 0) + (filters.limit || 20) < Number(total),
+      hasMore: offset + limit < Number(total),
     };
   } catch (error) {
     console.error('Error searching nurses:', error);
@@ -307,7 +316,7 @@ export async function searchNurses(filters: NurseSearchFilters) {
  */
 export async function getSearchSuggestions(type: 'job' | 'event' | 'location', query: string) {
   try {
-    const searchQuery = `${query}%`;
+    const searchQuery = `${escapeLikePattern(query)}%`;
 
     switch (type) {
       case 'job':
@@ -317,7 +326,7 @@ export async function getSearchSuggestions(type: 'job' | 'event' | 'location', q
           .where(
             and(
               eq(jobListings.is_approved, true),
-              ilike(jobListings.title, searchQuery)
+              sql`${jobListings.title} ILIKE ${searchQuery} ESCAPE '\\'`
             )
           )
           .limit(10);
@@ -327,7 +336,7 @@ export async function getSearchSuggestions(type: 'job' | 'event' | 'location', q
         const eventSuggestions = await db
           .selectDistinct({ title: events.title })
           .from(events)
-          .where(ilike(events.title, searchQuery))
+          .where(sql`${events.title} ILIKE ${searchQuery} ESCAPE '\\'`)
           .limit(10);
         return eventSuggestions.map(e => e.title);
 
@@ -339,7 +348,7 @@ export async function getSearchSuggestions(type: 'job' | 'event' | 'location', q
           .where(
             and(
               eq(jobListings.is_approved, true),
-              ilike(jobListings.location, searchQuery)
+              sql`${jobListings.location} ILIKE ${searchQuery} ESCAPE '\\'`
             )
           )
           .limit(5);
@@ -347,7 +356,7 @@ export async function getSearchSuggestions(type: 'job' | 'event' | 'location', q
         const eventLocations = await db
           .selectDistinct({ location: events.location })
           .from(events)
-          .where(ilike(events.location, searchQuery))
+          .where(sql`${events.location} ILIKE ${searchQuery} ESCAPE '\\'`)
           .limit(5);
 
         const allLocations = new Set<string>();

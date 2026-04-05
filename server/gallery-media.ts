@@ -8,17 +8,44 @@ import { gallery, mediaFolders } from '@shared/schema';
 import { eq, and, isNull, desc, asc, sql } from 'drizzle-orm';
 import { processImage, SUPPORTED_IMAGE_TYPES } from './image-utils';
 
+const GALLERY_UPLOAD_DIR = path.resolve(process.cwd(), 'uploads', 'gallery');
+const SAFE_GALLERY_IMAGE_TYPES = SUPPORTED_IMAGE_TYPES.filter((t) => t !== 'image/svg+xml');
+const MIME_EXTENSION_MAP: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/jpg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+  'image/gif': '.gif',
+  'image/bmp': '.bmp',
+  'image/tiff': '.tiff',
+  'image/heic': '.heic',
+  'image/heif': '.heif',
+};
+
+function resolveGalleryPathFromPublicUrl(publicUrl: string | null | undefined): string | null {
+  if (!publicUrl) return null;
+  if (!publicUrl.startsWith('/uploads/gallery/')) return null;
+  const relative = publicUrl.replace(/^\/uploads\/gallery\//, '');
+  if (!relative || relative.includes('..') || path.isAbsolute(relative)) return null;
+  const resolved = path.resolve(GALLERY_UPLOAD_DIR, relative);
+  if (!resolved.startsWith(GALLERY_UPLOAD_DIR + path.sep) && resolved !== GALLERY_UPLOAD_DIR) {
+    return null;
+  }
+  return resolved;
+}
+
 // Configure storage
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
-    const uploadDir = path.join(process.cwd(), 'uploads', 'gallery');
+    const uploadDir = GALLERY_UPLOAD_DIR;
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
     cb(null, uploadDir);
   },
   filename: (_req, file, cb) => {
-    const uniqueName = `${Date.now()}-${uuidv4()}${path.extname(file.originalname)}`;
+    const extension = MIME_EXTENSION_MAP[file.mimetype] || '.bin';
+    const uniqueName = `${Date.now()}-${uuidv4()}${extension}`;
     cb(null, uniqueName);
   }
 });
@@ -26,11 +53,11 @@ const storage = multer.diskStorage({
 // File filter to accept only image files
 const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   console.log(`Validating file: ${file.originalname}, mimetype: ${file.mimetype}`);
-  if (SUPPORTED_IMAGE_TYPES.includes(file.mimetype)) {
+  if (SAFE_GALLERY_IMAGE_TYPES.includes(file.mimetype)) {
     cb(null, true);
   } else {
     // More descriptive error for debugging
-    cb(new Error(`File "${file.originalname}" has unsupported mime type: ${file.mimetype}. Supported types: ${SUPPORTED_IMAGE_TYPES.join(', ')}`));
+    cb(new Error(`File "${file.originalname}" has unsupported mime type: ${file.mimetype}. Supported types: ${SAFE_GALLERY_IMAGE_TYPES.join(', ')}`));
   }
 };
 
@@ -333,15 +360,15 @@ export async function deleteGalleryImage(req: Request, res: Response) {
     
     // Delete the files (could be made optional)
     // This would need to be adjusted based on your path format
-    const basePath = path.join(process.cwd(), image.image_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
+    const basePath = resolveGalleryPathFromPublicUrl(image.image_url);
     
     try {
-      if (fs.existsSync(basePath)) fs.unlinkSync(basePath);
+      if (basePath && fs.existsSync(basePath)) fs.unlinkSync(basePath);
       
       // Only try to delete thumbnail if it exists
       if (image.thumbnail_url) {
-        const thumbnailPath = path.join(process.cwd(), image.thumbnail_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
-        if (fs.existsSync(thumbnailPath)) fs.unlinkSync(thumbnailPath);
+        const thumbnailPath = resolveGalleryPathFromPublicUrl(image.thumbnail_url);
+        if (thumbnailPath && fs.existsSync(thumbnailPath)) fs.unlinkSync(thumbnailPath);
       }
       
       // Could also delete other sizes if they are stored
@@ -662,15 +689,15 @@ export async function replaceGalleryImage(req: Request, res: Response) {
       `);
       
       // Clean up old files (optional)
-      const oldBasePath = path.join(process.cwd(), originalImage.image_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
+      const oldBasePath = resolveGalleryPathFromPublicUrl(originalImage.image_url);
       
       try {
-        if (fs.existsSync(oldBasePath)) fs.unlinkSync(oldBasePath);
+        if (oldBasePath && fs.existsSync(oldBasePath)) fs.unlinkSync(oldBasePath);
         
         // Only attempt to delete thumbnail if it exists
         if (originalImage.thumbnail_url) {
-          const oldThumbnailPath = path.join(process.cwd(), originalImage.thumbnail_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
-          if (fs.existsSync(oldThumbnailPath)) fs.unlinkSync(oldThumbnailPath);
+          const oldThumbnailPath = resolveGalleryPathFromPublicUrl(originalImage.thumbnail_url);
+          if (oldThumbnailPath && fs.existsSync(oldThumbnailPath)) fs.unlinkSync(oldThumbnailPath);
         }
       } catch (fsError) {
         console.error('Error deleting old image files:', fsError);
@@ -733,11 +760,14 @@ export async function replaceGalleryImage(req: Request, res: Response) {
       }
       
       // Get paths for the source and target images
-      const sourceImagePath = path.join(process.cwd(), sourceImage.image_url.replace(/^\/uploads\/gallery\//, 'uploads/gallery/'));
+      const sourceImagePath = resolveGalleryPathFromPublicUrl(sourceImage.image_url);
+      if (!sourceImagePath || !fs.existsSync(sourceImagePath)) {
+        return res.status(400).json({ error: 'Source image path is invalid or missing' });
+      }
       
       // Generate a unique filename for the resized copy
       const destFilename = `resized-${Date.now()}-${uuidv4()}`;
-      const uploadDir = path.join(process.cwd(), 'uploads', 'gallery');
+      const uploadDir = GALLERY_UPLOAD_DIR;
       
       // Process the image with the target dimensions
       const sizes = await processImage(

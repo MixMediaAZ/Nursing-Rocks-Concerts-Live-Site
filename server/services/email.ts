@@ -295,6 +295,10 @@ function escapeHtml(unsafe: string): string {
     .replace(/'/g, "&#039;");
 }
 
+function sanitizeHeader(value: string): string {
+  return value.replace(/[\r\n]+/g, " ").trim();
+}
+
 /**
  * Resend a ticket email (admin action)
  * Called when user didn't receive original email or needs a new copy
@@ -514,21 +518,21 @@ export async function approveAndSendTicketEmail(ticketId: string, adminUserId: n
     </div>
 
     <div class="content">
-      <p>Hi ${nurseName},</p>
+      <p>Hi ${escapeHtml(nurseName)},</p>
 
       <p>Thank you for purchasing your ticket to the Nursing Rocks! Concert Series! We're excited to see you at the event.</p>
 
       <div class="event-details">
-        <h3>${event.title}</h3>
-        <p><span class="label">Date:</span> ${formattedDate}</p>
-        <p><span class="label">Time:</span> ${event.start_time || 'TBD'}</p>
-        <p><span class="label">Location:</span> ${event.location}</p>
-        <p><span class="label">Ticket Type:</span> ${ticket.ticket_type || 'General Admission'}</p>
-        <p><span class="label">Price:</span> ${ticket.price || 'Free'}</p>
+        <h3>${escapeHtml(event.title)}</h3>
+        <p><span class="label">Date:</span> ${escapeHtml(formattedDate)}</p>
+        <p><span class="label">Time:</span> ${escapeHtml(event.start_time || 'TBD')}</p>
+        <p><span class="label">Location:</span> ${escapeHtml(event.location)}</p>
+        <p><span class="label">Ticket Type:</span> ${escapeHtml(ticket.ticket_type || 'General Admission')}</p>
+        <p><span class="label">Price:</span> ${escapeHtml(ticket.price || 'Free')}</p>
       </div>
 
       <div class="ticket-code">
-        ${ticket.ticket_code}
+        ${escapeHtml(ticket.ticket_code)}
       </div>
 
       <div class="important">
@@ -554,7 +558,7 @@ export async function approveAndSendTicketEmail(ticketId: string, adminUserId: n
     const emailResult = await resend.emails.send({
       from: SENDER_EMAIL,
       to: user.email,
-      subject: `Your Nursing Rocks! Ticket for ${event.title}`,
+      subject: sanitizeHeader(`Your Nursing Rocks! Ticket for ${event.title}`),
       html: emailHtml,
     });
 

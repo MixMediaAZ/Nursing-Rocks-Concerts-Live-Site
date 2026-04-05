@@ -3,11 +3,11 @@ import { createServer, type Server } from "http";
 import Stripe from "stripe";
 import path from "path";
 import fs from "fs";
-import { randomBytes } from "crypto";
+import { randomBytes, timingSafeEqual } from "crypto";
 import { db } from "./db";
-import { eq, sql, and, desc, ilike, or, inArray } from "drizzle-orm";
+import { eq, sql, and, desc, ilike, or, inArray, gte } from "drizzle-orm";
 import { storage } from "./storage";
-import { approvedVideos, gallery, mediaFolders, events, nrpxRegistrations, users, tickets } from "@shared/schema";
+import { approvedVideos, gallery, mediaFolders, events, nrpxRegistrations, users, tickets, storeProducts, storeOrders, storeOrderItems } from "@shared/schema";
 import QRCode from "qrcode";
 import { sendNrpxTicketEmail } from "./email";
 import { processImage } from "./image-utils";
@@ -58,6 +58,10 @@ let videoListCache:
     }
   | null = null;
 
+const JOB_VIEW_COUNT_TTL_MS = 60 * 60 * 1000;
+const JOB_VIEW_DEDUP_MAX_ENTRIES = 100000;
+const jobViewDedupe = new Map<string, number>();
+
 // Initialize Stripe with the secret key if it exists
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 let stripe: Stripe | undefined;
@@ -105,7 +109,8 @@ import {
   requireEmployerToken
 } from "./auth";
 import { setupAuth, requireAuth, requireVerifiedUser, requireAdmin } from "./session-auth";
-import { generateToken, isUserAdmin, getPayloadFromRequest } from './jwt';
+import { generateToken, isUserAdmin, getPayloadFromRequest, getTokenFromRequest } from './jwt';
+import { isTokenRevokedForUser } from "./token-revocation-store";
 import {
   upload,
   uploadMediaFiles,
@@ -119,6 +124,55 @@ import { runAllEmailSchedules, getEmailScheduleStatus } from "./email-scheduler"
 import { searchJobs, searchEvents, searchNurses, getSearchSuggestions } from "./search";
 import { handleJobAlertsCron, handleEventRemindersCron, handleCronHealth } from "./cron-handlers";
 
+function escapeCsvCell(value: unknown): string {
+  const asString = value === null || value === undefined ? '' : String(value);
+  const guarded = /^[=+\-@]/.test(asString) ? `'${asString}` : asString;
+  return `"${guarded.replace(/"/g, '""')}"`;
+}
+
+async function acquireAdvisoryLock(lockName: string): Promise<void> {
+  await db.execute(sql`SELECT pg_advisory_lock(hashtext(${lockName}))`);
+}
+
+async function releaseAdvisoryLock(lockName: string): Promise<void> {
+  await db.execute(sql`SELECT pg_advisory_unlock(hashtext(${lockName}))`);
+}
+
+const ALLOWED_VIDEO_UPLOAD_CONTENT_TYPES = new Set([
+  "video/mp4",
+  "video/quicktime",
+  "video/webm",
+  "video/x-m4v",
+]);
+
+function shouldCountJobView(req: Request, jobId: number): boolean {
+  const ip = ((req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "unknown")
+    .split(",")[0]
+    .trim();
+  const key = `${jobId}:${ip}`;
+  const now = Date.now();
+
+  const existing = jobViewDedupe.get(key);
+  if (existing && existing > now) {
+    return false;
+  }
+
+  jobViewDedupe.set(key, now + JOB_VIEW_COUNT_TTL_MS);
+  if (jobViewDedupe.size > JOB_VIEW_DEDUP_MAX_ENTRIES) {
+    for (const [k, expiresAt] of jobViewDedupe.entries()) {
+      if (expiresAt <= now) {
+        jobViewDedupe.delete(k);
+      }
+    }
+    if (jobViewDedupe.size > JOB_VIEW_DEDUP_MAX_ENTRIES) {
+      const oldest = jobViewDedupe.keys().next().value as string | undefined;
+      if (oldest) jobViewDedupe.delete(oldest);
+    }
+  }
+
+  return true;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup session-based authentication
   setupAuth(app);
@@ -126,9 +180,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ── Admin auth middleware ─────────────────────────────────────────────────
   // Defined first so it can be reused on any route in this file.
   const requireAdminToken = async (req: Request, res: Response, next: any) => {
+    const token = getTokenFromRequest(req);
     const payload = getPayloadFromRequest(req);
-    if (!payload || !payload.isAdmin) {
+    if (!payload || !payload.isAdmin || !token) {
       return res.status(403).json({ message: "Admin privileges required" });
+    }
+    if (await isTokenRevokedForUser(payload.userId, token)) {
+      return res.status(401).json({ message: "Session has been terminated. Please log in again." });
     }
     const adminUser = await db.select().from(users).where(eq(users.id, payload.userId)).limit(1);
     if (!adminUser.length || !adminUser[0].is_admin) {
@@ -850,6 +908,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/jobs", async (req: Request, res: Response) => {
     try {
       const filters: any = {};
+      const token = getTokenFromRequest(req);
+      const payload = getPayloadFromRequest(req);
+      const isRevoked = payload && token ? await isTokenRevokedForUser(payload.userId, token) : false;
+      const isAdminRequest = Boolean(payload?.isAdmin) && !isRevoked;
 
       // Extract filter parameters from query
       if (req.query.specialty) filters.specialty = req.query.specialty;
@@ -867,8 +929,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filters.employerId = !isNaN(parsed) ? Math.max(parsed, 1) : undefined;
       }
 
-      // Default to active jobs only
-      filters.isActive = req.query.showInactive ? undefined : true;
+      // Public defaults: only approved + active jobs.
+      // Admin can explicitly request inactive/unapproved jobs with showInactive.
+      const showInactive = req.query.showInactive === "1" || req.query.showInactive === "true";
+      if (showInactive && !isAdminRequest) {
+        return res.status(403).json({ message: "Admin privileges required for showInactive" });
+      }
+      if (!showInactive) {
+        filters.isActive = true;
+        filters.isApproved = true;
+      }
+      const parsedLimit = req.query.limit ? Math.min(Math.max(parseInt(req.query.limit as string) || 20, 1), 100) : 20;
+      const parsedOffset = req.query.offset ? Math.min(Math.max(parseInt(req.query.offset as string) || 0, 0), 10000) : 0;
+      filters.limit = parsedLimit;
+      filters.offset = parsedOffset;
 
       const jobs = await storage.getAllJobListings(filters);
       res.json(jobs);
@@ -903,8 +977,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/jobs/:id", async (req: Request, res: Response) => {
     try {
       // Optional auth: set req.user when Bearer token present so has_applied/is_saved work
+      const token = getTokenFromRequest(req);
       const payload = getPayloadFromRequest(req);
-      if (payload) {
+      if (payload && token && !(await isTokenRevokedForUser(payload.userId, token))) {
         (req as any).user = { userId: payload.userId, id: payload.userId, is_verified: payload.isVerified, is_admin: payload.isAdmin };
       }
 
@@ -917,9 +992,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!job) {
         return res.status(404).json({ message: "Job not found" });
       }
+
+      const isAdmin = Boolean((req as any).user?.is_admin);
+      if (!isAdmin && (!job.is_active || !job.is_approved)) {
+        return res.status(404).json({ message: "Job not found" });
+      }
       
-      // Increment view count
-      await storage.incrementJobListingViews(id);
+      // Deduplicate view counting by IP per job for 1 hour to reduce abuse/inflation.
+      if (shouldCountJobView(req, id)) {
+        await storage.incrementJobListingViews(id);
+      }
       
       // Add user-specific fields if authenticated
       let hasApplied = false;
@@ -996,21 +1078,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lifetime = !!(employer as any).job_post_lifetime;
       const passActive = !!passExpiresAt && new Date(passExpiresAt).getTime() > Date.now();
 
-      // For credit-based posting: atomically decrement BEFORE creating the job.
-      // The WHERE credits > 0 ensures a concurrent request cannot consume the same credit.
-      if (!lifetime && !passActive) {
-        const [decremented] = await db
-          .update(employers)
-          .set({ job_post_credits: sql`${employers.job_post_credits} - 1`, updated_at: new Date() })
-          .where(and(eq(employers.id, employer.id), sql`${employers.job_post_credits} > 0`))
-          .returning({ id: employers.id });
+      const now = new Date();
+      const jobListing = await db.transaction(async (tx) => {
+        // For credit-based posting: decrement and creation must be atomic.
+        if (!lifetime && !passActive) {
+          const [decremented] = await tx
+            .update(employers)
+            .set({ job_post_credits: sql`${employers.job_post_credits} - 1`, updated_at: now })
+            .where(and(eq(employers.id, employer.id), sql`${employers.job_post_credits} > 0`))
+            .returning({ id: employers.id });
 
-        if (!decremented) {
-          return res.status(402).json({ message: "Payment required to post jobs (no active entitlement)" });
+          if (!decremented) {
+            throw new Error("INSUFFICIENT_CREDITS");
+          }
         }
-      }
 
-      const jobListing = await storage.createJobListing(jobData, employer.id);
+        const [created] = await tx
+          .insert(jobListings)
+          .values({
+            ...jobData,
+            employer_id: employer.id,
+            posted_date: now,
+          })
+          .returning();
+        return created;
+      }).catch((error) => {
+        if (error instanceof Error && error.message === "INSUFFICIENT_CREDITS") {
+          return null;
+        }
+        throw error;
+      });
+
+      if (!jobListing) {
+        return res.status(402).json({ message: "Payment required to post jobs (no active entitlement)" });
+      }
 
       res.status(201).json({ 
         id: jobListing.id,
@@ -1205,7 +1306,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (job.employer_id !== employer.id) return res.status(403).json({ message: "Not your job listing" });
 
       const applications = await storage.getJobApplicationsByJobId(id);
-      return res.json(applications);
+      const sanitized = applications.map(({ user_id, ...rest }) => rest);
+      return res.json(sanitized);
     } catch (error) {
       console.error("Error fetching job applications:", error);
       return res.status(500).json({ message: "Failed to fetch applications" });
@@ -1628,6 +1730,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!job) {
         return res.status(404).json({ message: "Job not found" });
       }
+      if (!job.is_active || !job.is_approved) {
+        return res.status(403).json({ message: "This job is no longer accepting applications" });
+      }
 
       // Check if user has already applied
       const applications = await storage.getJobApplicationsByUserId(req.user.userId);
@@ -1779,19 +1884,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Authentication status - should now be handled by session-auth
   // This route is kept for backward compatibility
-  app.get("/api/auth/status", (req: Request, res: Response) => {
+  app.get("/api/auth/status", async (req: Request, res: Response) => {
     const sessionAuthenticated =
       typeof req.isAuthenticated === "function" && req.isAuthenticated();
     const sessionUser = sessionAuthenticated ? (req.user as any) : null;
 
+    const token = sessionAuthenticated ? null : getTokenFromRequest(req);
     const jwtPayload = sessionAuthenticated ? null : getPayloadFromRequest(req);
+    const jwtRevoked = jwtPayload && token ? await isTokenRevokedForUser(jwtPayload.userId, token) : false;
     const jwtUser = jwtPayload
-      ? {
-          id: jwtPayload.userId,
-          email: jwtPayload.email,
-          is_verified: jwtPayload.isVerified,
-          is_admin: jwtPayload.isAdmin,
-        }
+      ? jwtRevoked
+        ? null
+        : {
+            id: jwtPayload.userId,
+            email: jwtPayload.email,
+            is_verified: jwtPayload.isVerified,
+            is_admin: jwtPayload.isAdmin,
+          }
       : null;
 
     const user = sessionUser ?? jwtUser;
@@ -1901,8 +2010,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/videos/upload-url", requireAdminToken, async (req: Request, res: Response) => {
     try {
       const provider = getVideoProvider();
-      const filename = typeof req.body?.filename === "string" ? req.body.filename : "upload.mp4";
-      const contentType = typeof req.body?.contentType === "string" ? req.body.contentType : "video/mp4";
+      const filename = typeof req.body?.filename === "string" ? req.body.filename.trim() : "upload.mp4";
+      const contentType = typeof req.body?.contentType === "string" ? req.body.contentType.trim().toLowerCase() : "video/mp4";
+
+      if (!filename || filename.length > 255) {
+        return res.status(400).json({ success: false, message: "Invalid filename" });
+      }
+      if (!ALLOWED_VIDEO_UPLOAD_CONTENT_TYPES.has(contentType)) {
+        return res.status(400).json({ success: false, message: "Invalid contentType. Allowed: video/mp4, video/quicktime, video/webm, video/x-m4v" });
+      }
+
       const presigned = await provider.createSourceUploadUrl({ filename, contentType });
       const videoId = stableVideoIdFromKey(presigned.key);
       res.json({
@@ -2378,6 +2495,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Valid contact email is required" });
       }
 
+      const adminId = (req as any).user?.userId ?? null;
+
       // Create employer with admin presets
       const employer = await storage.createEmployer(
         {
@@ -2393,7 +2512,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           state: state?.trim() || null,
           zip_code: zip_code?.trim() || null,
         },
-        null // No user_id for admin-created employers
+        adminId
       );
 
       // Update to verified and active immediately (admin-created = pre-approved)
@@ -2486,9 +2605,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      const parsedSalaryMin =
+        salary_min !== undefined && salary_min !== null && salary_min !== ""
+          ? Number(salary_min)
+          : null;
+      const parsedSalaryMax =
+        salary_max !== undefined && salary_max !== null && salary_max !== ""
+          ? Number(salary_max)
+          : null;
+
+      if (parsedSalaryMin !== null && !Number.isFinite(parsedSalaryMin)) {
+        return res.status(400).json({ message: "salary_min must be a valid number" });
+      }
+      if (parsedSalaryMax !== null && !Number.isFinite(parsedSalaryMax)) {
+        return res.status(400).json({ message: "salary_max must be a valid number" });
+      }
+
       // Create job listing with admin presets (auto-approved, free post)
       const jobListing = await storage.createJobListing(
         {
+          employer_id: parseInt(employer_id),
           title: title.trim(),
           description: description.trim(),
           responsibilities: responsibilities?.trim() || null,
@@ -2502,15 +2638,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           education_required: education_required?.trim() || null,
           certification_required: Array.isArray(certification_required) ? certification_required : null,
           shift_type: shift_type?.trim() || null,
-          salary_min: salary_min ? parseFloat(salary_min) : null,
-          salary_max: salary_max ? parseFloat(salary_max) : null,
+          salary_min: parsedSalaryMin !== null ? parsedSalaryMin.toString() : null,
+          salary_max: parsedSalaryMax !== null ? parsedSalaryMax.toString() : null,
           salary_period: salary_period?.trim() || "annual",
           application_url: application_url?.trim() || null,
           contact_email: normalizedContactEmail,
           expiry_date: expiry_date ? new Date(expiry_date) : null,
           is_featured: is_featured === true,
-          is_active: true, // Admin posts are immediately active
-          is_approved: true, // Admin posts are immediately approved
         },
         parseInt(employer_id)
       );
@@ -2554,11 +2688,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create CSV rows
       const csvRows = subscribers.map(sub => {
-        const email = sub.email.replace(/"/g, '""'); // Escape quotes
+        const email = escapeCsvCell(sub.email);
         const createdAt = sub.created_at 
           ? new Date(sub.created_at).toISOString() 
           : "";
-        return `"${email}","${createdAt}"`;
+        return `${email},${escapeCsvCell(createdAt)}`;
       }).join("\n");
       
       const csv = csvHeader + csvRows;
@@ -2581,7 +2715,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const employer = await storage.getEmployerById(id);
       if (!employer) return res.status(404).json({ message: "Employer not found" });
 
-      const updated = await storage.updateEmployer(id, req.body);
+      const allowedFields = [
+        "name",
+        "company_name",
+        "description",
+        "website",
+        "logo_url",
+        "address",
+        "city",
+        "state",
+        "zip_code",
+        "contact_email",
+        "contact_phone",
+        "account_status",
+        "is_verified",
+      ] as const;
+      const updates: Record<string, unknown> = {};
+      for (const key of allowedFields) {
+        if ((req.body as any)[key] !== undefined) {
+          updates[key] = (req.body as any)[key];
+        }
+      }
+
+      if (typeof updates.contact_email === "string") {
+        updates.contact_email = updates.contact_email.trim().toLowerCase();
+      }
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ message: "No valid update fields provided" });
+      }
+
+      const updated = await storage.updateEmployer(id, updates as any);
       return res.json(updated);
     } catch (error) {
       console.error("Error updating employer:", error);
@@ -2826,16 +2989,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // HLS packaging (B2 only)
   app.post("/api/admin/videos/hls/backfill", requireAdminToken, async (req: Request, res: Response) => {
+    const backfillLock = "videos_hls_backfill_lock";
     try {
       if (getVideoProviderId() !== "b2") {
         return res.status(400).json({ success: false, message: "Backfill only supported for VIDEO_PROVIDER=b2" });
       }
+      await acquireAdvisoryLock(backfillLock);
 
       const sourcePrefix = (process.env.VIDEO_SOURCE_PREFIX || "").replace(/\/+$/, "");
-      const limit = Number(req.body?.limit ?? 25);
+      const limitRaw = Number(req.body?.limit ?? 25);
+      const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(Math.floor(limitRaw), 1), 200) : 25;
       const mp4s = (await listB2Objects(sourcePrefix || undefined))
         .filter((o) => o.key.toLowerCase().endsWith(".mp4"))
-        .slice(0, Number.isFinite(limit) ? limit : 25);
+        .slice(0, limit);
 
       const processed: any[] = [];
       const skipped: any[] = [];
@@ -2856,6 +3022,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) {
       console.error("Error backfilling HLS:", err);
       res.status(500).json({ success: false, message: err instanceof Error ? err.message : "Backfill failed" });
+    } finally {
+      await releaseAdvisoryLock(backfillLock).catch(() => undefined);
     }
   });
 
@@ -2959,8 +3127,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!videoId) return res.status(400).json({ message: "videoId is required" });
       if (!file?.buffer) return res.status(400).json({ message: "thumbnail file is required" });
+      const safeVideoId = videoId.replace(/[^a-zA-Z0-9_-]/g, "");
+      if (!safeVideoId) return res.status(400).json({ message: "videoId contains no valid characters" });
 
-      const Key = posterKeyForVideoId(videoId);
+      const allowedThumbTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+      const normalizedType = (file.mimetype || "").toLowerCase();
+      if (!allowedThumbTypes.has(normalizedType)) {
+        return res.status(400).json({ message: "Invalid thumbnail content type" });
+      }
+
+      const Key = posterKeyForVideoId(safeVideoId);
       const Bucket = getB2Bucket();
       const s3 = getB2S3Client();
 
@@ -2969,11 +3145,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           Bucket,
           Key,
           Body: file.buffer,
-          ContentType: file.mimetype || "image/jpeg",
+          ContentType: normalizedType || "image/jpeg",
         }),
       );
 
-      res.json({ success: true, videoId, key: Key, url: publicUrlForKey(Key) });
+      res.json({ success: true, videoId: safeVideoId, key: Key, url: publicUrlForKey(Key) });
     } catch (error) {
       console.error("Error uploading thumbnail:", error);
       res.status(500).json({ message: "Failed to upload thumbnail" });
@@ -2982,6 +3158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Thumbnails: server-side generation (requires ffmpeg)
   app.post("/api/admin/videos/generate-thumbnail", requireAdminToken, async (req: Request, res: Response) => {
+    let tmpDir: string | null = null;
     try {
       const videoUrl = typeof req.body?.videoUrl === "string" ? req.body.videoUrl : "";
       const videoId = typeof req.body?.videoId === "string" ? req.body.videoId : "";
@@ -2990,22 +3167,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!videoId) return res.status(400).json({ message: "videoId is required" });
       if (!ffmpegPath) return res.status(500).json({ message: "ffmpeg binary not available" });
 
+      let parsedUrl: URL;
+      try {
+        parsedUrl = new URL(videoUrl);
+      } catch {
+        return res.status(400).json({ message: "videoUrl must be a valid URL" });
+      }
+      if (parsedUrl.protocol !== "https:") {
+        return res.status(400).json({ message: "videoUrl must use https" });
+      }
+
+      const safeVideoId = videoId.replace(/[^a-zA-Z0-9_-]/g, "");
+      if (!safeVideoId) {
+        return res.status(400).json({ message: "videoId contains no valid characters" });
+      }
+
       ffmpeg.setFfmpegPath(ffmpegPath as any);
 
-      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "nr-thumb-"));
-      const outPath = path.join(tmpDir, `${videoId}.jpg`);
+      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "nr-thumb-"));
+      const outPath = path.join(tmpDir, `${safeVideoId}.jpg`);
 
       await new Promise<void>((resolve, reject) => {
-        ffmpeg(videoUrl)
+        const command = ffmpeg(videoUrl)
           .outputOptions(["-ss 00:00:03.000", "-frames:v 1"])
           .output(outPath)
           .on("end", () => resolve())
-          .on("error", (err: any) => reject(err))
+          .on("error", (err: any) => reject(err));
+
+        // Avoid hanging ffmpeg processes on corrupt/slow sources.
+        const timeout = setTimeout(() => {
+          command.kill("SIGKILL");
+          reject(new Error("ffmpeg timed out while generating thumbnail"));
+        }, 60_000);
+
+        command.on("end", () => clearTimeout(timeout)).on("error", () => clearTimeout(timeout))
           .run();
       });
 
       const buf = fs.readFileSync(outPath);
-      const Key = posterKeyForVideoId(videoId);
+      const Key = posterKeyForVideoId(safeVideoId);
       const Bucket = getB2Bucket();
       const s3 = getB2S3Client();
 
@@ -3018,10 +3218,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }),
       );
 
-      res.json({ success: true, videoId, key: Key, url: publicUrlForKey(Key) });
+      res.json({ success: true, videoId: safeVideoId, key: Key, url: publicUrlForKey(Key) });
     } catch (error) {
       console.error("Error generating thumbnail:", error);
       res.status(500).json({ message: "Failed to generate thumbnail" });
+    } finally {
+      if (tmpDir) {
+        try {
+          fs.rmSync(tmpDir, { recursive: true, force: true });
+        } catch {
+          // Best-effort cleanup only.
+        }
+      }
     }
   });
 
@@ -3172,20 +3380,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Too many items in order (max 100 items)" });
       }
 
-      // Validate order data
-      const orderValidation = insertStoreOrderSchema.safeParse({
-        ...order,
-        user_id: req.user!.userId
-      });
-
-      if (!orderValidation.success) {
-        return res.status(400).json({
-          message: "Invalid order data",
-          errors: orderValidation.error.format()
-        });
-      }
-
       // Validate order items
+      const requestedItems = new Map<number, { product_id: number; quantity: number }>();
       for (const item of items) {
         const itemValidation = insertStoreOrderItemSchema.safeParse(item);
         if (!itemValidation.success) {
@@ -3211,18 +3407,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        // Check stock availability
-        if ((product.stock_quantity ?? 0) < item.quantity) {
+        if (product.is_available === false) {
+          return res.status(400).json({
+            message: `Product ${product.name} is not available`
+          });
+        }
+
+        // Stock check: null means unlimited inventory, numeric values are enforced.
+        if (product.stock_quantity !== null && product.stock_quantity < item.quantity) {
           return res.status(400).json({
             message: `Insufficient stock for product ${product.name}`
           });
         }
+
+        // Merge duplicate product rows from client payload.
+        const existing = requestedItems.get(item.product_id);
+        if (existing) {
+          existing.quantity += item.quantity;
+        } else {
+          requestedItems.set(item.product_id, {
+            product_id: item.product_id,
+            quantity: item.quantity,
+          });
+        }
       }
 
-      const createdOrder = await storage.createStoreOrder(
-        orderValidation.data,
-        items
-      );
+      let orderTotal = 0;
+      const normalizedItems: Array<{
+        product_id: number;
+        quantity: number;
+        price_at_time: string;
+        subtotal: string;
+      }> = [];
+
+      for (const item of requestedItems.values()) {
+        const product = await storage.getStoreProductById(item.product_id);
+        if (!product) {
+          return res.status(404).json({ message: `Product with ID ${item.product_id} not found` });
+        }
+        const unitPrice = Number(product.price);
+        if (!Number.isFinite(unitPrice) || unitPrice < 0) {
+          return res.status(400).json({ message: `Invalid pricing for product ${product.name}` });
+        }
+        const subtotal = unitPrice * item.quantity;
+        orderTotal += subtotal;
+        normalizedItems.push({
+          product_id: item.product_id,
+          quantity: item.quantity,
+          price_at_time: unitPrice.toFixed(2),
+          subtotal: subtotal.toFixed(2),
+        });
+      }
+
+      const normalizedContactEmail =
+        typeof order?.contact_email === "string"
+          ? order.contact_email.trim().toLowerCase()
+          : order?.contact_email;
+
+      const orderValidation = insertStoreOrderSchema.safeParse({
+        ...order,
+        contact_email: normalizedContactEmail,
+        total_amount: orderTotal.toFixed(2),
+        user_id: req.user!.userId,
+      });
+      if (!orderValidation.success) {
+        return res.status(400).json({
+          message: "Invalid order data",
+          errors: orderValidation.error.format()
+        });
+      }
+
+      const createdOrder = await db.transaction(async (tx) => {
+        // Re-check and atomically decrement stock inside transaction to avoid overselling.
+        for (const item of normalizedItems) {
+          const [product] = await tx
+            .select()
+            .from(storeProducts)
+            .where(eq(storeProducts.id, item.product_id));
+          if (!product) {
+            throw new Error(`Product ${item.product_id} no longer exists`);
+          }
+          if (product.stock_quantity !== null) {
+            const [updatedStock] = await tx
+              .update(storeProducts)
+              .set({ stock_quantity: sql`${storeProducts.stock_quantity} - ${item.quantity}` })
+              .where(and(eq(storeProducts.id, item.product_id), gte(storeProducts.stock_quantity, item.quantity)))
+              .returning({ id: storeProducts.id });
+            if (!updatedStock) {
+              throw new Error(`Insufficient stock for ${product.name}`);
+            }
+          }
+        }
+
+        const [newOrder] = await tx
+          .insert(storeOrders)
+          .values(orderValidation.data)
+          .returning();
+
+        await tx.insert(storeOrderItems).values(
+          normalizedItems.map((item) => ({
+            ...item,
+            order_id: newOrder.id,
+          }))
+        );
+
+        return newOrder;
+      });
 
       res.status(201).json({
         id: createdOrder.id,
@@ -3230,6 +3520,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error creating order:", error);
+      if (error instanceof Error && /insufficient stock|no longer exists/i.test(error.message)) {
+        return res.status(400).json({ message: error.message });
+      }
       res.status(500).json({ message: "Failed to create order" });
     }
   });
@@ -3584,15 +3877,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(503).json({ message: "Admin PIN must be configured in production. Set ADMIN_PIN environment variable." });
       }
       const submittedPin = pin ? String(pin).trim() : "";
-      if (!submittedPin || submittedPin !== ADMIN_PIN) {
+      const submittedBuffer = Buffer.from(submittedPin);
+      const expectedBuffer = Buffer.from(ADMIN_PIN);
+      const pinMatches =
+        submittedBuffer.length === expectedBuffer.length &&
+        timingSafeEqual(submittedBuffer, expectedBuffer);
+      if (!submittedPin || !pinMatches) {
         return res.status(401).json({ message: "Invalid admin PIN" });
       }
-      const adminUser = {
-        id: 999999,
-        email: "admin@nursingrocks.com",
-        is_verified: true,
-        is_admin: true
-      };
+
+      // Issue admin token for an actual admin account to keep middleware behavior consistent.
+      const [adminUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.is_admin, true))
+        .limit(1);
+      if (!adminUser || adminUser.is_suspended) {
+        return res.status(503).json({ message: "No active admin account available to issue token" });
+      }
+
       const token = generateToken(adminUser as any);
       res.status(200).json({ token });
     } catch (error) {
@@ -3929,40 +4232,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!emailNorm || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNorm)) return res.status(400).json({ success: false, message: "A valid email address is required." });
       if (employer && employer.trim().length > 255) return res.status(400).json({ success: false, message: "Employer name is too long (max 255 chars)." });
 
-      // Cap check: max 500 registrations
-      const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(nrpxRegistrations);
-      if (count >= 500) {
+      // Capacity + duplicate check + insert happen under a DB transaction lock
+      // so concurrent requests cannot bypass the 500 cap.
+      const reg = await db.transaction(async (tx) => {
+        await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('nrpx_registration_capacity_lock'))`);
+
+        const [{ count }] = await tx.select({ count: sql<number>`count(*)::int` }).from(nrpxRegistrations);
+        if (count >= 500) {
+          throw new Error("NRPX_FULL");
+        }
+
+        const existing = await tx
+          .select({ id: nrpxRegistrations.id })
+          .from(nrpxRegistrations)
+          .where(eq(nrpxRegistrations.email, emailNorm))
+          .limit(1);
+        if (existing.length > 0) {
+          throw new Error("NRPX_DUPLICATE");
+        }
+
+        let ticketCode = '';
+        for (let i = 0; i < 10; i++) {
+          const candidate = generateTicketCode();
+          const collision = await tx
+            .select({ id: nrpxRegistrations.id })
+            .from(nrpxRegistrations)
+            .where(eq(nrpxRegistrations.ticket_code, candidate))
+            .limit(1);
+          if (collision.length === 0) {
+            ticketCode = candidate;
+            break;
+          }
+        }
+        if (!ticketCode) {
+          throw new Error("NRPX_CODE_FAILED");
+        }
+
+        const [created] = await tx
+          .insert(nrpxRegistrations)
+          .values({
+            ticket_code: ticketCode,
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+            email: emailNorm,
+            employer: employer?.trim() || null,
+          })
+          .returning();
+        return created;
+      }).catch((error) => {
+        if (error instanceof Error && error.message === "NRPX_FULL") {
+          return "NRPX_FULL" as const;
+        }
+        if (error instanceof Error && error.message === "NRPX_DUPLICATE") {
+          return "NRPX_DUPLICATE" as const;
+        }
+        if (error instanceof Error && error.message === "NRPX_CODE_FAILED") {
+          return "NRPX_CODE_FAILED" as const;
+        }
+        throw error;
+      });
+
+      if (reg === "NRPX_FULL") {
         return res.status(409).json({ success: false, message: "Registration is full. Thank you for your interest!" });
       }
-
-      // Duplicate email check
-      const existing = await db.select({ id: nrpxRegistrations.id }).from(nrpxRegistrations)
-        .where(eq(nrpxRegistrations.email, emailNorm)).limit(1);
-      if (existing.length > 0) {
+      if (reg === "NRPX_DUPLICATE") {
         return res.status(409).json({ success: false, message: "This email is already registered. Check your inbox for your ticket." });
       }
-
-      // Generate unique ticket code
-      let ticketCode = '';
-      for (let i = 0; i < 10; i++) {
-        const candidate = generateTicketCode();
-        const collision = await db.select({ id: nrpxRegistrations.id }).from(nrpxRegistrations)
-          .where(eq(nrpxRegistrations.ticket_code, candidate)).limit(1);
-        if (collision.length === 0) { ticketCode = candidate; break; }
+      if (reg === "NRPX_CODE_FAILED") {
+        return res.status(500).json({ success: false, message: "Could not generate ticket code. Please try again." });
       }
-      if (!ticketCode) return res.status(500).json({ success: false, message: "Could not generate ticket code. Please try again." });
-
-      // Insert registration
-      const [reg] = await db.insert(nrpxRegistrations).values({
-        ticket_code: ticketCode,
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        email: emailNorm,
-        employer: employer?.trim() || null,
-      }).returning();
 
       // Generate QR code
-      const qrBuffer = await QRCode.toBuffer(ticketCode, {
+      const qrBuffer = await QRCode.toBuffer(reg.ticket_code, {
         type: 'png',
         width: 400,
         margin: 2,
@@ -3986,7 +4327,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .where(eq(nrpxRegistrations.id, reg.id));
       }
 
-      console.log(`[NRPX] Registration successful - ticket ${ticketCode} | email: ${emailResult.success}`);
+      console.log(`[NRPX] Registration successful - ticket ${reg.ticket_code} | email: ${emailResult.success}`);
       res.status(201).json({ success: true, message: "Check your email for your ticket! 🎸" });
     } catch (error) {
       console.error("[NRPX] Registration error:", error);
@@ -4130,15 +4471,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const header = 'Ticket Code,First Name,Last Name,Email,Employer,Registered At,Email Sent,Checked In,Checked In At\n';
       const rows = regs.map(r =>
         [
-          r.ticket_code,
-          `"${r.first_name}"`,
-          `"${r.last_name}"`,
-          r.email,
-          r.employer ? `"${r.employer}"` : '',
-          r.registered_at ? new Date(r.registered_at).toISOString() : '',
-          r.email_sent ? 'Yes' : 'No',
-          r.checked_in ? 'Yes' : 'No',
-          r.checked_in_at ? new Date(r.checked_in_at).toISOString() : '',
+          escapeCsvCell(r.ticket_code),
+          escapeCsvCell(r.first_name),
+          escapeCsvCell(r.last_name),
+          escapeCsvCell(r.email),
+          escapeCsvCell(r.employer || ''),
+          escapeCsvCell(r.registered_at ? new Date(r.registered_at).toISOString() : ''),
+          escapeCsvCell(r.email_sent ? 'Yes' : 'No'),
+          escapeCsvCell(r.checked_in ? 'Yes' : 'No'),
+          escapeCsvCell(r.checked_in_at ? new Date(r.checked_in_at).toISOString() : ''),
         ].join(',')
       ).join('\n');
 

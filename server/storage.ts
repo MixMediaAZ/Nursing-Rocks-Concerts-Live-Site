@@ -86,7 +86,7 @@ export interface IStorage {
   // ========== JOB BOARD FUNCTIONS ==========
   
   // Employer Management
-  createEmployer(employer: InsertEmployer, userId: number): Promise<Employer>;
+  createEmployer(employer: InsertEmployer, userId: number | null): Promise<Employer>;
   getEmployerById(id: number): Promise<Employer | undefined>;
   getEmployerByUserId(userId: number): Promise<Employer | undefined>;
   getAllEmployers(): Promise<Employer[]>;
@@ -106,7 +106,10 @@ export interface IStorage {
     keywords?: string;
     employerId?: number;
     isActive?: boolean;
+    isApproved?: boolean;
     isFeatured?: boolean;
+    limit?: number;
+    offset?: number;
   }): Promise<JobListing[]>;
   getEmployerJobListings(employerId: number): Promise<JobListing[]>;
   getFeaturedJobListings(limit?: number): Promise<JobListing[]>;
@@ -1440,7 +1443,7 @@ export class MemStorage implements IStorage {
   // ========== JOB BOARD METHODS ==========
   
   // Employer Management
-  async createEmployer(employer: InsertEmployer, userId: number): Promise<Employer> {
+  async createEmployer(employer: InsertEmployer, userId: number | null): Promise<Employer> {
     const id = this.employerId++;
     const newEmployer: Employer = {
       id,
@@ -1571,7 +1574,10 @@ export class MemStorage implements IStorage {
     keywords?: string;
     employerId?: number;
     isActive?: boolean;
+    isApproved?: boolean;
     isFeatured?: boolean;
+    limit?: number;
+    offset?: number;
   }): Promise<JobListing[]> {
     let jobs = Array.from(this.jobListings.values());
     
@@ -1584,6 +1590,10 @@ export class MemStorage implements IStorage {
       // Filter by isActive
       if (filters.isActive !== undefined) {
         jobs = jobs.filter(job => job.is_active === filters.isActive);
+      }
+
+      if (filters.isApproved !== undefined) {
+        jobs = jobs.filter(job => job.is_approved === filters.isApproved);
       }
       
       // Filter by isFeatured
@@ -1645,14 +1655,18 @@ export class MemStorage implements IStorage {
     }
     
     // Sort by posted date (newest first)
-    return jobs.sort((a, b) => 
+    const sorted = jobs.sort((a, b) => 
       new Date(b.posted_date as any).getTime() - new Date(a.posted_date as any).getTime()
     );
+
+    const offset = Math.max(0, filters?.offset ?? 0);
+    const limit = Math.max(1, Math.min(100, filters?.limit ?? 100));
+    return sorted.slice(offset, offset + limit);
   }
   
   async getFeaturedJobListings(limit?: number): Promise<JobListing[]> {
     const featuredJobs = Array.from(this.jobListings.values())
-      .filter(job => job.is_featured && job.is_active)
+      .filter(job => job.is_featured && job.is_active && job.is_approved)
       .sort((a, b) => 
         new Date(b.posted_date as any).getTime() - new Date(a.posted_date as any).getTime()
       );
@@ -1662,7 +1676,7 @@ export class MemStorage implements IStorage {
   
   async getRecentJobListings(limit?: number): Promise<JobListing[]> {
     const recentJobs = Array.from(this.jobListings.values())
-      .filter(job => job.is_active)
+      .filter(job => job.is_active && job.is_approved)
       .sort((a, b) => 
         new Date(b.posted_date as any).getTime() - new Date(a.posted_date as any).getTime()
       );

@@ -8,11 +8,28 @@ import { log } from "./logger";
 export function createApp() {
   const app = express();
 
-  // Basic production hardening (safe defaults)
+  const isDev = process.env.NODE_ENV !== "production";
+
+  // Basic production hardening.
+  // Keep a permissive CSP profile to avoid breaking existing inline scripts/styles while still enforcing key protections.
   app.use(
     helmet({
-      // Avoid breaking existing inline scripts/styles; can be tightened later.
-      contentSecurityPolicy: false,
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          baseUri: ["'self'"],
+          formAction: ["'self'"],
+          objectSrc: ["'none'"],
+          frameAncestors: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https:"],
+          styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+          imgSrc: ["'self'", "data:", "blob:", "https:"],
+          mediaSrc: ["'self'", "blob:", "https:"],
+          fontSrc: ["'self'", "data:", "https:"],
+          frameSrc: ["'self'", "https:"],
+          connectSrc: isDev ? ["'self'", "https:", "wss:", "ws:"] : ["'self'", "https:", "wss:"],
+        },
+      },
     }),
   );
 
