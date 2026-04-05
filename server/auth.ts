@@ -57,9 +57,12 @@ export async function register(req: Request, res: Response) {
 
     const { email, password, first_name, last_name } = req.body;
 
+    // FIX: Normalize email (trim + lowercase) to ensure consistent storage and lookup
+    const normalizedEmail = email.toLowerCase().trim();
+
     // Check if user already exists
     // SECURITY FIX: Don't reveal whether email is registered (prevents account enumeration)
-    const existingUser = await storage.getUserByEmail(email);
+    const existingUser = await storage.getUserByEmail(normalizedEmail);
     if (existingUser) {
       // Return success response to prevent account enumeration attacks
       return res.status(200).json({
@@ -71,8 +74,8 @@ export async function register(req: Request, res: Response) {
     // Hash password
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
-    // Create user
-    const user = await storage.createUser({ email, first_name, last_name, password }, passwordHash);
+    // Create user with normalized email
+    const user = await storage.createUser({ email: normalizedEmail, first_name, last_name, password }, passwordHash);
 
     // SECURITY: Set Cache-Control headers to prevent caching of sensitive auth data
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -102,10 +105,13 @@ export async function login(req: Request, res: Response) {
 
     const { email, password } = req.body;
 
+    // FIX: Normalize email (trim + lowercase) to match registration behavior
+    const normalizedEmail = email.toLowerCase().trim();
+
     // Get user
     let user;
     try {
-      user = await storage.getUserByEmail(email);
+      user = await storage.getUserByEmail(normalizedEmail);
     } catch (dbError) {
       console.error('[login] Database error:', dbError);
       return res.status(500).json({ message: 'Database connection error' });
