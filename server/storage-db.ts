@@ -223,6 +223,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteUser(id: number): Promise<void> {
+    // First, revoke all tickets associated with this user (QR codes become invalid)
+    await db
+      .update(tickets)
+      .set({
+        status: "revoked",
+        revoked_at: new Date(),
+        revoke_reason: "User account deleted"
+      })
+      .where(eq(tickets.user_id, id));
+
+    // Then delete the user
     await db
       .delete(users)
       .where(eq(users.id, id));
