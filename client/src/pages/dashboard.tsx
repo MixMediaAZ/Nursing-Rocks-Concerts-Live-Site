@@ -363,7 +363,7 @@ export default function DashboardPage() {
                   <Ticket className="h-5 w-5 text-primary" />
                   Free event tickets
                 </CardTitle>
-                <div className="bg-muted/40 border border-primary/15 rounded px-3 py-2 mt-2">
+                <div className="bg-white border border-primary/20 rounded px-3 py-2 mt-2 shadow-sm">
                   <p className="text-sm text-foreground">
                     Create your free ticket(s) for published upcoming events. We&apos;ll send your QR ticket to{" "}
                     <span className="font-medium text-foreground">{userData.email}</span> (one email per new ticket).
@@ -377,7 +377,7 @@ export default function DashboardPage() {
                 >
                   {claimTicketsMutation.isPending ? "Working…" : "Get your ticket(s) & email"}
                 </Button>
-                <div className="text-xs bg-secondary/60 border border-primary/20 rounded px-3 py-2 sm:ml-2">
+                <div className="text-xs bg-white border border-primary/20 rounded px-3 py-2 sm:ml-2 shadow-sm">
                   <p className="text-foreground font-medium">
                     Tap again after new events are added — you won&apos;t get duplicate emails for tickets you already have.
                   </p>
