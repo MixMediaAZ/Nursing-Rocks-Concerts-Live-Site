@@ -375,9 +375,11 @@ export default function DashboardPage() {
                 >
                   {claimTicketsMutation.isPending ? "Working…" : "Get your ticket(s) & email"}
                 </Button>
-                <p className="text-xs text-muted-foreground sm:ml-2">
-                  Tap again after new events are added — you won&apos;t get duplicate emails for tickets you already have.
-                </p>
+                <div className="text-xs bg-secondary/60 border border-primary/20 rounded px-3 py-2 sm:ml-2">
+                  <p className="text-foreground font-medium">
+                    Tap again after new events are added — you won&apos;t get duplicate emails for tickets you already have.
+                  </p>
+                </div>
               </CardFooter>
             </Card>
           ) : (
