@@ -51,6 +51,7 @@ import { ErrorBoundary } from "@/components/error-boundary";
 
 // We use Zustand for cart management, no provider needed
 import { AuthProvider } from "@/hooks/use-auth";
+import { SessionSync } from "@/components/session-sync";
 
 function Router() {
   // Use window.location to check if we're on the admin page or scanner
@@ -123,6 +124,7 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
+        <SessionSync />
         <AuthProvider>
           <AdminEditingProvider>
             <Wallpaper />

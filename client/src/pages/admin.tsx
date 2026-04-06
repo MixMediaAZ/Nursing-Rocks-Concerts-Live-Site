@@ -54,6 +54,8 @@ import { NewsletterContacts } from "@/components/admin/newsletter-contacts";
 import VideoSubmissions from "@/components/admin/video-submissions";
 import VideoApproval from "@/components/admin/video-approval";
 import { LicenseManagement } from "@/components/admin/license-management";
+import { AdminCreateEmployer } from "@/components/admin/admin-create-employer";
+import { AdminCreateJob } from "@/components/admin/admin-create-job";
 
 export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -296,6 +298,18 @@ export default function AdminPage() {
     },
   });
 
+  const { data: verificationTicketEmailMeta } = useQuery({
+    queryKey: ["/api/admin/verification-ticket-email-info"],
+    queryFn: () => adminFetch("/api/admin/verification-ticket-email-info"),
+    enabled: authenticated && !loading && showUserDialog,
+  });
+
+  const { data: selectedUserTickets } = useQuery({
+    queryKey: ["/api/admin/users", selectedUser?.id, "tickets"],
+    queryFn: () => adminFetch(`/api/admin/users/${selectedUser!.id}/tickets`),
+    enabled: authenticated && !loading && showUserDialog && !!selectedUser?.id,
+  });
+
   // Verify user mutation (NEW - for ticketing system)
   const verifyUserMutation = useMutation({
     mutationFn: async ({ userId, verified }: { userId: number; verified: boolean }) => {
@@ -316,15 +330,88 @@ export default function AdminPage() {
     },
     onSuccess: async (result) => {
       await queryClient.refetchQueries({ queryKey: ['/api/admin/users'] });
-      if (selectedUser) {
+      await queryClient.refetchQueries({ queryKey: ['/api/admin/users', result.userId, 'tickets'] });
+      if (selectedUser && selectedUser.id === result.userId) {
         setSelectedUser({ ...selectedUser, is_verified: result.isVerified, verified_at: result.verifiedAt });
       }
-      const action = result.isVerified ? "Verified" : "Unverified";
-      const ticketCount = result.activeTicketCount || 0;
-      toast({
-        title: `User ${action}`,
-        description: `${result.activeTicketCount} tickets created, emails sent.`,
-      });
+      const vo = result.verifyOutcome as {
+        action?: string;
+        message?: string;
+        details?: {
+          claimOnDashboard?: boolean;
+          welcomeEmailMode?: "resend" | "dev_log" | null;
+          welcomeEmailError?: string;
+          ticketsCreated?: number;
+          ticketsSkippedExisting?: number;
+          ticketsFailed?: number;
+          emailsFailed?: number;
+          emailsDelivered?: number;
+          emailsSimulated?: number;
+          hasErrors?: boolean;
+          ticketsRevoked?: number;
+        };
+      } | null;
+      if (!vo?.action) {
+        toast({ title: "Saved", description: "Verification status updated." });
+        return;
+      }
+      if (vo.action === "already_verified") {
+        toast({ title: "Already verified", description: vo.message || "No new tickets or emails." });
+        return;
+      }
+      if (vo.action === "already_unverified") {
+        toast({ title: "Already unverified", description: vo.message || "" });
+        return;
+      }
+      if (vo.action === "verified" && vo.details) {
+        const d = vo.details;
+        if (d.claimOnDashboard) {
+          const welcomeOk = !d.welcomeEmailError;
+          const welcomeBit =
+            d.welcomeEmailMode === "resend"
+              ? "Welcome email sent (Resend)."
+              : d.welcomeEmailMode === "dev_log"
+                ? "Welcome email logged to server only (not delivered — set RESEND_API_KEY)."
+                : "";
+          toast({
+            title: welcomeOk ? "User verified" : "User verified (welcome email failed)",
+            description: [vo.message, welcomeBit].filter(Boolean).join(" "),
+            variant: welcomeOk ? "default" : "destructive",
+          });
+          return;
+        }
+        const bits: string[] = [];
+        bits.push(`${d.ticketsCreated ?? 0} ticket(s) created`);
+        if ((d.ticketsSkippedExisting ?? 0) > 0) {
+          bits.push(`${d.ticketsSkippedExisting} already had a ticket (no duplicate email)`);
+        }
+        if ((d.emailsDelivered ?? 0) > 0) {
+          bits.push(`${d.emailsDelivered} emailed via Resend`);
+        }
+        if ((d.emailsSimulated ?? 0) > 0) {
+          bits.push(`${d.emailsSimulated} log-only (not delivered — set RESEND_API_KEY to send)`);
+        }
+        if ((d.emailsFailed ?? 0) > 0) {
+          bits.push(`${d.emailsFailed} email(s) failed`);
+        }
+        if ((d.ticketsFailed ?? 0) > 0) {
+          bits.push(`${d.ticketsFailed} ticket(s) failed to create`);
+        }
+        toast({
+          title: d.hasErrors ? "Verified (see issues)" : "User verified",
+          description: bits.join(" · "),
+          variant: d.hasErrors ? "destructive" : "default",
+        });
+        return;
+      }
+      if (vo.action === "unverified" && vo.details) {
+        toast({
+          title: "User unverified",
+          description: `${vo.details.ticketsRevoked ?? 0} active ticket(s) revoked.`,
+        });
+        return;
+      }
+      toast({ title: "Verification updated", description: vo.message || "" });
     },
     onError: (error: Error) => {
       toast({
@@ -1274,6 +1361,12 @@ export default function AdminPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Admin Creation Tools */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <AdminCreateEmployer />
+                <AdminCreateJob />
+              </div>
 
               {/* Jobs Stats Overview */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -2556,6 +2649,115 @@ export default function AdminPage() {
                           }}
                           disabled={verifyUserMutation.isPending}
                         />
+                      </div>
+
+                      <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                        <p className="text-sm font-medium">Verification → ticket emails</p>
+                        <p className="text-xs text-muted-foreground">
+                          Approving verification unlocks free tickets; the nurse signs in and uses Get your ticket(s) on their dashboard to create tickets and trigger email.
+                        </p>
+                        {verificationTicketEmailMeta && (
+                          <Alert>
+                            <Mail className="h-4 w-4" />
+                            <AlertTitle className="text-sm">What is sent</AlertTitle>
+                            <AlertDescription className="text-xs space-y-1 mt-1">
+                              <div>
+                                <span className="font-medium">Template:</span> {verificationTicketEmailMeta.templateName}
+                              </div>
+                              <div>
+                                <span className="font-medium">Subject line:</span> {verificationTicketEmailMeta.subject}
+                              </div>
+                              <div>
+                                <span className="font-medium">From:</span> {verificationTicketEmailMeta.fromAddress}
+                              </div>
+                              <div className="pt-1 border-t mt-2">{verificationTicketEmailMeta.dispatchExplanation}</div>
+                              {selectedUser.email && (
+                                <div className="pt-1">
+                                  <span className="font-medium">Recipient:</span> {selectedUser.email}
+                                </div>
+                              )}
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                        {verificationTicketEmailMeta &&
+                          typeof (verificationTicketEmailMeta as { welcomeEmailSubject?: string }).welcomeEmailSubject ===
+                            "string" && (
+                            <Alert className="mt-2">
+                              <Mail className="h-4 w-4" />
+                              <AlertTitle className="text-sm">Welcome email (when you approve verify)</AlertTitle>
+                              <AlertDescription className="text-xs space-y-1 mt-1">
+                                <div>
+                                  <span className="font-medium">Subject:</span>{" "}
+                                  {(verificationTicketEmailMeta as { welcomeEmailSubject: string }).welcomeEmailSubject}
+                                </div>
+                                <div>
+                                  {(verificationTicketEmailMeta as { welcomeEmailExplanation?: string }).welcomeEmailExplanation}
+                                </div>
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                        {Array.isArray(selectedUserTickets) && selectedUserTickets.length > 0 ? (
+                          <div className="overflow-x-auto rounded border bg-background">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="border-b bg-muted/50 text-left">
+                                  <th className="p-2">Event</th>
+                                  <th className="p-2">Ticket</th>
+                                  <th className="p-2">Email</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {selectedUserTickets.map((t: {
+                                  id: string;
+                                  event_title?: string | null;
+                                  event_date?: string | null;
+                                  ticket_code?: string;
+                                  email_status?: string | null;
+                                  email_error?: string | null;
+                                }) => (
+                                  <tr key={t.id} className="border-b last:border-0">
+                                    <td className="p-2 align-top">
+                                      <div className="font-medium">{t.event_title || "—"}</div>
+                                      <div className="text-muted-foreground">
+                                        {t.event_date ? new Date(t.event_date).toLocaleDateString() : ""}
+                                      </div>
+                                    </td>
+                                    <td className="p-2 font-mono">{t.ticket_code}</td>
+                                    <td className="p-2 align-top">
+                                      <Badge
+                                        variant={
+                                          t.email_status === "sent"
+                                            ? "default"
+                                            : t.email_status === "simulated"
+                                              ? "secondary"
+                                              : t.email_status === "failed"
+                                                ? "destructive"
+                                                : "outline"
+                                        }
+                                        className="text-[10px]"
+                                      >
+                                        {t.email_status === "sent"
+                                          ? "Delivered (Resend)"
+                                          : t.email_status === "simulated"
+                                            ? "Log only (not delivered)"
+                                            : t.email_status === "failed"
+                                              ? "Failed"
+                                              : t.email_status || "—"}
+                                      </Badge>
+                                      {t.email_error ? (
+                                        <div className="text-destructive mt-1 max-w-[180px] break-words">{t.email_error}</div>
+                                      ) : null}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">
+                            No tickets yet — user needs verification while published future events exist.
+                          </p>
+                        )}
                       </div>
                       
                       <div className="flex items-center justify-between">

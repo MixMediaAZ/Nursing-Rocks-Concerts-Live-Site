@@ -6,25 +6,17 @@ import { v4 as uuidv4 } from 'uuid';
 import fetch from 'node-fetch';
 import { storage } from './storage';
 import { db } from './db';
-import { eq } from 'drizzle-orm';
-import { users } from '@shared/schema';
-import { generateToken, verifyToken, getUserIdFromRequest, isUserVerified } from './jwt';
+import { eq, and } from 'drizzle-orm';
+import { users, tickets } from '@shared/schema';
+import jwt from 'jsonwebtoken';
+import { generateToken, verifyToken, getPayloadFromRequest, getUserIdFromRequest, isUserVerified, blacklistToken, isTokenBlacklisted, getTokenFromRequest } from './jwt';
+import { setUserRevokedBeforeMs, isTokenRevokedForUser } from './token-revocation-store';
 import { sendTicketConfirmationEmail, sendPasswordResetEmail } from './email';
 
 const SALT_ROUNDS = 10;
 
-// SAFETY FIX: Token blacklist for logout/revocation
-// Stores invalidated tokens to prevent reuse after logout
-// Structure: token -> expiry timestamp
-const tokenBlacklist = new Map<string, number>();
-
-// Purge expired blacklisted tokens periodically
-setInterval(() => {
-  const now = Date.now();
-  for (const [token, expiry] of tokenBlacklist.entries()) {
-    if (expiry < now) tokenBlacklist.delete(token);
-  }
-}, 10 * 60 * 1000); // every 10 minutes
+// Token blacklist is now centralized in jwt.ts — imported as blacklistToken/isTokenBlacklisted
+// This ensures ALL auth paths check the blacklist, not just authenticateToken.
 
 // API key should be stored as an environment variable
 const VERIFICATION_API_KEY = process.env.VERIFICATION_API_KEY || '';
@@ -51,14 +43,20 @@ export async function register(req: Request, res: Response) {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      // Convert validation errors to user-friendly message format
+      const firstError = errors.array()[0];
+      const message = firstError.msg || 'Validation failed';
+      return res.status(400).json({ message });
     }
 
     const { email, password, first_name, last_name } = req.body;
 
+    // FIX: Normalize email (trim + lowercase) to ensure consistent storage and lookup
+    const normalizedEmail = email.toLowerCase().trim();
+
     // Check if user already exists
     // SECURITY FIX: Don't reveal whether email is registered (prevents account enumeration)
-    const existingUser = await storage.getUserByEmail(email);
+    const existingUser = await storage.getUserByEmail(normalizedEmail);
     if (existingUser) {
       // Return success response to prevent account enumeration attacks
       return res.status(200).json({
@@ -70,8 +68,8 @@ export async function register(req: Request, res: Response) {
     // Hash password
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
-    // Create user
-    const user = await storage.createUser({ email, first_name, last_name, password }, passwordHash);
+    // Create user with normalized email
+    const user = await storage.createUser({ email: normalizedEmail, first_name, last_name, password }, passwordHash);
 
     // SECURITY: Set Cache-Control headers to prevent caching of sensitive auth data
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -96,15 +94,21 @@ export async function login(req: Request, res: Response) {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      // Convert validation errors to user-friendly message format
+      const firstError = errors.array()[0];
+      const message = firstError.msg || 'Validation failed';
+      return res.status(400).json({ message });
     }
 
     const { email, password } = req.body;
 
+    // FIX: Normalize email (trim + lowercase) to match registration behavior
+    const normalizedEmail = email.toLowerCase().trim();
+
     // Get user
     let user;
     try {
-      user = await storage.getUserByEmail(email);
+      user = await storage.getUserByEmail(normalizedEmail);
     } catch (dbError) {
       console.error('[login] Database error:', dbError);
       return res.status(500).json({ message: 'Database connection error' });
@@ -142,7 +146,10 @@ export async function submitNurseLicense(req: Request, res: Response) {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      // Convert validation errors to user-friendly message format
+      const firstError = errors.array()[0];
+      const message = firstError.msg || 'Validation failed';
+      return res.status(400).json({ message });
     }
 
     // Get user from JWT token (assuming middleware has set req.user)
@@ -335,24 +342,40 @@ export async function markTicketUsed(req: Request, res: Response) {
       return res.status(400).json({ message: 'Invalid ticket code' });
     }
 
-    const ticket = await storage.getTicketByCode(code);
+    // Atomic check-and-mark to avoid race conditions under concurrent scans.
+    const [updatedTicket] = await db
+      .update(tickets)
+      .set({
+        is_used: true,
+        status: "checked_in",
+        checked_in_at: new Date(),
+        updated_at: new Date(),
+      })
+      .where(and(
+        eq(tickets.ticket_code, code),
+        eq(tickets.is_used, false)
+      ))
+      .returning();
 
-    if (!ticket) {
-      return res.status(404).json({
-        success: false,
-        message: 'Ticket not found'
-      });
-    }
+    if (!updatedTicket) {
+      const [existing] = await db
+        .select({ id: tickets.id, is_used: tickets.is_used })
+        .from(tickets)
+        .where(eq(tickets.ticket_code, code))
+        .limit(1);
 
-    if (ticket.is_used) {
+      if (!existing) {
+        return res.status(404).json({
+          success: false,
+          message: 'Ticket not found'
+        });
+      }
+
       return res.status(400).json({
         success: false,
         message: 'Ticket has already been used'
       });
     }
-
-    // Mark ticket as used
-    const updatedTicket = await storage.markTicketAsUsed(ticket.id as any);
 
     return res.status(200).json({
       success: true,
@@ -373,21 +396,25 @@ export async function markTicketUsed(req: Request, res: Response) {
 
 // Middleware to check if request is from an authenticated employer
 export async function requireEmployerToken(req: Request, res: Response, next: Function) {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
-
-  if (!token) {
-    return res.status(401).json({ message: "Authentication token required" });
-  }
-
   try {
-    const decoded = verifyToken(token);
-    if (!decoded || !decoded.userId) {
+    const token = getTokenFromRequest(req);
+    const payload = getPayloadFromRequest(req);
+    if (!payload || !payload.userId || !token) {
       return res.status(403).json({ message: "Invalid or expired token" });
     }
 
+    if (await isTokenRevokedForUser(payload.userId, token)) {
+      return res.status(401).json({ message: "Session has been terminated. Please log in again." });
+    }
+
+    // Always use latest user state from DB so suspended/revoked accounts cannot proceed.
+    const user = await storage.getUserById(payload.userId as any);
+    if (!user || user.is_suspended || !user.email) {
+      return res.status(403).json({ message: "Account is no longer active" });
+    }
+
     // Fetch employer by user id
-    const employer = await storage.getEmployerByUserId(decoded.userId as any);
+    const employer = await storage.getEmployerByUserId(user.id as any);
     if (!employer) {
       return res.status(403).json({ message: "Employer profile not found" });
     }
@@ -397,10 +424,10 @@ export async function requireEmployerToken(req: Request, res: Response, next: Fu
     }
 
     (req as any).user = {
-      userId: decoded.userId,
-      email: decoded.email,
-      isVerified: decoded.isVerified,
-      isAdmin: decoded.isAdmin,
+      userId: user.id,
+      email: user.email,
+      isVerified: user.is_verified,
+      isAdmin: user.is_admin,
     };
 
     (req as any).employer = {
@@ -420,8 +447,7 @@ export async function requireEmployerToken(req: Request, res: Response, next: Fu
 
 // Authentication middleware
 export async function authenticateToken(req: Request, res: Response, next: Function) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+  const token = getTokenFromRequest(req);
 
   if (!token) {
     return res.status(401).json({ message: 'Authentication token required' });
@@ -436,6 +462,10 @@ export async function authenticateToken(req: Request, res: Response, next: Funct
     const decoded = verifyToken(token);
     if (!decoded) {
       return res.status(403).json({ message: 'Invalid or expired token' });
+    }
+
+    if (await isTokenRevokedForUser(decoded.userId, token)) {
+      return res.status(401).json({ message: 'Session has been terminated. Please log in again.' });
     }
 
     // SAFETY FIX: Always fetch the latest user data to verify current permissions
@@ -569,7 +599,10 @@ export const resetPasswordValidation = [
 export async function requestPasswordReset(req: Request, res: Response) {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
+    // Convert validation errors to user-friendly message format
+    const firstError = errors.array()[0];
+    const message = firstError.msg || 'Validation failed';
+    return res.status(400).json({ message });
   }
 
   const { email } = req.body;
@@ -592,12 +625,13 @@ export async function requestPasswordReset(req: Request, res: Response) {
       .set({ reset_token: token, reset_token_expires_at: expiresAt })
       .where(eq(users.id, user.id));
 
-    // SECURITY FIX: Use configured APP_URL, never trust Host header for password reset
-    // Host headers can be spoofed by attackers to hijack password reset links
-    if (!process.env.APP_URL) {
-      console.warn('[AUTH] WARNING: APP_URL not configured. Password reset links may be vulnerable to Host header injection. Set APP_URL environment variable in production.');
+    // SECURITY: Never derive reset URL from Host header (host header injection risk).
+    // In production APP_URL must be configured; in development fallback to localhost.
+    if (process.env.NODE_ENV === 'production' && !process.env.APP_URL) {
+      console.error('[AUTH] APP_URL must be configured in production for secure password reset links.');
+      return res.status(500).json(genericResponse);
     }
-    const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+    const baseUrl = process.env.APP_URL || 'http://localhost:5000';
     await sendPasswordResetEmail(user.email, user.first_name, token, baseUrl);
 
     return res.status(200).json(genericResponse);
@@ -611,7 +645,10 @@ export async function requestPasswordReset(req: Request, res: Response) {
 export async function resetPassword(req: Request, res: Response) {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
+    // Convert validation errors to user-friendly message format
+    const firstError = errors.array()[0];
+    const message = firstError.msg || 'Validation failed';
+    return res.status(400).json({ message });
   }
 
   const { token, password } = req.body;
@@ -646,8 +683,7 @@ export async function resetPassword(req: Request, res: Response) {
  */
 export async function logout(req: Request, res: Response) {
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = getTokenFromRequest(req);
 
     if (!token) {
       return res.status(400).json({ message: 'No token to logout' });
@@ -656,14 +692,19 @@ export async function logout(req: Request, res: Response) {
     // SECURITY: Set Cache-Control headers for logout response
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
 
-    // Get the token's expiry time
+    // Get the token's expiry time and add to centralized blacklist in jwt.ts
     try {
-      const decoded = verifyToken(token);
-      if (decoded && decoded.exp) {
-        // Add token to blacklist with its expiration time
-        const tokenExpiry = decoded.exp * 1000; // exp is in seconds
-        tokenBlacklist.set(token, tokenExpiry);
-        console.log('[AUTH] Token blacklisted for logout');
+      const decoded = jwt.decode(token);
+      if (decoded && typeof decoded === 'object' && 'exp' in decoded) {
+        const exp = (decoded as { exp?: unknown }).exp;
+        if (typeof exp === 'number') {
+          blacklistToken(token, exp * 1000);
+          const payload = verifyToken(token);
+          if (payload?.userId) {
+            await setUserRevokedBeforeMs(payload.userId, Date.now());
+          }
+          console.log('[AUTH] Token blacklisted for logout');
+        }
       }
     } catch (err) {
       // Token is already invalid, that's fine
@@ -678,18 +719,26 @@ export async function logout(req: Request, res: Response) {
 }
 
 /**
- * SAFETY FIX: Check if a token is blacklisted (revoked/logged out)
+ * Fresh user row from DB + new JWT so client state matches server after admin verify, role changes, etc.
  */
-export function isTokenBlacklisted(token: string): boolean {
-  const expiry = tokenBlacklist.get(token);
-  if (!expiry) return false;
-
-  // Token is blacklisted if expiry hasn't passed yet
-  if (expiry > Date.now()) {
-    return true;
+export async function getCurrentUser(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user?.userId ?? (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const user = await storage.getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    const { password_hash, ...userData } = user;
+    const token = generateToken(user);
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    return res.json({ user: userData, token });
+  } catch (error) {
+    console.error('getCurrentUser error:', error);
+    return res.status(500).json({ message: 'Failed to load session' });
   }
-
-  // Token is expired, remove from blacklist
-  tokenBlacklist.delete(token);
-  return false;
 }
+
+// isTokenBlacklisted is now imported from jwt.ts (centralized blacklist)

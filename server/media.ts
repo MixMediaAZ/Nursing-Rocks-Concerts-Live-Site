@@ -8,6 +8,23 @@ import { authenticateToken } from './auth';
 
 
 // Configure multer for file uploads
+const MIME_EXTENSION_MAP: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/gif': '.gif',
+  'image/webp': '.webp',
+  'video/mp4': '.mp4',
+  'video/webm': '.webm',
+  'video/ogg': '.ogv',
+  'video/quicktime': '.mov',
+  'audio/mpeg': '.mp3',
+  'audio/wav': '.wav',
+  'audio/ogg': '.ogg',
+  'audio/m4a': '.m4a',
+};
+
+const ALLOWED_UPLOAD_TYPES = Object.keys(MIME_EXTENSION_MAP);
+
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
     // Create uploads directory if it doesn't exist
@@ -18,30 +35,19 @@ const storage = multer.diskStorage({
     cb(null, uploadsDir);
   },
   filename: (_req, file, cb) => {
-    // Generate a unique filename with the original extension
-    const originalExt = path.extname(file.originalname);
-    const filename = `${uuidv4()}${originalExt}`;
+    // Derive extension from validated MIME type — never from originalname.
+    const extension = MIME_EXTENSION_MAP[file.mimetype] || '.bin';
+    const filename = `${uuidv4()}${extension}`;
     cb(null, filename);
   },
 });
 
 // Configure file filter to limit file types
 const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowedTypes = [
-    // Images
-    'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
-    // Videos
-    'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime',
-    // Audio
-    'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/m4a',
-    // Documents
-    'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'text/rtf'
-  ];
-  
-  if (allowedTypes.includes(file.mimetype)) {
+  if (ALLOWED_UPLOAD_TYPES.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error(`Unsupported file type: ${file.mimetype}`));
+    cb(new Error(`Unsupported file type: ${file.mimetype}. Allowed: ${ALLOWED_UPLOAD_TYPES.join(', ')}`));
   }
 };
 

@@ -38,18 +38,36 @@ export type B2ConnectionStatus =
       message: string;
     };
 
+let cachedS3Client: S3Client | null = null;
+let cachedS3ClientKey: string | null = null;
+
+function getS3ClientCacheKey() {
+  const endpoint = requiredEnv("VIDEO_B2_S3_ENDPOINT");
+  const region = process.env.VIDEO_B2_REGION || "us-west-004";
+  const accessKeyId = requiredEnv("VIDEO_B2_ACCESS_KEY_ID");
+  const secretAccessKey = requiredEnv("VIDEO_B2_SECRET_ACCESS_KEY");
+  return `${endpoint}|${region}|${accessKeyId}|${secretAccessKey}`;
+}
+
 export function getB2S3Client() {
+  const cacheKey = getS3ClientCacheKey();
+  if (cachedS3Client && cachedS3ClientKey === cacheKey) {
+    return cachedS3Client;
+  }
+
   const endpoint = requiredEnv("VIDEO_B2_S3_ENDPOINT");
   const region = process.env.VIDEO_B2_REGION || "us-west-004";
   const accessKeyId = requiredEnv("VIDEO_B2_ACCESS_KEY_ID");
   const secretAccessKey = requiredEnv("VIDEO_B2_SECRET_ACCESS_KEY");
 
-  return new S3Client({
+  cachedS3Client = new S3Client({
     region,
     endpoint,
     forcePathStyle: true,
     credentials: { accessKeyId, secretAccessKey },
   });
+  cachedS3ClientKey = cacheKey;
+  return cachedS3Client;
 }
 
 export function getB2Bucket(): string {

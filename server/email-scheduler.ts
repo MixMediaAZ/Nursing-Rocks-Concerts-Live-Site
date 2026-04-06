@@ -20,7 +20,60 @@ interface EmailLog {
   error?: string;
 }
 
-const emailLogs: EmailLog[] = []; // In-memory log (for production, use database table)
+const emailLogs: EmailLog[] = [];
+const MAX_EMAIL_LOG_ENTRIES = 5000;
+const EMAIL_RATE_LIMIT_PER_RUN = Math.max(1, parseInt(process.env.EMAIL_SCHEDULER_MAX_PER_RUN || '250', 10) || 250);
+const EMAIL_DEDUP_KEY = 'EMAIL_SCHEDULER_DEDUP_V1';
+const EMAIL_DEDUP_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+const EMAIL_DEDUP_MAX_ENTRIES = 10000;
+
+type EmailDedupRecord = Record<string, number>;
+
+function appendEmailLog(entry: EmailLog): void {
+  emailLogs.push(entry);
+  if (emailLogs.length > MAX_EMAIL_LOG_ENTRIES) {
+    emailLogs.splice(0, emailLogs.length - MAX_EMAIL_LOG_ENTRIES);
+  }
+}
+
+function buildDedupKey(emailType: EmailLog['emailType'], recipientId: number, eventOrJobId: number): string {
+  return `${emailType}:${recipientId}:${eventOrJobId}`;
+}
+
+async function loadEmailDedupState(): Promise<EmailDedupRecord> {
+  try {
+    const setting = await storage.getAppSettingByKey(EMAIL_DEDUP_KEY);
+    if (!setting?.value) return {};
+    const parsed = JSON.parse(setting.value);
+    if (!parsed || typeof parsed !== 'object') return {};
+    return parsed as EmailDedupRecord;
+  } catch (error) {
+    console.error('[EMAIL SCHEDULER] Failed to load dedup state:', error);
+    return {};
+  }
+}
+
+async function persistEmailDedupState(state: EmailDedupRecord): Promise<void> {
+  try {
+    await storage.createOrUpdateAppSetting(
+      EMAIL_DEDUP_KEY,
+      JSON.stringify(state),
+      'Persistent dedup state for scheduled email sends',
+      true
+    );
+  } catch (error) {
+    console.error('[EMAIL SCHEDULER] Failed to persist dedup state:', error);
+  }
+}
+
+function pruneEmailDedupState(state: EmailDedupRecord): EmailDedupRecord {
+  const now = Date.now();
+  const activeEntries = Object.entries(state)
+    .filter(([, expiresAt]) => typeof expiresAt === 'number' && expiresAt > now)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, EMAIL_DEDUP_MAX_ENTRIES);
+  return Object.fromEntries(activeEntries);
+}
 
 /**
  * Send job alerts to nurses matching job requirements
@@ -31,6 +84,8 @@ export async function sendJobAlerts(): Promise<{ success: number; failed: number
     console.log('[EMAIL SCHEDULER] Starting job alert sending...');
     let successCount = 0;
     let failedCount = 0;
+    let sentThisRun = 0;
+    let dedupState = pruneEmailDedupState(await loadEmailDedupState());
 
     // Get all active job listings
     const activeJobs = await db.select().from(jobListings).where(
@@ -69,12 +124,14 @@ export async function sendJobAlerts(): Promise<{ success: number; failed: number
 
         // Send alert to each matching nurse
         for (const nurse of nursesWithAlerts) {
+          if (sentThisRun >= EMAIL_RATE_LIMIT_PER_RUN) {
+            console.warn(`[EMAIL SCHEDULER] Job alert send cap reached (${EMAIL_RATE_LIMIT_PER_RUN}). Stopping current run.`);
+            break;
+          }
+
           // Check if already sent
-          const alreadySent = emailLogs.some(
-            log => log.emailType === 'job_alert' &&
-              log.recipientId === nurse.userId &&
-              log.eventOrJobId === job.id
-          );
+          const dedupKey = buildDedupKey('job_alert', nurse.userId, job.id);
+          const alreadySent = Boolean(dedupState[dedupKey]);
 
           if (alreadySent) {
             console.log(`[EMAIL SCHEDULER] Job alert already sent to ${nurse.email} for job ${job.id}`);
@@ -100,7 +157,7 @@ export async function sendJobAlerts(): Promise<{ success: number; failed: number
             const result = await sendJobAlertEmail(emailData);
 
             if (result.success) {
-              emailLogs.push({
+              appendEmailLog({
                 emailType: 'job_alert',
                 recipientEmail: nurse.email,
                 recipientId: nurse.userId,
@@ -108,9 +165,11 @@ export async function sendJobAlerts(): Promise<{ success: number; failed: number
                 sentAt: new Date(),
                 status: 'sent',
               });
+              dedupState[dedupKey] = Date.now() + EMAIL_DEDUP_TTL_MS;
+              sentThisRun++;
               successCount++;
             } else {
-              emailLogs.push({
+              appendEmailLog({
                 emailType: 'job_alert',
                 recipientEmail: nurse.email,
                 recipientId: nurse.userId,
@@ -133,6 +192,8 @@ export async function sendJobAlerts(): Promise<{ success: number; failed: number
     }
 
     console.log(`[EMAIL SCHEDULER] Job alerts completed. Sent: ${successCount}, Failed: ${failedCount}`);
+    dedupState = pruneEmailDedupState(dedupState);
+    await persistEmailDedupState(dedupState);
     return {
       success: successCount,
       failed: failedCount,
@@ -152,6 +213,8 @@ export async function sendEventReminders(): Promise<{ success: number; failed: n
     console.log('[EMAIL SCHEDULER] Starting event reminder sending...');
     let successCount = 0;
     let failedCount = 0;
+    let sentThisRun = 0;
+    let dedupState = pruneEmailDedupState(await loadEmailDedupState());
 
     // Calculate date range for events 3 days from now
     const threeDaysFromNow = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
@@ -198,12 +261,14 @@ export async function sendEventReminders(): Promise<{ success: number; failed: n
 
         // Send reminder to each ticket holder
         for (const ticket of eventTickets) {
+          if (sentThisRun >= EMAIL_RATE_LIMIT_PER_RUN) {
+            console.warn(`[EMAIL SCHEDULER] Event reminder send cap reached (${EMAIL_RATE_LIMIT_PER_RUN}). Stopping current run.`);
+            break;
+          }
+
           // Check if already sent
-          const alreadySent = emailLogs.some(
-            log => log.emailType === 'event_reminder' &&
-              log.recipientId === ticket.userId &&
-              log.eventOrJobId === event.id
-          );
+          const dedupKey = buildDedupKey('event_reminder', ticket.userId, event.id);
+          const alreadySent = Boolean(dedupState[dedupKey]);
 
           if (alreadySent) {
             console.log(`[EMAIL SCHEDULER] Event reminder already sent to ${ticket.email} for event ${event.id}`);
@@ -237,7 +302,7 @@ export async function sendEventReminders(): Promise<{ success: number; failed: n
             const result = await sendEventReminderEmail(emailData);
 
             if (result.success) {
-              emailLogs.push({
+              appendEmailLog({
                 emailType: 'event_reminder',
                 recipientEmail: ticket.email,
                 recipientId: ticket.userId,
@@ -245,9 +310,11 @@ export async function sendEventReminders(): Promise<{ success: number; failed: n
                 sentAt: new Date(),
                 status: 'sent',
               });
+              dedupState[dedupKey] = Date.now() + EMAIL_DEDUP_TTL_MS;
+              sentThisRun++;
               successCount++;
             } else {
-              emailLogs.push({
+              appendEmailLog({
                 emailType: 'event_reminder',
                 recipientEmail: ticket.email,
                 recipientId: ticket.userId,
@@ -270,6 +337,8 @@ export async function sendEventReminders(): Promise<{ success: number; failed: n
     }
 
     console.log(`[EMAIL SCHEDULER] Event reminders completed. Sent: ${successCount}, Failed: ${failedCount}`);
+    dedupState = pruneEmailDedupState(dedupState);
+    await persistEmailDedupState(dedupState);
     return {
       success: successCount,
       failed: failedCount,

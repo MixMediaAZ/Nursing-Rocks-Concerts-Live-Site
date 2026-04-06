@@ -1,5 +1,6 @@
 import { Request } from 'express';
 import jwt from 'jsonwebtoken';
+import type { SignOptions } from 'jsonwebtoken';
 import { User } from '@shared/schema';
 
 // Use environment variable or fallback for development only.
@@ -12,8 +13,50 @@ if (process.env.NODE_ENV === 'production') {
 }
 const JWT_SECRET = process.env.JWT_SECRET || DEV_SECRET;
 
-// Token expiration (7 days for admin convenience, 24 hours is too short for production)
-const TOKEN_EXPIRATION = '7d';
+// Keep short-lived access tokens in production to reduce compromise window.
+// Can be overridden via JWT_EXPIRES_IN when needed.
+const TOKEN_EXPIRATION = process.env.JWT_EXPIRES_IN
+  || (process.env.NODE_ENV === 'production' ? '24h' : '7d');
+
+// ─────────────────────────────────────────────────────────────────────────
+// CENTRALIZED TOKEN BLACKLIST
+// Moved here so ALL auth paths (authenticateToken, requireAuth, requireAdmin,
+// requireAdminToken, requireEmployerToken) check the blacklist automatically.
+// ─────────────────────────────────────────────────────────────────────────
+
+// Structure: token -> expiry timestamp (ms)
+const tokenBlacklist = new Map<string, number>();
+
+// Purge expired blacklisted tokens periodically (every 10 minutes)
+setInterval(() => {
+  const now = Date.now();
+  for (const [token, expiry] of tokenBlacklist.entries()) {
+    if (expiry < now) tokenBlacklist.delete(token);
+  }
+}, 10 * 60 * 1000);
+
+/**
+ * Add a token to the blacklist (called on logout)
+ */
+export function blacklistToken(token: string, expiryMs: number): void {
+  tokenBlacklist.set(token, expiryMs);
+}
+
+/**
+ * Check if a token has been blacklisted (revoked/logged out)
+ */
+export function isTokenBlacklisted(token: string): boolean {
+  const expiry = tokenBlacklist.get(token);
+  if (!expiry) return false;
+
+  if (expiry > Date.now()) {
+    return true;
+  }
+
+  // Token has naturally expired — remove from blacklist
+  tokenBlacklist.delete(token);
+  return false;
+}
 
 // Interfaces for JWT payload
 export interface JwtPayload {
@@ -34,7 +77,7 @@ export function generateToken(user: User): string {
     isAdmin: user.is_admin || false
   };
   
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_EXPIRATION });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_EXPIRATION as SignOptions['expiresIn'] });
 }
 
 /**
@@ -51,26 +94,39 @@ export function verifyToken(token: string): JwtPayload | null {
 
 /**
  * Extract JWT payload from request
- * @returns The decoded payload or null if invalid/missing token
+ * SECURITY: Checks token blacklist before returning payload.
+ * This ensures ALL auth paths (requireAuth, requireAdmin, requireAdminToken,
+ * requireEmployerToken, authenticateToken) reject logged-out tokens.
+ * @returns The decoded payload or null if invalid/missing/blacklisted token
  */
 export function getPayloadFromRequest(req: Request): JwtPayload | null {
   try {
     // Get token from Authorization header
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null;
-    }
-    
-    const token = authHeader.split(' ')[1];
+    const token = getTokenFromRequest(req);
     if (!token) {
       return null;
     }
-    
+
+    // SECURITY FIX: Check blacklist BEFORE verifying token
+    // This ensures logged-out tokens are rejected in ALL middlewares
+    if (isTokenBlacklisted(token)) {
+      return null;
+    }
+
     // Verify and decode token
     return verifyToken(token);
   } catch (error) {
     return null;
   }
+}
+
+export function getTokenFromRequest(req: Request): string | null {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+  const token = authHeader.split(' ')[1];
+  return token || null;
 }
 
 /**

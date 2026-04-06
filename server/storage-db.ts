@@ -109,19 +109,36 @@ export class DatabaseStorage implements IStorage {
   
   // Subscribers
   async createSubscriber(insertSubscriber: InsertSubscriber): Promise<Subscriber> {
+    // SAFETY: Normalize subscriber email to lowercase before storage
+    // Database has case-insensitive unique index on LOWER(email)
+    const normalizedEmail = insertSubscriber.email.toLowerCase().trim();
+
     const [subscriber] = await db
       .insert(subscribers)
-      .values(insertSubscriber)
+      .values({
+        ...insertSubscriber,
+        email: normalizedEmail
+      })
       .returning();
     return subscriber;
   }
-  
+
   async getSubscriberByEmail(email: string): Promise<Subscriber | undefined> {
-    const [subscriber] = await db
-      .select()
-      .from(subscribers)
-      .where(eq(subscribers.email, email));
-    return subscriber;
+    try {
+      // CRITICAL: Normalize email to lowercase for case-insensitive lookup
+      // Database has case-insensitive unique index on LOWER(email)
+      const normalizedEmail = email.toLowerCase().trim();
+
+      const [subscriber] = await db
+        .select()
+        .from(subscribers)
+        .where(sql`lower(${subscribers.email}) = ${normalizedEmail}`);
+
+      return subscriber;
+    } catch (error) {
+      console.error('[getSubscriberByEmail] Database error:', error);
+      throw error;
+    }
   }
 
   async getAllSubscribers(): Promise<Subscriber[]> {
@@ -130,10 +147,18 @@ export class DatabaseStorage implements IStorage {
   
   // User Management
   async createUser(user: InsertUser, passwordHash: string): Promise<User> {
+    // SAFETY: Ensure email is normalized before storage
+    // This is a defensive check - registration already normalizes, but being explicit here
+    const normalizedEmail = user.email.toLowerCase().trim();
+
+    if (normalizedEmail !== user.email) {
+      console.warn('[createUser] Email was not normalized before storage. This should be normalized in the calling function.');
+    }
+
     const [newUser] = await db
       .insert(users)
       .values({
-        email: user.email,
+        email: normalizedEmail, // Always use normalized email
         first_name: user.first_name,
         last_name: user.last_name,
         password_hash: passwordHash,
@@ -146,18 +171,21 @@ export class DatabaseStorage implements IStorage {
   async getUserByEmail(email: string): Promise<User | undefined> {
     try {
       // Normalize email to lowercase for case-insensitive lookup
+      // Database has case-insensitive unique index on LOWER(email)
       const normalizedEmail = email.toLowerCase().trim();
-      const [user] = await db
+
+      const rows = await db
         .select()
         .from(users)
-        .where(sql`LOWER(${users.email}) = LOWER(${normalizedEmail})`);
+        .where(sql`lower(${users.email}) = ${normalizedEmail}`);
 
-      // Ensure is_admin field is included for login responses
-      if (user && !('is_admin' in user)) {
-        console.warn('[getUserByEmail] User object missing is_admin field:', { email: user.email });
+      if (rows.length > 1) {
+        console.error('[getUserByEmail] CRITICAL: Multiple users found with same email:', normalizedEmail);
+        // This should never happen due to the case-insensitive unique constraint
+        // but log it for debugging if it does
       }
 
-      return user;
+      return rows[0] as User | undefined;
     } catch (error) {
       console.error('[getUserByEmail] Database error:', error);
       throw error;
@@ -435,7 +463,7 @@ export class DatabaseStorage implements IStorage {
   // ========== JOB BOARD FUNCTIONS ==========
   
   // Employer Management
-  async createEmployer(employer: InsertEmployer, userId: number): Promise<Employer> {
+  async createEmployer(employer: InsertEmployer, userId: number | null): Promise<Employer> {
     const now = new Date();
     const payload = {
       ...employer,
@@ -534,7 +562,10 @@ export class DatabaseStorage implements IStorage {
     keywords?: string;
     employerId?: number;
     isActive?: boolean;
+    isApproved?: boolean;
     isFeatured?: boolean;
+    limit?: number;
+    offset?: number;
   }): Promise<JobListing[]> {
     const conditions = [];
 
@@ -543,6 +574,9 @@ export class DatabaseStorage implements IStorage {
     }
     if (filters?.isActive !== undefined) {
       conditions.push(eq(jobListings.is_active, filters.isActive));
+    }
+    if (filters?.isApproved !== undefined) {
+      conditions.push(eq(jobListings.is_approved, filters.isApproved));
     }
     if (filters?.isFeatured !== undefined) {
       conditions.push(eq(jobListings.is_featured, filters.isFeatured));
@@ -573,11 +607,16 @@ export class DatabaseStorage implements IStorage {
 
     const whereClause = conditions.length ? and(...conditions) : undefined;
 
+    const limit = Math.max(1, Math.min(100, filters?.limit ?? 100));
+    const offset = Math.max(0, filters?.offset ?? 0);
+
     return await db
       .select()
       .from(jobListings)
       .where(whereClause)
-      .orderBy(desc(jobListings.posted_date));
+      .orderBy(desc(jobListings.posted_date))
+      .limit(limit)
+      .offset(offset);
   }
 
   async getEmployerJobListings(employerId: number): Promise<JobListing[]> {
@@ -592,7 +631,7 @@ export class DatabaseStorage implements IStorage {
     let query: any = db
       .select()
       .from(jobListings)
-      .where(eq(jobListings.is_featured, true));
+      .where(and(eq(jobListings.is_featured, true), eq(jobListings.is_active, true), eq(jobListings.is_approved, true)));
 
     if (limit) {
       query = query.limit(limit);
@@ -605,6 +644,7 @@ export class DatabaseStorage implements IStorage {
     let query: any = db
       .select()
       .from(jobListings)
+      .where(and(eq(jobListings.is_active, true), eq(jobListings.is_approved, true)))
       .orderBy(desc(jobListings.posted_date));
 
     if (limit) {

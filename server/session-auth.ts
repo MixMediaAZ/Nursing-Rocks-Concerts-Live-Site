@@ -2,11 +2,12 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { scrypt, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { InsertUser, User } from "@shared/schema";
-import { getPayloadFromRequest } from "./jwt";
+import { getPayloadFromRequest, getTokenFromRequest } from "./jwt";
+import { isTokenRevokedForUser } from "./token-revocation-store";
 
 // Extend Express.User to cover both session auth (Passport/schema User) and JWT auth shapes.
 // JWT middleware (requireAuth) always sets userId, isVerified, isAdmin before protected routes run.
@@ -29,12 +30,6 @@ declare global {
 
 const scryptAsync = promisify(scrypt);
 
-async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
-}
-
 async function comparePasswords(supplied: string, stored: string) {
   const [hashed, salt] = stored.split(".");
   const hashedBuf = Buffer.from(hashed, "hex");
@@ -50,9 +45,13 @@ function getSessionUser(req: Request) {
   return null;
 }
 
-function getJwtUser(req: Request) {
+async function getJwtUser(req: Request) {
+  const token = getTokenFromRequest(req);
   const payload = getPayloadFromRequest(req);
-  if (!payload) return null;
+  if (!payload || !token) return null;
+  if (await isTokenRevokedForUser(payload.userId, token)) {
+    return null;
+  }
   return {
     id: payload.userId,
     email: payload.email,
@@ -61,13 +60,13 @@ function getJwtUser(req: Request) {
   };
 }
 
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
+export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const sessionUser = getSessionUser(req);
   if (sessionUser) {
     return next();
   }
 
-  const jwtUser = getJwtUser(req);
+  const jwtUser = await getJwtUser(req);
   if (jwtUser) {
     (req as any).user = jwtUser;
     return next();
@@ -77,9 +76,9 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
 }
 
 // Middleware to require verified user
-export function requireVerifiedUser(req: Request, res: Response, next: NextFunction) {
+export async function requireVerifiedUser(req: Request, res: Response, next: NextFunction) {
   const sessionUser = getSessionUser(req);
-  const jwtUser = sessionUser ? null : getJwtUser(req);
+  const jwtUser = sessionUser ? null : await getJwtUser(req);
 
   const user = sessionUser ?? jwtUser;
   if (!user) {
@@ -97,9 +96,9 @@ export function requireVerifiedUser(req: Request, res: Response, next: NextFunct
 }
 
 // Middleware to require admin user
-export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+export async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   const sessionUser = getSessionUser(req);
-  const jwtUser = sessionUser ? null : getJwtUser(req);
+  const jwtUser = sessionUser ? null : await getJwtUser(req);
   const user = sessionUser ?? jwtUser;
 
   if (!user) {
@@ -182,46 +181,9 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Registration endpoint
-  app.post("/api/auth/register", async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { email, password, first_name, last_name } = req.body;
-
-      // Validate password strength (minimum 8 characters)
-      if (!password || typeof password !== 'string' || password.length < 8) {
-        return res.status(400).json({ message: "Password must be at least 8 characters long" });
-      }
-
-      // Check if email is already registered
-      const existingUser = await storage.getUserByEmail(email);
-      if (existingUser) {
-        return res.status(400).json({ message: "Email already registered" });
-      }
-
-      // Hash the password
-      const hashedPassword = await hashPassword(password);
-      
-      // Create the new user
-      const user = await storage.createUser(
-        { 
-          email, 
-          first_name, 
-          last_name,
-          password: password // Include in schema object for type compatibility
-        },
-        hashedPassword
-      );
-      
-      // Log in the new user
-      req.login(user as any, (err) => {
-        if (err) return next(err);
-        return res.status(201).json(user);
-      });
-    } catch (error: any) {
-      console.error("Registration error:", error);
-      res.status(500).json({ message: "Registration failed" });
-    }
-  });
+  // POST /api/auth/register is registered in routes.ts (JWT: { token, user, message }).
+  // Do not register it here — Express matches the first handler; a session-only handler
+  // returned 201 with a raw user and no token, which broke the SPA register page.
 
   // Login endpoint - DISABLED: Using JWT-based auth from routes.ts instead
   // The JWT endpoint returns { token, user } which the frontend expects

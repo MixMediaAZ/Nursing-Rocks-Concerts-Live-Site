@@ -1,6 +1,6 @@
 import { db } from "../db";
 import { tickets, events, users, verificationAuditLogs } from "@shared/schema";
-import { eq, and, or, isNull, gte, lt, not } from "drizzle-orm";
+import { eq, and, or, isNull, gte, lt, not, desc } from "drizzle-orm";
 import { signQrPayload, generateTicketCode, generateAndStoreQrImage } from "./qr";
 
 /**
@@ -34,9 +34,15 @@ export async function getEligibleEventsForUser(userId: number) {
   return eligible;
 }
 
+export type IssueTicketForEventResult = {
+  ticket: typeof tickets.$inferSelect;
+  /** False when an existing row was returned (no new insert) — callers must not send duplicate issuance emails. */
+  newlyIssued: boolean;
+};
+
 /**
  * Issue a ticket for a specific event
- * Idempotent: returns existing issued/checked-in ticket if one already exists
+ * Idempotent: returns existing issued/checked-in ticket if one already exists (`newlyIssued: false`)
  * FIX: Uses database UNIQUE constraint to prevent race conditions
  * FIX: Accepts optional event data to prevent N+1 queries when called in a loop
  */
@@ -44,7 +50,7 @@ export async function issueTicketForEvent(
   userId: number,
   eventId: number,
   eventData?: { end_at: Date | null; ticket_expiration_at: Date | null } | null
-): Promise<any> {
+): Promise<IssueTicketForEventResult> {
   // Check if ticket already exists
   const existing = await db
     .select()
@@ -57,12 +63,12 @@ export async function issueTicketForEvent(
 
     // If issued or checked-in, return existing (FIX: standardized to "issued" from schema default)
     if (ticket.status === "issued" || ticket.status === "checked_in") {
-      return ticket;
+      return { ticket, newlyIssued: false };
     }
 
     // If revoked or expired, don't auto-reissue (controlled policy)
     if (ticket.status === "revoked" || ticket.status === "expired") {
-      return ticket;
+      return { ticket, newlyIssued: false };
     }
   }
 
@@ -138,7 +144,7 @@ export async function issueTicketForEvent(
         .where(and(eq(tickets.user_id, userId), eq(tickets.event_id, eventId)))
         .limit(1);
       if (existingAgain.length > 0) {
-        return existingAgain[0];
+        return { ticket: existingAgain[0], newlyIssued: false };
       }
     }
     throw error;
@@ -168,7 +174,7 @@ export async function issueTicketForEvent(
     // Continue without QR image - tickets can still be used with ticket code
   }
 
-  return ticket;
+  return { ticket, newlyIssued: true };
 }
 
 /**
@@ -254,6 +260,27 @@ export async function getUserTicketsForEvent(userId: number, eventId: number) {
  */
 export async function getUserTickets(userId: number) {
   return await db.select().from(tickets).where(eq(tickets.user_id, userId));
+}
+
+/** Admin list: tickets with event title for verification / email status UI */
+export async function getUserTicketsWithEvents(userId: number) {
+  return await db
+    .select({
+      id: tickets.id,
+      event_id: tickets.event_id,
+      ticket_code: tickets.ticket_code,
+      status: tickets.status,
+      email_status: tickets.email_status,
+      email_error: tickets.email_error,
+      emailed_at: tickets.emailed_at,
+      created_at: tickets.created_at,
+      event_title: events.title,
+      event_date: events.date,
+    })
+    .from(tickets)
+    .innerJoin(events, eq(tickets.event_id, events.id))
+    .where(eq(tickets.user_id, userId))
+    .orderBy(desc(tickets.created_at));
 }
 
 /**

@@ -6,6 +6,13 @@ const resend = resendApiKey ? new Resend(resendApiKey) : null;
 // Strip CR/LF from any user-supplied string used in email headers.
 // Prevents CRLF header injection (BCC injection, subject hijacking, etc.)
 const hdr = (s: unknown): string => String(s ?? '').replace(/[\r\n]+/g, ' ').trim();
+const esc = (s: unknown): string =>
+  String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 
 export interface TicketEmailData {
   nurseName: string;
@@ -67,21 +74,21 @@ export async function sendTicketConfirmationEmail(data: TicketEmailData): Promis
     </div>
 
     <div class="content">
-      <p>Hi ${data.nurseName},</p>
+      <p>Hi ${esc(data.nurseName)},</p>
 
       <p>Thank you for purchasing your ticket to the Nursing Rocks! Concert Series! We're excited to see you at the event.</p>
 
       <div class="event-details">
-        <h3>${data.eventTitle}</h3>
-        <p><span class="label">Date:</span> ${data.eventDate}</p>
-        <p><span class="label">Time:</span> ${data.eventTime}</p>
-        <p><span class="label">Location:</span> ${data.eventLocation}</p>
-        <p><span class="label">Ticket Type:</span> ${data.ticketType}</p>
-        <p><span class="label">Price:</span> ${data.price}</p>
+        <h3>${esc(data.eventTitle)}</h3>
+        <p><span class="label">Date:</span> ${esc(data.eventDate)}</p>
+        <p><span class="label">Time:</span> ${esc(data.eventTime)}</p>
+        <p><span class="label">Location:</span> ${esc(data.eventLocation)}</p>
+        <p><span class="label">Ticket Type:</span> ${esc(data.ticketType)}</p>
+        <p><span class="label">Price:</span> ${esc(data.price)}</p>
       </div>
 
       <div class="ticket-code">
-        ${data.ticketCode}
+        ${esc(data.ticketCode)}
       </div>
 
       <div class="important">
@@ -158,11 +165,11 @@ export async function sendLicenseVerificationEmail(
     </div>
 
     <div class="content">
-      <p>Hi ${nurseName},</p>
+      <p>Hi ${esc(nurseName)},</p>
 
       <div class="success-box">
         <p><strong>Your nursing license has been verified!</strong></p>
-        <p>License #${licenseNumber}</p>
+        <p>License #${esc(licenseNumber)}</p>
       </div>
 
       <p>You're now able to purchase tickets and access exclusive content on Nursing Rocks! Concert Series.</p>
@@ -250,22 +257,22 @@ export async function sendJobAlertEmail(data: JobAlertEmailData): Promise<{ succ
     </div>
 
     <div class="content">
-      <p>Hi ${data.nurseName},</p>
+      <p>Hi ${esc(data.nurseName)},</p>
 
       <p>We found a healthcare position that matches your professional profile and interests.</p>
 
       <div class="job-details">
-        <h3>${data.jobTitle}</h3>
-        <p><span class="label">Employer:</span> ${data.employer}</p>
-        <p><span class="label">Specialty:</span> ${data.specialty}</p>
-        <p><span class="label">Location:</span> ${data.location}</p>
-        ${data.salary ? `<p><span class="label">Salary:</span> ${data.salary}</p>` : ''}
+        <h3>${esc(data.jobTitle)}</h3>
+        <p><span class="label">Employer:</span> ${esc(data.employer)}</p>
+        <p><span class="label">Specialty:</span> ${esc(data.specialty)}</p>
+        <p><span class="label">Location:</span> ${esc(data.location)}</p>
+        ${data.salary ? `<p><span class="label">Salary:</span> ${esc(data.salary)}</p>` : ''}
       </div>
 
       <p>This position aligns with your experience and certifications. Apply today to connect with the employer!</p>
 
       <div style="text-align: center;">
-        <a href="${data.jobUrl}" class="cta-button">View Job & Apply</a>
+        <a href="${esc(data.jobUrl)}" class="cta-button">View Job & Apply</a>
       </div>
 
       <p>You're receiving this email because you set up job alerts on Nursing Rocks! To manage your preferences, visit your dashboard.</p>
@@ -348,24 +355,24 @@ export async function sendEventReminderEmail(data: EventReminderEmailData): Prom
   <div class="container">
     <div class="header">
       <h1>🎵 Event Reminder</h1>
-      <p>Your concert is coming up in ${data.daysUntilEvent} days!</p>
+      <p>Your concert is coming up in ${esc(data.daysUntilEvent)} days!</p>
     </div>
 
     <div class="content">
-      <p>Hi ${data.nurseName},</p>
+      <p>Hi ${esc(data.nurseName)},</p>
 
       <p>Your Nursing Rocks! Concert Series event is just around the corner. Get ready for an amazing experience!</p>
 
       <div class="event-details">
-        <h3>${data.eventTitle}</h3>
-        <p><span class="label">Date:</span> ${data.eventDate}</p>
-        <p><span class="label">Time:</span> ${data.eventTime}</p>
-        <p><span class="label">Location:</span> ${data.eventLocation}</p>
+        <h3>${esc(data.eventTitle)}</h3>
+        <p><span class="label">Date:</span> ${esc(data.eventDate)}</p>
+        <p><span class="label">Time:</span> ${esc(data.eventTime)}</p>
+        <p><span class="label">Location:</span> ${esc(data.eventLocation)}</p>
       </div>
 
       <div class="reminder-box">
         <strong>Your Ticket Code:</strong><br>
-        <span class="ticket-code">${data.ticketCode}</span>
+        <span class="ticket-code">${esc(data.ticketCode)}</span>
         <p style="margin-top: 10px; margin-bottom: 0;">Please bring this code (or your phone with this email) to check in at the event.</p>
       </div>
 
@@ -471,7 +478,7 @@ export async function sendNrpxTicketEmail(data: NrpxTicketEmailData): Promise<{ 
       </div>
 
       <div class="content">
-        <p class="greeting">Hi ${data.firstName},</p>
+        <p class="greeting">Hi ${esc(data.firstName)},</p>
         <p>You're registered for <strong>Nursing Rocks Phoenix</strong>! Show this QR code at the door for entry. No printing needed — your phone works great.</p>
 
         <div class="event-card">
@@ -485,13 +492,13 @@ export async function sendNrpxTicketEmail(data: NrpxTicketEmailData): Promise<{ 
         <div class="qr-section">
           <h3>Your Entry QR Code</h3>
           <img src="data:image/png;base64,${qrBase64}" alt="QR Code for entry" />
-          <div class="ticket-code">${data.ticketCode}</div>
+          <div class="ticket-code">${esc(data.ticketCode)}</div>
         </div>
 
         <div class="backup-info">
           <strong>Can't scan? No problem.</strong>
-          Give the door volunteer your name: <strong>${data.firstName} ${data.lastName}</strong><br>
-          Or your ticket code: <strong>${data.ticketCode}</strong>
+          Give the door volunteer your name: <strong>${esc(data.firstName)} ${esc(data.lastName)}</strong><br>
+          Or your ticket code: <strong>${esc(data.ticketCode)}</strong>
         </div>
 
         <p style="font-size: 14px; color: #666;">Questions? Reach us at <a href="mailto:hello@nursingrocksconcerts.com" style="color: #e94560;">hello@nursingrocksconcerts.com</a></p>
@@ -579,16 +586,16 @@ export async function sendPasswordResetEmail(
         <p>Nursing Rocks Concert Series</p>
       </div>
       <div class="content">
-        <p>Hi ${firstName},</p>
+        <p>Hi ${esc(firstName)},</p>
         <p>We received a request to reset the password for your Nursing Rocks account. Click the button below to choose a new password.</p>
         <div style="text-align: center;">
-          <a href="${resetUrl}" class="reset-button">Reset My Password</a>
+          <a href="${esc(resetUrl)}" class="reset-button">Reset My Password</a>
         </div>
         <div class="warning">
           <strong>This link expires in 1 hour.</strong> If you did not request a password reset, you can safely ignore this email — your password will not change.
         </div>
         <p style="font-size: 13px; color: #888;">If the button doesn't work, copy and paste this link into your browser:<br>
-        <a href="${resetUrl}" style="color: #e94560; word-break: break-all;">${resetUrl}</a></p>
+        <a href="${esc(resetUrl)}" style="color: #e94560; word-break: break-all;">${esc(resetUrl)}</a></p>
         <p>— The Nursing Rocks Team</p>
       </div>
       <div class="footer">
