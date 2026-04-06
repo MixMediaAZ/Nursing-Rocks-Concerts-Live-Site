@@ -92,11 +92,18 @@ export default function RegisterPage() {
         const error = await userResponse.json();
         throw new Error(error.message || "Registration failed. Please try again.");
       }
-      
+
       const userData = await userResponse.json();
 
-      // Validate response data exists
-      if (!userData.token || !userData.user) {
+      // Check if email already exists (server returns 200 with user: null for security)
+      if (!userData.user) {
+        const error = new Error("Email already registered");
+        (error as any).emailExists = true;
+        throw error;
+      }
+
+      // Validate token was returned
+      if (!userData.token) {
         throw new Error("Invalid response format from server");
       }
 
@@ -123,11 +130,26 @@ export default function RegisterPage() {
       window.location.href = isSafeRedirect(redirectPath) ? redirectPath : '/dashboard';
     },
     onError: (error: Error) => {
-      toast({
-        variant: "destructive",
-        title: "Registration Failed",
-        description: error.message,
-      });
+      const isEmailExists = (error as any).emailExists;
+
+      if (isEmailExists) {
+        toast({
+          variant: "destructive",
+          title: "Email Already Registered",
+          description: "This email address is already associated with an account. Please log in instead.",
+        });
+
+        // Redirect to login after a short delay
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 2000);
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Registration Failed",
+          description: error.message,
+        });
+      }
     }
   });
   

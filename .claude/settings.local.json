@@ -144,7 +144,8 @@
       "Bash(DATABASE_URL='postgresql://neondb_owner:npg_eESDud9K3Zwh@ep-icy-butterfly-afxy9quz-pooler.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require' npm run db:introspect)",
       "Bash(ADMIN_PASSWORD_1='HomeRunBall1!' npm run db:create-admins)",
       "Bash(ADMIN_PASSWORD_1='HomeRunBall1!' ADMIN_PASSWORD_2='TempPassword123!' npm run db:create-admins)",
-      "mcp__bbb7e4d9-48d1-4584-9ef5-c334117800ca__get_deployment_build_logs"
+      "mcp__bbb7e4d9-48d1-4584-9ef5-c334117800ca__get_deployment_build_logs",
+      "Bash(grep -n \"getUserByEmail\" server/storage*.ts)"
     ]
   }
 }
