@@ -8,6 +8,7 @@ import {
   getActiveFutureTicketsForUser,
 } from "./tickets";
 import { sendTicketIssuedEmail, sendNurseVerifiedWelcomeEmail, ticketIssuedEmailStatusFromDelivery } from "./email";
+import { setUserRevokedBeforeMs } from "../token-revocation-store";
 
 /**
  * Verified nurses: create free tickets for eligible published events and send issuance emails.
@@ -278,6 +279,11 @@ export async function unverifyUser(userId: number, adminUserId: number) {
       previous_verified_state: wasVerified, // Now accurately true since we checked above
       new_verified_state: false,
     });
+
+    // Revoke all existing JWT tokens for this user so they get logged out immediately
+    // This invalidates all tokens issued before now, forcing re-authentication
+    await setUserRevokedBeforeMs(userId, Date.now());
+    console.log(`[Unverify] Revoked all JWT tokens for user ${userId}`);
   } catch (dbError) {
     console.error(`Failed to update user unverification status:`, dbError);
     throw new Error(`Failed to unverify user: ${dbError instanceof Error ? dbError.message : "Unknown error"}`);
