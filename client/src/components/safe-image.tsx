@@ -221,7 +221,7 @@ export function SafeImage({
             data-element-id={elementId || ''}
             data-product-id={productId || ''}
             loading={loading}
-            fetchPriority={fetchpriority}
+            fetchpriority={fetchpriority}
             width={width}
             height={height}
             onLoad={() => setIsLoading(false)}
