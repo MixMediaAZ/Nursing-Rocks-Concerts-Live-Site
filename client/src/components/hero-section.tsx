@@ -118,8 +118,7 @@ const HeroSection = () => {
   // Always render the hero section even if no featured event is found
   // This ensures the hero section is always displayed
 
-  const defaultHeroBackground =
-    "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&h=800&q=80";
+  const defaultHeroBackground = "/assets/concert-crowd-hero.jpg";
   const heroBackgroundSrc = defaultHeroBackground;
   const heroBackgroundAlt = featuredEvent?.title
     ? `${featuredEvent.title} — event poster`
@@ -172,13 +171,6 @@ const HeroSection = () => {
 
           <div className="border-t border-white/20 my-8 pt-6"></div>
           
-          {/* Location information if there's a featured event */}
-          {featuredEvent?.location && (
-            <div className="flex items-center mb-8">
-              <i className="fas fa-map-marker-alt mr-2"></i>
-              <span>{featuredEvent.location}</span>
-            </div>
-          )}
           
           {/* Desktop Layout - Side by side */}
           <div className="hidden lg:flex items-start justify-between gap-10 mt-8">
