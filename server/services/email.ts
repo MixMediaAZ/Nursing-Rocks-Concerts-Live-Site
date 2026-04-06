@@ -46,6 +46,40 @@ async function initializeResendClient() {
 const SENDER_EMAIL = process.env.SENDER_EMAIL || "noreply@nursingrocks.com";
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "support@nursingrocks.com";
 
+/** Subject line for nurse verification / free ticket issuance emails (Resend or dev log). */
+export const TICKET_ISSUED_EMAIL_SUBJECT = "Your Free Nursing Rocks Ticket is Ready! 🎸";
+
+/** Subject when an admin verifies a nurse — links to site; ticket QR is sent separately when they claim. */
+export const NURSE_VERIFIED_WELCOME_SUBJECT = "You're verified — welcome to Nursing Rocks! 🎸";
+
+function getPublicSiteBaseUrl(): string {
+  const appUrl = process.env.APP_URL?.trim();
+  if (process.env.NODE_ENV === "production" && !appUrl) {
+    throw new Error("[Email] APP_URL is required in production for verification welcome email links. Set it in your environment variables.");
+  }
+  return (appUrl || "http://localhost:5000").replace(/\/+$/, "");
+}
+
+export type TicketIssuedEmailDeliveryMode = "resend" | "dev_log";
+
+/** Public metadata for admin UI — what the verification ticket email is and how it is dispatched. */
+export function getTicketIssuedEmailDispatchInfo() {
+  const hasResend = !!process.env.RESEND_API_KEY;
+  return {
+    templateName: "Verified nurse — free event ticket",
+    subject: TICKET_ISSUED_EMAIL_SUBJECT,
+    fromAddress: SENDER_EMAIL,
+    supportEmail: SUPPORT_EMAIL,
+    dispatchMode: hasResend ? ("resend" as const) : ("dev_log" as const),
+    dispatchExplanation: hasResend
+      ? "With RESEND_API_KEY set, each ticket email is sent to the user’s registered address via Resend."
+      : "Without RESEND_API_KEY, the app only prints email content to the server log — nothing is delivered to the user’s inbox.",
+    welcomeEmailSubject: NURSE_VERIFIED_WELCOME_SUBJECT,
+    welcomeEmailExplanation:
+      "Sent when an admin verifies a nurse. Includes a sign-in link to the dashboard — the QR ticket email is sent when they click Get your ticket(s).",
+  };
+}
+
 /**
  * Validate UUID format
  */
@@ -94,8 +128,7 @@ export async function sendTicketIssuedEmail(userId: number, eventId: number, tic
   if (!ticketResult.length) throw new Error("Ticket not found");
   const ticket = ticketResult[0];
 
-  // Build email
-  const emailSubject = `Your Free Nursing Rocks Ticket is Ready! 🎸`;
+  const emailSubject = TICKET_ISSUED_EMAIL_SUBJECT;
 
   const emailBody = buildTicketEmailHtml({
     userName: user.first_name,
@@ -118,6 +151,7 @@ export async function sendTicketIssuedEmail(userId: number, eventId: number, tic
         to: user.email,
         subject: emailSubject,
         html: emailBody,
+        replyTo: "NursingRocksConcerts@gmail.com",
       });
 
       // FIX: Don't log user email addresses in production
@@ -125,7 +159,7 @@ export async function sendTicketIssuedEmail(userId: number, eventId: number, tic
       if (isDev) {
         console.log(`[EMAIL] Sent ticket ${ticket.ticket_code}`);
       }
-      return { success: true, emailId: result.id };
+      return { success: true as const, deliveryMode: "resend" as const, emailId: result.id };
     } catch (error) {
       // FIX: Don't expose user email in error logs
       console.error(`[EMAIL] Failed to send ticket ${ticket.ticket_code}:`, error instanceof Error ? error.message : String(error));
@@ -141,8 +175,15 @@ export async function sendTicketIssuedEmail(userId: number, eventId: number, tic
     console.log(`HTML Preview: ${emailBody.substring(0, 200)}...`);
     console.log(`${"=".repeat(60)}\n`);
 
-    return { success: true };
+    return { success: true as const, deliveryMode: "dev_log" as const };
   }
+}
+
+/** DB `email_status` for successful verification sends: real delivery vs server log only. */
+export function ticketIssuedEmailStatusFromDelivery(
+  mode: TicketIssuedEmailDeliveryMode
+): "sent" | "simulated" {
+  return mode === "resend" ? "sent" : "simulated";
 }
 
 /**
@@ -300,6 +341,86 @@ function sanitizeHeader(value: string): string {
 }
 
 /**
+ * Welcome email after admin verifies a nurse: link to sign in → dashboard → "Get your ticket(s)".
+ * Does not include QR; ticket issuance email is sent when the user claims from the dashboard.
+ */
+export async function sendNurseVerifiedWelcomeEmail(userId: number): Promise<{
+  deliveryMode: TicketIssuedEmailDeliveryMode;
+}> {
+  if (!Number.isInteger(userId) || userId <= 0) {
+    throw new Error("Invalid user ID");
+  }
+
+  const userResult = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!userResult.length) throw new Error("User not found");
+  const user = userResult[0];
+  if (!user.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email)) {
+    throw new Error("User has invalid email address");
+  }
+
+  const firstName = escapeHtml((user.first_name || "there").trim() || "there");
+  const base = getPublicSiteBaseUrl();
+  const signInUrl = `${base}/login?redirect=${encodeURIComponent("/dashboard")}`;
+  const subject = NURSE_VERIFIED_WELCOME_SUBJECT;
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f3f4f6;color:#1f2937;">
+  <div style="max-width:600px;margin:0 auto;padding:24px;">
+    <div style="background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%);color:#fff;padding:28px;border-radius:12px 12px 0 0;text-align:center;">
+      <h1 style="margin:0;font-size:24px;">You're verified!</h1>
+      <p style="margin:12px 0 0;font-size:16px;opacity:.95;">Nursing Rocks</p>
+    </div>
+    <div style="background:#fff;padding:28px;border-radius:0 0 12px 12px;box-shadow:0 4px 6px rgba(0,0,0,.08);">
+      <p style="font-size:16px;line-height:1.6;">Hi ${firstName},</p>
+      <p style="font-size:16px;line-height:1.6;">Your nursing account has been <strong>approved</strong>. Next steps:</p>
+      <ol style="font-size:15px;line-height:1.7;padding-left:20px;">
+        <li>Sign in to the site using the button below.</li>
+        <li>Open your <strong>dashboard</strong>.</li>
+        <li>Click <strong>Get your ticket(s) &amp; email</strong> to create your free event ticket(s). We'll email your QR code — one message per new ticket when events are available.</li>
+      </ol>
+      <div style="text-align:center;margin:28px 0;">
+        <a href="${signInUrl}" style="display:inline-block;background:#dc2626;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:16px;">Sign in to your dashboard</a>
+      </div>
+      <p style="font-size:13px;color:#6b7280;">If the button doesn't work, copy this link: <a href="${signInUrl}" style="color:#dc2626;word-break:break-all;">${escapeHtml(signInUrl)}</a></p>
+      <p style="font-size:13px;color:#6b7280;margin-top:20px;border-top:1px solid #e5e7eb;padding-top:16px;">Questions? Reply is not monitored — contact <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}">${escapeHtml(SUPPORT_EMAIL)}</a>.</p>
+    </div>
+    <p style="text-align:center;font-size:12px;color:#9ca3af;margin-top:16px;">Nursing Rocks Foundation · Gateway Community College Scholarships</p>
+  </div>
+</body>
+</html>`;
+
+  const client = await initializeResendClient();
+  if (client && process.env.RESEND_API_KEY) {
+    try {
+      await client.emails.send({
+        from: SENDER_EMAIL,
+        to: user.email,
+        subject: sanitizeHeader(subject),
+        html,
+        replyTo: "NursingRocksConcerts@gmail.com",
+      });
+      return { deliveryMode: "resend" };
+    } catch (error) {
+      console.error(
+        `[Email] Welcome after verify failed for user ${userId}:`,
+        error instanceof Error ? error.message : String(error)
+      );
+      throw new Error(`Email service error: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
+  }
+
+  console.log(`\n${"=".repeat(60)}`);
+  console.log(`[EMAIL - DEV] Nurse welcome after verify → ${user.email}`);
+  console.log(`Subject: ${subject}`);
+  console.log(`Link: ${signInUrl}`);
+  console.log(`${"=".repeat(60)}\n`);
+  return { deliveryMode: "dev_log" };
+}
+
+/**
  * Resend a ticket email (admin action)
  * Called when user didn't receive original email or needs a new copy
  */
@@ -323,20 +444,26 @@ export async function resendTicketEmail(ticketId: string) {
   }
 
   try {
-    await sendTicketIssuedEmail(ticket.user_id, ticket.event_id, ticketId);
+    const sendResult = await sendTicketIssuedEmail(ticket.user_id, ticket.event_id, ticketId);
+    const status = ticketIssuedEmailStatusFromDelivery(sendResult.deliveryMode);
 
-    // Update email status to success
     await db
       .update(tickets)
       .set({
-        email_status: "sent",
+        email_status: status,
         emailed_at: new Date(),
         email_error: "",
         updated_at: new Date(),
       })
       .where(eq(tickets.id, ticketId));
 
-    return { success: true, message: "Ticket email resent successfully" };
+    return {
+      success: true,
+      message:
+        status === "sent"
+          ? "Ticket email resent successfully"
+          : "Ticket email content logged on server only (Resend not configured) — not delivered to inbox",
+    };
   } catch (error) {
     // Log the error but still update DB to track failure
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
@@ -560,6 +687,7 @@ export async function approveAndSendTicketEmail(ticketId: string, adminUserId: n
       to: user.email,
       subject: sanitizeHeader(`Your Nursing Rocks! Ticket for ${event.title}`),
       html: emailHtml,
+      replyTo: "NursingRocksConcerts@gmail.com",
     });
 
     if (!emailResult || emailResult.error) {

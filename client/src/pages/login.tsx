@@ -53,6 +53,15 @@ export default function LoginPage() {
       
       if (!response.ok) {
         const error = await response.json();
+
+        // Handle both validation errors array and message format
+        if (error.errors && Array.isArray(error.errors)) {
+          const errorMsg = error.errors
+            .map((e: any) => e.msg || e.message)
+            .join("; ");
+          throw new Error(errorMsg || "Validation failed");
+        }
+
         throw new Error(error.message || "Login failed. Please check your credentials.");
       }
       

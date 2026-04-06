@@ -90,23 +90,49 @@ export default function RegisterPage() {
       
       if (!userResponse.ok) {
         const error = await userResponse.json();
+
+        // Handle both validation errors array and message format
+        if (error.errors && Array.isArray(error.errors)) {
+          const errorMsg = error.errors
+            .map((e: any) => e.msg || e.message)
+            .join("; ");
+          throw new Error(errorMsg || "Validation failed");
+        }
+
         throw new Error(error.message || "Registration failed. Please try again.");
       }
       
       const userData = await userResponse.json();
 
-      // Validate response data exists
-      if (!userData.token || !userData.user) {
-        throw new Error("Invalid response format from server");
+      if (userData.token && userData.user) {
+        return {
+          user: userData.user,
+          token: userData.token,
+          ambiguous: false as const,
+        };
       }
 
-      return {
-        user: userData.user,
-        token: userData.token
-      };
+      // Server returns 200 + message + user: null for duplicate email (enumeration-safe)
+      if (userData.message) {
+        return { ambiguous: true as const, message: userData.message as string };
+      }
+
+      throw new Error("Invalid response format from server");
     },
     onSuccess: async (data) => {
-      // Store token with expiration tracking and user data
+      if (data.ambiguous) {
+        toast({
+          title: "Next steps",
+          description: data.message,
+        });
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectPath = urlParams.get("redirect");
+        window.location.href = isSafeRedirect(redirectPath)
+          ? `/login?redirect=${encodeURIComponent(redirectPath!)}`
+          : "/login";
+        return;
+      }
+
       setToken(data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
@@ -115,12 +141,9 @@ export default function RegisterPage() {
         description: "Welcome to Nursing Rocks!",
       });
 
-      // Check for redirect parameter in URL
       const urlParams = new URLSearchParams(window.location.search);
-      const redirectPath = urlParams.get('redirect');
-
-      // Force a full page navigation to the dashboard after registration
-      window.location.href = isSafeRedirect(redirectPath) ? redirectPath : '/dashboard';
+      const redirectPath = urlParams.get("redirect");
+      window.location.href = isSafeRedirect(redirectPath) ? redirectPath : "/dashboard";
     },
     onError: (error: Error) => {
       toast({

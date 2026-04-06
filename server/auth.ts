@@ -43,7 +43,10 @@ export async function register(req: Request, res: Response) {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      // Convert validation errors to user-friendly message format
+      const firstError = errors.array()[0];
+      const message = firstError.msg || 'Validation failed';
+      return res.status(400).json({ message });
     }
 
     const { email, password, first_name, last_name } = req.body;
@@ -91,7 +94,10 @@ export async function login(req: Request, res: Response) {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      // Convert validation errors to user-friendly message format
+      const firstError = errors.array()[0];
+      const message = firstError.msg || 'Validation failed';
+      return res.status(400).json({ message });
     }
 
     const { email, password } = req.body;
@@ -140,7 +146,10 @@ export async function submitNurseLicense(req: Request, res: Response) {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      // Convert validation errors to user-friendly message format
+      const firstError = errors.array()[0];
+      const message = firstError.msg || 'Validation failed';
+      return res.status(400).json({ message });
     }
 
     // Get user from JWT token (assuming middleware has set req.user)
@@ -590,7 +599,10 @@ export const resetPasswordValidation = [
 export async function requestPasswordReset(req: Request, res: Response) {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
+    // Convert validation errors to user-friendly message format
+    const firstError = errors.array()[0];
+    const message = firstError.msg || 'Validation failed';
+    return res.status(400).json({ message });
   }
 
   const { email } = req.body;
@@ -633,7 +645,10 @@ export async function requestPasswordReset(req: Request, res: Response) {
 export async function resetPassword(req: Request, res: Response) {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
+    // Convert validation errors to user-friendly message format
+    const firstError = errors.array()[0];
+    const message = firstError.msg || 'Validation failed';
+    return res.status(400).json({ message });
   }
 
   const { token, password } = req.body;
@@ -700,6 +715,29 @@ export async function logout(req: Request, res: Response) {
   } catch (error) {
     console.error('Logout error:', error);
     return res.status(500).json({ message: 'Server error during logout' });
+  }
+}
+
+/**
+ * Fresh user row from DB + new JWT so client state matches server after admin verify, role changes, etc.
+ */
+export async function getCurrentUser(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user?.userId ?? (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const user = await storage.getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    const { password_hash, ...userData } = user;
+    const token = generateToken(user);
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    return res.json({ user: userData, token });
+  } catch (error) {
+    console.error('getCurrentUser error:', error);
+    return res.status(500).json({ message: 'Failed to load session' });
   }
 }
 
