@@ -363,10 +363,12 @@ export default function DashboardPage() {
                   <Ticket className="h-5 w-5 text-primary" />
                   Free event tickets
                 </CardTitle>
-                <CardDescription>
-                  Create your free ticket(s) for published upcoming events. We&apos;ll send your QR ticket to{" "}
-                  <span className="font-medium text-foreground">{userData.email}</span> (one email per new ticket).
-                </CardDescription>
+                <div className="bg-muted/40 border border-primary/15 rounded px-3 py-2 mt-2">
+                  <p className="text-sm text-foreground">
+                    Create your free ticket(s) for published upcoming events. We&apos;ll send your QR ticket to{" "}
+                    <span className="font-medium text-foreground">{userData.email}</span> (one email per new ticket).
+                  </p>
+                </div>
               </CardHeader>
               <CardFooter className="pt-0 flex flex-col sm:flex-row gap-2 sm:items-center">
                 <Button
