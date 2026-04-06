@@ -272,7 +272,7 @@ export const tickets = pgTable("tickets", {
   first_scan_device_fingerprint: text("first_scan_device_fingerprint"),
   last_scan_at: timestamp("last_scan_at", { withTimezone: true }),
   scan_count: integer("scan_count").default(0),
-  email_status: text("email_status").default("pending"), // pending, sent, failed, bounced
+  email_status: text("email_status").default("pending"), // pending, sent, simulated, failed, bounced
   email_error: text("email_error"),
   created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),

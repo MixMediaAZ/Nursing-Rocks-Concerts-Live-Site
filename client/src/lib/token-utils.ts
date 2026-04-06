@@ -117,3 +117,50 @@ export function isTokenExpiringSoon(): boolean {
   const fiveMinutes = 5 * 60 * 1000;
   return remaining < fiveMinutes && remaining > 0;
 }
+
+/** Dispatched after localStorage user + token are updated from GET /api/auth/me */
+export const SESSION_USER_SYNC_EVENT = "nursing-rocks-session-sync";
+
+let sessionSyncInFlight: Promise<boolean> | null = null;
+
+/**
+ * Load current user from the server and replace JWT + localStorage user (fresh is_verified / is_admin).
+ * Deduplicates concurrent calls. Returns true if sync succeeded.
+ */
+export function syncSessionUserFromApi(): Promise<boolean> {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) return Promise.resolve(false);
+  if (sessionSyncInFlight) return sessionSyncInFlight;
+
+  const p = (async (): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/auth/me", {
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
+      });
+      if (res.status === 401) {
+        clearToken();
+        return false;
+      }
+      if (!res.ok) return false;
+      const data = await res.json();
+      if (!data?.user || !data?.token) return false;
+      setToken(data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      if (data.user.is_admin) {
+        localStorage.setItem("isAdmin", "true");
+      } else {
+        localStorage.removeItem("isAdmin");
+      }
+      window.dispatchEvent(new CustomEvent(SESSION_USER_SYNC_EVENT));
+      return true;
+    } catch {
+      return false;
+    } finally {
+      sessionSyncInFlight = null;
+    }
+  })();
+
+  sessionSyncInFlight = p;
+  return p;
+}

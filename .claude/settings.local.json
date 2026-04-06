@@ -147,7 +147,8 @@
       "mcp__bbb7e4d9-48d1-4584-9ef5-c334117800ca__get_deployment_build_logs",
       "Bash(curl -s -L -X GET \"https://nursingrocksconcerts.com/api/cron/job-alerts\" -H \"x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee\" -H \"Content-Type: application/json\" --max-time 45)",
       "Bash(curl -s -L -X GET \"https://nursingrocksconcerts.com/api/cron/event-reminders\" -H \"x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee\" -H \"Content-Type: application/json\" --max-time 30 -w \"\\\\n\\\\nHTTP Status: %{http_code}\")",
-      "Bash(curl -s -L -X GET \"https://nursingrocksconcerts.com/api/cron/job-alerts\" -H \"Content-Type: application/json\" -H \"x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee\" --max-time 60 -w \"\\\\n\\\\nHTTP Status: %{http_code}\")"
+      "Bash(curl -s -L -X GET \"https://nursingrocksconcerts.com/api/cron/job-alerts\" -H \"Content-Type: application/json\" -H \"x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee\" --max-time 60 -w \"\\\\n\\\\nHTTP Status: %{http_code}\")",
+      "Bash(find 'C:\\\\Users\\\\Dave\\\\Downloads\\\\Nursing-Rocks-Concerts-Live-Site - 3.0\\\\client' -name *scan* -o -name *check*in* -o -name *gate*)"
     ]
   }
 }

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle,
   XCircle,
@@ -23,10 +23,11 @@ import {
   Settings,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
-import { clearToken, isTokenExpired } from "@/lib/token-utils";
+import { clearToken, isTokenExpired, SESSION_USER_SYNC_EVENT } from "@/lib/token-utils";
 
 export default function DashboardPage() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [_, setLocation] = useLocation();
   const [userData, setUserData] = useState<any>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -96,6 +97,20 @@ export default function DashboardPage() {
 
     checkAuth();
   }, [toast]);
+
+  useEffect(() => {
+    const refreshUserFromStorage = () => {
+      const raw = localStorage.getItem("user");
+      if (!raw) return;
+      try {
+        setUserData(JSON.parse(raw));
+      } catch {
+        /* ignore */
+      }
+    };
+    window.addEventListener(SESSION_USER_SYNC_EVENT, refreshUserFromStorage);
+    return () => window.removeEventListener(SESSION_USER_SYNC_EVENT, refreshUserFromStorage);
+  }, []);
   
   // Fetch licenses
   const { data: licenses = { licenses: [] } } = useQuery<{ licenses: any[] }>({
@@ -128,6 +143,70 @@ export default function DashboardPage() {
       if (!response.ok) throw new Error('Failed to fetch tickets');
       const data = await response.json();
       return Array.isArray(data) ? { tickets: data } : data;
+    },
+  });
+
+  const claimTicketsMutation = useMutation({
+    mutationFn: async () => {
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/tickets/claim-verified", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token ?? ""}`,
+        },
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(typeof data?.message === "string" ? data.message : "Could not claim tickets");
+      }
+      return data as {
+        message?: string;
+        details?: {
+          ticketsCreated?: number;
+          ticketsSkippedExisting?: number;
+          emailsDelivered?: number;
+          emailsSimulated?: number;
+          emailsFailed?: number;
+          eligibleEventCount?: number;
+          hasErrors?: boolean;
+        };
+      };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tickets"] });
+      const d = data.details;
+      if (!d) {
+        toast({ title: "Done", description: data.message || "Request completed." });
+        return;
+      }
+      const parts: string[] = [];
+      if ((d.eligibleEventCount ?? 0) === 0) {
+        parts.push(data.message || "No eligible events right now.");
+      } else {
+        if ((d.ticketsCreated ?? 0) > 0) {
+          parts.push(`${d.ticketsCreated} new ticket(s) — check your email`);
+        }
+        if ((d.ticketsSkippedExisting ?? 0) > 0) {
+          parts.push(`${d.ticketsSkippedExisting} event(s) already had a ticket`);
+        }
+        if ((d.emailsDelivered ?? 0) > 0) {
+          parts.push(`${d.emailsDelivered} email(s) sent via Resend`);
+        }
+        if ((d.emailsSimulated ?? 0) > 0) {
+          parts.push(`${d.emailsSimulated} logged to server only (set RESEND_API_KEY to deliver)`);
+        }
+        if ((d.emailsFailed ?? 0) > 0) {
+          parts.push(`${d.emailsFailed} email(s) failed`);
+        }
+      }
+      toast({
+        title: d.hasErrors ? "Tickets (see issues)" : "Tickets",
+        description: parts.length ? parts.join(" · ") : data.message || "Done.",
+        variant: d.hasErrors ? "destructive" : "default",
+      });
+    },
+    onError: (e: Error) => {
+      toast({ variant: "destructive", title: "Could not claim tickets", description: e.message });
     },
   });
   
@@ -276,6 +355,46 @@ export default function DashboardPage() {
               </CardDescription>
             </CardHeader>
           </Card>
+
+          {userData.is_verified ? (
+            <Card className="mb-6 border-primary/30 bg-primary/5">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Ticket className="h-5 w-5 text-primary" />
+                  Free event tickets
+                </CardTitle>
+                <CardDescription>
+                  Create your free ticket(s) for published upcoming events. We&apos;ll send your QR ticket to{" "}
+                  <span className="font-medium text-foreground">{userData.email}</span> (one email per new ticket).
+                </CardDescription>
+              </CardHeader>
+              <CardFooter className="pt-0 flex flex-col sm:flex-row gap-2 sm:items-center">
+                <Button
+                  onClick={() => claimTicketsMutation.mutate()}
+                  disabled={claimTicketsMutation.isPending}
+                >
+                  {claimTicketsMutation.isPending ? "Working…" : "Get your ticket(s) & email"}
+                </Button>
+                <p className="text-xs text-muted-foreground sm:ml-2">
+                  Tap again after new events are added — you won&apos;t get duplicate emails for tickets you already have.
+                </p>
+              </CardFooter>
+            </Card>
+          ) : (
+            <Card className="mb-6 border-amber-200 bg-amber-50/50 dark:bg-amber-950/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Free tickets</CardTitle>
+                <CardDescription>
+                  Complete license verification and wait for Nursing Rocks to approve your account. Then you can claim free tickets here.
+                </CardDescription>
+              </CardHeader>
+              <CardFooter className="pt-0">
+                <Button variant="outline" onClick={() => { window.location.href = "/license-verification"; }}>
+                  Go to license verification
+                </Button>
+              </CardFooter>
+            </Card>
+          )}
           
           {/* Action Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">

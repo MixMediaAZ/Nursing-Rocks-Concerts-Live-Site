@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { apiRequest } from "@/lib/queryClient";
+import { setToken } from "@/lib/token-utils";
 import { useToast } from "@/hooks/use-toast";
 import {
   Form,
@@ -68,19 +69,30 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
       }
 
       const data = await response.json();
-      
-      // Store JWT token
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      
-      toast({
-        title: "Registration Successful",
-        description: "Welcome to Nursing Rocks! You can now submit your nursing license for verification.",
-      });
-      
-      if (onSuccess) {
-        onSuccess(data);
+
+      if (data.token && data.user) {
+        setToken(data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        toast({
+          title: "Registration Successful",
+          description:
+            "Welcome to Nursing Rocks! You can now submit your nursing license for verification.",
+        });
+        if (onSuccess) {
+          onSuccess(data);
+        }
+        return;
       }
+
+      if (data.message) {
+        toast({
+          title: "Next steps",
+          description: data.message,
+        });
+        return;
+      }
+
+      throw new Error("Invalid response format from server");
     } catch (error) {
       console.error("Registration error:", error);
       toast({

@@ -1,21 +1,125 @@
 import { db } from "../db";
 import { users, tickets, verificationAuditLogs } from "@shared/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import {
   getEligibleEventsForUser,
   issueTicketForEvent,
   revokeTicket,
   getActiveFutureTicketsForUser,
 } from "./tickets";
-import { sendTicketIssuedEmail } from "./email";
+import { sendTicketIssuedEmail, sendNurseVerifiedWelcomeEmail, ticketIssuedEmailStatusFromDelivery } from "./email";
+
+/**
+ * Verified nurses: create free tickets for eligible published events and send issuance emails.
+ * Intended to run when the user clicks "Get your ticket(s)" on the dashboard (not on admin verify).
+ */
+export async function claimVerifiedUserTickets(userId: number) {
+  if (!Number.isInteger(userId) || userId <= 0) {
+    throw new Error("Invalid user ID");
+  }
+
+  const userResult = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!userResult.length) {
+    throw new Error("User not found");
+  }
+  if (!userResult[0].is_verified) {
+    const err = new Error("Account must be verified by Nursing Rocks before claiming free tickets.");
+    (err as { code?: string }).code = "VERIFICATION_REQUIRED";
+    throw err;
+  }
+
+  const now = new Date();
+  let eligibleEvents;
+  try {
+    eligibleEvents = await getEligibleEventsForUser(userId);
+  } catch (eventError) {
+    console.error(`Failed to get eligible events for user ${userId}:`, eventError);
+    throw new Error(
+      `Failed to get eligible events: ${eventError instanceof Error ? eventError.message : "Unknown error"}`
+    );
+  }
+
+  const ticketResults = {
+    created: 0,
+    skippedExisting: 0,
+    failed: 0,
+    emailFailed: 0,
+    emailsDelivered: 0,
+    emailsSimulated: 0,
+  };
+
+  for (const event of eligibleEvents) {
+    try {
+      const { ticket, newlyIssued } = await issueTicketForEvent(userId, event.id, {
+        end_at: event.end_at,
+        ticket_expiration_at: event.ticket_expiration_at,
+      });
+
+      if (newlyIssued) {
+        ticketResults.created++;
+      } else {
+        ticketResults.skippedExisting++;
+        continue;
+      }
+
+      try {
+        const sendResult = await sendTicketIssuedEmail(userId, event.id, ticket.id);
+        const emailStatus = ticketIssuedEmailStatusFromDelivery(sendResult.deliveryMode);
+        if (sendResult.deliveryMode === "resend") {
+          ticketResults.emailsDelivered++;
+        } else {
+          ticketResults.emailsSimulated++;
+        }
+
+        await db
+          .update(tickets)
+          .set({
+            email_status: emailStatus,
+            emailed_at: now,
+            updated_at: now,
+          })
+          .where(eq(tickets.id, ticket.id));
+      } catch (emailError) {
+        console.error(`Failed to send email for ticket ${ticket.id}:`, emailError);
+        ticketResults.emailFailed++;
+
+        await db
+          .update(tickets)
+          .set({
+            email_status: "failed",
+            email_error: emailError instanceof Error ? emailError.message : "Unknown error",
+            updated_at: now,
+          })
+          .where(eq(tickets.id, ticket.id));
+      }
+    } catch (ticketError) {
+      console.error(`Failed to issue ticket for event ${event.id}:`, ticketError);
+      ticketResults.failed++;
+    }
+  }
+
+  return {
+    success: true,
+    message:
+      eligibleEvents.length === 0
+        ? "No published upcoming events are open for free tickets right now."
+        : "Tickets processed.",
+    details: {
+      eligibleEventCount: eligibleEvents.length,
+      ticketsCreated: ticketResults.created,
+      ticketsSkippedExisting: ticketResults.skippedExisting,
+      ticketsFailed: ticketResults.failed,
+      emailsFailed: ticketResults.emailFailed,
+      emailsDelivered: ticketResults.emailsDelivered,
+      emailsSimulated: ticketResults.emailsSimulated,
+      hasErrors: ticketResults.failed > 0 || ticketResults.emailFailed > 0,
+    },
+  };
+}
 
 /**
  * Verify a user (admin action)
- * This triggers:
- * 1. User status update
- * 2. Ticket creation for all eligible events
- * 3. Email sending with tickets
- * 4. Audit log entry
+ * Updates verification status only. Free tickets + emails are claimed by the user from their dashboard.
  */
 export async function verifyUser(userId: number, adminUserId: number) {
   // FIX: Validate input parameters
@@ -79,77 +183,34 @@ export async function verifyUser(userId: number, adminUserId: number) {
       throw new Error(`Failed to verify user: ${dbError instanceof Error ? dbError.message : "Unknown error"}`);
     }
 
-    // Get eligible events for user
-    let eligibleEvents;
+    let welcomeEmailMode: "resend" | "dev_log" | null = null;
+    let welcomeEmailError: string | undefined;
     try {
-      eligibleEvents = await getEligibleEventsForUser(userId);
-    } catch (eventError) {
-      console.error(`Failed to get eligible events for user ${userId}:`, eventError);
-      throw new Error(`Failed to get eligible events: ${eventError instanceof Error ? eventError.message : "Unknown error"}`);
+      const w = await sendNurseVerifiedWelcomeEmail(userId);
+      welcomeEmailMode = w.deliveryMode;
+    } catch (welcomeErr) {
+      console.error(`[verification] Welcome email failed for user ${userId}:`, welcomeErr);
+      welcomeEmailError = welcomeErr instanceof Error ? welcomeErr.message : String(welcomeErr);
     }
 
-    // Issue tickets for each eligible event
-    // FIX: Track ticket creation to return detailed results
-    const ticketResults = {
-      created: 0,
-      failed: 0,
-      emailFailed: 0,
-    };
-
-    for (const event of eligibleEvents) {
-      try {
-        // FIX: Pass event data to prevent N+1 query - issueTicketForEvent will use this
-        // instead of fetching the event again
-        const ticket = await issueTicketForEvent(userId, event.id, {
-          end_at: event.end_at,
-          ticket_expiration_at: event.ticket_expiration_at,
-        });
-        ticketResults.created++;
-
-        // Send email with ticket
-        try {
-          await sendTicketIssuedEmail(userId, event.id, ticket.id);
-
-          // Mark email as sent
-          await db
-            .update(tickets)
-            .set({
-              email_status: "sent",
-              emailed_at: now,
-              updated_at: now,
-            })
-            .where(eq(tickets.id, ticket.id));
-        } catch (emailError) {
-          console.error(`Failed to send email for ticket ${ticket.id}:`, emailError);
-          ticketResults.emailFailed++;
-
-          // Log email failure but don't fail the whole operation
-          await db
-            .update(tickets)
-            .set({
-              email_status: "failed",
-              email_error: emailError instanceof Error ? emailError.message : "Unknown error",
-              updated_at: now,
-            })
-            .where(eq(tickets.id, ticket.id));
-        }
-      } catch (ticketError) {
-        console.error(`Failed to issue ticket for event ${event.id}:`, ticketError);
-        ticketResults.failed++;
-        // Continue with other events on ticket creation failure
-      }
-    }
-
-    // FIX: Return detailed results
     return {
       success: true,
       action: "verified",
-      message: `User verified successfully`,
+      message:
+        welcomeEmailError == null
+          ? "User verified — a welcome email with a dashboard link was sent. They can sign in and use Get your ticket(s) to receive QR ticket emails."
+          : "User verified in the database, but the welcome email failed to send. They can still sign in and use Get your ticket(s) on the dashboard.",
       details: {
-        ticketsCreated: ticketResults.created,
-        ticketsFailed: ticketResults.failed,
-        emailsFailed: ticketResults.emailFailed,
-        hasErrors: ticketResults.failed > 0 || ticketResults.emailFailed > 0,
+        ticketsCreated: 0,
+        ticketsSkippedExisting: 0,
+        ticketsFailed: 0,
+        emailsFailed: 0,
+        emailsDelivered: 0,
+        emailsSimulated: 0,
+        hasErrors: !!welcomeEmailError,
+        claimOnDashboard: true,
+        welcomeEmailMode,
+        welcomeEmailError,
       },
     };
   }

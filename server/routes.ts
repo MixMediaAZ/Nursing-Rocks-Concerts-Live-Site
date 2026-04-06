@@ -106,7 +106,8 @@ import {
   logout,
   requestPasswordReset,
   resetPassword,
-  requireEmployerToken
+  requireEmployerToken,
+  getCurrentUser,
 } from "./auth";
 import { setupAuth, requireAuth, requireVerifiedUser, requireAdmin } from "./session-auth";
 import { generateToken, isUserAdmin, getPayloadFromRequest, getTokenFromRequest } from './jwt';
@@ -818,6 +819,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/login", authRateLimiter, loginValidation, login);
   // SAFETY FIX: Logout endpoint to invalidate tokens server-side
   app.post("/api/auth/logout", authenticateToken, logout);
+  app.get("/api/auth/me", requireAuth, getCurrentUser);
   app.post("/api/auth/forgot-password", passwordResetRateLimiter, requestPasswordResetValidation, requestPasswordReset);
   app.post("/api/auth/reset-password", passwordResetRateLimiter, resetPasswordValidation, resetPassword);
 
@@ -826,6 +828,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/license", requireAuth, getNurseLicenses);
   app.post("/api/tickets/purchase", requireAuth, purchaseTicket);
   app.get("/api/tickets", requireAuth, getUserTickets);
+
+  // Verified nurses: issue free tickets + send issuance email (user-initiated from dashboard)
+  app.post("/api/tickets/claim-verified", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id ?? (req as any).user?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const { claimVerifiedUserTickets } = await import("./services/verification");
+      const result = await claimVerifiedUserTickets(userId);
+      return res.json(result);
+    } catch (error: unknown) {
+      const err = error as { code?: string; message?: string };
+      if (err?.code === "VERIFICATION_REQUIRED") {
+        return res.status(403).json({
+          message: err.message || "Account must be verified before claiming free tickets.",
+        });
+      }
+      console.error("claim-verified error:", error);
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to claim tickets",
+      });
+    }
+  });
 
   // QR Ticket Validation Routes
   app.get("/api/tickets/validate/:code", validateTicketByCode); // Public read-only validation
@@ -1882,8 +1908,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Authentication status - should now be handled by session-auth
-  // This route is kept for backward compatibility
+  // Authentication status - JWT users get is_verified / is_admin from DB (not stale JWT claims)
   app.get("/api/auth/status", async (req: Request, res: Response) => {
     const sessionAuthenticated =
       typeof req.isAuthenticated === "function" && req.isAuthenticated();
@@ -1892,23 +1917,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const token = sessionAuthenticated ? null : getTokenFromRequest(req);
     const jwtPayload = sessionAuthenticated ? null : getPayloadFromRequest(req);
     const jwtRevoked = jwtPayload && token ? await isTokenRevokedForUser(jwtPayload.userId, token) : false;
-    const jwtUser = jwtPayload
-      ? jwtRevoked
-        ? null
-        : {
-            id: jwtPayload.userId,
-            email: jwtPayload.email,
-            is_verified: jwtPayload.isVerified,
-            is_admin: jwtPayload.isAdmin,
-          }
-      : null;
+
+    let jwtUser: {
+      id: number;
+      email: string;
+      is_verified: boolean;
+      is_admin: boolean;
+      first_name?: string | null;
+      last_name?: string | null;
+    } | null = null;
+
+    if (jwtPayload && token && !jwtRevoked) {
+      const dbUser = await storage.getUserById(jwtPayload.userId);
+      if (dbUser) {
+        jwtUser = {
+          id: dbUser.id,
+          email: dbUser.email,
+          is_verified: !!dbUser.is_verified,
+          is_admin: !!dbUser.is_admin,
+          first_name: dbUser.first_name,
+          last_name: dbUser.last_name,
+        };
+      }
+    }
 
     const user = sessionUser ?? jwtUser;
 
+    const u = user as { is_verified?: boolean; isVerified?: boolean; is_admin?: boolean; isAdmin?: boolean } | null;
+    const verifiedFlag = u ? !!(u.is_verified ?? u.isVerified) : false;
+    const adminFlag = u ? !!(u.is_admin ?? u.isAdmin) : false;
+
     res.json({
       isAuthenticated: !!user,
-      isVerified: !!user?.is_verified,
-      isAdmin: !!user?.is_admin,
+      isVerified: verifiedFlag,
+      isAdmin: adminFlag,
       user: user || null,
     });
   });
@@ -2094,10 +2136,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ========== USER VERIFICATION & TICKETING ROUTES ==========
 
+  // Admin: Describe the verification / free-ticket email (template + Resend vs log-only)
+  app.get("/api/admin/verification-ticket-email-info", requireAdminToken, async (_req: Request, res: Response) => {
+    try {
+      const { getTicketIssuedEmailDispatchInfo } = await import("./services/email");
+      return res.json(getTicketIssuedEmailDispatchInfo());
+    } catch (error) {
+      console.error("Error loading ticket email info:", error);
+      return res.status(500).json({ message: "Failed to load email info" });
+    }
+  });
+
   // Admin: Verify/unverify user (triggers ticket creation and emails)
   app.patch("/api/admin/users/:id/verify", requireAdminToken, async (req: Request, res: Response) => {
     try {
       const { verifyUser, unverifyUser, getUserVerificationStatus } = await import("./services/verification");
+      const { getTicketIssuedEmailDispatchInfo } = await import("./services/email");
 
       const userId = parseInt(req.params.id);
       if (isNaN(userId)) return res.status(400).json({ message: "Invalid user ID" });
@@ -2105,24 +2159,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const adminUserId = (req as any).user?.userId;
       if (!adminUserId) return res.status(401).json({ message: "Admin user not found" });
 
-      const { verified, notes } = req.body;
+      const { verified } = req.body;
 
+      let verifyOutcome: Awaited<ReturnType<typeof verifyUser>> | Awaited<ReturnType<typeof unverifyUser>> | null =
+        null;
       if (verified === true) {
-        await verifyUser(userId, adminUserId);
+        verifyOutcome = await verifyUser(userId, adminUserId);
       } else if (verified === false) {
-        await unverifyUser(userId, adminUserId);
+        verifyOutcome = await unverifyUser(userId, adminUserId);
       } else {
         return res.status(400).json({ message: "verified must be boolean" });
       }
 
-      // Return updated verification status
       const status = await getUserVerificationStatus(userId);
-      // FIX: Don't leak sensitive user data like password_hash, phone, email in response
       const { user, ...safeStatus } = status;
+      const ticketEmailInfo = getTicketIssuedEmailDispatchInfo();
       return res.json({
         ...safeStatus,
         userId: user.id,
         userName: user.first_name + " " + user.last_name,
+        verifyOutcome,
+        ticketEmailInfo,
       });
     } catch (error) {
       console.error("Error verifying user:", error);
@@ -2130,15 +2187,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin: Get user's tickets
+  // Admin: Get user's tickets (with event titles for email status UI)
   app.get("/api/admin/users/:id/tickets", requireAdminToken, async (req: Request, res: Response) => {
     try {
-      const { getUserTickets } = await import("./services/tickets");
+      const { getUserTicketsWithEvents } = await import("./services/tickets");
 
       const userId = parseInt(req.params.id);
       if (isNaN(userId)) return res.status(400).json({ message: "Invalid user ID" });
 
-      const userTickets = await getUserTickets(userId);
+      const userTickets = await getUserTicketsWithEvents(userId);
       return res.json(userTickets);
     } catch (error) {
       console.error("Error fetching user tickets:", error);

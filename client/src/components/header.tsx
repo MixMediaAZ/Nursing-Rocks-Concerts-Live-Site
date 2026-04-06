@@ -10,7 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Menu, X, User, HeartPulse, Map, PlayCircle, Video, Briefcase, ShieldCheck } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { clearToken } from "@/lib/token-utils";
+import { clearToken, SESSION_USER_SYNC_EVENT } from "@/lib/token-utils";
 import { useToast } from "@/hooks/use-toast";
 
 // Define the type for navigation links
@@ -31,11 +31,9 @@ export function Header() {
   const [location] = useLocation();
   // Cart functionality removed as store is non-functioning
 
-  useEffect(() => {
-    // Check if user is logged in
+  const applyUserFromStorage = () => {
     const token = localStorage.getItem("token");
     const userData = localStorage.getItem("user");
-
     if (token && userData) {
       setIsLoggedIn(true);
       try {
@@ -45,7 +43,18 @@ export function Header() {
       } catch (e) {
         console.error("Failed to parse user data", e);
       }
+    } else {
+      setIsLoggedIn(false);
+      setUser(null);
+      setIsAdmin(false);
     }
+  };
+
+  useEffect(() => {
+    applyUserFromStorage();
+    const onSync = () => applyUserFromStorage();
+    window.addEventListener(SESSION_USER_SYNC_EVENT, onSync);
+    return () => window.removeEventListener(SESSION_USER_SYNC_EVENT, onSync);
   }, []);
 
   const handleLogout = async () => {
