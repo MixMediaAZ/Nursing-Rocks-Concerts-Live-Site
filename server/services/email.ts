@@ -395,27 +395,30 @@ export async function sendNurseVerifiedWelcomeEmail(userId: number): Promise<{
   const client = await initializeResendClient();
   if (client && process.env.RESEND_API_KEY) {
     try {
-      await client.emails.send({
+      const result = await client.emails.send({
         from: SENDER_EMAIL,
         to: user.email,
         subject: sanitizeHeader(subject),
         html,
         replyTo: "NursingRocksConcerts@gmail.com",
       });
+      console.log(`[Email] ✅ Nurse welcome email sent successfully - ID: ${result.id}`);
       return { deliveryMode: "resend" };
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
       console.error(
-        `[Email] Welcome after verify failed for user ${userId}:`,
-        error instanceof Error ? error.message : String(error)
+        `[Email] ❌ Welcome email failed for user ${userId} (${user.email}): ${errorMsg}`
       );
-      throw new Error(`Email service error: ${error instanceof Error ? error.message : "Unknown error"}`);
+      throw new Error(`Email service error: ${errorMsg}`);
     }
   }
 
   console.log(`\n${"=".repeat(60)}`);
-  console.log(`[EMAIL - DEV] Nurse welcome after verify → ${user.email}`);
+  console.log(`[EMAIL - DEV LOG ONLY] Welcome email for user ${userId}`);
+  console.log(`To: ${user.email}`);
   console.log(`Subject: ${subject}`);
-  console.log(`Link: ${signInUrl}`);
+  console.log(`Dashboard Link: ${signInUrl}`);
+  console.log(`Note: RESEND_API_KEY not configured - email NOT sent to Resend, only logged here`);
   console.log(`${"=".repeat(60)}\n`);
   return { deliveryMode: "dev_log" };
 }
