@@ -120,8 +120,7 @@ const HeroSection = () => {
 
   const defaultHeroBackground =
     "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&h=800&q=80";
-  const heroBackgroundSrc =
-    featuredEvent?.image_url?.trim() || defaultHeroBackground;
+  const heroBackgroundSrc = defaultHeroBackground;
   const heroBackgroundAlt = featuredEvent?.title
     ? `${featuredEvent.title} — event poster`
     : "Concert crowd with hands raised";
