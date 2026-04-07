@@ -894,21 +894,31 @@ export const nrpxRegistrations = pgTable("nrpx_registrations", {
   // See migration: 004_fix_email_case_insensitive_all_tables.sql
   email: varchar("email", { length: 255 }).notNull().unique(),
   employer: varchar("employer", { length: 255 }),
+  // Reference to users table - admin approval workflow creates user account for each NRPX registration
+  // NULLABLE to preserve existing 6 pre-workflow registrations; new registrations will have user_id
+  user_id: integer("user_id").references(() => users.id),
   registered_at: timestamp("registered_at", { withTimezone: true }).defaultNow(),
   checked_in: boolean("checked_in").default(false),
   checked_in_at: timestamp("checked_in_at", { withTimezone: true }),
+  // email_sent now tracks welcome email (sent on admin approval)
   email_sent: boolean("email_sent").default(false),
   email_sent_at: timestamp("email_sent_at", { withTimezone: true }),
+  // ticket_email_sent tracks if ticket email with QR was sent on claim
+  ticket_email_sent: boolean("ticket_email_sent").default(false),
+  ticket_email_sent_at: timestamp("ticket_email_sent_at", { withTimezone: true }),
   created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
 export const insertNrpxRegistrationSchema = createInsertSchema(nrpxRegistrations).omit({
   id: true,
+  user_id: true, // Server-generated when user account is created on approval
   registered_at: true,
   checked_in: true,
   checked_in_at: true,
   email_sent: true,
   email_sent_at: true,
+  ticket_email_sent: true,
+  ticket_email_sent_at: true,
   created_at: true,
 });
 

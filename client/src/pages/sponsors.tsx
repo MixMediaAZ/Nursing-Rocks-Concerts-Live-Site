@@ -123,7 +123,7 @@ export default function SponsorsPage() {
 
       {/* Partners Roll Call Section */}
       <div className="w-full max-w-6xl mx-auto px-4 py-12">
-        <section className="mt-16 py-12">
+        <section className="mt-16 py-12 bg-white rounded-lg border border-gray-200 p-8 shadow-md">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">Sponsorship Partners</h2>
             <p className="text-gray-600">Thank you to our sponsors who help make events possible</p>

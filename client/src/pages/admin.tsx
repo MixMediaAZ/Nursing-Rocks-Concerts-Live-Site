@@ -3133,7 +3133,9 @@ function NrpxRegistrationsTab() {
   const [statusFilter, setStatusFilter] = useState<"all" | "checked_in" | "not_checked_in">("all");
   const [sort, setSort] = useState<"date" | "name">("date");
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
   const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
@@ -3155,6 +3157,48 @@ function NrpxRegistrationsTab() {
     },
     refetchInterval: 30000,
   });
+
+  // Fetch pending NRPX approvals (users with is_verified: false)
+  const { data: pendingApprovals, isLoading: pendingLoading, refetch: refetchPending } = useQuery<{
+    pending: Array<{ id: string; first_name: string; last_name: string; email: string; registered_at: string }>;
+    count: number;
+  }>({
+    queryKey: ["/api/admin/nrpx/pending-approvals"],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/nrpx/pending-approvals`, { headers: authHeaders });
+      if (!res.ok) throw new Error("Failed to load");
+      return res.json();
+    },
+    refetchInterval: 30000,
+  });
+
+  const handleApproveRegistration = async (registrationId: string) => {
+    setApprovingId(registrationId);
+    try {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch(`/api/admin/nrpx/approve/${registrationId}`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const json = await res.json();
+      toast({
+        title: json.success ? "Registration approved!" : "Approval failed",
+        description: json.message,
+        variant: json.success ? "default" : "destructive",
+      });
+      if (json.success) {
+        refetchPending();
+        refetch();
+      }
+    } catch (error) {
+      toast({ title: "Network error", variant: "destructive" });
+    } finally {
+      setApprovingId(null);
+    }
+  };
 
   const handleResend = async (id: string) => {
     setResendingId(id);
@@ -3200,6 +3244,45 @@ function NrpxRegistrationsTab() {
           </Button>
         </div>
       </div>
+
+      {/* Pending Approvals Section */}
+      {pendingApprovals && pendingApprovals.count > 0 && (
+        <Card className="border-amber-200 bg-amber-50/50">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <UserCheck className="h-5 w-5 text-amber-600" />
+              Pending Approvals ({pendingApprovals.count})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {pendingLoading ? (
+              <div className="space-y-2">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="animate-pulse h-12 bg-muted rounded"></div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {pendingApprovals.pending.map((reg) => (
+                  <div key={reg.id} className="flex items-center justify-between bg-white border border-amber-200 rounded p-3">
+                    <div>
+                      <p className="font-medium">{reg.first_name} {reg.last_name}</p>
+                      <p className="text-sm text-muted-foreground">{reg.email}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => handleApproveRegistration(reg.id)}
+                      disabled={approvingId === reg.id}
+                    >
+                      {approvingId === reg.id ? "Approving…" : "Approve"}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats cards */}
       {stats && (

@@ -75,9 +75,9 @@ export default function PhoenixRegisterPage() {
               </div>
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">You're in! 🎸</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Registration Submitted! 📝</h1>
               <p className="mt-2 text-lg text-gray-600">
-                Check your email for your QR ticket.
+                Check your email for next steps.
               </p>
             </div>
             <div className="bg-gray-50 rounded-xl p-6 text-left space-y-3">
@@ -106,14 +106,7 @@ export default function PhoenixRegisterPage() {
               </div>
             </div>
             <p className="text-sm text-gray-500">
-              Didn't get the email? Check your spam folder or{" "}
-              <button
-                onClick={() => setStatus("idle")}
-                className="text-blue-600 underline hover:no-underline"
-              >
-                register again
-              </button>
-              .
+              Didn't get the approval email? Check your spam folder. Once approved, you'll receive an email with instructions to claim your ticket.
             </p>
           </div>
         </div>
@@ -163,9 +156,9 @@ export default function PhoenixRegisterPage() {
         {/* Form */}
         <Card className="w-full max-w-md shadow-lg border-0">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl text-center">Claim Your Free Ticket</CardTitle>
+            <CardTitle className="text-xl text-center">Nursing Rocks Phoenix</CardTitle>
             <CardDescription className="text-center">
-              For registered nurses. Limited to 500 tickets — first come, first served.
+              Create an account to join the Nursing Rocks community and become eligible for free tickets
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -212,7 +205,7 @@ export default function PhoenixRegisterPage() {
                 {form.formState.errors.email && (
                   <p className="text-xs text-red-600">{form.formState.errors.email.message}</p>
                 )}
-                <p className="text-xs text-gray-500">Your QR ticket will be sent here.</p>
+                <p className="text-xs text-gray-500">We'll send approval updates here.</p>
               </div>
 
               <div className="space-y-1.5">

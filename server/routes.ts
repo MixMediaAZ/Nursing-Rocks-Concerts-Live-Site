@@ -4,6 +4,7 @@ import Stripe from "stripe";
 import path from "path";
 import fs from "fs";
 import { randomBytes, timingSafeEqual } from "crypto";
+import bcryptjs from "bcryptjs";
 import { db } from "./db";
 import { eq, sql, and, desc, ilike, or, inArray, gte } from "drizzle-orm";
 import { storage } from "./storage";
@@ -4441,7 +4442,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return true;
   }
 
-  // POST /api/nrpx/register — public nurse registration
+  // POST /api/nrpx/register — public nurse registration (creates user account, pending admin approval)
   app.post("/api/nrpx/register", async (req: Request, res: Response) => {
     try {
       const ip = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || 'unknown').split(',')[0].trim();
@@ -4457,9 +4458,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!emailNorm || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNorm)) return res.status(400).json({ success: false, message: "A valid email address is required." });
       if (employer && employer.trim().length > 255) return res.status(400).json({ success: false, message: "Employer name is too long (max 255 chars)." });
 
-      // Capacity + duplicate check + insert happen under a DB transaction lock
+      // Capacity + duplicate check + user creation + insert happen under a DB transaction lock
       // so concurrent requests cannot bypass the 500 cap.
-      const reg = await db.transaction(async (tx) => {
+      const result = await db.transaction(async (tx) => {
         await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('nrpx_registration_capacity_lock'))`);
 
         const [{ count }] = await tx.select({ count: sql<number>`count(*)::int` }).from(nrpxRegistrations);
@@ -4476,6 +4477,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
           throw new Error("NRPX_DUPLICATE");
         }
 
+        // Check if user already exists
+        const existingUser = await tx
+          .select({ id: users.id })
+          .from(users)
+          .where(eq(users.email, emailNorm))
+          .limit(1);
+        if (existingUser.length > 0) {
+          throw new Error("NRPX_USER_EXISTS");
+        }
+
+        // Generate secure random password (user won't use it — they'll reset via email)
+        const randomPassword = randomBytes(32).toString('hex');
+        const passwordHash = await bcryptjs.hash(randomPassword, 10);
+
+        // Create user account with is_verified: false (admin must approve first)
+        const [newUser] = await tx
+          .insert(users)
+          .values({
+            email: emailNorm,
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+            password_hash: passwordHash,
+            is_verified: false,
+            is_admin: false,
+            created_at: new Date(),
+            updated_at: new Date(),
+          })
+          .returning();
+
+        // Generate unique ticket code
         let ticketCode = '';
         for (let i = 0; i < 10; i++) {
           const candidate = generateTicketCode();
@@ -4493,6 +4524,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           throw new Error("NRPX_CODE_FAILED");
         }
 
+        // Create NRPX registration linked to user
         const [created] = await tx
           .insert(nrpxRegistrations)
           .values({
@@ -4501,9 +4533,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             last_name: lastName.trim(),
             email: emailNorm,
             employer: employer?.trim() || null,
+            user_id: newUser.id,
+            // DO NOT set email_sent or ticket_email_sent — both are false by default
           })
           .returning();
-        return created;
+
+        return { registration: created, user: newUser };
       }).catch((error) => {
         if (error instanceof Error && error.message === "NRPX_FULL") {
           return "NRPX_FULL" as const;
@@ -4511,24 +4546,151 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (error instanceof Error && error.message === "NRPX_DUPLICATE") {
           return "NRPX_DUPLICATE" as const;
         }
+        if (error instanceof Error && error.message === "NRPX_USER_EXISTS") {
+          return "NRPX_USER_EXISTS" as const;
+        }
         if (error instanceof Error && error.message === "NRPX_CODE_FAILED") {
           return "NRPX_CODE_FAILED" as const;
         }
         throw error;
       });
 
-      if (reg === "NRPX_FULL") {
+      if (result === "NRPX_FULL") {
         return res.status(409).json({ success: false, message: "Registration is full. Thank you for your interest!" });
       }
-      if (reg === "NRPX_DUPLICATE") {
-        return res.status(409).json({ success: false, message: "This email is already registered. Check your inbox for your ticket." });
+      if (result === "NRPX_DUPLICATE") {
+        return res.status(409).json({ success: false, message: "This email is already registered for this event." });
       }
-      if (reg === "NRPX_CODE_FAILED") {
+      if (result === "NRPX_USER_EXISTS") {
+        return res.status(409).json({ success: false, message: "This email is already in our system. Please log in to claim your Phoenix ticket." });
+      }
+      if (result === "NRPX_CODE_FAILED") {
         return res.status(500).json({ success: false, message: "Could not generate ticket code. Please try again." });
       }
 
-      // Generate QR code
-      const qrBuffer = await QRCode.toBuffer(reg.ticket_code, {
+      // NO EMAIL SENT ON REGISTRATION — email sent only after admin approval
+      console.log(`[NRPX] Registration created - user ${result.user.id} | email: ${emailNorm} | pending admin approval`);
+      res.status(201).json({
+        success: true,
+        message: "Registration pending admin review. We'll email you next steps once approved! 🎸"
+      });
+    } catch (error) {
+      console.error("[NRPX] Registration error:", error);
+      res.status(500).json({ success: false, message: "Registration failed. Please try again." });
+    }
+  });
+
+  // POST /api/admin/nrpx/approve/:registrationId — admin approves NRPX registration and sends welcome email
+  app.post("/api/admin/nrpx/approve/:registrationId", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const { verifyUser } = await import("./services/verification");
+      const { sendNrpxWelcomeEmail } = await import("./email");
+
+      const registrationId = req.params.registrationId;
+      if (!registrationId) return res.status(400).json({ success: false, message: "Registration ID required" });
+
+      const adminUserId = (req as any).user?.userId;
+      if (!adminUserId) return res.status(401).json({ success: false, message: "Admin user not found" });
+
+      // Get NRPX registration
+      const [registration] = await db
+        .select()
+        .from(nrpxRegistrations)
+        .where(eq(nrpxRegistrations.id, registrationId))
+        .limit(1);
+
+      if (!registration) {
+        return res.status(404).json({ success: false, message: "Registration not found" });
+      }
+
+      if (!registration.user_id) {
+        return res.status(400).json({ success: false, message: "Registration has no associated user account" });
+      }
+
+      // Get user
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, registration.user_id))
+        .limit(1);
+
+      if (!user) {
+        return res.status(404).json({ success: false, message: "Associated user not found" });
+      }
+
+      // Check if already verified
+      if (user.is_verified) {
+        return res.status(400).json({ success: false, message: "User already verified" });
+      }
+
+      // Call existing verifyUser service to set is_verified: true (handles audit log, etc.)
+      await verifyUser(registration.user_id, adminUserId);
+
+      // Send NRPX-specific welcome email with claim ticket instructions
+      const emailResult = await sendNrpxWelcomeEmail({
+        firstName: registration.first_name,
+        lastName: registration.last_name,
+        email: registration.email,
+      });
+
+      // Mark email sent (welcome email)
+      if (emailResult.success) {
+        await db.update(nrpxRegistrations)
+          .set({ email_sent: true, email_sent_at: new Date() })
+          .where(eq(nrpxRegistrations.id, registrationId));
+      }
+
+      console.log(`[NRPX] Admin approved registration - user ${registration.user_id} | email: ${registration.email}`);
+      res.json({
+        success: true,
+        message: "Registration approved and welcome email sent",
+        registration: { id: registration.id, first_name: registration.first_name, last_name: registration.last_name, email: registration.email }
+      });
+    } catch (error) {
+      console.error("[NRPX] Approval error:", error);
+      res.status(500).json({ success: false, message: "Approval failed. Please try again." });
+    }
+  });
+
+  // POST /api/nrpx/claim-ticket — verified NRPX user claims their ticket (generates QR, sends ticket email)
+  app.post("/api/nrpx/claim-ticket", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.userId || (req as any).user?.id;
+      if (!userId) return res.status(401).json({ success: false, message: "Authentication required" });
+
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (!user) {
+        return res.status(404).json({ success: false, message: "User not found" });
+      }
+
+      // Check if user is verified
+      if (!user.is_verified) {
+        return res.status(403).json({ success: false, message: "Your account is not yet verified. Please wait for admin approval." });
+      }
+
+      // Get NRPX registration for this user
+      const [registration] = await db
+        .select()
+        .from(nrpxRegistrations)
+        .where(eq(nrpxRegistrations.user_id, userId))
+        .limit(1);
+
+      if (!registration) {
+        return res.status(404).json({ success: false, message: "You are not registered for the Phoenix event" });
+      }
+
+      // Check if ticket already claimed
+      if (registration.ticket_email_sent) {
+        return res.status(400).json({ success: false, message: "Ticket already claimed. Check your email for the QR code." });
+      }
+
+      // Generate QR code from ticket code
+      const qrBuffer = await QRCode.toBuffer(registration.ticket_code, {
         type: 'png',
         width: 400,
         margin: 2,
@@ -4538,25 +4700,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send ticket email
       const emailResult = await sendNrpxTicketEmail({
-        firstName: reg.first_name,
-        lastName: reg.last_name,
-        email: reg.email,
-        ticketCode: reg.ticket_code,
+        firstName: registration.first_name,
+        lastName: registration.last_name,
+        email: registration.email,
+        ticketCode: registration.ticket_code,
         qrBuffer,
       });
 
-      // Mark email sent
-      if (emailResult.success) {
-        await db.update(nrpxRegistrations)
-          .set({ email_sent: true, email_sent_at: new Date() })
-          .where(eq(nrpxRegistrations.id, reg.id));
+      if (!emailResult.success) {
+        return res.status(500).json({ success: false, message: "Could not send ticket email. Please try again." });
       }
 
-      console.log(`[NRPX] Registration successful - ticket ${reg.ticket_code} | email: ${emailResult.success}`);
-      res.status(201).json({ success: true, message: "Check your email for your ticket! 🎸" });
+      // Mark ticket email sent
+      await db.update(nrpxRegistrations)
+        .set({ ticket_email_sent: true, ticket_email_sent_at: new Date() })
+        .where(eq(nrpxRegistrations.id, registration.id));
+
+      console.log(`[NRPX] Ticket claimed - user ${userId} | email: ${registration.email} | code: ${registration.ticket_code}`);
+      res.json({
+        success: true,
+        message: "Ticket sent to your email! Check your inbox for the QR code. 🎸",
+        ticketCode: registration.ticket_code
+      });
     } catch (error) {
-      console.error("[NRPX] Registration error:", error);
-      res.status(500).json({ success: false, message: "Registration failed. Please try again." });
+      console.error("[NRPX] Claim ticket error:", error);
+      res.status(500).json({ success: false, message: "Could not claim ticket. Please try again." });
+    }
+  });
+
+  // GET /api/admin/nrpx/pending-approvals — get all NRPX registrations pending admin approval
+  app.get("/api/admin/nrpx/pending-approvals", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      // Get all NRPX registrations where user is_verified: false
+      const pending = await db
+        .select({
+          id: nrpxRegistrations.id,
+          first_name: nrpxRegistrations.first_name,
+          last_name: nrpxRegistrations.last_name,
+          email: nrpxRegistrations.email,
+          registered_at: nrpxRegistrations.registered_at,
+        })
+        .from(nrpxRegistrations)
+        .innerJoin(users, eq(nrpxRegistrations.user_id, users.id))
+        .where(eq(users.is_verified, false))
+        .orderBy(desc(nrpxRegistrations.registered_at));
+
+      res.json({
+        success: true,
+        pending,
+        count: pending.length,
+      });
+    } catch (error) {
+      console.error("[NRPX] Get pending approvals error:", error);
+      res.status(500).json({ success: false, message: "Failed to fetch pending approvals" });
+    }
+  });
+
+  // GET /api/nrpx/my-registration — get current user's NRPX registration status
+  app.get("/api/nrpx/my-registration", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.userId || (req as any).user?.id;
+      if (!userId) return res.status(401).json({ success: false, message: "Authentication required" });
+
+      // Get NRPX registration for this user
+      const [registration] = await db
+        .select()
+        .from(nrpxRegistrations)
+        .where(eq(nrpxRegistrations.user_id, userId))
+        .limit(1);
+
+      if (!registration) {
+        return res.status(404).json({ success: false, message: "No NRPX registration found" });
+      }
+
+      // Return registration details (safe data only)
+      res.json({
+        success: true,
+        id: registration.id,
+        first_name: registration.first_name,
+        last_name: registration.last_name,
+        email: registration.email,
+        ticket_code: registration.ticket_code,
+        ticket_email_sent: registration.ticket_email_sent,
+        checked_in: registration.checked_in,
+      });
+    } catch (error) {
+      console.error("[NRPX] Get registration error:", error);
+      res.status(500).json({ success: false, message: "Failed to fetch registration" });
     }
   });
 

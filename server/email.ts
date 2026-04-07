@@ -544,6 +544,132 @@ export async function sendNrpxTicketEmail(data: NrpxTicketEmailData): Promise<{ 
   }
 }
 
+export interface NrpxWelcomeEmailData {
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+/**
+ * Send welcome email for approved NRPX registration with instructions to claim ticket
+ */
+export async function sendNrpxWelcomeEmail(data: NrpxWelcomeEmailData): Promise<{ success: boolean; error?: string }> {
+  if (!resend) {
+    console.warn('Resend API key not configured - skipping NRPX welcome email');
+    return { success: false, error: 'Email service not configured' };
+  }
+
+  const appUrl = process.env.APP_URL || 'https://nursingrocksconcerts.com';
+
+  const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #1a1a1a; margin: 0; padding: 0; background: #f4f4f4; }
+    .wrapper { background: #f4f4f4; padding: 24px 0; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 40px 32px; text-align: center; }
+    .header h1 { margin: 0 0 8px; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+    .header p { margin: 0; font-size: 16px; opacity: 0.85; }
+    .rock-accent { color: #e94560; }
+    .content { padding: 32px; }
+    .greeting { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+    .approval-card { background: #e8f5e9; border: 2px solid #4caf50; border-radius: 10px; padding: 20px 24px; margin: 24px 0; text-align: center; }
+    .approval-card h2 { margin: 0 0 10px; font-size: 20px; color: #2e7d32; }
+    .approval-card p { margin: 0; color: #388e3c; font-size: 15px; }
+    .cta-button { display: inline-block; background: #e94560; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin: 24px 0; }
+    .event-card { background: #f8f9ff; border: 2px solid #e94560; border-radius: 10px; padding: 20px 24px; margin: 24px 0; }
+    .event-card h2 { margin: 0 0 16px; font-size: 20px; color: #0f3460; }
+    .event-detail { display: flex; align-items: flex-start; margin-bottom: 10px; font-size: 15px; }
+    .event-detail .icon { font-size: 18px; margin-right: 10px; flex-shrink: 0; }
+    .next-steps { background: #fff3e0; border-left: 4px solid #ff9800; padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 20px 0; }
+    .next-steps h3 { margin: 0 0 12px; color: #e65100; font-size: 16px; }
+    .next-steps ol { margin: 0; padding-left: 20px; color: #5a4000; }
+    .next-steps li { margin-bottom: 8px; }
+    .footer { background: #1a1a2e; color: #aaa; text-align: center; padding: 24px 32px; font-size: 13px; }
+    .footer a { color: #e94560; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <h1>🎸 Nursing Rocks Phoenix</h1>
+        <p>Your registration is approved!</p>
+      </div>
+
+      <div class="content">
+        <p class="greeting">Hi ${esc(data.firstName)},</p>
+
+        <div class="approval-card">
+          <h2>✓ Registration Approved</h2>
+          <p>Great news! Your registration for Nursing Rocks Phoenix has been approved.</p>
+        </div>
+
+        <p>Now it's time to claim your free ticket. Follow the steps below:</p>
+
+        <div class="next-steps">
+          <h3>📋 Next Steps:</h3>
+          <ol>
+            <li><strong>Log in</strong> to your account at <a href="${appUrl}" style="color: #ff6f00;">${appUrl}</a></li>
+            <li><strong>Go to your dashboard</strong> and look for "Claim Your Phoenix Ticket"</li>
+            <li><strong>Click the button</strong> to receive your QR code ticket via email</li>
+            <li><strong>Show your QR code</strong> at the door on event day</li>
+          </ol>
+        </div>
+
+        <p style="text-align: center;">
+          <a href="${appUrl}/dashboard" class="cta-button">Log In & Claim Your Ticket</a>
+        </p>
+
+        <div class="event-card">
+          <h2>🎤 Event Details</h2>
+          <div class="event-detail"><span class="icon">📅</span><div><strong>Date:</strong> Friday, May 16, 2026</div></div>
+          <div class="event-detail"><span class="icon">⏰</span><div><strong>Time:</strong> 3:00 PM (Doors Open)</div></div>
+          <div class="event-detail"><span class="icon">📍</span><div><strong>Venue:</strong> The Walter Studio, Phoenix, AZ</div></div>
+          <div class="event-detail"><span class="icon">🎵</span><div><strong>Featuring:</strong> The Black Moods, Jane 'n the Jungle, PsychoStar, My Upside Down & more</div></div>
+          <div class="event-detail"><span class="icon">🎟️</span><div><strong>Ticket:</strong> Free — for registered nurses</div></div>
+        </div>
+
+        <p style="font-size: 14px; color: #666;">Questions? Reach us at <a href="mailto:support@nursingrocksconcerts.com" style="color: #e94560;">support@nursingrocksconcerts.com</a></p>
+        <p style="font-size: 14px; color: #666;">See you at Nursing Rocks! 🤘<br><strong>— The Nursing Rocks Team</strong></p>
+      </div>
+
+      <div class="footer">
+        <p><strong style="color: #fff;">Nursing Rocks Concert Series</strong></p>
+        <p>Benefiting Gateway Community College Scholarships</p>
+        <p style="margin-top: 12px; font-size: 11px; color: #666;">This is a transactional email confirming your registration approval.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  try {
+    const response = await resend.emails.send({
+      from: 'Nursing Rocks <noreply@nursingrocksconcerts.com>',
+      to: data.email,
+      subject: 'Your Nursing Rocks Phoenix Registration Approved! 🎸',
+      html: emailHtml,
+    });
+
+    if (response.error) {
+      console.error('[NRPX] Resend error:', response.error);
+      return { success: false, error: response.error.message };
+    }
+
+    if (process.env.NODE_ENV !== 'production') console.log('[NRPX] Welcome email sent:', response.data?.id);
+    return { success: true };
+  } catch (error: any) {
+    console.error('[NRPX] Error sending welcome email:', error);
+    return { success: false, error: error.message || 'Failed to send email' };
+  }
+}
+
 /**
  * Send password reset email with a one-time link
  */

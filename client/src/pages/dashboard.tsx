@@ -401,7 +401,12 @@ export default function DashboardPage() {
               </CardFooter>
             </Card>
           )}
-          
+
+          {/* NRPX Phoenix Ticket Claim Section */}
+          {userData.is_verified && (
+            <NrpxClaimSection userEmail={userData.email} />
+          )}
+
           {/* Action Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <Card className="border-primary/20 shadow-sm hover:shadow-md transition-all duration-200">
@@ -605,5 +610,115 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * NRPX Phoenix Ticket Claim Section
+ * Shows claim ticket button for verified NRPX users
+ */
+function NrpxClaimSection({ userEmail }: { userEmail: string }) {
+  const { toast } = useToast();
+  const [isChecking, setIsChecking] = useState(true);
+  const [hasNrpxRegistration, setHasNrpxRegistration] = useState(false);
+  const [ticketClaimed, setTicketClaimed] = useState(false);
+
+  const claimTicketMutation = useMutation({
+    mutationFn: async () => {
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/nrpx/claim-ticket", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Failed to claim ticket");
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setTicketClaimed(true);
+      toast({
+        title: "Ticket Claimed!",
+        description: data.message || "Check your email for your QR code.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Could not claim ticket",
+        description: error.message,
+      });
+    },
+  });
+
+  // Check if user has an NRPX registration
+  useEffect(() => {
+    const checkNrpxRegistration = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch("/api/nrpx/my-registration", {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setHasNrpxRegistration(true);
+          setTicketClaimed(data.ticket_email_sent || false);
+        } else {
+          setHasNrpxRegistration(false);
+        }
+      } catch (error) {
+        console.error("Error checking NRPX registration:", error);
+        setHasNrpxRegistration(false);
+      } finally {
+        setIsChecking(false);
+      }
+    };
+
+    checkNrpxRegistration();
+  }, []);
+
+  if (isChecking || !hasNrpxRegistration) {
+    return null;
+  }
+
+  return (
+    <Card className="mb-6 border-purple-200 bg-purple-50/50 dark:bg-purple-950/20">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <span className="text-2xl">🎸</span>
+          Claim Your Phoenix Ticket
+        </CardTitle>
+        <CardDescription>
+          Your registration has been approved! Click below to receive your QR code ticket.
+        </CardDescription>
+      </CardHeader>
+      <CardFooter className="pt-0">
+        {ticketClaimed ? (
+          <div className="w-full">
+            <div className="flex items-center gap-2 text-green-700 bg-green-100 px-3 py-2 rounded">
+              <CheckCircle className="h-4 w-4" />
+              <span className="text-sm font-medium">Ticket claimed! Check your email for the QR code.</span>
+            </div>
+          </div>
+        ) : (
+          <Button
+            onClick={() => claimTicketMutation.mutate()}
+            disabled={claimTicketMutation.isPending}
+            className="bg-purple-600 hover:bg-purple-700"
+          >
+            {claimTicketMutation.isPending ? "Sending ticket…" : "Get My Ticket 🎸"}
+          </Button>
+        )}
+      </CardFooter>
+    </Card>
   );
 }
