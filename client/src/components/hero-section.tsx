@@ -215,18 +215,18 @@ const HeroSection = () => {
                 className="w-full bg-gradient-to-r from-[#5D3FD3] to-[#00A3E0] hover:from-[#00A3E0] hover:to-[#5D3FD3] text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full shadow-lg border-2 border-white/30 transition-all duration-300"
               >
                 <Link href="/sponsorship">
-                  <span className="uppercase">Become a Sponsor</span>
+                  <span className="uppercase">Help sponsor the events!</span>
                   <i className="fas fa-heart ml-1 sm:ml-2"></i>
                 </Link>
               </Button>
 
-              {/* Donation Button */}
+              {/* Scholarship Donation Button */}
               <Button
                 className="w-full bg-[#00A3E0] hover:bg-[#0088B8] text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full shadow-lg transition-all duration-300"
-                onClick={() => window.location.href = '/sponsorship'}
+                onClick={() => window.open('https://nursing-rocks-scholorship-foundation-mixmediaaz.replit.app/donate', '_blank', 'noopener noreferrer')}
               >
-                <span className="uppercase">Make a Donation</span>
-                <i className="fas fa-donate ml-1 sm:ml-2"></i>
+                <span className="uppercase">Make a scholarship donation!</span>
+                <i className="fas fa-graduation-cap ml-1 sm:ml-2"></i>
               </Button>
             </div>
 
@@ -292,18 +292,18 @@ const HeroSection = () => {
                 className="w-full bg-gradient-to-r from-[#5D3FD3] to-[#00A3E0] hover:from-[#00A3E0] hover:to-[#5D3FD3] text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full shadow-lg border-2 border-white/30 transition-all duration-300"
               >
                 <Link href="/sponsorship">
-                  <span className="uppercase">Become a Sponsor</span>
+                  <span className="uppercase">Help sponsor the events!</span>
                   <i className="fas fa-heart ml-1 sm:ml-2"></i>
                 </Link>
               </Button>
 
-              {/* Donation Button */}
+              {/* Scholarship Donation Button */}
               <Button
                 className="w-full bg-[#00A3E0] hover:bg-[#0088B8] text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full shadow-lg transition-all duration-300"
-                onClick={() => window.location.href = '/sponsorship'}
+                onClick={() => window.open('https://nursing-rocks-scholorship-foundation-mixmediaaz.replit.app/donate', '_blank', 'noopener noreferrer')}
               >
-                <span className="uppercase">Make a Donation</span>
-                <i className="fas fa-donate ml-1 sm:ml-2"></i>
+                <span className="uppercase">Make a scholarship donation!</span>
+                <i className="fas fa-graduation-cap ml-1 sm:ml-2"></i>
               </Button>
 
               {/* Slideshow for Mobile Only - Under buttons */}
