@@ -3350,7 +3350,7 @@ function NrpxRegistrationsTab() {
             <table className="w-full text-sm">
               <thead className="bg-muted/50">
                 <tr>
-                  {["Name", "Email", "Employer", "Ticket Code", "Registered", "Email", "Checked In", "Actions"].map(h => (
+                  {["Name", "Email", "Event", "Approval", "Verified", "Checked In", "Actions"].map(h => (
                     <th key={h} className="text-left px-4 py-3 font-medium text-muted-foreground whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -3362,14 +3362,19 @@ function NrpxRegistrationsTab() {
                       {reg.first_name} {reg.last_name}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{reg.email}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{reg.employer || "—"}</td>
-                    <td className="px-4 py-3 font-mono text-xs">{reg.ticket_code}</td>
-                    <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                      {reg.registered_at ? new Date(reg.registered_at).toLocaleDateString() : "—"}
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <Badge variant="outline" className="text-xs">Phoenix 2026</Badge>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant={reg.email_sent ? "default" : "secondary"} className="text-xs">
-                        {reg.email_sent ? "Sent" : "Pending"}
+                      <Badge
+                        className={reg.is_verified ? "bg-green-100 text-green-800 border-green-200" : "bg-yellow-100 text-yellow-800 border-yellow-200"}
+                      >
+                        {reg.is_verified ? "✓ Approved" : "⏳ Pending"}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge variant={reg.is_verified ? "default" : "secondary"} className="text-xs">
+                        {reg.is_verified ? "Yes" : "No"}
                       </Badge>
                     </td>
                     <td className="px-4 py-3">
@@ -3388,19 +3393,32 @@ function NrpxRegistrationsTab() {
                         <Badge variant="outline" className="text-xs text-muted-foreground">Not In</Badge>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 space-x-2 flex flex-wrap">
+                      {!reg.is_verified && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={approvingId === reg.id}
+                          onClick={() => handleApproveRegistration(reg.id)}
+                          className="h-7 text-xs text-green-600 hover:text-green-700"
+                        >
+                          {approvingId === reg.id ? (
+                            <RefreshCw className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <>✓ Approve</>
+                          )}
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
-                        disabled={resendingId === reg.id}
-                        onClick={() => handleResend(reg.id)}
+                        onClick={() => {
+                          setSelectedUser(reg);
+                          setShowUserDialog(true);
+                        }}
                         className="h-7 text-xs"
                       >
-                        {resendingId === reg.id ? (
-                          <RefreshCw className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <><Mail className="h-3 w-3 mr-1" />Resend</>
-                        )}
+                        Details
                       </Button>
                     </td>
                   </tr>
