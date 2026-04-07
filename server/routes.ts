@@ -1618,7 +1618,175 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: "Failed to confirm payment" });
     }
   });
-  
+
+  // ========== SPONSORSHIP ENDPOINTS ==========
+
+  // Create payment intent for sponsorship/donation
+  app.post("/api/sponsorship/payment-intent", async (req: Request, res: Response) => {
+    try {
+      const amountCents = req.body?.amountCents;
+      const tier = String(req.body?.tier || "");
+      const donorName = String(req.body?.donor_name || "").trim();
+      const donorEmail = String(req.body?.donor_email || "").toLowerCase().trim();
+      const isAnonymous = Boolean(req.body?.is_anonymous);
+
+      // Validation
+      if (!Number.isInteger(amountCents) || amountCents < 100 || amountCents > 500000000) {
+        return res.status(400).json({ message: "Invalid amount. Minimum: $1.00, Maximum: $5,000,000.00" });
+      }
+      if (!["marquee", "premium", "silent-auction", "donation", "custom"].includes(tier)) {
+        return res.status(400).json({ message: "Invalid tier" });
+      }
+      if (!donorName || donorName.length < 1 || donorName.length > 200) {
+        return res.status(400).json({ message: "Donor name must be 1-200 characters" });
+      }
+      if (!donorEmail || !donorEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+        return res.status(400).json({ message: "Please enter a valid email address" });
+      }
+
+      // If Stripe is not initialized, simulate for development
+      if (!stripe) {
+        return res.json({
+          clientSecret: "simulated_client_secret",
+          amountCents,
+          paymentIntentId: `simulated_pi_${Date.now()}`,
+        });
+      }
+
+      const pi = await stripe.paymentIntents.create({
+        amount: Math.round(amountCents),
+        currency: "usd",
+        automatic_payment_methods: { enabled: true },
+        metadata: {
+          donor_email: donorEmail,
+          tier,
+          is_anonymous: String(isAnonymous),
+          mode: "sponsorship",
+        },
+      });
+
+      return res.json({
+        clientSecret: pi.client_secret,
+        amountCents,
+        paymentIntentId: pi.id,
+      });
+    } catch (error: any) {
+      console.error("Error creating sponsorship PaymentIntent:", error);
+      return res.status(500).json({ message: "Failed to create payment intent" });
+    }
+  });
+
+  // Confirm sponsorship payment and create sponsorship record
+  app.post("/api/sponsorship/confirm", async (req: Request, res: Response) => {
+    try {
+      const paymentIntentId = String(req.body?.paymentIntentId || "");
+      if (!paymentIntentId) {
+        return res.status(400).json({ message: "paymentIntentId is required" });
+      }
+
+      // Check for idempotency - prevent double-charging
+      const idempotencyKey = `CONFIRMED_PAYMENT_${paymentIntentId}`;
+      const existing = await storage.getAppSettingByKey(idempotencyKey);
+      if (existing) {
+        return res.json({ success: true });
+      }
+
+      let metadata: any = {};
+      let amountCents = 0;
+
+      if (!stripe) {
+        // Simulation mode - use body data
+        amountCents = req.body?.amountCents || 0;
+        metadata = {
+          donor_email: String(req.body?.donor_email || "").toLowerCase().trim(),
+          donor_name: String(req.body?.donor_name || "").trim(),
+          tier: String(req.body?.tier || "donation"),
+          is_anonymous: req.body?.is_anonymous || false,
+          message: req.body?.message || "",
+          company_name: req.body?.company_name || "",
+        };
+      } else {
+        const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+        if (!pi) {
+          return res.status(404).json({ message: "PaymentIntent not found" });
+        }
+        if (pi.status !== "succeeded") {
+          return res.status(400).json({ message: `Payment not completed (status=${pi.status})` });
+        }
+
+        amountCents = pi.amount;
+        const piMeta = (pi.metadata || {}) as any;
+        metadata = {
+          donor_email: piMeta.donor_email || "",
+          donor_name: req.body?.donor_name || "",
+          tier: piMeta.tier || "donation",
+          is_anonymous: piMeta.is_anonymous === "true",
+          message: req.body?.message || "",
+          company_name: req.body?.company_name || "",
+        };
+      }
+
+      // Normalize email
+      metadata.donor_email = metadata.donor_email.toLowerCase().trim();
+
+      // Insert sponsorship record
+      await storage.createSponsorship({
+        amount_cents: amountCents,
+        tier: metadata.tier,
+        donor_name: metadata.donor_name,
+        donor_email: metadata.donor_email,
+        is_anonymous: metadata.is_anonymous,
+        payment_intent_id: paymentIntentId,
+        status: stripe ? "succeeded" : "pending",
+        payment_status: "paid",
+        metadata: {
+          message: metadata.message,
+          company_name: metadata.company_name,
+        },
+      });
+
+      // Set idempotency flag
+      await storage.createOrUpdateAppSetting(idempotencyKey, "confirmed");
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error confirming sponsorship payment:", error);
+      return res.status(500).json({ message: "Failed to confirm payment" });
+    }
+  });
+
+  // Get list of public sponsors/partners
+  app.get("/api/sponsors/partners", async (_req: Request, res: Response) => {
+    try {
+      const partners = await storage.getSponsorsByStatus("succeeded", false);
+
+      const summary: any = {};
+      let totalRaisedCents = 0;
+
+      partners.forEach((partner: any) => {
+        totalRaisedCents += partner.amount_cents;
+        summary[partner.tier] = (summary[partner.tier] || 0) + 1;
+      });
+
+      return res.json({
+        success: true,
+        partners: partners.map((p: any) => ({
+          id: p.id,
+          donor_name: p.donor_name,
+          amount_cents: p.amount_cents,
+          tier: p.tier,
+          created_at: p.created_at,
+        })),
+        total_count: partners.length,
+        total_raised_cents: totalRaisedCents,
+        summary,
+      });
+    } catch (error: any) {
+      console.error("Error fetching sponsors/partners:", error);
+      return res.status(500).json({ message: "Failed to fetch partners" });
+    }
+  });
+
   // Employers
   app.get("/api/employers", async (_req: Request, res: Response) => {
     try {

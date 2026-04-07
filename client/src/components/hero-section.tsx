@@ -208,6 +208,26 @@ const HeroSection = () => {
                 Upload your video of appreciation here
                 <i className="fas fa-video ml-1 sm:ml-2"></i>
               </Button>
+
+              {/* Sponsorship Button */}
+              <Button
+                asChild
+                className="w-full bg-gradient-to-r from-[#5D3FD3] to-[#00A3E0] hover:from-[#00A3E0] hover:to-[#5D3FD3] text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full shadow-lg border-2 border-white/30 transition-all duration-300"
+              >
+                <Link href="/sponsorship">
+                  <span className="uppercase">Become a Sponsor</span>
+                  <i className="fas fa-heart ml-1 sm:ml-2"></i>
+                </Link>
+              </Button>
+
+              {/* Donation Button */}
+              <Button
+                className="w-full bg-[#00A3E0] hover:bg-[#0088B8] text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full shadow-lg transition-all duration-300"
+                onClick={() => window.location.href = '/sponsorship'}
+              >
+                <span className="uppercase">Make a Donation</span>
+                <i className="fas fa-donate ml-1 sm:ml-2"></i>
+              </Button>
             </div>
 
             {/* Video Column - Right side - 20% larger (from max-w-sm 384px to ~460px) */}
@@ -265,7 +285,27 @@ const HeroSection = () => {
                 Upload your video of appreciation here
                 <i className="fas fa-video ml-1 sm:ml-2"></i>
               </Button>
-              
+
+              {/* Sponsorship Button */}
+              <Button
+                asChild
+                className="w-full bg-gradient-to-r from-[#5D3FD3] to-[#00A3E0] hover:from-[#00A3E0] hover:to-[#5D3FD3] text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full shadow-lg border-2 border-white/30 transition-all duration-300"
+              >
+                <Link href="/sponsorship">
+                  <span className="uppercase">Become a Sponsor</span>
+                  <i className="fas fa-heart ml-1 sm:ml-2"></i>
+                </Link>
+              </Button>
+
+              {/* Donation Button */}
+              <Button
+                className="w-full bg-[#00A3E0] hover:bg-[#0088B8] text-white font-accent font-semibold text-xs sm:text-sm md:text-base py-3 px-4 sm:px-6 rounded-full shadow-lg transition-all duration-300"
+                onClick={() => window.location.href = '/sponsorship'}
+              >
+                <span className="uppercase">Make a Donation</span>
+                <i className="fas fa-donate ml-1 sm:ml-2"></i>
+              </Button>
+
               {/* Slideshow for Mobile Only - Under buttons */}
               <div className="mt-6 w-full max-w-full" style={{ width: '100%', maxWidth: '100%' }}>
                 <h4 className="text-center font-semibold mb-2 text-white/90">Featured Video</h4>

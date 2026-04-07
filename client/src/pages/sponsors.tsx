@@ -1,5 +1,7 @@
 import { Helmet } from "react-helmet";
 import { useMemo, useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 
 // Pitch deck slides (13)
@@ -118,6 +120,59 @@ export default function SponsorsPage() {
           </div>
         </div>
       </div>
+
+      {/* Partners Roll Call Section */}
+      <div className="w-full max-w-6xl mx-auto px-4 py-12">
+        <section className="mt-16 py-12">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">Sponsorship Partners</h2>
+            <p className="text-gray-600">Thank you to our sponsors who help make events possible</p>
+          </div>
+
+          <PartnersGrid />
+        </section>
+      </div>
     </>
+  );
+}
+
+function PartnersGrid() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["/api/sponsors/partners"],
+  });
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-8">
+        <div className="inline-block">
+          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </div>
+    );
+  }
+
+  const partners = data?.partners || [];
+
+  if (partners.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-600 mb-4">Be the first to become a partner</p>
+        <Button asChild>
+          <Link href="/sponsorship">Become a Partner</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {partners.map((partner: any) => (
+        <div key={partner.id} className="border rounded-lg p-4 bg-gray-50 hover:shadow-md transition-shadow">
+          <h3 className="font-semibold text-lg text-gray-900">{partner.donor_name}</h3>
+          <p className="text-sm text-gray-600 mt-2">${(partner.amount_cents / 100).toFixed(2)}</p>
+          <p className="text-xs text-blue-600 capitalize mt-2 font-medium">{partner.tier}</p>
+        </div>
+      ))}
+    </div>
   );
 }

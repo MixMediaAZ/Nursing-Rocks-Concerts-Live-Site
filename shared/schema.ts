@@ -841,6 +841,28 @@ export const storeOrderItemsRelations = relations(storeOrderItems, ({ one }) => 
   }),
 }));
 
+// ========== SPONSORSHIPS TABLE ==========
+export const sponsorships = pgTable("sponsorships", {
+  id: serial("id").primaryKey(),
+  amount_cents: integer("amount_cents").notNull(),
+  tier: text("tier").notNull(), // marquee, premium, silent-auction, donation, custom
+  donor_name: text("donor_name").notNull(),
+  donor_email: text("donor_email").notNull(), // MUST normalize: toLowerCase().trim()
+  is_anonymous: boolean("is_anonymous").default(false),
+  payment_intent_id: text("payment_intent_id").notNull().unique(),
+  status: text("status").default("pending"), // pending, succeeded, failed
+  payment_status: text("payment_status").default("pending"), // pending, paid
+  metadata: jsonb("metadata"), // {message, company_name}
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSponsorshipSchema = createInsertSchema(sponsorships).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
 // Update user relations to include store relationships
 // Note: usersRelations consolidated above with all relationships including storeOrders
 
@@ -853,6 +875,9 @@ export type InsertStoreOrder = z.infer<typeof insertStoreOrderSchema>;
 
 export type StoreOrderItem = typeof storeOrderItems.$inferSelect;
 export type InsertStoreOrderItem = z.infer<typeof insertStoreOrderItemSchema>;
+
+export type Sponsorship = typeof sponsorships.$inferSelect;
+export type InsertSponsorship = z.infer<typeof insertSponsorshipSchema>;
 
 export type VideoSubmission = typeof videoSubmissions.$inferSelect;
 export type InsertVideoSubmission = z.infer<typeof insertVideoSubmissionSchema>;

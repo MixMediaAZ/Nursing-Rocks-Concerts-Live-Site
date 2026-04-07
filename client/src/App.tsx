@@ -37,6 +37,7 @@ import ThanksPage from "@/pages/thanks";
 import ContactPage from "@/pages/contact";
 import PhoenixRegisterPage from "@/pages/phoenix-register";
 import ScanPage from "@/pages/scan";
+import SponsorshipPage from "@/pages/sponsorship";
 
 // Import the pages that were previously lazy loaded
 import TermsPage from "@/pages/terms";
@@ -89,6 +90,7 @@ function Router() {
             <Route path="/cities" component={CitiesPage} />
             <Route path="/cities/:cityId" component={CityDetailsPage} />
             <Route path="/sponsors" component={SponsorsPage} />
+            <Route path="/sponsorship" component={SponsorshipPage} />
             <Route path="/sponsorships" component={SponsorshipsPage} />
             <Route path="/jobs" component={JobsPage} />
             <Route path="/jobs/:id" component={JobDetailsPage} />

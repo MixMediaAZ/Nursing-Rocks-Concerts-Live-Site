@@ -1,9 +1,9 @@
 import { eq, and, or, ilike, gte, sql, desc } from "drizzle-orm";
 import { db, pool } from "./db";
-import { 
-  Event, InsertEvent, 
-  Artist, InsertArtist, 
-  Gallery, InsertGallery, 
+import {
+  Event, InsertEvent,
+  Artist, InsertArtist,
+  Gallery, InsertGallery,
   Subscriber, InsertSubscriber,
   User, InsertUser,
   NurseLicense, InsertNurseLicense,
@@ -19,12 +19,13 @@ import {
   JobAlert, InsertJobAlert,
   ContactRequest, InsertContactRequest,
   AppSetting, InsertAppSetting,
+  Sponsorship, InsertSponsorship,
   events, artists, gallery, subscribers,
   users, nurseLicenses, tickets,
   storeProducts, storeOrders, storeOrderItems,
   employers, jobListings, nurseProfiles,
   jobApplications, savedJobs, jobAlerts, contactRequests,
-  appSettings
+  appSettings, sponsorships
 } from "@shared/schema";
 import { IStorage } from "./storage";
 import session from "express-session";
@@ -981,5 +982,32 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(appSettings)
       .where(eq(appSettings.key, key));
+  }
+
+  // ========== SPONSORSHIPS ==========
+
+  async createSponsorship(sponsorship: InsertSponsorship): Promise<Sponsorship> {
+    const [newSponsorship] = await db
+      .insert(sponsorships)
+      .values(sponsorship)
+      .returning();
+
+    return newSponsorship;
+  }
+
+  async getSponsorsByStatus(status: string, isAnonymous: boolean): Promise<Sponsorship[]> {
+    return await db
+      .select()
+      .from(sponsorships)
+      .where(
+        and(
+          eq(sponsorships.status, status),
+          eq(sponsorships.is_anonymous, isAnonymous)
+        )
+      )
+      .orderBy(
+        desc(sponsorships.amount_cents),
+        desc(sponsorships.created_at)
+      );
   }
 }

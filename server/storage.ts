@@ -17,12 +17,13 @@ import {
   StoreOrder, InsertStoreOrder,
   StoreOrderItem, InsertStoreOrderItem,
   AppSetting, InsertAppSetting,
+  Sponsorship, InsertSponsorship,
   events, artists, gallery, subscribers,
   users, nurseLicenses, tickets,
   employers, jobListings, nurseProfiles,
   jobApplications, savedJobs, jobAlerts,
   storeProducts, storeOrders, storeOrderItems,
-  appSettings
+  appSettings, sponsorships
 } from "@shared/schema";
 import { DatabaseStorage } from "./storage-db";
 import session from "express-session";
@@ -185,12 +186,18 @@ export interface IStorage {
   getStoreOrderItemsByOrderId(orderId: number): Promise<StoreOrderItem[]>;
   
   // ========== APP SETTINGS ==========
-  
+
   // App Settings management
   getAppSettingByKey(key: string): Promise<AppSetting | undefined>;
   getAllAppSettings(): Promise<AppSetting[]>;
   createOrUpdateAppSetting(key: string, value: string, description?: string, isSensitive?: boolean): Promise<AppSetting>;
   deleteAppSetting(key: string): Promise<void>;
+
+  // ========== SPONSORSHIPS ==========
+
+  // Sponsorship management
+  createSponsorship(sponsorship: any): Promise<any>;
+  getSponsorsByStatus(status: string, isAnonymous: boolean): Promise<any[]>;
 }
 
 export class MemStorage implements IStorage {
