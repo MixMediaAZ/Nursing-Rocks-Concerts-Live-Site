@@ -54,9 +54,10 @@ async function getJwtUser(req: Request) {
   }
   return {
     id: payload.userId,
+    userId: payload.userId,
     email: payload.email,
-    is_verified: payload.isVerified,
-    is_admin: payload.isAdmin,
+    isVerified: payload.isVerified,
+    isAdmin: payload.isAdmin,
   };
 }
 
