@@ -25,7 +25,7 @@ import {
   storeProducts, storeOrders, storeOrderItems,
   employers, jobListings, nurseProfiles,
   jobApplications, savedJobs, jobAlerts, contactRequests,
-  appSettings, sponsorships
+  appSettings, sponsorships, nrpxRegistrations
 } from "@shared/schema";
 import { IStorage } from "./storage";
 import session from "express-session";
@@ -224,7 +224,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteUser(id: number): Promise<void> {
-    // First, revoke all tickets associated with this user (QR codes become invalid)
+    // First, delete NRPX registrations (breaks foreign key reference)
+    await db
+      .delete(nrpxRegistrations)
+      .where(eq(nrpxRegistrations.user_id, id));
+
+    // Then, revoke all tickets associated with this user (QR codes become invalid)
     await db
       .update(tickets)
       .set({
@@ -234,7 +239,7 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(tickets.user_id, id));
 
-    // Then delete the user
+    // Finally delete the user
     await db
       .delete(users)
       .where(eq(users.id, id));
