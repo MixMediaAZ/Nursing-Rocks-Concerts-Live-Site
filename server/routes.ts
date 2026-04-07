@@ -4846,7 +4846,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/nrpx/registrations — admin list with search/filter
-  app.get("/api/admin/nrpx/registrations", requireAdmin, async (req: Request, res: Response) => {
+  app.get("/api/admin/nrpx/registrations", requireAdminToken, async (req: Request, res: Response) => {
     try {
       const { search, status, sort } = req.query as { search?: string; status?: string; sort?: string };
 
@@ -4888,7 +4888,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/admin/nrpx/registrations/resend/:id — resend ticket email
-  app.post("/api/admin/nrpx/registrations/resend/:id", requireAdmin, async (req: Request, res: Response) => {
+  app.post("/api/admin/nrpx/registrations/resend/:id", requireAdminToken, async (req: Request, res: Response) => {
     try {
       const [reg] = await db.select().from(nrpxRegistrations)
         .where(eq(nrpxRegistrations.id, req.params.id)).limit(1);
@@ -4920,7 +4920,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/nrpx/registrations/export — CSV export
-  app.get("/api/admin/nrpx/registrations/export", requireAdmin, async (_req: Request, res: Response) => {
+  app.get("/api/admin/nrpx/registrations/export", requireAdminToken, async (_req: Request, res: Response) => {
     try {
       const regs = await db.select().from(nrpxRegistrations).orderBy(nrpxRegistrations.registered_at);
       const header = 'Ticket Code,First Name,Last Name,Email,Employer,Registered At,Email Sent,Checked In,Checked In At\n';
