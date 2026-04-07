@@ -9,8 +9,8 @@ const FeaturedArtist = () => {
     { type: "band", name: "Jane 'n the Jungle", url: "https://www.janenthejungle.com/" },
     { type: "band", name: "PsychoStar", url: "https://linktr.ee/psychostar" },
     { type: "band", name: "My Upside Down", url: "https://linktr.ee/myupsidedown?utm_source=ig&utm_medium=social&utm_content=link_in_bio&fbclid=PAZXh0bgNhZW0CMTEAc3J0YwZhcHBfaWQMMjU2MjgxMDQwNTU4AAGnMjHDfeOnXd7lbqhPbfsQzdUxgvFu46D58LJjH2KOfvVwopesIARMimTBETU_aem_eimjH1K9n_Kz-aRWTR0izg" },
-    { type: "dj", name: "DJ Casual Alien", url: "https://casualalien.bandzoogle.com/" },
-    { type: "dj", name: "DJ Oppsie Daisy", url: "https://www.instagram.com/nickbornhoft/" }
+    { type: "dj", name: "Casual Alien", url: "https://casualalien.bandzoogle.com/" },
+    { type: "dj", name: "Oppsie Daisy", url: "https://www.instagram.com/nickbornhoft/" }
   ];
   const bandLineup = lineup.filter((artist) => artist.type === "band");
   const djLineup = lineup.filter((artist) => artist.type === "dj");
@@ -114,7 +114,7 @@ const FeaturedArtist = () => {
               </div>
 
               <div>
-                <h5 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">DJs</h5>
+                <h5 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">MCs</h5>
                 <div className="space-y-3">
                   {djLineup.map((artist, index) => (
                     <div key={artist.name} className="flex items-center gap-3 pb-3 border-b border-gray-200 last:border-b-0">
@@ -131,7 +131,7 @@ const FeaturedArtist = () => {
                         <span className="hover:underline">{artist.name}</span>
                       </a>
                       {index === 0 && (
-                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-semibold">MC/DJ</span>
+                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-semibold">MC</span>
                       )}
                     </div>
                   ))}
