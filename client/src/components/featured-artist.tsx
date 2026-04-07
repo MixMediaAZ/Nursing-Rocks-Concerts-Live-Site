@@ -138,6 +138,37 @@ const FeaturedArtist = () => {
                 </div>
               </div>
             </div>
+
+            {/* Spotify Playlist Embed */}
+            <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-md">
+              <div className="mb-4">
+                <h5 className="text-lg font-bold mb-2 flex items-center gap-2">
+                  <span className="text-xl">🎵</span>
+                  Stream the Lineup on Spotify
+                </h5>
+                <p className="text-sm text-gray-600 mb-4">
+                  Preview all the artists performing at Nursing Rocks Phoenix 2026.{" "}
+                  <span className="italic text-gray-500">(Available where Spotify is accessible in your region)</span>
+                </p>
+              </div>
+              <iframe
+                src="https://open.spotify.com/embed/playlist/601PiIjcLk4ot4KCj4CDKA?utm_source=generator"
+                width="100%"
+                height="152"
+                frameBorder="0"
+                allowFullScreen={true}
+                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                loading="lazy"
+                style={{ borderRadius: "12px" }}
+                title="Nursing Rocks Phoenix 2026 Playlist"
+              />
+              <p className="text-xs text-gray-500 mt-3 text-center">
+                💡 Tip: Free Spotify account available at{" "}
+                <a href="https://www.spotify.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                  spotify.com
+                </a>
+              </p>
+            </div>
           </div>
 
           {/* Event Benefits */}
