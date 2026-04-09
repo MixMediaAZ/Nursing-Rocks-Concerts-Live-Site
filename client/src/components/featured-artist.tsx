@@ -10,7 +10,7 @@ const FeaturedArtist = () => {
     { type: "band", name: "PsychoStar", url: "https://linktr.ee/psychostar" },
     { type: "band", name: "My Upside Down", url: "https://linktr.ee/myupsidedown?utm_source=ig&utm_medium=social&utm_content=link_in_bio&fbclid=PAZXh0bgNhZW0CMTEAc3J0YwZhcHBfaWQMMjU2MjgxMDQwNTU4AAGnMjHDfeOnXd7lbqhPbfsQzdUxgvFu46D58LJjH2KOfvVwopesIARMimTBETU_aem_eimjH1K9n_Kz-aRWTR0izg" },
     { type: "dj", name: "Casual Alien", url: "https://casualalien.bandzoogle.com/" },
-    { type: "dj", name: "Oppsie Daisy", url: "https://www.instagram.com/nickbornhoft/" }
+    { type: "dj", name: "Oopsie Daisy", url: "https://www.instagram.com/nickbornhoft/" }
   ];
   const bandLineup = lineup.filter((artist) => artist.type === "band");
   const djLineup = lineup.filter((artist) => artist.type === "dj");

@@ -101,7 +101,7 @@ export default function PhoenixRegisterPage() {
                   <li>Jane 'N The Jungle</li>
                   <li>PsychoStar</li>
                   <li>My Upside Down + Casual Alien</li>
-                  <li>Oppsie Daisey</li>
+                  <li>Oopsie Daisy</li>
                 </ul>
               </div>
             </div>
@@ -143,7 +143,7 @@ export default function PhoenixRegisterPage() {
               <p className="font-semibold text-gray-800 text-center mb-3">Featuring:</p>
               <div className="text-sm text-gray-700 text-center leading-relaxed">
                 <div>The Black Moods, The Central Line, Jane 'N The Jungle, PsychoStar,</div>
-                <div>My Upside Down + Casual Alien and Oppsie Daisey</div>
+                <div>My Upside Down + Casual Alien and Oopsie Daisy</div>
               </div>
             </div>
 

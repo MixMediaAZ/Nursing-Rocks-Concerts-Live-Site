@@ -154,7 +154,8 @@
       "Bash(timeout 10 node .claude/worktrees/sad-bohr/scripts/test-resend-nrcs.js nursingrocksconcerts@gmail.com)",
       "Bash(node scripts/diagnose-email.js)",
       "Bash(find 'C:\\\\Users\\\\Dave\\\\Downloads\\\\Nursing-Rocks-Concerts-Live-Site - 3.0\\\\.claude\\\\worktrees\\\\sad-bohr\\\\client\\\\src' -name *page* -o -name *home* -o -name *index*)",
-      "Bash(curl -o \"public/assets/concert-crowd-hero.jpg\" \"https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&h=800&q=80\")"
+      "Bash(curl -o \"public/assets/concert-crowd-hero.jpg\" \"https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&h=800&q=80\")",
+      "Bash(curl -s -L -X GET \"https://nursingrocksconcerts.com/api/cron/job-alerts\" -H \"x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee\" -H \"Content-Type: application/json\" -w \"\\\\n\\\\nHTTP STATUS: %{http_code}\" --max-time 60)"
     ]
   }
 }
