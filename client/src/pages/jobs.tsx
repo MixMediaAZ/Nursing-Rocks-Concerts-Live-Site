@@ -763,12 +763,14 @@ export default function JobsPage() {
               {isLoading ? (
                 <Skeleton className="h-9 w-40" />
               ) : (
-                <h2 className="text-xl font-semibold">
-                  {jobs?.length || 0} Nursing Jobs
-                  {Object.keys(searchValues).length > 0
-                    ? " matching your filters"
-                    : ""}
-                </h2>
+                <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 w-fit">
+                  <h2 className="text-xl font-semibold">
+                    {jobs?.length || 0} Nursing Jobs
+                    {Object.keys(searchValues).length > 0
+                      ? " matching your filters"
+                      : ""}
+                  </h2>
+                </div>
               )}
             </div>
             <div className="flex items-center gap-2">
