@@ -865,8 +865,8 @@ export default function JobDetailsPage() {
                     </div>
                     
                     <Button variant="outline" className="w-full" asChild>
-                      <a href="https://careers.phoenixchildrens.com" target="_blank" rel="noopener noreferrer">
-                        View Careers at Phoenix Children's
+                      <a href="https://careers.phoenixchildrens.com/Positions/Nursing-jobs" target="_blank" rel="noopener noreferrer">
+                        Browse More Nursing Positions
                         <ExternalLink className="h-4 w-4 ml-2" />
                       </a>
                     </Button>
