@@ -19,8 +19,7 @@
     "db:check": "node scripts/check-schema-status.js",
     "db:create-admins": "node scripts/create-admin-users.js",
     "db:set-featured-poster": "node scripts/set-featured-event-poster.js",
-    "safe-upgrade": "npm install && npm run build",
-    "postinstall": "drizzle-kit push --no-prompt"
+    "safe-upgrade": "npm install && npm run build"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.744.0",

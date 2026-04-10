@@ -1,4 +1,3 @@
-import * as cron from "node-cron";
 import { ingestionPipeline } from "./pipeline";
 
 interface SchedulerOptions {
@@ -8,7 +7,7 @@ interface SchedulerOptions {
 }
 
 export class IngestionScheduler {
-  private task: cron.ScheduledTask | null = null;
+  private task: any = null;
   private isRunning = false;
 
   async startIngestionScheduler(options: SchedulerOptions = {}): Promise<void> {
@@ -21,6 +20,9 @@ export class IngestionScheduler {
       console.log("[Scheduler] Jobs ingestion disabled (JOBS_INGESTION_ENABLED not set)");
       return;
     }
+
+    // Dynamically import node-cron (not needed in Vercel serverless)
+    const cron = await import("node-cron");
 
     // Get cron expression from options or env
     const cronExpression =
