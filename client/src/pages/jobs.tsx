@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
@@ -91,6 +91,7 @@ export default function JobsPage() {
   const [searchValues, setSearchValues] = useState<SearchFormValues>({});
   const [sortBy, setSortBy] = useState<string>("relevance");
   const [showFilters, setShowFilters] = useState(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Form for search filters
   const form = useForm<SearchFormValues>({
@@ -134,9 +135,18 @@ export default function JobsPage() {
     select: (data) => data || [],
   });
 
-  // Handle search form submission
+  // Handle search form submission with debouncing
+  const debouncedSubmit = useCallback((values: SearchFormValues) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      setSearchValues(values);
+    }, 300);
+  }, []);
+
   function onSubmit(values: SearchFormValues) {
-    setSearchValues(values);
+    debouncedSubmit(values);
   }
 
   return (
