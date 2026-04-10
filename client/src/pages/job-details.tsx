@@ -865,10 +865,10 @@ export default function JobDetailsPage() {
                     </div>
                     
                     <Button variant="outline" className="w-full" asChild>
-                      <WouterLink href={`/employers/${employer.id}`}>
-                        View Employer Profile
+                      <a href="https://careers.phoenixchildrens.com" target="_blank" rel="noopener noreferrer">
+                        View Careers at Phoenix Children's
                         <ExternalLink className="h-4 w-4 ml-2" />
-                      </WouterLink>
+                      </a>
                     </Button>
                   </div>
                 ) : (
