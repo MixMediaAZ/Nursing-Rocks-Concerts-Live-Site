@@ -30,7 +30,11 @@ app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Serve public assets directory (for city backgrounds, etc.)
-app.use('/assets', express.static(path.join(process.cwd(), 'public', 'assets')));
+// In production, assets are in dist/public; in development, they're in public
+const assetsPath = process.env.NODE_ENV === 'production'
+  ? path.join(process.cwd(), 'dist', 'public', 'assets')
+  : path.join(process.cwd(), 'public', 'assets');
+app.use('/assets', express.static(assetsPath));
 
 app.use((req, res, next) => {
   const start = Date.now();
