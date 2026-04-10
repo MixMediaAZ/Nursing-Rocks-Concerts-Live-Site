@@ -4,7 +4,6 @@ import { nodeProfilingIntegration } from "@sentry/profiling-node";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { ingestionScheduler } from "./ingestion/scheduler";
 import path from "path";
 
 // Initialize Sentry
@@ -69,6 +68,7 @@ app.use((req, res, next) => {
   // Initialize jobs ingestion scheduler (only in production if explicitly enabled)
   if (process.env.NODE_ENV === 'production' && process.env.JOBS_INGESTION_ENABLED === 'true') {
     try {
+      const { ingestionScheduler } = await import("./ingestion/scheduler");
       await ingestionScheduler.startIngestionScheduler();
     } catch (error) {
       console.warn("[ingestion] Scheduler initialization warning:", error instanceof Error ? error.message : error);
