@@ -563,11 +563,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getJobListingById(id: number): Promise<JobListing | undefined> {
-    const [listing] = await db
-      .select()
+    const [result] = await db
+      .select({
+        ...jobListings,
+        employer: {
+          id: employers.id,
+          name: employers.name,
+          logo_url: employers.logo_url,
+          contact_email: employers.contact_email,
+          description: employers.description,
+        }
+      })
       .from(jobListings)
+      .leftJoin(employers, eq(jobListings.employer_id, employers.id))
       .where(eq(jobListings.id, id));
-    return listing;
+    return result as JobListing;
   }
 
   async getAllJobListings(filters?: {
