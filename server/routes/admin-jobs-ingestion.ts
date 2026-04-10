@@ -1,6 +1,5 @@
 import type { Express, Request, Response } from "express";
 import { ingestionPipeline } from "../ingestion/pipeline";
-import { ingestionScheduler } from "../ingestion/scheduler";
 import { ingestionDb } from "../storage/ingestion-db";
 
 /**
@@ -178,6 +177,8 @@ export function registerAdminJobsIngestionRoutes(
     requireAdminToken,
     async (req: Request, res: Response) => {
       try {
+        const { ingestionScheduler } = await import("../ingestion/scheduler");
+
         if (ingestionScheduler.isSchedulerRunning()) {
           return res.json({
             success: true,
@@ -212,6 +213,7 @@ export function registerAdminJobsIngestionRoutes(
     requireAdminToken,
     async (req: Request, res: Response) => {
       try {
+        const { ingestionScheduler } = await import("../ingestion/scheduler");
         ingestionScheduler.stopIngestionScheduler();
 
         return res.json({
@@ -238,6 +240,7 @@ export function registerAdminJobsIngestionRoutes(
     requireAdminToken,
     async (req: Request, res: Response) => {
       try {
+        const { ingestionScheduler } = await import("../ingestion/scheduler");
         return res.json({
           success: true,
           scheduler: {
