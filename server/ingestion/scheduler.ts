@@ -21,9 +21,6 @@ export class IngestionScheduler {
       return;
     }
 
-    // Dynamically import node-cron (not needed in Vercel serverless)
-    const cron = await import("node-cron");
-
     // Get cron expression from options or env
     const cronExpression =
       options.cronExpression || process.env.JOBS_INGESTION_CRON || "0 2 * * *";
@@ -34,6 +31,15 @@ export class IngestionScheduler {
       parseInt(process.env.INGESTION_GRACE_PERIOD_DAYS || "21", 10);
 
     try {
+      // Dynamically import node-cron (not needed in Vercel serverless)
+      let cron: any;
+      try {
+        cron = await import("node-cron");
+      } catch (importError) {
+        console.warn("[Scheduler] node-cron not available (running on Vercel serverless?)");
+        return;
+      }
+
       // Validate cron expression
       if (!cron.validate(cronExpression)) {
         throw new Error(`Invalid cron expression: ${cronExpression}`);
