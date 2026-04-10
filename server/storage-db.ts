@@ -667,15 +667,24 @@ export class DatabaseStorage implements IStorage {
 
   async getFeaturedJobListings(limit?: number): Promise<JobListing[]> {
     let query: any = db
-      .select()
+      .select({
+        ...jobListings,
+        employer: {
+          id: employers.id,
+          name: employers.name,
+          logo_url: employers.logo_url,
+          contact_email: employers.contact_email,
+        }
+      })
       .from(jobListings)
+      .leftJoin(employers, eq(jobListings.employer_id, employers.id))
       .where(and(eq(jobListings.is_featured, true), eq(jobListings.is_active, true), eq(jobListings.is_approved, true)));
 
     if (limit) {
       query = query.limit(limit);
     }
 
-    return await query;
+    return await query as JobListing[];
   }
 
   async getRecentJobListings(limit?: number): Promise<JobListing[]> {

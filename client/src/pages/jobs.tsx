@@ -802,9 +802,9 @@ export default function JobsPage() {
               </div>
             ) : featuredJobs && Array.isArray(featuredJobs) && featuredJobs.length > 0 ? (
               <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-                <div className="flex items-center mb-4">
+                <div className="flex items-center mb-4 bg-primary/10 px-3 py-2 rounded-md w-fit">
                   <Sparkles className="h-5 w-5 text-primary mr-2" />
-                  <h3 className="font-semibold">Featured Opportunities</h3>
+                  <h3 className="font-semibold text-primary">Featured Opportunities</h3>
                 </div>
                 <div className="grid grid-cols-1 gap-4">
                   {featuredJobs.map((job: any) => (
