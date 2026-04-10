@@ -506,6 +506,29 @@ export const jobListings = pgTable("job_listings", {
   approved_by: integer("approved_by").references(() => users.id),
   approved_at: timestamp("approved_at"),
   approval_notes: text("approval_notes"),
+  // Source tracking (Phase 1 ingestion)
+  source_name: text("source_name"), // e.g., 'phoenixchildrens'
+  source_job_id: text("source_job_id"), // ID from external source
+  source_url: text("source_url"), // Direct URL to job posting
+  source_type: text("source_type"), // 'scraped', 'api', etc.
+  source_content_hash: text("source_content_hash"), // SHA256 of content for dedup
+  // Location normalization (Phase 1)
+  location_raw: text("location_raw"), // Raw location string from source
+  location_city: text("location_city"), // Extracted city
+  location_state: text("location_state"), // Extracted state/province
+  location_postal_code: text("location_postal_code"), // Extracted ZIP/postal code
+  is_remote: boolean("is_remote"), // Whether job is remote-eligible
+  // Sync tracking
+  first_seen_at: timestamp("first_seen_at"), // When first ingested
+  last_seen_at: timestamp("last_seen_at"), // When last confirmed in listing
+  last_synced_at: timestamp("last_synced_at"), // When data was last updated
+  sync_status: text("sync_status"), // 'active', 'archived', 'pending'
+  // Quality tracking
+  data_quality_score: integer("data_quality_score"), // 0-100 quality rating
+  manual_review_required: boolean("manual_review_required").default(false),
+  // Specialty normalization
+  normalized_specialty_id: integer("normalized_specialty_id"), // FK to job_specialties
+  normalized_role_level: text("normalized_role_level"), // Normalized role/level from extraction
 });
 
 export const insertJobListingSchema = createInsertSchema(jobListings).omit({
@@ -924,3 +947,81 @@ export const insertNrpxRegistrationSchema = createInsertSchema(nrpxRegistrations
 
 export type NrpxRegistration = typeof nrpxRegistrations.$inferSelect;
 export type InsertNrpxRegistration = z.infer<typeof insertNrpxRegistrationSchema>;
+
+// ============= JOBS INGESTION (Phase 1 & 2) =============
+
+// Job specialties reference table
+export const jobSpecialties = pgTable("job_specialties", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+export type JobSpecialty = typeof jobSpecialties.$inferSelect;
+export type InsertJobSpecialty = typeof jobSpecialties.$inferInsert;
+
+// Job tags (skills, certifications, etc.)
+export const jobTags = pgTable("job_tags", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  category: text("category"), // 'skill', 'certification', 'requirement'
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+export type JobTag = typeof jobTags.$inferSelect;
+export type InsertJobTag = typeof jobTags.$inferInsert;
+
+// Job to tags mapping with confidence scores
+export const jobTagMap = pgTable("job_tag_map", {
+  id: serial("id").primaryKey(),
+  job_id: integer("job_id").notNull().references(() => jobListings.id, { onDelete: "cascade" }),
+  tag_id: integer("tag_id").notNull().references(() => jobTags.id, { onDelete: "cascade" }),
+  confidence_score: decimal("confidence_score", { precision: 3, scale: 2 }), // 0.00-1.00
+  inferred_from: text("inferred_from"), // 'extracted', 'inferred', 'manual'
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+export type JobTagMapping = typeof jobTagMap.$inferSelect;
+export type InsertJobTagMapping = typeof jobTagMap.$inferInsert;
+
+// Ingestion runs tracking
+export const jobIngestionRuns = pgTable("job_ingestion_runs", {
+  id: serial("id").primaryKey(),
+  source_name: text("source_name").notNull(), // 'phoenixchildrens', etc.
+  status: text("status").notNull(), // 'in_progress', 'success', 'partial', 'failed'
+  jobs_fetched: integer("jobs_fetched").default(0),
+  jobs_parsed: integer("jobs_parsed").default(0),
+  jobs_inserted: integer("jobs_inserted").default(0),
+  jobs_updated: integer("jobs_updated").default(0),
+  jobs_skipped: integer("jobs_skipped").default(0),
+  jobs_archived: integer("jobs_archived").default(0),
+  errors_count: integer("errors_count").default(0),
+  error_log: text("error_log").array(), // Array of error messages
+  started_at: timestamp("started_at").notNull(),
+  completed_at: timestamp("completed_at"),
+  duration_seconds: integer("duration_seconds"),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+export type JobIngestionRun = typeof jobIngestionRuns.$inferSelect;
+export type InsertJobIngestionRun = typeof jobIngestionRuns.$inferInsert;
+
+// Source page tracking (for detecting listing page changes)
+export const jobSourcePages = pgTable("job_source_pages", {
+  id: serial("id").primaryKey(),
+  source_name: text("source_name").notNull(),
+  page_url: text("page_url").notNull(),
+  page_hash: text("page_hash"), // SHA256 of listing page content
+  job_count: integer("job_count"), // Number of jobs on last fetch
+  status: text("status"), // 'active', 'changed', 'error'
+  fetched_at: timestamp("fetched_at").defaultNow(),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+export type JobSourcePage = typeof jobSourcePages.$inferSelect;
+export type InsertJobSourcePage = typeof jobSourcePages.$inferInsert;
+
+// Type exports for JobListing with ingestion columns
+export type JobListing = typeof jobListings.$inferSelect;
+export type InsertJobListing = typeof jobListings.$inferInsert;

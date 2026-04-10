@@ -4,6 +4,7 @@ import { nodeProfilingIntegration } from "@sentry/profiling-node";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { ingestionScheduler } from "./ingestion/scheduler";
 import path from "path";
 
 // Initialize Sentry
@@ -64,6 +65,18 @@ app.use((req, res, next) => {
 
 (async () => {
   const server = await registerRoutes(app);
+
+  // Initialize jobs ingestion scheduler (only in production if explicitly enabled)
+  if (process.env.NODE_ENV === 'production' && process.env.JOBS_INGESTION_ENABLED === 'true') {
+    try {
+      await ingestionScheduler.startIngestionScheduler();
+    } catch (error) {
+      console.warn("[ingestion] Scheduler initialization warning:", error instanceof Error ? error.message : error);
+      // Scheduler failure is not fatal - jobs can still be triggered manually via API
+    }
+  } else if (process.env.JOBS_INGESTION_ENABLED === 'true' && process.env.NODE_ENV !== 'production') {
+    log("[ingestion] Scheduler disabled in development (set NODE_ENV=production to enable)");
+  }
 
   // Helps diagnose bind errors like EADDRINUSE and whether we accidentally call listen twice.
   server.on("error", (err: any) => {

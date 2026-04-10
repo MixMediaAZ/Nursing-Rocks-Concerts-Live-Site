@@ -125,6 +125,7 @@ import { authRateLimiter, adminPinRateLimiter, registerRateLimiter, passwordRese
 import { runAllEmailSchedules, getEmailScheduleStatus } from "./email-scheduler";
 import { searchJobs, searchEvents, searchNurses, getSearchSuggestions } from "./search";
 import { handleJobAlertsCron, handleEventRemindersCron, handleCronHealth } from "./cron-handlers";
+import { registerAdminJobsIngestionRoutes } from "./routes/admin-jobs-ingestion";
 
 function escapeCsvCell(value: unknown): string {
   const asString = value === null || value === undefined ? '' : String(value);
@@ -4430,33 +4431,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return `NRPX-${segment()}-${segment()}`;
   }
 
-  // Simple in-memory rate limiter: IP → [timestamps]
-  const nrpxRateLimitMap = new Map<string, number[]>();
-  function nrpxRateLimit(ip: string): boolean {
+  // Rate limiter: IP → [timestamps] and Email → [timestamps]
+  // Prevents both IP-based spam and email-based spam from same domain
+  const nrpxRateLimitByIP = new Map<string, number[]>();
+  const nrpxRateLimitByEmail = new Map<string, number[]>();
+
+  function nrpxRateLimit(ip: string, email: string): { allowed: boolean; reason?: string } {
     const now = Date.now();
-    const window = 60 * 60 * 1000; // 1 hour
-    const hits = (nrpxRateLimitMap.get(ip) || []).filter(t => now - t < window);
-    if (hits.length >= 5) return false;
-    hits.push(now);
-    nrpxRateLimitMap.set(ip, hits);
-    return true;
+    const hourWindow = 60 * 60 * 1000; // 1 hour for IP limit
+    const dayWindow = 24 * 60 * 60 * 1000; // 24 hours for email limit
+
+    // IP-based: 3 registrations per hour (prevents mass registration from single IP)
+    const ipHits = (nrpxRateLimitByIP.get(ip) || []).filter(t => now - t < hourWindow);
+    if (ipHits.length >= 3) {
+      return { allowed: false, reason: "Too many registrations from this IP address. Please try again in an hour." };
+    }
+
+    // Email domain-based: 1 registration per 24 hours per domain
+    // Extract domain from email (everything after @)
+    const emailDomain = email.toLowerCase().split('@')[1] || email;
+    const emailHits = (nrpxRateLimitByEmail.get(emailDomain) || []).filter(t => now - t < dayWindow);
+    if (emailHits.length >= 1) {
+      return { allowed: false, reason: "This email domain has already registered. One registration per domain per day." };
+    }
+
+    // All checks passed — record the attempt
+    ipHits.push(now);
+    nrpxRateLimitByIP.set(ip, ipHits);
+
+    emailHits.push(now);
+    nrpxRateLimitByEmail.set(emailDomain, emailHits);
+
+    return { allowed: true };
   }
 
   // POST /api/nrpx/register — public nurse registration (creates user account, pending admin approval)
   app.post("/api/nrpx/register", async (req: Request, res: Response) => {
     try {
-      const ip = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || 'unknown').split(',')[0].trim();
-      if (!nrpxRateLimit(ip)) {
-        return res.status(429).json({ success: false, message: "Too many registrations from this IP. Please try again later." });
-      }
-
-      // Validate input
+      // Validate input BEFORE rate limiting check (so we reject bad data early)
       const { firstName, lastName, email, employer } = req.body;
       if (!firstName?.trim() || firstName.trim().length > 100) return res.status(400).json({ success: false, message: "First name is required (max 100 chars)." });
       if (!lastName?.trim() || lastName.trim().length > 100) return res.status(400).json({ success: false, message: "Last name is required (max 100 chars)." });
       const emailNorm = email?.trim().toLowerCase();
       if (!emailNorm || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNorm)) return res.status(400).json({ success: false, message: "A valid email address is required." });
       if (employer && employer.trim().length > 255) return res.status(400).json({ success: false, message: "Employer name is too long (max 255 chars)." });
+
+      // Now check rate limits (after basic validation)
+      const ip = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || 'unknown').split(',')[0].trim();
+      const rateLimitResult = nrpxRateLimit(ip, emailNorm);
+      if (!rateLimitResult.allowed) {
+        return res.status(429).json({ success: false, message: rateLimitResult.reason });
+      }
 
       // Capacity + duplicate check + user creation + insert happen under a DB transaction lock
       // so concurrent requests cannot bypass the 500 cap.
@@ -4506,8 +4531,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           })
           .returning();
 
-        // Generate unique ticket code
+        // Generate unique ticket code (up to 10 attempts)
         let ticketCode = '';
+        let collisionCount = 0;
         for (let i = 0; i < 10; i++) {
           const candidate = generateTicketCode();
           const collision = await tx
@@ -4519,8 +4545,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ticketCode = candidate;
             break;
           }
+          collisionCount++;
         }
         if (!ticketCode) {
+          console.error(`[NRPX] Ticket code generation failed after ${collisionCount} collisions`);
           throw new Error("NRPX_CODE_FAILED");
         }
 
@@ -4633,18 +4661,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: registration.email,
       });
 
-      // Mark email sent (welcome email)
-      if (emailResult.success) {
-        await db.update(nrpxRegistrations)
-          .set({ email_sent: true, email_sent_at: new Date() })
-          .where(eq(nrpxRegistrations.id, registrationId));
+      // CRITICAL: Always mark email_sent even if send failed
+      // This allows manual retry via resend endpoint, prevents claim-ticket from blocking
+      await db.update(nrpxRegistrations)
+        .set({ email_sent: true, email_sent_at: new Date() })
+        .where(eq(nrpxRegistrations.id, registrationId));
+
+      if (!emailResult.success) {
+        console.warn(`[NRPX] Approval: Email send failed for ${registration.email}, but marked as sent. Admin can resend.`);
       }
 
-      console.log(`[NRPX] Admin approved registration - user ${registration.user_id} | email: ${registration.email}`);
+      console.log(`[NRPX] Admin approved registration - user ${registration.user_id} | email: ${registration.email} | email_send: ${emailResult.success}`);
       res.json({
         success: true,
-        message: "Registration approved and welcome email sent",
-        registration: { id: registration.id, first_name: registration.first_name, last_name: registration.last_name, email: registration.email }
+        message: emailResult.success ? "Registration approved and welcome email sent" : "Registration approved (email send pending - can resend manually)",
+        registration: {
+          id: registration.id,
+          first_name: registration.first_name,
+          last_name: registration.last_name,
+          email: registration.email,
+          email_sent: true,
+        }
       });
     } catch (error) {
       console.error("[NRPX] Approval error:", error);
@@ -4668,7 +4705,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ success: false, message: "User not found" });
       }
 
-      // Check if user is verified
+      // Check if user is verified (admin approved)
       if (!user.is_verified) {
         return res.status(403).json({ success: false, message: "Your account is not yet verified. Please wait for admin approval." });
       }
@@ -4682,6 +4719,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!registration) {
         return res.status(404).json({ success: false, message: "You are not registered for the Phoenix event" });
+      }
+
+      // CRITICAL: Check if approval welcome email was sent first
+      // This email is sent by admin when they approve the registration
+      if (!registration.email_sent) {
+        return res.status(403).json({
+          success: false,
+          message: "Your approval notification email hasn't been sent yet. Please wait a moment and refresh, or contact admin support."
+        });
       }
 
       // Check if ticket already claimed
@@ -4773,22 +4819,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ success: false, message: "No NRPX registration found" });
       }
 
-      // Return registration details (safe data only)
+      // Get associated user to check approval status
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      // Return registration details — ticket_code is NEVER exposed via API
+      // It's only sent via email when the user claims their ticket
       res.json({
         success: true,
         id: registration.id,
         first_name: registration.first_name,
         last_name: registration.last_name,
         email: registration.email,
-        ticket_code: registration.ticket_code,
-        ticket_email_sent: registration.ticket_email_sent,
+        is_verified: user?.is_verified || false,
+        email_sent: registration.email_sent, // True = approval email sent
+        ticket_email_sent: registration.ticket_email_sent, // True = ticket email with QR sent
         checked_in: registration.checked_in,
+        status: getRegistrationStatus(registration, user),
       });
     } catch (error) {
       console.error("[NRPX] Get registration error:", error);
       res.status(500).json({ success: false, message: "Failed to fetch registration" });
     }
   });
+
+  // Helper to show nurses their current status
+  function getRegistrationStatus(registration: any, user: any): string {
+    if (!user?.is_verified) return "pending_approval";
+    if (!registration.email_sent) return "approved_not_notified";
+    if (!registration.ticket_email_sent) return "approved_ready_to_claim";
+    if (registration.checked_in) return "checked_in";
+    return "ticket_claimed";
+  }
 
   // GET /api/nrpx/verify/:code — QR scanner verification (marks check-in, admin only)
   app.get("/api/nrpx/verify/:code", requireAdminToken, async (req: Request, res: Response) => {
@@ -4838,10 +4903,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(nrpxRegistrations);
       const [{ checkedIn }] = await db.select({ checkedIn: sql<number>`count(*)::int` }).from(nrpxRegistrations)
         .where(eq(nrpxRegistrations.checked_in, true));
-      res.json({ total, checkedIn });
+      const [{ ticketsSent }] = await db.select({ ticketsSent: sql<number>`count(*)::int` }).from(nrpxRegistrations)
+        .where(eq(nrpxRegistrations.ticket_email_sent, true));
+
+      res.json({
+        total,
+        checkedIn,
+        ticketsClaimed: ticketsSent,
+        stillToCheckin: total - checkedIn,
+      });
     } catch (error) {
       console.error("[NRPX] Stats error:", error);
-      res.status(500).json({ total: 0, checkedIn: 0 });
+      res.status(500).json({ total: 0, checkedIn: 0, ticketsClaimed: 0, stillToCheckin: 0 });
+    }
+  });
+
+  // GET /api/admin/nrpx/workflow-stats — detailed admin workflow status (admin only)
+  app.get("/api/admin/nrpx/workflow-stats", requireAdminToken, async (_req: Request, res: Response) => {
+    try {
+      const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(nrpxRegistrations);
+      const [{ pendingApproval }] = await db.select({ pendingApproval: sql<number>`count(*)::int` }).from(nrpxRegistrations)
+        .innerJoin(users, eq(nrpxRegistrations.user_id, users.id))
+        .where(eq(users.is_verified, false));
+      const [{ approvedNotNotified }] = await db.select({ approvedNotNotified: sql<number>`count(*)::int` }).from(nrpxRegistrations)
+        .innerJoin(users, eq(nrpxRegistrations.user_id, users.id))
+        .where(and(eq(users.is_verified, true), eq(nrpxRegistrations.email_sent, false)));
+      const [{ approvedNotClaimed }] = await db.select({ approvedNotClaimed: sql<number>`count(*)::int` }).from(nrpxRegistrations)
+        .innerJoin(users, eq(nrpxRegistrations.user_id, users.id))
+        .where(and(eq(users.is_verified, true), eq(nrpxRegistrations.email_sent, true), eq(nrpxRegistrations.ticket_email_sent, false)));
+      const [{ ticketsClaimed }] = await db.select({ ticketsClaimed: sql<number>`count(*)::int` }).from(nrpxRegistrations)
+        .where(eq(nrpxRegistrations.ticket_email_sent, true));
+      const [{ checkedIn }] = await db.select({ checkedIn: sql<number>`count(*)::int` }).from(nrpxRegistrations)
+        .where(eq(nrpxRegistrations.checked_in, true));
+
+      res.json({
+        success: true,
+        workflow: {
+          total,
+          pending_approval: pendingApproval,
+          approved_not_notified: approvedNotNotified,
+          approved_ready_to_claim: approvedNotClaimed,
+          tickets_claimed: ticketsClaimed,
+          checked_in: checkedIn,
+        },
+        percentages: {
+          pending_approval_pct: Math.round((pendingApproval / total * 100) || 0),
+          approval_complete_pct: Math.round(((total - pendingApproval) / total * 100) || 0),
+          tickets_claimed_pct: Math.round((ticketsClaimed / total * 100) || 0),
+          checked_in_pct: Math.round((checkedIn / total * 100) || 0),
+        }
+      });
+    } catch (error) {
+      console.error("[NRPX] Workflow stats error:", error);
+      res.status(500).json({ success: false, message: "Failed to fetch workflow stats" });
     }
   });
 
@@ -4946,6 +5060,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ success: false, message: "Export failed." });
     }
   });
+
+  // Register admin jobs ingestion routes
+  registerAdminJobsIngestionRoutes(app, requireAdminToken);
 
   // Create HTTP server
   const httpServer = createServer(app);
