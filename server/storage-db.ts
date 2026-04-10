@@ -637,13 +637,24 @@ export class DatabaseStorage implements IStorage {
     const limit = Math.max(1, Math.min(100, filters?.limit ?? 100));
     const offset = Math.max(0, filters?.offset ?? 0);
 
-    return await db
-      .select()
+    const results = await db
+      .select({
+        ...jobListings,
+        employer: {
+          id: employers.id,
+          name: employers.name,
+          logo_url: employers.logo_url,
+          contact_email: employers.contact_email,
+        }
+      })
       .from(jobListings)
+      .leftJoin(employers, eq(jobListings.employer_id, employers.id))
       .where(whereClause)
       .orderBy(desc(jobListings.posted_date))
       .limit(limit)
       .offset(offset);
+
+    return results as JobListing[];
   }
 
   async getEmployerJobListings(employerId: number): Promise<JobListing[]> {
