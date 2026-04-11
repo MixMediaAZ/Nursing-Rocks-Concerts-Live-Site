@@ -58,8 +58,9 @@ export async function register(req: Request, res: Response) {
     // SECURITY FIX: Don't reveal whether email is registered (prevents account enumeration)
     const existingUser = await storage.getUserByEmail(normalizedEmail);
     if (existingUser) {
-      // Return success response to prevent account enumeration attacks
-      return res.status(200).json({
+      // Return 409 Conflict to indicate email already exists (RFC 7231)
+      // Response message is generic to prevent account enumeration attacks
+      return res.status(409).json({
         message: 'If this email address is not yet registered, a verification email will be sent. Please check your inbox.',
         user: null // Don't return user data if already exists
       });
@@ -153,12 +154,25 @@ export async function submitNurseLicense(req: Request, res: Response) {
     }
 
     // Get user from JWT token (assuming middleware has set req.user)
-    const userId = (req as any).user?.id || (req as any).user?.userId;
+    // Use nullish coalesce (??) to handle both JWT (userId) and session (id) auth.
+    // Ensures user ID = 0 is accepted (edge case protection).
+    const userId = (req as any).user?.id ?? (req as any).user?.userId;
     if (!userId) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
     const { license_number, state, expiration_date } = req.body;
+
+    // Validate license expiration date is in the future
+    const expirationDate = new Date(expiration_date);
+    const now = new Date();
+    now.setHours(0, 0, 0, 0); // Normalize to start of today for fair comparison
+
+    if (expirationDate < now) {
+      return res.status(400).json({
+        message: 'License expiration date must be in the future'
+      });
+    }
 
     // Check if license is already submitted
     const existingLicenses = await storage.getNurseLicensesByUserId(userId);
@@ -194,7 +208,9 @@ export async function submitNurseLicense(req: Request, res: Response) {
 export async function getNurseLicenses(req: Request, res: Response) {
   try {
     // Get user from JWT token (assuming middleware has set req.user)
-    const userId = (req as any).user?.id || (req as any).user?.userId;
+    // Use nullish coalesce (??) to handle both JWT (userId) and session (id) auth.
+    // Ensures user ID = 0 is accepted (edge case protection).
+    const userId = (req as any).user?.id ?? (req as any).user?.userId;
     if (!userId) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
@@ -494,7 +510,7 @@ export async function authenticateToken(req: Request, res: Response, next: Funct
   }
 }
 
-// License verification function (would connect to external API in production)
+// License verification function: submits license for manual admin review
 async function verifyNurseLicense(licenseId: number) {
   try {
     // Get license details
@@ -503,87 +519,21 @@ async function verifyNurseLicense(licenseId: number) {
       throw new Error('License not found');
     }
 
-    let verificationResult: any;
-    let status = 'invalid';
-
-    // In a real implementation, this would make a call to the actual nursing board API
-    if (VERIFICATION_API_KEY) {
-      try {
-        // This is where you would integrate with the actual verification API
-        const response = await fetch('https://api.nursingboard.verification.example/verify', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${VERIFICATION_API_KEY}`
-          },
-          body: JSON.stringify({
-            licenseNumber: license.license_number,
-            state: license.state
-          })
-        });
-        
-        verificationResult = await response.json() as any;
-        status = verificationResult?.isValid ? 'verified' : 'invalid';
-      } catch (error) {
-        console.error('External API verification error:', error);
-        // Fall back to simulated verification
-        verificationResult = simulateVerification(license.license_number, license.state);
-        status = verificationResult.isValid ? 'verified' : 'invalid';
-      }
-    } else {
-      // For development/demo, simulate verification
-      verificationResult = simulateVerification(license.license_number, license.state);
-      status = verificationResult.isValid ? 'verified' : 'invalid';
-    }
-
-    // Update license verification status
+    // Mark license as pending manual review instead of auto-verifying
+    // Admin must manually verify each license via the admin dashboard
     await storage.updateNurseLicenseVerification(
       licenseId,
-      status,
+      'pending_manual_review',
       new Date(),
       'system',
-      verificationResult
+      { reason: 'Awaiting manual verification' }
     );
 
-    // If license is verified, update user verification status
-    if (status === 'verified') {
-      await storage.updateUserVerificationStatus(license.user_id, true);
-    }
-
-    return { success: true, status };
+    return { success: true, status: 'pending_manual_review' };
   } catch (error) {
     console.error('License verification error:', error);
     throw error;
   }
-}
-
-// Simulation function for development purposes
-function simulateVerification(licenseNumber: string, state: string) {
-  // Create a deterministic but "random-looking" result based on license number
-  const hash = crypto.createHash('md5').update(`${licenseNumber}-${state}`).digest('hex');
-  const firstChar = parseInt(hash.charAt(0), 16);
-  
-  // 80% chance of successful verification (for testing purposes)
-  const isValid = firstChar < 13;
-  
-  return {
-    isValid,
-    licenseNumber,
-    state,
-    verificationId: `SIM-${hash.substring(0, 8)}`,
-    timestamp: new Date().toISOString(),
-    details: isValid
-      ? {
-          status: 'Active',
-          holder: 'SIMULATED NURSE',
-          issueDate: '2020-01-01',
-          expirationDate: '2025-01-01'
-        }
-      : {
-          status: 'Invalid',
-          reason: 'License not found in database'
-        }
-  };
 }
 
 // Validation rules

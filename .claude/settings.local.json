@@ -188,7 +188,13 @@
       "Bash(find server:*)",
       "Bash(curl -s -I \"https://www.nursingrocksconcerts.com/assets/employers/phoenix-childrens-logo.svg\")",
       "Bash(curl -s \"https://www.nursingrocksconcerts.com/api/jobs\")",
-      "Bash(ls -d */)"
+      "Bash(ls -d */)",
+      "Bash(curl -s -X GET https://nursingrocksconcerts.com/api/cron/job-alerts -H 'x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee' -H 'Content-Type: application/json' --max-time 60)",
+      "Bash(curl -s -L -X GET https://nursingrocksconcerts.com/api/cron/job-alerts -H 'x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee' -H 'Content-Type: application/json' --max-time 60)",
+      "Bash(curl -s -L -X GET https://nursingrocksconcerts.com/api/cron/health -H 'Content-Type: application/json' --max-time 30)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5000/api/cron/health)",
+      "Bash(curl -s -w '\\\\n---HTTP_STATUS:%{http_code}---' -H 'x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee' https://nursingrocksconcerts.com/api/cron/event-reminders)",
+      "Bash(curl -sL -w '\\\\n---HTTP_STATUS:%{http_code}---' -H 'x-cron-secret: jewye83hd9dkjj4jSHJDKJ4EIDJ3hns8dh3%^\\)NJh3shwhw333hssjaYJVO\\)ne#jdeee' https://nursingrocksconcerts.com/api/cron/event-reminders)"
     ]
   }
 }
