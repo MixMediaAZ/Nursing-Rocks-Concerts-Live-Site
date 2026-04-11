@@ -506,6 +506,10 @@ export const jobListings = pgTable("job_listings", {
   approved_by: integer("approved_by").references(() => users.id),
   approved_at: timestamp("approved_at"),
   approval_notes: text("approval_notes"),
+  // Admin edit tracking
+  last_admin_edit_at: timestamp("last_admin_edit_at"), // When admin last edited this job
+  last_admin_edit_by: integer("last_admin_edit_by").references(() => users.id), // Which admin edited
+  is_editable: boolean("is_editable").default(true), // Soft lock for jobs under review
   // Source tracking (Phase 1 ingestion)
   source_name: text("source_name"), // e.g., 'phoenixchildrens'
   source_job_id: text("source_job_id"), // ID from external source
@@ -540,6 +544,9 @@ export const insertJobListingSchema = createInsertSchema(jobListings).omit({
   approved_by: true,
   approved_at: true,
   approval_notes: true,
+  last_admin_edit_at: true,
+  last_admin_edit_by: true,
+  is_editable: true,
 });
 
 // Contact requests (employer requests for applicant contact info)
