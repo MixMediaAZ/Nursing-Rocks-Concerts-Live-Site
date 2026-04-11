@@ -2659,9 +2659,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin: Get all jobs (with employer name joined)
-  app.get("/api/admin/jobs", requireAdminToken, async (_req: Request, res: Response) => {
+  app.get("/api/admin/jobs", requireAdminToken, async (req: Request, res: Response) => {
     try {
-      const rows = await db
+      // Get query parameters for filtering
+      const { status, active, featured, employer_id, search, sort = 'posted_date', sortOrder = 'desc' } = req.query;
+
+      let query: any = db
         .select({
           id: jobListings.id,
           title: jobListings.title,
@@ -2684,10 +2687,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
           approval_notes: jobListings.approval_notes,
         })
         .from(jobListings)
-        .leftJoin(employers, eq(jobListings.employer_id, employers.id))
-        .orderBy(desc(jobListings.posted_date));
+        .leftJoin(employers, eq(jobListings.employer_id, employers.id));
 
-      return res.json(rows.map(r => {
+      // Build WHERE clause
+      const conditions = [];
+
+      // Filter by approval status
+      if (status === 'pending') {
+        conditions.push(and(eq(jobListings.is_approved, false), eq(jobListings.is_active, true)));
+      } else if (status === 'approved') {
+        conditions.push(eq(jobListings.is_approved, true));
+      }
+
+      // Filter by active status
+      if (active === 'true') {
+        conditions.push(eq(jobListings.is_active, true));
+      } else if (active === 'false') {
+        conditions.push(eq(jobListings.is_active, false));
+      }
+
+      // Filter by featured
+      if (featured === 'true') {
+        conditions.push(eq(jobListings.is_featured, true));
+      }
+
+      // Filter by employer
+      if (employer_id && !isNaN(parseInt(String(employer_id)))) {
+        conditions.push(eq(jobListings.employer_id, parseInt(String(employer_id))));
+      }
+
+      // Apply WHERE conditions
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      // Sorting
+      const sortField = sort === 'views' ? jobListings.views_count
+        : sort === 'applications' ? jobListings.applications_count
+        : jobListings.posted_date;
+      const sortDir = sortOrder === 'asc' ? asc : desc;
+      query = query.orderBy(sortDir(sortField));
+
+      const rows = await query;
+
+      // Apply search filter client-side (full-text search on title and location)
+      let filtered = rows;
+      if (search && typeof search === 'string') {
+        const searchLower = search.toLowerCase();
+        filtered = rows.filter(r =>
+          r.title.toLowerCase().includes(searchLower) ||
+          r.location.toLowerCase().includes(searchLower)
+        );
+      }
+
+      return res.json(filtered.map(r => {
         const { employer_name, employer_name_fallback, ...rest } = r;
         const displayName = employer_name || employer_name_fallback;
         return { ...rest, employer: displayName ? { name: displayName } : null };
@@ -3066,6 +3119,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting job:", error);
       return res.status(500).json({ message: "Failed to delete job" });
+    }
+  });
+
+  // Edit job (admin can update certain fields)
+  app.patch("/api/admin/jobs/:id", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid job ID" });
+
+      const job = await storage.getJobListingById(id);
+      if (!job) return res.status(404).json({ message: "Job not found" });
+
+      // Whitelist editable fields - prevent editing approval-critical fields
+      const editableFields = [
+        'title', 'description', 'location', 'job_type', 'work_arrangement',
+        'specialty', 'experience_level', 'salary_min', 'salary_max', 'salary_period',
+        'responsibilities', 'requirements', 'benefits', 'education_required',
+        'certification_required', 'shift_type', 'contact_email', 'application_url',
+        'is_featured', 'expiry_date'
+      ];
+
+      const updates: Record<string, any> = {};
+      for (const field of editableFields) {
+        if (field in req.body) {
+          const value = req.body[field];
+
+          // Type validation
+          if (field === 'salary_min' || field === 'salary_max') {
+            if (value !== null && value !== undefined && isNaN(parseFloat(value))) {
+              return res.status(400).json({ message: `${field} must be a number` });
+            }
+            updates[field] = value ? parseFloat(value) : undefined;
+          } else if (field === 'is_featured') {
+            updates[field] = Boolean(value);
+          } else if (field === 'certification_required') {
+            // Handle comma-separated string -> array conversion
+            if (Array.isArray(value)) {
+              updates[field] = value;
+            } else if (typeof value === 'string') {
+              updates[field] = value.split(',').map((c: string) => c.trim()).filter((c: string) => c);
+            }
+          } else {
+            updates[field] = value;
+          }
+        }
+      }
+
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ message: "No valid fields to update" });
+      }
+
+      const updated = await storage.updateJobListing(id, updates);
+      return res.json(updated);
+    } catch (error) {
+      console.error("Error editing job:", error);
+      return res.status(500).json({ message: "Failed to edit job" });
+    }
+  });
+
+  // Bulk approve jobs
+  app.patch("/api/admin/jobs/bulk-approve", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const { jobIds = [], notes } = req.body;
+
+      if (!Array.isArray(jobIds) || jobIds.length === 0) {
+        return res.status(400).json({ message: "jobIds array is required and must contain at least one ID" });
+      }
+
+      if (notes && typeof notes === 'string' && notes.length > 1000) {
+        return res.status(400).json({ message: 'Approval notes too long (max 1000 characters)' });
+      }
+
+      const adminId = (req as any).user?.userId;
+      const approvedAt = new Date();
+
+      let approvedCount = 0;
+      const failedIds: number[] = [];
+
+      // Process each job approval
+      for (const jobId of jobIds) {
+        const id = parseInt(String(jobId));
+        if (isNaN(id)) {
+          failedIds.push(jobId);
+          continue;
+        }
+
+        try {
+          const job = await storage.getJobListingById(id);
+          if (!job) {
+            failedIds.push(id);
+            continue;
+          }
+
+          // Skip if already approved
+          if (job.is_approved) {
+            continue;
+          }
+
+          await storage.updateJobListing(id, {
+            is_approved: true,
+            is_active: true,
+            approved_by: adminId,
+            approved_at: approvedAt,
+            approval_notes: notes,
+          });
+          approvedCount++;
+        } catch (err) {
+          console.error(`Failed to approve job ${id}:`, err);
+          failedIds.push(id);
+        }
+      }
+
+      return res.json({
+        message: `Approved ${approvedCount} job(s)`,
+        approvedCount,
+        failedCount: failedIds.length,
+        failedIds: failedIds.length > 0 ? failedIds : undefined,
+      });
+    } catch (error) {
+      console.error("Error in bulk approve jobs:", error);
+      return res.status(500).json({ message: "Failed to bulk approve jobs" });
     }
   });
 

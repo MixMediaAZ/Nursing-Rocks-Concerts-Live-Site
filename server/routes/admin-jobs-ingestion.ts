@@ -264,4 +264,60 @@ export function registerAdminJobsIngestionRoutes(
       }
     }
   );
+
+  /**
+   * GET /api/admin/jobs/ingestion-summary
+   * Get a summary of the latest ingestion run and scheduler status
+   */
+  app.get(
+    "/api/admin/jobs/ingestion-summary",
+    requireAdminToken,
+    async (req: Request, res: Response) => {
+      try {
+        const { ingestionScheduler } = await import("../ingestion/scheduler");
+
+        // Get latest ingestion run
+        const latestRuns = await ingestionDb.getRecentIngestionRuns("phoenixchildrens", 1);
+        const latestRun = latestRuns[0] || null;
+
+        // Get scheduler status
+        const schedulerStatus = {
+          running: ingestionScheduler.isSchedulerRunning(),
+          currentlyProcessing: ingestionScheduler.isCurrentlyRunning(),
+          cron: process.env.JOBS_INGESTION_CRON || "0 2 * * *",
+          enabled: process.env.JOBS_INGESTION_ENABLED === "true",
+          graceDays: parseInt(process.env.INGESTION_GRACE_PERIOD_DAYS || "21", 10),
+        };
+
+        return res.json({
+          success: true,
+          latestRun: latestRun
+            ? {
+                id: latestRun.id,
+                status: latestRun.status,
+                started_at: latestRun.started_at,
+                completed_at: latestRun.completed_at,
+                duration_seconds: latestRun.duration_seconds,
+                jobs_fetched: latestRun.jobs_fetched,
+                jobs_parsed: latestRun.jobs_parsed,
+                jobs_inserted: latestRun.jobs_inserted,
+                jobs_updated: latestRun.jobs_updated,
+                jobs_skipped: latestRun.jobs_skipped,
+                jobs_archived: latestRun.jobs_archived,
+                errors_count: latestRun.errors_count,
+                error_log: (latestRun.error_log || []).slice(0, 5), // First 5 errors
+              }
+            : null,
+          scheduler: schedulerStatus,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error("[Admin API] Ingestion summary error:", message);
+        return res.status(500).json({
+          error: "Failed to get ingestion summary",
+          message,
+        });
+      }
+    }
+  );
 }
