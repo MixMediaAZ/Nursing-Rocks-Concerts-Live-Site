@@ -187,7 +187,8 @@
       "Bash(grep -n \"getJobListingById\" server/storage/*.ts)",
       "Bash(find server:*)",
       "Bash(curl -s -I \"https://www.nursingrocksconcerts.com/assets/employers/phoenix-childrens-logo.svg\")",
-      "Bash(curl -s \"https://www.nursingrocksconcerts.com/api/jobs\")"
+      "Bash(curl -s \"https://www.nursingrocksconcerts.com/api/jobs\")",
+      "Bash(ls -d */)"
     ]
   }
 }

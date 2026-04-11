@@ -56,6 +56,8 @@ import VideoApproval from "@/components/admin/video-approval";
 import { LicenseManagement } from "@/components/admin/license-management";
 import { AdminCreateEmployer } from "@/components/admin/admin-create-employer";
 import { AdminCreateJob } from "@/components/admin/admin-create-job";
+import { JobsTable } from "@/components/admin/jobs-table";
+import { IngestionStatusCard } from "@/components/admin/ingestion-status-card";
 
 export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -1412,167 +1414,11 @@ export default function AdminPage() {
                 </Card>
               </div>
 
+              {/* Ingestion Status */}
+              <IngestionStatusCard />
+
               {/* Job Listings Table */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Job Listings</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {jobsLoading ? (
-                    <div className="flex justify-center py-8">
-                      <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-                    </div>
-                  ) : Array.isArray(jobsData) && jobsData.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="text-left p-3">Title</th>
-                            <th className="text-left p-3">Employer</th>
-                            <th className="text-left p-3">Location</th>
-                            <th className="text-left p-3">Status</th>
-                            <th className="text-left p-3">Approval</th>
-                            <th className="text-left p-3">Views</th>
-                            <th className="text-left p-3">Applications</th>
-                            <th className="text-left p-3">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {jobsData.map((job: any) => (
-                            <tr key={job.id} className="border-b hover:bg-muted/50">
-                              <td className="p-3 font-medium">{job.title}</td>
-                              <td className="p-3">{job.employer?.name || 'N/A'}</td>
-                              <td className="p-3">{job.location}</td>
-                              <td className="p-3">
-                                <Badge variant={job.is_active ? "default" : "secondary"}>
-                                  {job.is_active ? "Active" : "Inactive"}
-                                </Badge>
-                              </td>
-                              <td className="p-3">
-                                {job.is_approved ? (
-                                  <Badge variant="default" className="bg-green-500">
-                                    <CheckCircle className="h-3 w-3 mr-1" /> Approved
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="destructive">
-                                    <XCircle className="h-3 w-3 mr-1" /> Pending
-                                  </Badge>
-                                )}
-                              </td>
-                              <td className="p-3">{job.views_count || 0}</td>
-                              <td className="p-3">{job.applications_count || 0}</td>
-                              <td className="p-3">
-                                <div className="flex gap-2">
-                                  {!job.is_approved ? (
-                                    <Button
-                                      size="sm"
-                                      variant="default"
-                                      className="bg-green-600 hover:bg-green-700"
-                                      onClick={async () => {
-                                        try {
-                                          const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
-                                          const res = await fetch(`/api/admin/jobs/${job.id}/approve`, {
-                                            method: 'PATCH',
-                                            headers: {
-                                              'Authorization': `Bearer ${token}`,
-                                              'Content-Type': 'application/json',
-                                            },
-                                          });
-                                          if (!res.ok) throw new Error(await res.text() || res.statusText);
-                                          await queryClient.refetchQueries({ queryKey: ['/api/admin/jobs'] });
-                                          toast({
-                                            title: "Job Approved",
-                                            description: "Job listing is now visible to users",
-                                          });
-                                        } catch (error) {
-                                          toast({
-                                            title: "Error",
-                                            description: "Failed to approve job",
-                                            variant: "destructive",
-                                          });
-                                        }
-                                      }}
-                                    >
-                                      Approve
-                                    </Button>
-                                  ) : (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={async () => {
-                                        try {
-                                          const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
-                                          const res = await fetch(`/api/admin/jobs/${job.id}/deny`, {
-                                            method: 'PATCH',
-                                            headers: {
-                                              'Authorization': `Bearer ${token}`,
-                                              'Content-Type': 'application/json',
-                                            },
-                                          });
-                                          if (!res.ok) throw new Error(await res.text() || res.statusText);
-                                          await queryClient.refetchQueries({ queryKey: ['/api/admin/jobs'] });
-                                          toast({
-                                            title: "Job Unapproved",
-                                            description: "Job listing is now hidden from users",
-                                          });
-                                        } catch (error) {
-                                          toast({
-                                            title: "Error",
-                                            description: "Failed to unapprove job",
-                                            variant: "destructive",
-                                          });
-                                        }
-                                      }}
-                                    >
-                                      Unapprove
-                                    </Button>
-                                  )}
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={async () => {
-                                      if (window.confirm('Are you sure you want to delete this job listing?')) {
-                                        try {
-                                          const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
-                                          const res = await fetch(`/api/admin/jobs/${job.id}`, {
-                                            method: 'DELETE',
-                                            headers: {
-                                              'Authorization': `Bearer ${token}`,
-                                            },
-                                          });
-                                          if (!res.ok) throw new Error(await res.text() || res.statusText);
-                                          await queryClient.refetchQueries({ queryKey: ['/api/admin/jobs'] });
-                                          toast({
-                                            title: "Job Deleted",
-                                            description: "Job listing has been removed",
-                                          });
-                                        } catch (error) {
-                                          toast({
-                                            title: "Error",
-                                            description: "Failed to delete job",
-                                            variant: "destructive",
-                                          });
-                                        }
-                                      }
-                                    }}
-                                  >
-                                    Delete
-                                  </Button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Briefcase className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                      <p>No job listings yet</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <JobsTable employersData={Array.isArray(employersData) ? employersData : []} />
 
               {/* Employers Table */}
               <Card>
