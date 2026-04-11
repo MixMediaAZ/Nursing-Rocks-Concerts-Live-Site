@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +20,43 @@ interface NavLink {
   icon: React.ReactNode;
   isExternal?: boolean;
 }
+
+// Memoized nav item component to prevent re-renders and improve INP
+interface NavItemProps {
+  link: NavLink;
+  isActive: boolean;
+}
+
+const NavItem = memo(({ link, isActive }: NavItemProps) => {
+  if (link.isExternal) {
+    return (
+      <a
+        href={link.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="px-4 py-2 rounded-full text-xs md:text-sm font-semibold uppercase tracking-wider transition-all hover:bg-background hover:shadow-sm text-muted-foreground hover:text-primary flex items-center gap-2"
+      >
+        {link.icon}
+        <span>{link.label}</span>
+      </a>
+    );
+  }
+
+  return (
+    <Link href={link.href}>
+      <div
+        className={`px-4 py-2 rounded-full text-xs md:text-sm font-semibold uppercase tracking-wider cursor-pointer transition-all flex items-center gap-2 ${
+          isActive
+            ? "bg-primary text-white shadow-md shadow-primary/20"
+            : "text-muted-foreground hover:bg-background hover:text-primary"
+        }`}
+      >
+        {link.icon}
+        <span>{link.label}</span>
+      </div>
+    </Link>
+  );
+});
 
 export function Header() {
   const { toast } = useToast();
@@ -96,32 +133,34 @@ export function Header() {
     }
   };
 
-  // Navigation links - some links are only for authenticated users
-  const publicNavLinks: NavLink[] = [
-    { href: "/", label: "Home", icon: <HeartPulse size={18} /> },
-    { href: "/videos", label: "Videos", icon: <PlayCircle size={18} /> },
-    { href: "/jobs", label: "Jobs Board", icon: <Briefcase size={18} /> },
-    {
-      href: "/thanks",
-      label: "Upload Video",
-      icon: <Video size={18} />,
-    },
-    { href: "/sponsors", label: "Sponsors", icon: <HeartPulse size={18} /> },
-  ];
-  
-  const authenticatedNavLinks: NavLink[] = [
-    { href: "/dashboard", label: "Dashboard", icon: <User size={18} /> },
-  ];
-  
-  // Combine links based on authentication status
-  const navLinks: NavLink[] = [
-    ...publicNavLinks,
-    ...(isLoggedIn ? authenticatedNavLinks : []),
-  ];
+  // Navigation links - memoized to prevent recalculation on every render
+  const navLinks = useMemo(() => {
+    const publicNavLinks: NavLink[] = [
+      { href: "/", label: "Home", icon: <HeartPulse size={18} /> },
+      { href: "/videos", label: "Videos", icon: <PlayCircle size={18} /> },
+      { href: "/jobs", label: "Jobs Board", icon: <Briefcase size={18} /> },
+      {
+        href: "/thanks",
+        label: "Upload Video",
+        icon: <Video size={18} />,
+      },
+      { href: "/sponsors", label: "Sponsors", icon: <HeartPulse size={18} /> },
+    ];
 
-  const isActive = (path: string) => {
+    const authenticatedNavLinks: NavLink[] = [
+      { href: "/dashboard", label: "Dashboard", icon: <User size={18} /> },
+    ];
+
+    return [
+      ...publicNavLinks,
+      ...(isLoggedIn ? authenticatedNavLinks : []),
+    ];
+  }, [isLoggedIn]);
+
+  // Memoized isActive check to avoid recalculation
+  const isActive = useCallback((path: string) => {
     return location === path;
-  };
+  }, [location]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background shadow-sm">
@@ -147,31 +186,7 @@ export function Header() {
               <div className="flex items-center gap-x-2 lg:gap-x-4 h-full">
                 <div className="flex items-center gap-x-2 lg:gap-x-4 bg-muted/50 p-1.5 rounded-full border border-border/50">
                   {navLinks.map((link) => (
-                    link.isExternal ? (
-                      <a 
-                        key={link.href} 
-                        href={link.href} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className={`px-4 py-2 rounded-full text-xs md:text-sm font-semibold uppercase tracking-wider transition-all hover:bg-background hover:shadow-sm text-muted-foreground hover:text-primary flex items-center gap-2`}
-                      >
-                        {link.icon}
-                        <span>{link.label}</span>
-                      </a>
-                    ) : (
-                      <Link key={link.href} href={link.href}>
-                        <div
-                          className={`px-4 py-2 rounded-full text-xs md:text-sm font-semibold uppercase tracking-wider cursor-pointer transition-all flex items-center gap-2 ${
-                            isActive(link.href) 
-                              ? "bg-primary text-white shadow-md shadow-primary/20" 
-                              : "text-muted-foreground hover:bg-background hover:text-primary"
-                          }`}
-                        >
-                          {link.icon}
-                          <span>{link.label}</span>
-                        </div>
-                      </Link>
-                    )
+                    <NavItem key={link.href} link={link} isActive={isActive(link.href)} />
                   ))}
                 </div>
                 {/* Login/Register buttons next to nav pill - desktop only, logged out only */}
