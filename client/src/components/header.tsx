@@ -243,9 +243,6 @@ export function Header() {
                         </Link>
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem onClick={() => window.location.href = "/license-verification"}>
-                      License Verification
-                    </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/tickets">My Tickets</Link>
                     </DropdownMenuItem>
@@ -357,16 +354,6 @@ export function Header() {
                       </div>
                     </Link>
                   )}
-                  <div
-                    className="flex items-center justify-center gap-2 p-3 rounded-md text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      window.location.href = "/license-verification";
-                    }}
-                  >
-                    <HeartPulse size={18} />
-                    License Verification
-                  </div>
                   <Link href="/tickets">
                     <div
                       className="flex items-center justify-center gap-2 p-3 rounded-md text-muted-foreground hover:bg-muted transition-colors"

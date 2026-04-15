@@ -11,7 +11,7 @@ import { users, tickets } from '@shared/schema';
 import jwt from 'jsonwebtoken';
 import { generateToken, verifyToken, getPayloadFromRequest, getUserIdFromRequest, isUserVerified, blacklistToken, isTokenBlacklisted, getTokenFromRequest } from './jwt';
 import { setUserRevokedBeforeMs, isTokenRevokedForUser } from './token-revocation-store';
-import { sendTicketConfirmationEmail, sendPasswordResetEmail } from './email';
+import { sendTicketConfirmationEmail, sendPasswordResetEmail, sendWelcomeEmail } from './email';
 
 const SALT_ROUNDS = 10;
 
@@ -51,32 +51,46 @@ export async function register(req: Request, res: Response) {
 
     const { email, password, first_name, last_name } = req.body;
 
+    console.log('[register] Attempt for email:', email);
+    console.log('[register] First name:', first_name, 'Last name:', last_name);
+
     // FIX: Normalize email (trim + lowercase) to ensure consistent storage and lookup
     const normalizedEmail = email.toLowerCase().trim();
+    console.log('[register] Normalized email:', normalizedEmail);
 
     // Check if user already exists
     // SECURITY FIX: Don't reveal whether email is registered (prevents account enumeration)
     const existingUser = await storage.getUserByEmail(normalizedEmail);
+    console.log('[register] Existing user check:', !!existingUser);
     if (existingUser) {
-      // Return 409 Conflict to indicate email already exists (RFC 7231)
-      // Response message is generic to prevent account enumeration attacks
-      return res.status(409).json({
-        message: 'If this email address is not yet registered, a verification email will be sent. Please check your inbox.',
-        user: null // Don't return user data if already exists
+      // Return 200 (not 409) so the client can handle the ambiguous flow gracefully.
+      // Message is generic to prevent account enumeration attacks.
+      return res.status(200).json({
+        message: 'An account with this email may already exist. Please try logging in.',
+        user: null
       });
     }
 
     // Hash password
+    console.log('[register] Hashing password...');
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+    console.log('[register] Password hashed, length:', passwordHash.length);
 
     // Create user with normalized email
     const user = await storage.createUser({ email: normalizedEmail, first_name, last_name, password }, passwordHash);
+    console.log('[register] User created with ID:', user.id);
 
     // SECURITY: Set Cache-Control headers to prevent caching of sensitive auth data
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
 
     // Generate JWT token using our helper module
     const token = generateToken(user);
+    console.log('[register] Token generated');
+
+    // Send welcome email asynchronously — don't block registration on email failure
+    sendWelcomeEmail(user.email, user.first_name || 'Nurse').catch(err => {
+      console.error('[register] Welcome email failed (non-blocking):', err);
+    });
 
     // Return user data without password hash
     const { password_hash, ...userData } = user;
@@ -103,6 +117,9 @@ export async function login(req: Request, res: Response) {
 
     const { email, password } = req.body;
 
+    console.log('[login] Attempt for email:', email);
+    console.log('[login] Password present:', !!password);
+
     // FIX: Normalize email (trim + lowercase) to match registration behavior
     const normalizedEmail = email.toLowerCase().trim();
 
@@ -110,16 +127,21 @@ export async function login(req: Request, res: Response) {
     let user;
     try {
       user = await storage.getUserByEmail(normalizedEmail);
+      console.log('[login] User found:', !!user, user?.email);
     } catch (dbError) {
       console.error('[login] Database error:', dbError);
       return res.status(500).json({ message: 'Database connection error' });
     }
     if (!user) {
+      console.log('[login] No user found for email');
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     // Verify password
+    console.log('[login] Password hash format check:', user.password_hash.substring(0, 10));
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+    console.log('[login] Password valid:', isPasswordValid);
+
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -129,6 +151,7 @@ export async function login(req: Request, res: Response) {
 
     // Generate JWT token using our helper module
     const token = generateToken(user);
+    console.log('[login] Token generated for user:', user.id);
 
     // Return user data without password hash
     const { password_hash, ...userData } = user;

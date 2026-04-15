@@ -236,9 +236,9 @@ export function NurseLicenseVerification() {
                 <ShieldCheck className="h-8 w-8 text-green-600" />
               </div>
             </div>
-            <CardTitle className="text-center text-2xl">Nurse License Verified</CardTitle>
+            <CardTitle className="text-center text-2xl">Registration Complete</CardTitle>
             <CardDescription className="text-center text-base">
-              Your nursing credentials have been successfully verified in our system!
+              Your information has been successfully received!
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -285,22 +285,22 @@ export function NurseLicenseVerification() {
               <ShieldCheck className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-center text-2xl">Nurse License Verification</CardTitle>
+          <CardTitle className="text-center text-2xl">Nursing Professional Registration</CardTitle>
           <CardDescription className="text-center text-base">
-            Verify your nursing license to receive free concert tickets and exclusive benefits.
+            Register as a nursing professional to receive free concert tickets and exclusive benefits.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="register">License Verification</TabsTrigger>
+              <TabsTrigger value="register">Nurse Registration</TabsTrigger>
               <TabsTrigger value="login">Login / Register</TabsTrigger>
             </TabsList>
             
             <TabsContent value="register">
               {!isAuthenticated ? (
                 <div className="text-center p-6 bg-muted/50 rounded-lg">
-                  <p className="mb-4">Please log in or create an account to verify your nursing license.</p>
+                  <p className="mb-4">Please log in or create an account to continue.</p>
                   <Button 
                     variant="default" 
                     onClick={() => setActiveTab("login")}
@@ -576,7 +576,7 @@ export function NurseLicenseVerification() {
             <TabsContent value="login">
               <div className="space-y-4 text-center">
                 <p>
-                  Please log in to your existing account or create a new account to proceed with license verification.
+                  Please log in to your existing account or create a new account to continue.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Button 
@@ -601,7 +601,7 @@ export function NurseLicenseVerification() {
       </Card>
       
       <div className="mt-8 space-y-4">
-        <h3 className="text-lg font-semibold text-center">Benefits of License Verification</h3>
+        <h3 className="text-lg font-semibold text-center">Benefits of Registering</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
             <CardHeader className="pb-2">

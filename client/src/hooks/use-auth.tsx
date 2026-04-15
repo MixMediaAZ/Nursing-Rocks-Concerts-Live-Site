@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { getToken } from "@/lib/token-utils";
 
 interface User {
   id: number;
@@ -16,9 +17,10 @@ interface AuthStatusResponse {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  isLoggedIn: boolean; // Alias for isAuthenticated
+  isLoggedIn: boolean;
   isVerified: boolean;
   isLoading: boolean;
+  refetch: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -27,11 +29,16 @@ const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
   isVerified: false,
   isLoading: true,
+  refetch: () => {},
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const { data, isLoading } = useQuery<AuthStatusResponse>({
+  const { data, isLoading, refetch } = useQuery<AuthStatusResponse>({
     queryKey: ["/api/auth/status"],
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    retry: 1,
   });
 
   const isAuthenticated = !!data?.isAuthenticated;
@@ -39,9 +46,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const authStatus: AuthContextType = {
     user: data?.user || null,
     isAuthenticated,
-    isLoggedIn: isAuthenticated, // Alias for isAuthenticated
+    isLoggedIn: isAuthenticated,
     isVerified: !!data?.isVerified,
     isLoading,
+    refetch,
   };
 
   return (

@@ -328,10 +328,6 @@ export default function DashboardPage() {
                   <Ticket className="mr-2 h-4 w-4" />
                   My Tickets
                 </Button>
-                <Button variant="outline" className="w-full justify-start" onClick={() => window.location.href = "/license-verification"}>
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  License Verification
-                </Button>
                 <Button variant="outline" className="w-full justify-start" onClick={() => window.location.href = "/store"}>
                   <Store className="mr-2 h-4 w-4" />
                   Shop Merchandise
@@ -391,14 +387,9 @@ export default function DashboardPage() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg">Free tickets</CardTitle>
                 <CardDescription>
-                  Complete license verification and wait for Nursing Rocks to approve your account. Then you can claim free tickets here.
+                  Your account is being reviewed by our team. Free tickets will be available once approved.
                 </CardDescription>
               </CardHeader>
-              <CardFooter className="pt-0">
-                <Button variant="outline" onClick={() => { window.location.href = "/license-verification"; }}>
-                  Go to license verification
-                </Button>
-              </CardFooter>
             </Card>
           )}
 

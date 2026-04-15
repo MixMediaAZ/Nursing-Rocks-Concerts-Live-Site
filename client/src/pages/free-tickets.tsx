@@ -303,23 +303,12 @@ export default function FreeTickets() {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    <Alert className="bg-amber-50 border-amber-200 text-amber-800">
-                      <Info className="h-4 w-4" />
-                      <AlertTitle>Verification Required</AlertTitle>
-                      <AlertDescription>
-                        Your nursing license needs to be verified before you can receive free tickets.
-                      </AlertDescription>
-                    </Alert>
-                    
                     <div className="flex flex-col items-center gap-4 py-6">
                       <ShieldCheck className="h-16 w-16 text-muted-foreground/30" />
-                      <h3 className="text-lg font-medium">Complete Your Verification</h3>
+                      <h3 className="text-lg font-medium">Account Pending Approval</h3>
                       <p className="text-center text-muted-foreground max-w-md">
-                        Please complete the license verification process to unlock free tickets to all our concerts.
+                        Your account is being reviewed. Free tickets will be available once your account is approved.
                       </p>
-                      <Button onClick={() => setLocation("/register")}>
-                        Verify Your License
-                      </Button>
                     </div>
                   </div>
                 )
@@ -329,7 +318,7 @@ export default function FreeTickets() {
                     <Info className="h-4 w-4" />
                     <AlertTitle>Authentication Required</AlertTitle>
                     <AlertDescription>
-                      Please create an account or log in to verify your nursing license and receive free tickets.
+                      Please create an account or log in to receive free tickets.
                     </AlertDescription>
                   </Alert>
                   
@@ -337,7 +326,7 @@ export default function FreeTickets() {
                     <ShieldCheck className="h-16 w-16 text-muted-foreground/30" />
                     <h3 className="text-lg font-medium">Sign Up or Log In</h3>
                     <p className="text-center text-muted-foreground max-w-md">
-                      Create an account or log in to verify your nursing license and access free concert tickets.
+                      Create an account or log in to access free concert tickets.
                     </p>
                     <div className="flex gap-4">
                       <Button onClick={() => setLocation("/register")}>

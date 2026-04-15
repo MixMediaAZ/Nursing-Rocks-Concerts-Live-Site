@@ -42,46 +42,39 @@ export default function TermsPage() {
             tickets will typically be valid for the new date, but refunds may be offered at our discretion.
           </p>
           
-          <h2 className="text-xl font-semibold mt-8 mb-4">5. License Verification</h2>
-          <p>
-            For special offers available to licensed healthcare professionals, we may require verification
-            of professional licenses. By submitting license information, you affirm that it is accurate
-            and current. We reserve the right to deny special offers if license verification cannot be completed.
-          </p>
-          
-          <h2 className="text-xl font-semibold mt-8 mb-4">6. Merchandise and Orders</h2>
+          <h2 className="text-xl font-semibold mt-8 mb-4">5. Merchandise and Orders</h2>
           <p>
             Product descriptions and images are for illustrative purposes only. We strive for accuracy
             but cannot guarantee that colors, sizes, or other details will be exactly as shown. Orders
             are subject to availability and we reserve the right to cancel orders if products become unavailable.
           </p>
           
-          <h2 className="text-xl font-semibold mt-8 mb-4">7. Privacy Policy</h2>
+          <h2 className="text-xl font-semibold mt-8 mb-4">6. Privacy Policy</h2>
           <p>
             Your use of our services is also governed by our Privacy Policy, which is incorporated by reference
             into these Terms of Service. Please review our Privacy Policy to understand our practices.
           </p>
           
-          <h2 className="text-xl font-semibold mt-8 mb-4">8. Intellectual Property</h2>
+          <h2 className="text-xl font-semibold mt-8 mb-4">7. Intellectual Property</h2>
           <p>
             All content on the Nursing Rocks! Concert Series website, including text, graphics, logos,
             images, and software, is the property of Nursing Rocks! or its content suppliers and is protected
             by copyright and other intellectual property laws.
           </p>
           
-          <h2 className="text-xl font-semibold mt-8 mb-4">9. Limitation of Liability</h2>
+          <h2 className="text-xl font-semibold mt-8 mb-4">8. Limitation of Liability</h2>
           <p>
             Nursing Rocks! Concert Series will not be liable for any direct, indirect, incidental, special,
             consequential, or punitive damages resulting from your use of or inability to use our services.
           </p>
           
-          <h2 className="text-xl font-semibold mt-8 mb-4">10. Changes to Terms</h2>
+          <h2 className="text-xl font-semibold mt-8 mb-4">9. Changes to Terms</h2>
           <p>
             We may modify these Terms of Service at any time. Changes will be effective immediately upon posting.
             Your continued use of our services after changes are posted constitutes your acceptance of the modified terms.
           </p>
           
-          <h2 className="text-xl font-semibold mt-8 mb-4">11. Contact Information</h2>
+          <h2 className="text-xl font-semibold mt-8 mb-4">10. Contact Information</h2>
           <p>
             If you have any questions about these Terms of Service, please contact us at:
             <br />

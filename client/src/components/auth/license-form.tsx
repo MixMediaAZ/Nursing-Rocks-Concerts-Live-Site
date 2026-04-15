@@ -80,7 +80,7 @@ export function LicenseForm({ onSuccess }: LicenseFormProps) {
       
       toast({
         title: "License Submitted",
-        description: "Your nursing license has been submitted for verification. This process may take a few minutes.",
+        description: "Your nursing credentials have been submitted successfully.",
       });
       
       if (onSuccess) {
@@ -156,9 +156,9 @@ export function LicenseForm({ onSuccess }: LicenseFormProps) {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle>Nursing License Verification</CardTitle>
+        <CardTitle>Your Nursing Credentials</CardTitle>
         <CardDescription>
-          Submit your RN license information for verification. Only verified nurses can purchase tickets.
+          Submit your RN license information so we can confirm you're a nursing professional.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -249,14 +249,14 @@ export function LicenseForm({ onSuccess }: LicenseFormProps) {
               )}
             />
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Submitting..." : "Submit License for Verification"}
+              {isLoading ? "Submitting..." : "Submit"}
             </Button>
           </form>
         </Form>
       </CardContent>
       <CardFooter className="flex justify-center">
         <p className="text-sm text-muted-foreground">
-          Your license information will be verified securely with the state nursing board.
+          Your information is kept private and secure.
         </p>
       </CardFooter>
     </Card>

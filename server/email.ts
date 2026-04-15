@@ -161,18 +161,17 @@ export async function sendLicenseVerificationEmail(
 <body>
   <div class="container">
     <div class="header">
-      <h1>✓ License Verified</h1>
+      <h1>✓ Account Approved</h1>
     </div>
 
     <div class="content">
       <p>Hi ${esc(nurseName)},</p>
 
       <div class="success-box">
-        <p><strong>Your nursing license has been verified!</strong></p>
-        <p>License #${esc(licenseNumber)}</p>
+        <p><strong>Your account has been approved!</strong></p>
       </div>
 
-      <p>You're now able to purchase tickets and access exclusive content on Nursing Rocks! Concert Series.</p>
+      <p>You're now able to access free tickets and exclusive content on Nursing Rocks! Concert Series.</p>
 
       <p>Thank you for being part of our community.</p>
 
@@ -192,7 +191,7 @@ export async function sendLicenseVerificationEmail(
     const response = await resend.emails.send({
       from: 'verify@nursingrocks.com',
       to: userEmail,
-      subject: 'Your License Has Been Verified - Nursing Rocks!',
+      subject: 'Your Account Has Been Approved - Nursing Rocks!',
       html: emailHtml,
     });
 
@@ -205,6 +204,85 @@ export async function sendLicenseVerificationEmail(
     return { success: true };
   } catch (error: any) {
     console.error('Error sending license verification email:', error);
+    return { success: false, error: error.message || 'Failed to send email' };
+  }
+}
+
+/**
+ * Send welcome email to a newly registered nurse
+ */
+export async function sendWelcomeEmail(
+  userEmail: string,
+  firstName: string
+): Promise<{ success: boolean; error?: string }> {
+  if (!resend) {
+    console.warn('Resend API key not configured - skipping welcome email');
+    return { success: false, error: 'Email service not configured' };
+  }
+
+  try {
+    const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #F61D7A 0%, #5D3FD3 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+    .header h1 { margin: 0; font-size: 26px; }
+    .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+    .highlight-box { background: #fff; border-left: 4px solid #F61D7A; padding: 15px 20px; border-radius: 4px; margin: 20px 0; }
+    .cta-button { display: inline-block; background: linear-gradient(135deg, #F61D7A, #5D3FD3); color: white; padding: 14px 28px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 16px; margin: 20px 0; }
+    .footer { text-align: center; padding: 20px; font-size: 12px; color: #888; border-top: 1px solid #ddd; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Welcome to Nursing Rocks!</h1>
+      <p style="margin:8px 0 0;">Concert Series Celebrating Healthcare Heroes</p>
+    </div>
+    <div class="content">
+      <p>Hi ${esc(firstName)},</p>
+      <p>Thank you for joining the Nursing Rocks! community. Your account has been created and we're thrilled to have you.</p>
+      <div class="highlight-box">
+        <strong>What happens next?</strong><br>
+        Our team will review your account and you'll be notified once you're approved to claim free concert tickets. No action needed on your end — we'll reach out by email.
+      </div>
+      <p>In the meantime, check out upcoming concerts and events near you on our site.</p>
+      <p style="text-align:center;">
+        <a href="https://nursingrocksconcerts.com/dashboard" class="cta-button">Go to My Dashboard</a>
+      </p>
+      <p>Thank you for everything you do for your patients and community. This one's for you.</p>
+      <p>With gratitude,<br><strong>The Nursing Rocks! Team</strong></p>
+    </div>
+    <div class="footer">
+      <p>Nursing Rocks! Concert Series | For Healthcare Professionals</p>
+      <p>&copy; ${new Date().getFullYear()} All rights reserved.</p>
+      <p><a href="mailto:NursingRocksConcerts@gmail.com" style="color:#888;">NursingRocksConcerts@gmail.com</a></p>
+    </div>
+  </div>
+</body>
+</html>
+    `;
+
+    const response = await resend.emails.send({
+      from: 'welcome@nursingrocksconcerts.com',
+      to: userEmail,
+      subject: 'Welcome to Nursing Rocks! 🎵',
+      html: emailHtml,
+    });
+
+    if (response.error) {
+      console.error('Resend welcome email error:', response.error);
+      return { success: false, error: response.error.message };
+    }
+
+    console.log('Welcome email sent:', response.data?.id);
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error sending welcome email:', error);
     return { success: false, error: error.message || 'Failed to send email' };
   }
 }

@@ -29,24 +29,14 @@ export default function FAQPage() {
             <AccordionTrigger>What is Nursing Rocks! Concert Series?</AccordionTrigger>
             <AccordionContent>
               Nursing Rocks! Concert Series is a special event series celebrating healthcare professionals through the power of music. 
-              We host concerts across the country featuring renowned artists, with special benefits and free tickets for verified nursing professionals.
+              We host concerts across the country featuring renowned artists, with special benefits and free tickets for nursing professionals.
             </AccordionContent>
           </AccordionItem>
           
           <AccordionItem value="item-2">
             <AccordionTrigger>How do I get tickets to concerts?</AccordionTrigger>
             <AccordionContent>
-              Verified nursing professionals always get free admission—no purchase required. Register on our site and verify your nursing license, then claim your free ticket for each event. We don’t sell tickets for every event: some venues offer presale tickets (advance purchase), and some are admission at the door only. Check each event page for details. <Link href="/register"><span className="text-primary hover:underline">Register here</span></Link> to get started.
-            </AccordionContent>
-          </AccordionItem>
-          
-          <AccordionItem value="item-3">
-            <AccordionTrigger>How does the nursing license verification work?</AccordionTrigger>
-            <AccordionContent>
-              During registration, you'll be prompted to enter your nursing license number and state. 
-              Our system will verify this information against state licensing databases. 
-              This process typically takes 1-2 business days. Once verified, you'll receive an email 
-              confirmation and be eligible for free concert tickets and special promotions.
+              Nursing professionals always get free admission—no purchase required. Register on our site and claim your free ticket for each event. We don’t sell tickets for every event: some venues offer presale tickets (advance purchase), and some are admission at the door only. Check each event page for details. <Link href="/register"><span className="text-primary hover:underline">Register here</span></Link> to get started.
             </AccordionContent>
           </AccordionItem>
           

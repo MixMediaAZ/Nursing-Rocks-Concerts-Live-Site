@@ -174,12 +174,14 @@ export class DatabaseStorage implements IStorage {
       // Normalize email to lowercase for case-insensitive lookup
       // Database has case-insensitive unique index on LOWER(email)
       const normalizedEmail = email.toLowerCase().trim();
+      console.log('[getUserByEmail] Looking for:', normalizedEmail);
 
       const rows = await db
         .select()
         .from(users)
         .where(sql`lower(${users.email}) = ${normalizedEmail}`);
 
+      console.log('[getUserByEmail] Rows found:', rows.length);
       if (rows.length > 1) {
         console.error('[getUserByEmail] CRITICAL: Multiple users found with same email:', normalizedEmail);
         // This should never happen due to the case-insensitive unique constraint
