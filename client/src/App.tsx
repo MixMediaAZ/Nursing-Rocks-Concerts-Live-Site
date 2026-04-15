@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -122,10 +123,21 @@ function Router() {
   );
 }
 
+// Fire once per browser session to count unique page visits
+function VisitTracker() {
+  useEffect(() => {
+    if (sessionStorage.getItem('visit_tracked')) return;
+    sessionStorage.setItem('visit_tracked', '1');
+    fetch('/api/track-visit', { method: 'POST' }).catch(() => {});
+  }, []);
+  return null;
+}
+
 function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
+        <VisitTracker />
         <SessionSync />
         <AuthProvider>
           <AdminEditingProvider>

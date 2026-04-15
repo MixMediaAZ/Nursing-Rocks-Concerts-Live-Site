@@ -2078,6 +2078,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // ── Traffic tracking ─────────────────────────────────────────────────────
+  // In-memory daily unique visitor store: date string → Set of visitor fingerprints
+  // Keeps last 30 days. Resets on server restart (acceptable for lightweight analytics).
+  const visitStore = new Map<string, Set<string>>();
+
+  const todayKey = () => new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+
+  const pruneOldDays = () => {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    for (const key of visitStore.keys()) {
+      if (key < cutoff.toISOString().slice(0, 10)) visitStore.delete(key);
+    }
+  };
+
+  // Public endpoint — fires once per browser session from the client
+  app.post("/api/track-visit", (req: Request, res: Response) => {
+    try {
+      const ip = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '').split(',')[0].trim();
+      const ua = (req.headers['user-agent'] || '').slice(0, 200);
+      const crypto = require('crypto');
+      const fingerprint = crypto.createHash('sha256').update(ip + ua).digest('hex').slice(0, 16);
+      const day = todayKey();
+      if (!visitStore.has(day)) visitStore.set(day, new Set());
+      visitStore.get(day)!.add(fingerprint);
+      pruneOldDays();
+      res.json({ ok: true });
+    } catch {
+      res.json({ ok: true }); // Always succeed silently
+    }
+  });
+
+  // Admin-only endpoint — returns traffic stats + registration counts
+  app.get("/api/admin/traffic-stats", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const today = todayKey();
+      const days: { date: string; visitors: number; registrations: number }[] = [];
+
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().slice(0, 10);
+        const visitors = visitStore.get(dateStr)?.size ?? 0;
+
+        const startOfDay = new Date(dateStr + 'T00:00:00.000Z');
+        const endOfDay = new Date(dateStr + 'T23:59:59.999Z');
+        const [row] = await db
+          .select({ count: sql<number>`cast(count(*) as int)` })
+          .from(users)
+          .where(and(gte(users.created_at, startOfDay), sql`${users.created_at} <= ${endOfDay}`));
+
+        days.push({ date: dateStr, visitors, registrations: Number(row?.count ?? 0) });
+      }
+
+      const todayStats = days.find(d => d.date === today) ?? { date: today, visitors: 0, registrations: 0 };
+      const weekVisitors = days.reduce((sum, d) => sum + d.visitors, 0);
+      const weekRegistrations = days.reduce((sum, d) => sum + d.registrations, 0);
+
+      res.json({ today: todayStats, week: { visitors: weekVisitors, registrations: weekRegistrations }, days });
+    } catch (error) {
+      console.error('[traffic-stats]', error);
+      res.status(500).json({ message: 'Failed to load traffic stats' });
+    }
+  });
+
   // Authentication status - JWT users get is_verified / is_admin from DB (not stale JWT claims)
   app.get("/api/auth/status", async (req: Request, res: Response) => {
     const sessionAuthenticated =

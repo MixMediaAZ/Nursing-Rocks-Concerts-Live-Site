@@ -1274,6 +1274,9 @@ export default function AdminPage() {
                 </Card>
               </div>
             </div>
+
+            {/* Traffic vs Registrations */}
+            <TrafficStatsWidget adminFetch={adminFetch} />
           </TabsContent>
 
           <TabsContent value="jobs">
@@ -3278,5 +3281,88 @@ function NrpxRegistrationsTab() {
         </div>
       )}
     </div>
+  );
+}
+
+// ── Traffic Stats Widget ──────────────────────────────────────────────────────
+function TrafficStatsWidget({ adminFetch }: { adminFetch: (url: string) => Promise<any> }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['/api/admin/traffic-stats'],
+    queryFn: () => adminFetch('/api/admin/traffic-stats'),
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+  });
+
+  const days: { date: string; visitors: number; registrations: number }[] = data?.days ?? [];
+  const today = data?.today ?? { visitors: 0, registrations: 0 };
+  const week = data?.week ?? { visitors: 0, registrations: 0 };
+
+  const maxVal = Math.max(...days.map((d: any) => Math.max(d.visitors, d.registrations)), 1);
+
+  return (
+    <Card className="mt-6">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Users className="h-5 w-5" /> Site Traffic vs Registrations
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="animate-pulse space-y-3">
+            <div className="h-6 bg-muted rounded w-40" />
+            <div className="h-32 bg-muted rounded" />
+          </div>
+        ) : (
+          <>
+            {/* Summary row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              {[
+                { label: "Visitors Today", value: today.visitors, color: "text-blue-600" },
+                { label: "Registrations Today", value: today.registrations, color: "text-green-600" },
+                { label: "Visitors This Week", value: week.visitors, color: "text-blue-500" },
+                { label: "Registrations This Week", value: week.registrations, color: "text-green-500" },
+              ].map(({ label, value, color }) => (
+                <div key={label} className="bg-muted/40 rounded-lg p-4 text-center">
+                  <p className={`text-2xl font-bold ${color}`}>{value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* 7-day bar chart */}
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground mb-3">Last 7 Days</p>
+              {days.map((d: any) => (
+                <div key={d.date} className="flex items-center gap-3 text-xs">
+                  <span className="w-20 text-muted-foreground shrink-0">
+                    {new Date(d.date + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                  </span>
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-3 rounded bg-blue-400"
+                        style={{ width: `${Math.max((d.visitors / maxVal) * 100, d.visitors > 0 ? 2 : 0)}%` }}
+                      />
+                      <span className="text-muted-foreground">{d.visitors} visits</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-3 rounded bg-green-500"
+                        style={{ width: `${Math.max((d.registrations / maxVal) * 100, d.registrations > 0 ? 2 : 0)}%` }}
+                      />
+                      <span className="text-muted-foreground">{d.registrations} registrations</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-xs text-muted-foreground mt-4">
+              * Visitor counts reset on server restart. Registrations are pulled from the database.
+            </p>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
