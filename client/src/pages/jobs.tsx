@@ -109,7 +109,7 @@ export default function JobsPage() {
   });
 
   // Fetch job listings with filters
-  const { data: jobs, isLoading } = useQuery({
+  const { data: jobs, isLoading, error: jobsError } = useQuery({
     queryKey: ['/api/jobs', searchValues, sortBy],
     enabled: true,
     queryFn: async () => {
@@ -124,7 +124,8 @@ export default function JobsPage() {
       const url = qs ? `/api/jobs?${qs}` : "/api/jobs";
       const res = await fetch(url, { credentials: "include" });
       if (!res.ok) throw new Error(`${res.status}: ${await res.text() || res.statusText}`);
-      return res.json();
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
     },
     select: (data) => data || [],
   });
@@ -822,6 +823,16 @@ export default function JobsPage() {
                 {[1, 2, 3, 4, 5].map((i) => (
                   <JobCardSkeleton key={i} />
                 ))}
+              </div>
+            ) : jobsError ? (
+              <div className="text-center py-12 border rounded-lg bg-background">
+                <div className="mx-auto w-16 h-16 mb-4 flex items-center justify-center rounded-full bg-muted">
+                  <Briefcase className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Unable to load jobs</h3>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto text-sm">
+                  {(jobsError as Error).message || "An error occurred loading jobs. Please refresh and try again."}
+                </p>
               </div>
             ) : jobs && Array.isArray(jobs) && jobs.length > 0 ? (
               <div className="space-y-4">

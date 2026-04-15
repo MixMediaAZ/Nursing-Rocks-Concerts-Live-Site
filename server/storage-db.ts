@@ -226,22 +226,49 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteUser(id: number): Promise<void> {
-    // First, delete NRPX registrations (breaks foreign key reference)
+    // Null out reviewed_by on contact_requests where this user was the admin reviewer
+    // (prevents FK violation when the user row is deleted)
+    await db
+      .update(contactRequests)
+      .set({ reviewed_by: null })
+      .where(eq(contactRequests.reviewed_by, id));
+
+    // Delete job alerts
+    await db
+      .delete(jobAlerts)
+      .where(eq(jobAlerts.user_id, id));
+
+    // Delete saved jobs
+    await db
+      .delete(savedJobs)
+      .where(eq(savedJobs.user_id, id));
+
+    // Delete job applications (cascades contact_requests via onDelete: "cascade")
+    await db
+      .delete(jobApplications)
+      .where(eq(jobApplications.user_id, id));
+
+    // Delete nurse licenses
+    await db
+      .delete(nurseLicenses)
+      .where(eq(nurseLicenses.user_id, id));
+
+    // Delete nurse profile
+    await db
+      .delete(nurseProfiles)
+      .where(eq(nurseProfiles.user_id, id));
+
+    // Delete NRPX registrations
     await db
       .delete(nrpxRegistrations)
       .where(eq(nrpxRegistrations.user_id, id));
 
-    // Then, revoke all tickets associated with this user (QR codes become invalid)
+    // Delete tickets entirely (email is freed, re-registration is a clean slate)
     await db
-      .update(tickets)
-      .set({
-        status: "revoked",
-        revoked_at: new Date(),
-        revoke_reason: "User account deleted"
-      })
+      .delete(tickets)
       .where(eq(tickets.user_id, id));
 
-    // Finally delete the user
+    // Delete the user row — email is now free for fresh registration
     await db
       .delete(users)
       .where(eq(users.id, id));

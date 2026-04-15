@@ -949,7 +949,10 @@ export default function AdminPage() {
         {isAdminMode && (
           <Alert className="mb-4 bg-green-50 border-green-300">
             <LayoutDashboard className="h-5 w-5 text-green-600" />
-            <AlertTitle className="text-green-800 font-bold">Admin Mode Active</AlertTitle>
+            <AlertTitle className="text-green-800 font-bold flex items-center gap-3">
+              Admin Mode Active
+              <TokenCountdown />
+            </AlertTitle>
             <AlertDescription className="text-green-700">
               You are currently signed in as an administrator with full editing capabilities.
               All dashboard features are available. Use the toggle above to exit admin mode.
@@ -3284,27 +3287,119 @@ function NrpxRegistrationsTab() {
   );
 }
 
+// ── Admin Token Countdown ─────────────────────────────────────────────────────
+function TokenCountdown() {
+  const [remaining, setRemaining] = useState<number | null>(null);
+
+  useEffect(() => {
+    const getExpiry = () => {
+      const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+      if (!token) return null;
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.exp ? payload.exp * 1000 : null;
+      } catch { return null; }
+    };
+
+    const tick = () => {
+      const exp = getExpiry();
+      if (!exp) { setRemaining(null); return; }
+      setRemaining(Math.max(0, exp - Date.now()));
+    };
+
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  if (remaining === null) return null;
+
+  const days = Math.floor(remaining / 86400000);
+  const hrs  = Math.floor((remaining % 86400000) / 3600000);
+  const mins = Math.floor((remaining % 3600000) / 60000);
+  const secs = Math.floor((remaining % 60000) / 1000);
+
+  const urgent = remaining < 3600000;   // < 1 hour
+  const warning = remaining < 86400000; // < 1 day
+
+  return (
+    <span className={`text-xs font-mono px-2 py-0.5 rounded ${
+      urgent ? 'bg-red-100 text-red-700' :
+      warning ? 'bg-yellow-100 text-yellow-700' :
+      'bg-green-100 text-green-800'
+    }`}>
+      Token expires in: {days > 0 ? `${days}d ` : ''}{String(hrs).padStart(2,'0')}:{String(mins).padStart(2,'0')}:{String(secs).padStart(2,'0')}
+    </span>
+  );
+}
+
 // ── Traffic Stats Widget ──────────────────────────────────────────────────────
+const TRAFFIC_REFRESH_MS = 30_000; // 30 seconds
+
 function TrafficStatsWidget({ adminFetch }: { adminFetch: (url: string) => Promise<any> }) {
-  const { data, isLoading } = useQuery({
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['/api/admin/traffic-stats'],
-    queryFn: () => adminFetch('/api/admin/traffic-stats'),
-    staleTime: 60_000,
-    refetchInterval: 60_000,
+    queryFn: async () => {
+      const result = await adminFetch('/api/admin/traffic-stats');
+      setLastUpdated(new Date());
+      return result;
+    },
+    staleTime: 0,
+    refetchInterval: TRAFFIC_REFRESH_MS,
+    refetchIntervalInBackground: true, // keeps ticking even when tab is not focused
   });
+
+  const handleManualRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await refetch();
+    setIsRefreshing(false);
+  }, [refetch]);
+
+  // Format "last updated" as a human-readable time
+  const lastUpdatedLabel = lastUpdated
+    ? lastUpdated.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    : null;
 
   const days: { date: string; visitors: number; registrations: number }[] = data?.days ?? [];
   const today = data?.today ?? { visitors: 0, registrations: 0 };
   const week = data?.week ?? { visitors: 0, registrations: 0 };
-
   const maxVal = Math.max(...days.map((d: any) => Math.max(d.visitors, d.registrations)), 1);
 
   return (
     <Card className="mt-6">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Users className="h-5 w-5" /> Site Traffic vs Registrations
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" /> Site Traffic vs Registrations
+            {/* Live indicator dot */}
+            <span className="flex items-center gap-1 ml-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+              </span>
+              <span className="text-xs font-normal text-green-600">Live</span>
+            </span>
+          </CardTitle>
+          <div className="flex items-center gap-3">
+            {lastUpdatedLabel && (
+              <span className="text-xs text-muted-foreground">
+                Updated {lastUpdatedLabel}
+              </span>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleManualRefresh}
+              disabled={isFetching || isRefreshing}
+              className="h-8 px-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${(isFetching || isRefreshing) ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -3317,48 +3412,61 @@ function TrafficStatsWidget({ adminFetch }: { adminFetch: (url: string) => Promi
             {/* Summary row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               {[
-                { label: "Visitors Today", value: today.visitors, color: "text-blue-600" },
-                { label: "Registrations Today", value: today.registrations, color: "text-green-600" },
-                { label: "Visitors This Week", value: week.visitors, color: "text-blue-500" },
-                { label: "Registrations This Week", value: week.registrations, color: "text-green-500" },
-              ].map(({ label, value, color }) => (
-                <div key={label} className="bg-muted/40 rounded-lg p-4 text-center">
+                { label: "Visitors Today", value: today.visitors, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30" },
+                { label: "Registrations Today", value: today.registrations, color: "text-green-600", bg: "bg-green-50 dark:bg-green-950/30" },
+                { label: "Visitors This Week", value: week.visitors, color: "text-blue-500", bg: "bg-blue-50/60 dark:bg-blue-950/20" },
+                { label: "Registrations This Week", value: week.registrations, color: "text-green-500", bg: "bg-green-50/60 dark:bg-green-950/20" },
+              ].map(({ label, value, color, bg }) => (
+                <div key={label} className={`${bg} rounded-lg p-4 text-center transition-all`}>
                   <p className={`text-2xl font-bold ${color}`}>{value}</p>
                   <p className="text-xs text-muted-foreground mt-1">{label}</p>
                 </div>
               ))}
             </div>
 
+            {/* Legend */}
+            <div className="flex gap-4 mb-3">
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="inline-block w-3 h-3 rounded bg-blue-400" /> Unique Visits
+              </span>
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="inline-block w-3 h-3 rounded bg-green-500" /> Registrations
+              </span>
+            </div>
+
             {/* 7-day bar chart */}
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground mb-3">Last 7 Days</p>
+            <div className="space-y-2">
               {days.map((d: any) => (
                 <div key={d.date} className="flex items-center gap-3 text-xs">
-                  <span className="w-20 text-muted-foreground shrink-0">
+                  <span className="w-20 text-muted-foreground shrink-0 font-medium">
                     {new Date(d.date + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                   </span>
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center gap-2">
-                      <div
-                        className="h-3 rounded bg-blue-400"
-                        style={{ width: `${Math.max((d.visitors / maxVal) * 100, d.visitors > 0 ? 2 : 0)}%` }}
-                      />
-                      <span className="text-muted-foreground">{d.visitors} visits</span>
+                      <div className="flex-1 bg-muted/30 rounded h-3 overflow-hidden">
+                        <div
+                          className="h-full rounded bg-blue-400 transition-all duration-500"
+                          style={{ width: `${Math.max((d.visitors / maxVal) * 100, d.visitors > 0 ? 2 : 0)}%` }}
+                        />
+                      </div>
+                      <span className="text-muted-foreground w-16 text-right">{d.visitors} visits</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div
-                        className="h-3 rounded bg-green-500"
-                        style={{ width: `${Math.max((d.registrations / maxVal) * 100, d.registrations > 0 ? 2 : 0)}%` }}
-                      />
-                      <span className="text-muted-foreground">{d.registrations} registrations</span>
+                      <div className="flex-1 bg-muted/30 rounded h-3 overflow-hidden">
+                        <div
+                          className="h-full rounded bg-green-500 transition-all duration-500"
+                          style={{ width: `${Math.max((d.registrations / maxVal) * 100, d.registrations > 0 ? 2 : 0)}%` }}
+                        />
+                      </div>
+                      <span className="text-muted-foreground w-16 text-right">{d.registrations} reg.</span>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
 
-            <p className="text-xs text-muted-foreground mt-4">
-              * Visitor counts reset on server restart. Registrations are pulled from the database.
+            <p className="text-xs text-muted-foreground mt-4 border-t pt-3">
+              Refreshes every 30 seconds. Visitor counts reset on server restart. Registrations are live from the database.
             </p>
           </>
         )}

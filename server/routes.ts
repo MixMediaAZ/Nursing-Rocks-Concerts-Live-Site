@@ -112,7 +112,7 @@ import {
 } from "./auth";
 import { setupAuth, requireAuth, requireVerifiedUser, requireAdmin } from "./session-auth";
 import { generateToken, isUserAdmin, getPayloadFromRequest, getTokenFromRequest } from './jwt';
-import { isTokenRevokedForUser } from "./token-revocation-store";
+import { isTokenRevokedForUser, setUserRevokedBeforeMs } from "./token-revocation-store";
 import {
   upload,
   uploadMediaFiles,
@@ -967,12 +967,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filters.isActive = true;
         filters.isApproved = true;
       }
-      const parsedLimit = req.query.limit ? Math.min(Math.max(parseInt(req.query.limit as string) || 20, 1), 100) : 20;
+      const parsedLimit = req.query.limit ? Math.min(Math.max(parseInt(req.query.limit as string) || 100, 1), 100) : 100;
       const parsedOffset = req.query.offset ? Math.min(Math.max(parseInt(req.query.offset as string) || 0, 0), 10000) : 0;
       filters.limit = parsedLimit;
       filters.offset = parsedOffset;
 
       const jobs = await storage.getAllJobListings(filters);
+      console.log(`[/api/jobs] filters=${JSON.stringify(filters)} → ${jobs.length} results`);
       res.json(jobs);
     } catch (error) {
       console.error("Error fetching jobs:", error);
@@ -2708,6 +2709,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUserById(id);
       if (!user) return res.status(404).json({ message: "User not found" });
 
+      // Immediately invalidate all active tokens for this user
+      await setUserRevokedBeforeMs(id, Date.now());
+
+      // Hard delete — all related data scrubbed, email freed for re-registration
       await storage.deleteUser(id);
       return res.json({ message: "User deleted successfully" });
     } catch (error) {

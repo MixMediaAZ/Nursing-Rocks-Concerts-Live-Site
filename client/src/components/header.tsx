@@ -7,8 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import { Menu, X, User, HeartPulse, Map, PlayCircle, Video, Briefcase, ShieldCheck } from "lucide-react";
+import { Menu, X, User, HeartPulse, PlayCircle, Video, Briefcase, ShieldCheck } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { clearToken, SESSION_USER_SYNC_EVENT } from "@/lib/token-utils";
 import { useToast } from "@/hooks/use-toast";
@@ -58,6 +57,47 @@ const NavItem = memo(({ link, isActive }: NavItemProps) => {
   );
 });
 
+// Memoized user dropdown to prevent full Header re-render on open/close
+interface UserDropdownProps {
+  isAdmin: boolean;
+  onLogout: () => void;
+}
+
+const UserDropdown = memo(({ isAdmin, onLogout }: UserDropdownProps) => (
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <Button variant="ghost" size="icon" className="rounded-full">
+        <User size={24} />
+      </Button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="end">
+      <DropdownMenuItem asChild>
+        <Link href="/dashboard">My Dashboard</Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild>
+        <Link href="/profile">My Profile</Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild>
+        <Link href="/employer-dashboard">Employer Dashboard</Link>
+      </DropdownMenuItem>
+      {isAdmin && (
+        <DropdownMenuItem asChild>
+          <Link href="/admin">
+            <ShieldCheck size={14} className="mr-1.5 text-primary" />
+            Admin Dashboard
+          </Link>
+        </DropdownMenuItem>
+      )}
+      <DropdownMenuItem asChild>
+        <Link href="/tickets">My Tickets</Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={onLogout}>
+        Logout
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
+));
+
 export function Header() {
   const { toast } = useToast();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -94,7 +134,7 @@ export function Header() {
     return () => window.removeEventListener(SESSION_USER_SYNC_EVENT, onSync);
   }, []);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
 
@@ -131,7 +171,7 @@ export function Header() {
         description: "Failed to log out properly.",
       });
     }
-  };
+  }, [toast]);
 
   // Navigation links - memoized to prevent recalculation on every render
   const navLinks = useMemo(() => {
@@ -219,38 +259,7 @@ export function Header() {
               </a>
             
               {isLoggedIn && !isMobile && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-10 w-10 rounded-full">
-                      <User size={24} />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard">My Dashboard</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/profile">My Profile</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/employer-dashboard">Employer Dashboard</Link>
-                    </DropdownMenuItem>
-                    {isAdmin && (
-                      <DropdownMenuItem asChild>
-                        <Link href="/admin">
-                          <ShieldCheck size={14} className="mr-1.5 text-primary" />
-                          Admin Dashboard
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem asChild>
-                      <Link href="/tickets">My Tickets</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleLogout}>
-                      Logout
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <UserDropdown isAdmin={isAdmin} onLogout={handleLogout} />
               )}
             
               {isMobile && (
