@@ -666,15 +666,45 @@ export class DatabaseStorage implements IStorage {
     const limit = Math.max(1, Math.min(100, filters?.limit ?? 100));
     const offset = Math.max(0, filters?.offset ?? 0);
 
+    // Explicit column list — never use ...jobListings spread here.
+    // Spreading pulls every column in the Drizzle schema; if a new column is
+    // added to the schema but the production migration hasn't run yet, the
+    // SELECT fails and the entire jobs board goes down. By listing only the
+    // stable display columns the public board keeps working regardless of any
+    // schema additions made elsewhere in the codebase.
     const results = await db
       .select({
-        ...jobListings,
+        id:                  jobListings.id,
+        title:               jobListings.title,
+        description:         jobListings.description,
+        employer_id:         jobListings.employer_id,
+        location:            jobListings.location,
+        job_type:            jobListings.job_type,
+        work_arrangement:    jobListings.work_arrangement,
+        specialty:           jobListings.specialty,
+        experience_level:    jobListings.experience_level,
+        salary_min:          jobListings.salary_min,
+        salary_max:          jobListings.salary_max,
+        application_url:     jobListings.application_url,
+        requirements:        jobListings.requirements,
+        benefits:            jobListings.benefits,
+        contact_email:       jobListings.contact_email,
+        is_featured:         jobListings.is_featured,
+        is_active:           jobListings.is_active,
+        is_approved:         jobListings.is_approved,
+        posted_date:         jobListings.posted_date,
+        expiry_date:         jobListings.expiry_date,
+        views_count:         jobListings.views_count,
+        applications_count:  jobListings.applications_count,
+        source_name:         jobListings.source_name,
+        source_job_id:       jobListings.source_job_id,
+        source_url:          jobListings.source_url,
         employer: {
-          id: employers.id,
-          name: employers.name,
-          logo_url: employers.logo_url,
+          id:            employers.id,
+          name:          employers.name,
+          logo_url:      employers.logo_url,
           contact_email: employers.contact_email,
-        }
+        },
       })
       .from(jobListings)
       .leftJoin(employers, eq(jobListings.employer_id, employers.id))
@@ -683,7 +713,7 @@ export class DatabaseStorage implements IStorage {
       .limit(limit)
       .offset(offset);
 
-    return results as JobListing[];
+    return results as unknown as JobListing[];
   }
 
   async getEmployerJobListings(employerId: number): Promise<JobListing[]> {
@@ -695,16 +725,42 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFeaturedJobListings(limit?: number): Promise<JobListing[]> {
+    const STABLE_COLUMNS = {
+      id:                 jobListings.id,
+      title:              jobListings.title,
+      description:        jobListings.description,
+      employer_id:        jobListings.employer_id,
+      location:           jobListings.location,
+      job_type:           jobListings.job_type,
+      work_arrangement:   jobListings.work_arrangement,
+      specialty:          jobListings.specialty,
+      experience_level:   jobListings.experience_level,
+      salary_min:         jobListings.salary_min,
+      salary_max:         jobListings.salary_max,
+      application_url:    jobListings.application_url,
+      requirements:       jobListings.requirements,
+      benefits:           jobListings.benefits,
+      contact_email:      jobListings.contact_email,
+      is_featured:        jobListings.is_featured,
+      is_active:          jobListings.is_active,
+      is_approved:        jobListings.is_approved,
+      posted_date:        jobListings.posted_date,
+      expiry_date:        jobListings.expiry_date,
+      views_count:        jobListings.views_count,
+      applications_count: jobListings.applications_count,
+      source_name:        jobListings.source_name,
+      source_job_id:      jobListings.source_job_id,
+      source_url:         jobListings.source_url,
+      employer: {
+        id:            employers.id,
+        name:          employers.name,
+        logo_url:      employers.logo_url,
+        contact_email: employers.contact_email,
+      },
+    };
+
     let query: any = db
-      .select({
-        ...jobListings,
-        employer: {
-          id: employers.id,
-          name: employers.name,
-          logo_url: employers.logo_url,
-          contact_email: employers.contact_email,
-        }
-      })
+      .select(STABLE_COLUMNS)
       .from(jobListings)
       .leftJoin(employers, eq(jobListings.employer_id, employers.id))
       .where(and(eq(jobListings.is_featured, true), eq(jobListings.is_active, true), eq(jobListings.is_approved, true)));
@@ -713,12 +769,38 @@ export class DatabaseStorage implements IStorage {
       query = query.limit(limit);
     }
 
-    return await query as JobListing[];
+    return await query as unknown as JobListing[];
   }
 
   async getRecentJobListings(limit?: number): Promise<JobListing[]> {
     let query: any = db
-      .select()
+      .select({
+        id:                 jobListings.id,
+        title:              jobListings.title,
+        description:        jobListings.description,
+        employer_id:        jobListings.employer_id,
+        location:           jobListings.location,
+        job_type:           jobListings.job_type,
+        work_arrangement:   jobListings.work_arrangement,
+        specialty:          jobListings.specialty,
+        experience_level:   jobListings.experience_level,
+        salary_min:         jobListings.salary_min,
+        salary_max:         jobListings.salary_max,
+        application_url:    jobListings.application_url,
+        requirements:       jobListings.requirements,
+        benefits:           jobListings.benefits,
+        contact_email:      jobListings.contact_email,
+        is_featured:        jobListings.is_featured,
+        is_active:          jobListings.is_active,
+        is_approved:        jobListings.is_approved,
+        posted_date:        jobListings.posted_date,
+        expiry_date:        jobListings.expiry_date,
+        views_count:        jobListings.views_count,
+        applications_count: jobListings.applications_count,
+        source_name:        jobListings.source_name,
+        source_job_id:      jobListings.source_job_id,
+        source_url:         jobListings.source_url,
+      })
       .from(jobListings)
       .where(and(eq(jobListings.is_active, true), eq(jobListings.is_approved, true)))
       .orderBy(desc(jobListings.posted_date));
@@ -727,7 +809,7 @@ export class DatabaseStorage implements IStorage {
       query = query.limit(limit);
     }
 
-    return await query;
+    return await query as unknown as JobListing[];
   }
 
   async updateJobListing(id: number, data: Partial<JobListing>): Promise<JobListing> {
