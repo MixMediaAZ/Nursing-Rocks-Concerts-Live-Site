@@ -871,6 +871,19 @@ export default function JobsPage() {
   );
 }
 
+// Strip HTML tags and collapse whitespace for plain-text card summaries
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&#\d+;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 interface JobCardProps {
   job: {
     id: number;
@@ -1061,7 +1074,7 @@ const JobCard = ({ job }: JobCardProps) => {
           </div>
         </div>
         <div className="mt-3 text-sm text-muted-foreground line-clamp-2">
-          {job.description}
+          {stripHtml(job.description || "")}
         </div>
       </CardContent>
       <CardFooter className="px-4 pb-4 pt-0 flex justify-between items-center">
