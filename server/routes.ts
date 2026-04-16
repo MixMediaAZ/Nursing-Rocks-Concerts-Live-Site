@@ -2399,6 +2399,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "verified must be boolean" });
       }
 
+      // When verifying a standard-registered user, auto-create an NRPX registration
+      // so they can claim a QR ticket for door scanning at the Phoenix event.
+      if (verified === true && (verifyOutcome as any)?.action === "verified") {
+        try {
+          const [existingReg] = await db
+            .select({ id: nrpxRegistrations.id })
+            .from(nrpxRegistrations)
+            .where(eq(nrpxRegistrations.user_id, userId))
+            .limit(1);
+
+          if (!existingReg) {
+            const [targetUser] = await db
+              .select()
+              .from(users)
+              .where(eq(users.id, userId))
+              .limit(1);
+
+            if (targetUser) {
+              // Generate unique ticket code (same algorithm as /api/nrpx/register)
+              const { randomBytes: rb } = await import("crypto");
+              const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+              const seg = () => Array.from(rb(4)).map((b: number) => chars[b % chars.length]).join("");
+              let ticketCode = "";
+              for (let i = 0; i < 10; i++) {
+                const candidate = `NRPX-${seg()}-${seg()}`;
+                const collision = await db
+                  .select({ id: nrpxRegistrations.id })
+                  .from(nrpxRegistrations)
+                  .where(eq(nrpxRegistrations.ticket_code, candidate))
+                  .limit(1);
+                if (collision.length === 0) { ticketCode = candidate; break; }
+              }
+
+              if (ticketCode) {
+                await db.insert(nrpxRegistrations).values({
+                  ticket_code: ticketCode,
+                  first_name: targetUser.first_name,
+                  last_name: targetUser.last_name,
+                  email: targetUser.email.toLowerCase().trim(),
+                  user_id: userId,
+                  email_sent: true,        // Standard verification email already sent
+                  email_sent_at: new Date(),
+                });
+                console.log(`[Admin Verify] Auto-created NRPX registration for user ${userId} | ticket: ${ticketCode}`);
+              } else {
+                console.warn(`[Admin Verify] Could not generate unique ticket code for user ${userId}`);
+              }
+            }
+          }
+        } catch (nrpxErr) {
+          // Non-fatal — user is still verified, just log the issue
+          console.error(`[Admin Verify] NRPX auto-registration failed for user ${userId}:`, nrpxErr);
+        }
+      }
+
       const status = await getUserVerificationStatus(userId);
       const { user, ...safeStatus } = status;
       const ticketEmailInfo = getTicketIssuedEmailDispatchInfo();
