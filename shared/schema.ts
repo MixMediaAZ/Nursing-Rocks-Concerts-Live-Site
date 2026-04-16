@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, date, decimal, varchar, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, date, decimal, varchar, uuid, uniqueIndex } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -773,6 +773,18 @@ export const appSettings = pgTable("app_settings", {
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
 });
+
+// Site visit tracking — persists across restarts/deployments
+export const siteVisits = pgTable("site_visits", {
+  id: serial("id").primaryKey(),
+  visit_date: varchar("visit_date", { length: 10 }).notNull(), // "YYYY-MM-DD"
+  fingerprint: varchar("fingerprint", { length: 16 }).notNull(), // sha256(ip+ua) prefix
+  created_at: timestamp("created_at").defaultNow(),
+}, (t) => ({
+  uniq: uniqueIndex("site_visits_date_fp_idx").on(t.visit_date, t.fingerprint),
+}));
+
+export type SiteVisit = typeof siteVisits.$inferSelect;
 
 export const insertAppSettingSchema = createInsertSchema(appSettings).omit({
   id: true,

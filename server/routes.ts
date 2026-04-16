@@ -85,7 +85,8 @@ import {
   employers,
   insertStoreProductSchema,
   insertStoreOrderSchema,
-  insertStoreOrderItemSchema
+  insertStoreOrderItemSchema,
+  siteVisits
 } from "@shared/schema";
 import { uploadCityBackground, uploadMultipleCityBackgrounds } from "./upload";
 import { z } from "zod";
@@ -2079,32 +2080,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // ── Traffic tracking ─────────────────────────────────────────────────────
-  // In-memory daily unique visitor store: date string → Set of visitor fingerprints
-  // Keeps last 30 days. Resets on server restart (acceptable for lightweight analytics).
-  const visitStore = new Map<string, Set<string>>();
-
+  // ── Traffic tracking (DB-backed — survives restarts and deployments) ──────
   const todayKey = () => new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
 
-  const pruneOldDays = () => {
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 30);
-    for (const key of visitStore.keys()) {
-      if (key < cutoff.toISOString().slice(0, 10)) visitStore.delete(key);
-    }
-  };
-
   // Public endpoint — fires once per browser session from the client
-  app.post("/api/track-visit", (req: Request, res: Response) => {
+  app.post("/api/track-visit", async (req: Request, res: Response) => {
     try {
       const ip = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '').split(',')[0].trim();
       const ua = (req.headers['user-agent'] || '').slice(0, 200);
       const crypto = require('crypto');
       const fingerprint = crypto.createHash('sha256').update(ip + ua).digest('hex').slice(0, 16);
-      const day = todayKey();
-      if (!visitStore.has(day)) visitStore.set(day, new Set());
-      visitStore.get(day)!.add(fingerprint);
-      pruneOldDays();
+      const visit_date = todayKey();
+      // ON CONFLICT DO NOTHING — idempotent, one row per unique visitor per day
+      await db.insert(siteVisits).values({ visit_date, fingerprint }).onConflictDoNothing();
       res.json({ ok: true });
     } catch {
       res.json({ ok: true }); // Always succeed silently
@@ -2121,16 +2109,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const d = new Date();
         d.setDate(d.getDate() - i);
         const dateStr = d.toISOString().slice(0, 10);
-        const visitors = visitStore.get(dateStr)?.size ?? 0;
+
+        const [visitorRow] = await db
+          .select({ count: sql<number>`cast(count(*) as int)` })
+          .from(siteVisits)
+          .where(eq(siteVisits.visit_date, dateStr));
 
         const startOfDay = new Date(dateStr + 'T00:00:00.000Z');
         const endOfDay = new Date(dateStr + 'T23:59:59.999Z');
-        const [row] = await db
+        const [regRow] = await db
           .select({ count: sql<number>`cast(count(*) as int)` })
           .from(users)
           .where(and(gte(users.created_at, startOfDay), sql`${users.created_at} <= ${endOfDay}`));
 
-        days.push({ date: dateStr, visitors, registrations: Number(row?.count ?? 0) });
+        days.push({ date: dateStr, visitors: Number(visitorRow?.count ?? 0), registrations: Number(regRow?.count ?? 0) });
       }
 
       const todayStats = days.find(d => d.date === today) ?? { date: today, visitors: 0, registrations: 0 };
