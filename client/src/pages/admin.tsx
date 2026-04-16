@@ -2506,7 +2506,7 @@ export default function AdminPage() {
                       <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
                         <p className="text-sm font-medium">Verification → ticket emails</p>
                         <p className="text-xs text-muted-foreground">
-                          Approving verification unlocks free tickets; the nurse signs in and uses Get your ticket(s) on their dashboard to create tickets and trigger email.
+                          Approving verification automatically sends the nurse a QR ticket email. They can also resend it anytime from their dashboard.
                         </p>
                         {verificationTicketEmailMeta && (
                           <Alert>

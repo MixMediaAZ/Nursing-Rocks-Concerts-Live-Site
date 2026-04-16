@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { ingestionPipeline } from "../ingestion/pipeline";
 import { ingestionDb } from "../storage/ingestion-db";
+import { ingestionScheduler } from "../ingestion/scheduler";
 
 /**
  * Register admin jobs ingestion routes.

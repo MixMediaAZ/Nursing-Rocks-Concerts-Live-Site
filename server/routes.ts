@@ -2400,14 +2400,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // When verifying a standard-registered user, auto-create an NRPX registration
-      // so they can claim a QR ticket for door scanning at the Phoenix event.
+      // and immediately send the QR ticket email — no dashboard action required.
       if (verified === true && (verifyOutcome as any)?.action === "verified") {
         try {
           const [existingReg] = await db
-            .select({ id: nrpxRegistrations.id })
+            .select()
             .from(nrpxRegistrations)
             .where(eq(nrpxRegistrations.user_id, userId))
             .limit(1);
+
+          let nrpxReg = existingReg ?? null;
 
           if (!existingReg) {
             const [targetUser] = await db
@@ -2433,19 +2435,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
 
               if (ticketCode) {
-                await db.insert(nrpxRegistrations).values({
+                const [created] = await db.insert(nrpxRegistrations).values({
                   ticket_code: ticketCode,
                   first_name: targetUser.first_name,
                   last_name: targetUser.last_name,
                   email: targetUser.email.toLowerCase().trim(),
                   user_id: userId,
-                  email_sent: true,        // Standard verification email already sent
+                  email_sent: true,
                   email_sent_at: new Date(),
-                });
+                }).returning();
+                nrpxReg = created;
                 console.log(`[Admin Verify] Auto-created NRPX registration for user ${userId} | ticket: ${ticketCode}`);
               } else {
                 console.warn(`[Admin Verify] Could not generate unique ticket code for user ${userId}`);
               }
+            }
+          }
+
+          // Send QR ticket email immediately upon verification (if not already sent)
+          if (nrpxReg && !nrpxReg.ticket_email_sent) {
+            try {
+              const qrBuffer = await QRCode.toBuffer(nrpxReg.ticket_code, {
+                type: 'png', width: 400, margin: 2,
+                color: { dark: '#000000', light: '#FFFFFF' },
+                errorCorrectionLevel: 'H',
+              });
+
+              const emailResult = await sendNrpxTicketEmail({
+                firstName: nrpxReg.first_name,
+                lastName: nrpxReg.last_name,
+                email: nrpxReg.email,
+                ticketCode: nrpxReg.ticket_code,
+                qrBuffer,
+              });
+
+              if (emailResult.success) {
+                await db.update(nrpxRegistrations)
+                  .set({ ticket_email_sent: true, ticket_email_sent_at: new Date() })
+                  .where(eq(nrpxRegistrations.id, nrpxReg.id));
+                console.log(`[Admin Verify] QR ticket email sent for user ${userId} | ticket: ${nrpxReg.ticket_code}`);
+              } else {
+                console.error(`[Admin Verify] QR ticket email failed for user ${userId}:`, emailResult.error);
+              }
+            } catch (emailErr) {
+              console.error(`[Admin Verify] QR ticket email error for user ${userId}:`, emailErr);
             }
           }
         } catch (nrpxErr) {
@@ -5021,11 +5054,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Check if ticket already claimed
-      if (registration.ticket_email_sent) {
-        return res.status(400).json({ success: false, message: "Ticket already claimed. Check your email for the QR code." });
-      }
-
       // Generate QR code from ticket code
       const qrBuffer = await QRCode.toBuffer(registration.ticket_code, {
         type: 'png',
@@ -5053,10 +5081,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .set({ ticket_email_sent: true, ticket_email_sent_at: new Date() })
         .where(eq(nrpxRegistrations.id, registration.id));
 
-      console.log(`[NRPX] Ticket claimed - user ${userId} | email: ${registration.email} | code: ${registration.ticket_code}`);
+      const isResend = registration.ticket_email_sent;
+      console.log(`[NRPX] Ticket ${isResend ? "resent" : "claimed"} - user ${userId} | email: ${registration.email} | code: ${registration.ticket_code}`);
       res.json({
         success: true,
-        message: "Ticket sent to your email! Check your inbox for the QR code. 🎸",
+        message: isResend
+          ? "Ticket resent to your email! Check your inbox for the QR code. 🎸"
+          : "Ticket sent to your email! Check your inbox for the QR code. 🎸",
         ticketCode: registration.ticket_code
       });
     } catch (error) {

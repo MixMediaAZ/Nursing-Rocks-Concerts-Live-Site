@@ -686,19 +686,29 @@ function NrpxClaimSection({ userEmail }: { userEmail: string }) {
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-center gap-2">
           <span className="text-2xl">🎸</span>
-          Claim Your Phoenix Ticket
+          Your Phoenix Event Ticket
         </CardTitle>
         <CardDescription>
-          Your registration has been approved! Click below to receive your QR code ticket.
+          {ticketClaimed
+            ? "Your QR code ticket has been sent to your email. Show it at the door on May 16."
+            : "Your registration has been approved! Click below to receive your QR code ticket."}
         </CardDescription>
       </CardHeader>
-      <CardFooter className="pt-0">
+      <CardFooter className="pt-0 flex flex-col items-start gap-2">
         {ticketClaimed ? (
-          <div className="w-full">
+          <div className="w-full flex flex-col gap-2">
             <div className="flex items-center gap-2 text-green-700 bg-green-100 px-3 py-2 rounded">
               <CheckCircle className="h-4 w-4" />
-              <span className="text-sm font-medium">Ticket claimed! Check your email for the QR code.</span>
+              <span className="text-sm font-medium">Ticket sent to your email.</span>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => claimTicketMutation.mutate()}
+              disabled={claimTicketMutation.isPending}
+            >
+              {claimTicketMutation.isPending ? "Resending…" : "Resend my ticket"}
+            </Button>
           </div>
         ) : (
           <Button
