@@ -210,11 +210,11 @@ export function Header() {
         <div className="flex items-center justify-between h-16 sm:h-20 lg:h-24">
           {/* Left side - NursingRocks.org */}
           <div className="w-48 sm:w-52 lg:w-64 flex items-center justify-center">
-            <a 
-              href="https://nursingrocks.org" 
-              target="_blank" 
+            <a
+              href="https://nursingrocks.org"
+              target="_blank"
               rel="noopener noreferrer"
-              className="text-primary font-bold text-sm sm:text-base md:text-lg lg:text-xl hover:text-primary/80 transition-colors"
+              className="inline-flex items-center px-3 py-1.5 rounded-md border border-primary/40 bg-primary/5 text-primary font-bold text-sm sm:text-base hover:bg-primary/15 hover:border-primary/70 transition-colors"
             >
               NursingRocks.org
             </a>
@@ -249,11 +249,11 @@ export function Header() {
           {/* Right side - Linktree and controls */}
           <div className="w-48 sm:w-52 lg:w-64 flex items-center justify-center">
             <div className="flex items-center gap-3">
-              <a 
-                href="https://linktr.ee/nursingrocksconcertseries" 
-                target="_blank" 
+              <a
+                href="https://linktr.ee/nursingrocksconcertseries"
+                target="_blank"
                 rel="noopener noreferrer"
-                className="text-primary font-bold text-sm sm:text-base md:text-lg lg:text-xl hover:text-primary/80 transition-colors"
+                className="inline-flex items-center px-3 py-1.5 rounded-md border border-primary/40 bg-primary/5 text-primary font-bold text-sm sm:text-base hover:bg-primary/15 hover:border-primary/70 transition-colors"
               >
                 Linktree
               </a>
