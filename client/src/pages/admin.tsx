@@ -424,6 +424,35 @@ export default function AdminPage() {
     },
   });
 
+  const resendTicketEmailMutation = useMutation({
+    mutationFn: async ({ ticketId, userId }: { ticketId: string; userId: number }) => {
+      const token = localStorage.getItem("token") || localStorage.getItem("adminToken");
+      const response = await fetch(`/api/admin/tickets/${ticketId}/resend-email`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = (await response.json().catch(() => ({}))) as { message?: string; success?: boolean };
+      if (!response.ok) {
+        throw new Error(json.message || "Failed to resend ticket email");
+      }
+      return { ...json, userId };
+    },
+    onSuccess: async (data) => {
+      await queryClient.refetchQueries({ queryKey: ["/api/admin/users", data.userId, "tickets"] });
+      toast({
+        title: "Ticket email sent",
+        description: data.message || "Ticket email resent successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Resend failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Update user mutation (for other fields like is_admin, is_suspended)
   const updateUserMutation = useMutation({
     mutationFn: async ({ userId, updates }: { userId: number; updates: { is_admin?: boolean; is_suspended?: boolean } }) => {
@@ -2507,7 +2536,7 @@ export default function AdminPage() {
                       <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
                         <p className="text-sm font-medium">Verification → ticket emails</p>
                         <p className="text-xs text-muted-foreground">
-                          Approving verification automatically sends the nurse a QR ticket email. They can also resend it anytime from their dashboard.
+                          Verifying sends a welcome email with next steps. Free ticket emails (subject below) go out when the nurse claims from their dashboard—or you can resend a ticket email from the table below. Nurses can also resend from their dashboard.
                         </p>
                         {verificationTicketEmailMeta && (
                           <Alert>
@@ -2529,6 +2558,9 @@ export default function AdminPage() {
                                   <span className="font-medium">Recipient:</span> {selectedUser.email}
                                 </div>
                               )}
+                              <p className="pt-2 mt-2 border-t text-[11px] leading-snug text-muted-foreground">
+                                <span className="font-medium text-foreground">One template:</span> Admin &quot;Resend ticket email&quot; uses this same subject and HTML layout with live event details, ticket code, and QR image—no separate resend template.
+                              </p>
                             </AlertDescription>
                           </Alert>
                         )}
@@ -2556,18 +2588,26 @@ export default function AdminPage() {
                                 <tr className="border-b bg-muted/50 text-left">
                                   <th className="p-2">Event</th>
                                   <th className="p-2">Ticket</th>
-                                  <th className="p-2">Email</th>
+                                  <th className="p-2">Email status</th>
+                                  <th className="p-2 w-[140px]">Actions</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {selectedUserTickets.map((t: {
                                   id: string;
+                                  status?: string | null;
                                   event_title?: string | null;
                                   event_date?: string | null;
                                   ticket_code?: string;
                                   email_status?: string | null;
                                   email_error?: string | null;
-                                }) => (
+                                }) => {
+                                  const ticketBlocked =
+                                    t.status === "revoked" || t.status === "expired";
+                                  const resendPending =
+                                    resendTicketEmailMutation.isPending &&
+                                    resendTicketEmailMutation.variables?.ticketId === t.id;
+                                  return (
                                   <tr key={t.id} className="border-b last:border-0">
                                     <td className="p-2 align-top">
                                       <div className="font-medium">{t.event_title || "—"}</div>
@@ -2590,7 +2630,7 @@ export default function AdminPage() {
                                         className="text-[10px]"
                                       >
                                         {t.email_status === "sent"
-                                          ? "Delivered (Resend)"
+                                          ? "Delivered"
                                           : t.email_status === "simulated"
                                             ? "Log only (not delivered)"
                                             : t.email_status === "failed"
@@ -2601,8 +2641,38 @@ export default function AdminPage() {
                                         <div className="text-destructive mt-1 max-w-[180px] break-words">{t.email_error}</div>
                                       ) : null}
                                     </td>
+                                    <td className="p-2 align-top">
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-[10px] h-7 px-2"
+                                        disabled={ticketBlocked || resendPending}
+                                        title={
+                                          ticketBlocked
+                                            ? "Cannot resend email for revoked or expired tickets"
+                                            : undefined
+                                        }
+                                        onClick={() =>
+                                          resendTicketEmailMutation.mutate({
+                                            ticketId: t.id,
+                                            userId: selectedUser.id,
+                                          })
+                                        }
+                                      >
+                                        {resendPending ? (
+                                          <>
+                                            <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                                            Sending…
+                                          </>
+                                        ) : (
+                                          "Resend ticket email"
+                                        )}
+                                      </Button>
+                                    </td>
                                   </tr>
-                                ))}
+                                  );
+                                })}
                               </tbody>
                             </table>
                           </div>
@@ -2977,6 +3047,8 @@ interface NrpxReg {
   employer: string | null;
   registered_at: string;
   email_sent: boolean;
+  ticket_email_sent?: boolean;
+  user_id?: number | null;
   checked_in: boolean;
   checked_in_at: string | null;
 }
@@ -2990,7 +3062,10 @@ function NrpxRegistrationsTab() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("token") || localStorage.getItem("adminToken") || localStorage.getItem("auth_token")
+      : null;
   const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
   const params = new URLSearchParams();
@@ -3028,7 +3103,8 @@ function NrpxRegistrationsTab() {
   const handleApproveRegistration = async (registrationId: string) => {
     setApprovingId(registrationId);
     try {
-      const token = localStorage.getItem("auth_token");
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("adminToken") || localStorage.getItem("auth_token");
       const res = await fetch(`/api/admin/nrpx/approve/${registrationId}`, {
         method: "POST",
         headers: {
@@ -3203,13 +3279,16 @@ function NrpxRegistrationsTab() {
             <table className="w-full text-sm">
               <thead className="bg-muted/50">
                 <tr>
-                  {["Name", "Email", "Event", "Approval", "Verified", "Checked In", "Actions"].map(h => (
+                  {["Name", "Email", "Event", "Approval", "Ticket email", "Checked In", "Actions"].map(h => (
                     <th key={h} className="text-left px-4 py-3 font-medium text-muted-foreground whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {regs.map(reg => (
+                {regs.map(reg => {
+                  const accountApproved = reg.user_id != null || reg.email_sent;
+                  const ticketEmailSent = Boolean(reg.ticket_email_sent);
+                  return (
                   <tr key={reg.id} className="hover:bg-muted/20">
                     <td className="px-4 py-3 whitespace-nowrap font-medium">
                       {reg.first_name} {reg.last_name}
@@ -3220,14 +3299,14 @@ function NrpxRegistrationsTab() {
                     </td>
                     <td className="px-4 py-3">
                       <Badge
-                        className={reg.is_verified ? "bg-green-100 text-green-800 border-green-200" : "bg-yellow-100 text-yellow-800 border-yellow-200"}
+                        className={accountApproved ? "bg-green-100 text-green-800 border-green-200" : "bg-yellow-100 text-yellow-800 border-yellow-200"}
                       >
-                        {reg.is_verified ? "✓ Approved" : "⏳ Pending"}
+                        {accountApproved ? "✓ Approved" : "⏳ Pending"}
                       </Badge>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant={reg.is_verified ? "default" : "secondary"} className="text-xs">
-                        {reg.is_verified ? "Yes" : "No"}
+                      <Badge variant={ticketEmailSent ? "default" : "secondary"} className="text-xs">
+                        {ticketEmailSent ? "Yes" : "No"}
                       </Badge>
                     </td>
                     <td className="px-4 py-3">
@@ -3247,7 +3326,7 @@ function NrpxRegistrationsTab() {
                       )}
                     </td>
                     <td className="px-4 py-3 space-x-2 flex flex-wrap">
-                      {!reg.is_verified && (
+                      {!accountApproved && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -3263,19 +3342,22 @@ function NrpxRegistrationsTab() {
                         </Button>
                       )}
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        onClick={() => {
-                          setSelectedUser(reg);
-                          setShowUserDialog(true);
-                        }}
+                        disabled={resendingId === reg.id}
+                        onClick={() => handleResend(reg.id)}
                         className="h-7 text-xs"
                       >
-                        Details
+                        {resendingId === reg.id ? (
+                          <RefreshCw className="h-3 w-3 animate-spin" />
+                        ) : (
+                          "Resend email"
+                        )}
                       </Button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
