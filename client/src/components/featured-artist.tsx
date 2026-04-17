@@ -41,7 +41,7 @@ const FeaturedArtist = () => {
                 <div className="space-y-3 py-4 border-y border-gray-200">
                   <div className="flex items-center gap-3 text-gray-700">
                     <Calendar className="h-5 w-5 text-red-500 flex-shrink-0" />
-                    <span className="font-semibold">Friday, May 16, 2026</span>
+                    <span className="font-semibold">Saturday, May 16, 2026</span>
                   </div>
                   <div className="flex items-center gap-3 text-gray-700">
                     <Clock className="h-5 w-5 text-red-500 flex-shrink-0" />

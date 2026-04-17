@@ -561,7 +561,7 @@ export async function sendNrpxTicketEmail(data: NrpxTicketEmailData): Promise<{ 
 
         <div class="event-card">
           <h2>🎤 Event Details</h2>
-          <div class="event-detail"><span class="icon">📅</span><div><strong>Date:</strong> Friday, May 16, 2026</div></div>
+          <div class="event-detail"><span class="icon">📅</span><div><strong>Date:</strong> Saturday, May 16, 2026</div></div>
           <div class="event-detail"><span class="icon">📍</span><div><strong>Venue:</strong> The Walter Studio, Phoenix, AZ</div></div>
           <div class="event-detail"><span class="icon">🎵</span><div><strong>Featuring:</strong> PsychoStar + special guests</div></div>
           <div class="event-detail"><span class="icon">🎟️</span><div><strong>Ticket:</strong> Free — registered nurses only</div></div>
@@ -705,7 +705,7 @@ export async function sendNrpxWelcomeEmail(data: NrpxWelcomeEmailData): Promise<
 
         <div class="event-card">
           <h2>🎤 Event Details</h2>
-          <div class="event-detail"><span class="icon">📅</span><div><strong>Date:</strong> Friday, May 16, 2026</div></div>
+          <div class="event-detail"><span class="icon">📅</span><div><strong>Date:</strong> Saturday, May 16, 2026</div></div>
           <div class="event-detail"><span class="icon">⏰</span><div><strong>Time:</strong> 3:00 PM (Doors Open)</div></div>
           <div class="event-detail"><span class="icon">📍</span><div><strong>Venue:</strong> The Walter Studio, Phoenix, AZ</div></div>
           <div class="event-detail"><span class="icon">🎵</span><div><strong>Featuring:</strong> The Black Moods, Jane 'n the Jungle, PsychoStar, My Upside Down & more</div></div>
