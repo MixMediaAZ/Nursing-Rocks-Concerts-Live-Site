@@ -339,7 +339,8 @@ export class DatabaseStorage implements IStorage {
         ticket_type: ticket.ticket_type,
         price: ticket.price,
         ticket_code: ticketCode,
-        is_used: false
+        is_used: false,
+        email_status: (ticket as any).email_status ?? 'pending_approval',
       })
       .returning();
     const newTicket = Array.isArray(result) ? result[0] : result;

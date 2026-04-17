@@ -873,7 +873,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/licenses", requireAuth, async (req: Request, res: Response) => {
     try {
       // Get the user id from the request
-      const userId = (req.user as any)?.id;
+      const userId = (req.user as any)?.userId ?? (req.user as any)?.id;
       if (!userId) {
         return res.status(401).json({ message: 'Unauthorized' });
       }

@@ -51,34 +51,26 @@ export function FloatingAdminControl() {
   };
 
   const handleLogout = () => {
-    // Perform admin logout
-    fetch('/api/admin/logout', { method: 'POST' })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error('Logout request failed');
-        }
-        // Clear all admin-related local storage items
-        localStorage.removeItem('adminToken');
-        localStorage.removeItem('isAdmin');
-        localStorage.removeItem('adminPinVerified');
-        localStorage.removeItem('editMode');
-        
-        toast({
-          title: 'Logged Out',
-          description: 'You have been logged out of admin mode',
-        });
-        
-        // Reload page to ensure all admin components are unmounted
-        window.location.reload();
-      })
-      .catch(err => {
-        console.error('Logout error:', err);
-        toast({
-          title: 'Logout Failed',
-          description: 'There was an error logging out. Please try again.',
-          variant: 'destructive',
-        });
-      });
+    // Clear local admin state immediately — server-side token invalidation is best-effort
+    const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+    if (token) {
+      fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {}); // fire-and-forget — local clear happens regardless
+    }
+
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('isAdmin');
+    localStorage.removeItem('adminPinVerified');
+    localStorage.removeItem('editMode');
+
+    toast({
+      title: 'Logged Out',
+      description: 'You have been logged out of admin mode',
+    });
+
+    window.location.reload();
   };
 
   const goToAdminDashboard = () => {
