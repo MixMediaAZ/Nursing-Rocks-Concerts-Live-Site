@@ -86,7 +86,7 @@ export function FloatingAdminControl() {
   };
 
   return (
-    <div className="fixed bottom-24 right-4 z-50 flex flex-col gap-2">
+    <div data-admin-toolbar="true" className="fixed bottom-24 right-4 z-50 flex flex-col gap-2">
       {/* Edit Mode Toggle */}
       <div className="bg-white rounded-lg shadow-lg border border-slate-200 p-3 mb-2 min-w-[180px]">
         <div className="flex items-center space-x-2">

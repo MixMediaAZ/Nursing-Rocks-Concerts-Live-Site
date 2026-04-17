@@ -1483,12 +1483,13 @@ export default function AdminPage() {
                                     onClick={async () => {
                                       try {
                                         const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
-                                        await fetch(`/api/admin/employers/${employer.id}/verify`, {
-                                          method: 'POST',
+                                        const res = await fetch(`/api/admin/employers/${employer.id}/approve`, {
+                                          method: 'PATCH',
                                           headers: {
                                             'Authorization': `Bearer ${token}`,
                                           },
                                         });
+                                        if (!res.ok) throw new Error("Server error");
                                         await queryClient.refetchQueries({ queryKey: ['/api/admin/employers'] });
                                         toast({
                                           title: "Employer Verified",
