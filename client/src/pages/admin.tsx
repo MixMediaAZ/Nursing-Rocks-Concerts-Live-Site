@@ -19,18 +19,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import {
-  Key,
-  KeyRound,
+import { 
+  Key, 
+  KeyRound, 
   Delete,
-  LayoutDashboard,
-  Settings,
-  Calendar,
-  ImageIcon,
-  Music,
-  Users,
-  Store,
-  FileEdit,
+  LayoutDashboard, 
+  Settings, 
+  Calendar, 
+  ImageIcon, 
+  Music, 
+  Users, 
+  Store, 
+  FileEdit, 
   Lock,
   Edit,
   LogOut,
@@ -625,28 +625,28 @@ export default function AdminPage() {
         const isAdmin = localStorage.getItem("isAdmin") === "true";
 
         console.log('[Admin Auth] Check - token:', !!token, 'user:', !!userDataStr, 'isAdmin:', isAdmin);
-
+        
         if (!token || !userDataStr) {
           // No authentication found, wait a moment before showing error (in case auth is processing)
           setLoading(false);
           setTimeout(() => {
             setAuthenticated(false);
             console.log('[Admin Auth] No token or user data, redirecting to login');
-            toast({
-              variant: "destructive",
-              title: "Authentication Required",
-              description: "Please login with an admin account to access this page.",
-            });
-            setTimeout(() => {
-              window.location.href = "/login?redirect=/admin";
-            }, 1500);
+          toast({
+            variant: "destructive",
+            title: "Authentication Required",
+            description: "Please login with an admin account to access this page.",
+          });
+          setTimeout(() => {
+            window.location.href = "/login?redirect=/admin";
+          }, 1500);
           }, 500);
           return;
         }
-
+        
         // Parse user data
         const userData = JSON.parse(userDataStr);
-
+        
         // Check if user is an admin (verify both storage flag and user data)
         const hasAdminAccess = isAdmin && userData.is_admin === true;
         console.log('[Admin Auth] Admin check - isAdmin:', isAdmin, 'userData.is_admin:', userData.is_admin, 'hasAccess:', hasAdminAccess);
@@ -657,18 +657,18 @@ export default function AdminPage() {
           setTimeout(() => {
             setAuthenticated(false);
             console.log('[Admin Auth] User not admin, redirecting to dashboard');
-            toast({
-              variant: "destructive",
-              title: "Access Denied",
-              description: "You do not have admin privileges.",
-            });
-            setTimeout(() => {
-              window.location.href = "/dashboard";
-            }, 1500);
+          toast({
+            variant: "destructive",
+            title: "Access Denied",
+            description: "You do not have admin privileges.",
+          });
+          setTimeout(() => {
+            window.location.href = "/dashboard";
+          }, 1500);
           }, 500);
           return;
         }
-
+        
         // User is authenticated as admin
         setUserEmail(userData.email);
         setAuthenticated(true);
@@ -677,20 +677,20 @@ export default function AdminPage() {
         console.error("Admin auth check error:", error);
         // Wait before showing error to allow auth to process
         setTimeout(() => {
-          setAuthenticated(false);
-          setLoading(false);
-          toast({
-            variant: "destructive",
-            title: "Authentication Error",
-            description: "Please login again.",
-          });
-          setTimeout(() => {
-            window.location.href = "/login";
-          }, 1500);
+        setAuthenticated(false);
+        setLoading(false);
+        toast({
+          variant: "destructive",
+          title: "Authentication Error",
+          description: "Please login again.",
+        });
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 1500);
         }, 500);
       }
     };
-
+    
     checkAdminAuth();
   }, [toast]);
 
@@ -713,21 +713,21 @@ export default function AdminPage() {
         }
       }
 
-      // Clear all authentication state
+    // Clear all authentication state
       clearToken();
-      localStorage.removeItem("adminPinVerified");
-      localStorage.removeItem("adminToken");
-      localStorage.removeItem("editMode");
-
-      toast({
-        title: "Logged Out",
-        description: "You have been logged out successfully.",
-        variant: "default",
-      });
-
-      // Redirect to login page
-      setTimeout(() => {
-        window.location.href = "/login";
+    localStorage.removeItem("adminPinVerified");
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("editMode");
+    
+    toast({
+      title: "Logged Out",
+      description: "You have been logged out successfully.",
+      variant: "default",
+    });
+    
+    // Redirect to login page
+    setTimeout(() => {
+      window.location.href = "/login";
       }, 800);
     } catch (error) {
       console.error("Logout error:", error);
@@ -1839,7 +1839,7 @@ export default function AdminPage() {
                         }}
                       />
                     </div>
-
+                    
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label>Show Control Panel</Label>
@@ -1859,7 +1859,7 @@ export default function AdminPage() {
                         }}
                       />
                     </div>
-
+                    
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label>Direct Image Replacement</Label>
@@ -1879,7 +1879,7 @@ export default function AdminPage() {
                         }}
                       />
                     </div>
-
+                    
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label>Confirm Before Saving</Label>
@@ -2031,7 +2031,7 @@ export default function AdminPage() {
                   </div>
                 )}
                 
-                <Button
+                <Button 
                   className="bg-[#5D3FD3] hover:bg-[#5D3FD3]/90 text-white mt-4"
                   onClick={() => setShowAddEventDialog(true)}
                   disabled={addEventMutation.isPending}
