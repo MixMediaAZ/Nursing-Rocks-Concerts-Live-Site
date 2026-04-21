@@ -10,23 +10,70 @@ interface JobsBoardStats {
   days: { date: string; uniqueVisits: number; returningVisits: number }[];
 }
 
+function normalizeStats(raw: unknown): JobsBoardStats | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  const today = o.today;
+  const week = o.week;
+  const allTime = o.allTime;
+  const days = o.days;
+  if (!today || typeof today !== "object" || !week || typeof week !== "object" || !allTime || typeof allTime !== "object" || !Array.isArray(days)) {
+    return null;
+  }
+  const t = today as Record<string, unknown>;
+  const w = week as Record<string, unknown>;
+  const a = allTime as Record<string, unknown>;
+  return {
+    today: {
+      date: typeof t.date === "string" ? t.date : "",
+      uniqueVisits: Number(t.uniqueVisits ?? 0),
+      returningVisits: Number(t.returningVisits ?? 0),
+    },
+    week: {
+      uniqueVisits: Number(w.uniqueVisits ?? 0),
+      returningVisits: Number(w.returningVisits ?? 0),
+    },
+    allTime: {
+      uniqueVisits: Number(a.uniqueVisits ?? 0),
+      returningVisits: Number(a.returningVisits ?? 0),
+    },
+    days: days.map((d: unknown) => {
+      const row = (d && typeof d === "object" ? d : {}) as Record<string, unknown>;
+      return {
+        date: typeof row.date === "string" ? row.date : "",
+        uniqueVisits: Number(row.uniqueVisits ?? 0),
+        returningVisits: Number(row.returningVisits ?? 0),
+      };
+    }),
+  };
+}
+
 export function JobsBoardTrafficWidget({ adminFetch }: { adminFetch: (url: string) => Promise<any> }) {
   const [data, setData] = useState<JobsBoardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdatedLabel, setLastUpdatedLabel] = useState<string>("");
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const fetchStats = async () => {
     try {
       setIsFetching(true);
-      const stats = await adminFetch("/api/admin/jobs-board-stats");
-      setData(stats);
-      const now = new Date();
-      const timeStr = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true });
-      setLastUpdatedLabel(timeStr);
+      setFetchError(null);
+      const raw = await adminFetch("/api/admin/jobs-board-stats");
+      const stats = normalizeStats(raw);
+      if (!stats) {
+        setFetchError("Unexpected response from server.");
+        setData(null);
+      } else {
+        setData(stats);
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true });
+        setLastUpdatedLabel(timeStr);
+      }
     } catch (error) {
       console.error("Failed to fetch jobs board stats:", error);
+      setFetchError(error instanceof Error ? error.message : "Failed to load stats.");
     } finally {
       setIsFetching(false);
       setIsLoading(false);
@@ -64,7 +111,26 @@ export function JobsBoardTrafficWidget({ adminFetch }: { adminFetch: (url: strin
   }
 
   if (!data) {
-    return null;
+    return (
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" /> Jobs Board Traffic
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {fetchError ? (
+            <p className="text-sm text-destructive">{fetchError}</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">No statistics available yet.</p>
+          )}
+          <Button variant="outline" size="sm" onClick={() => fetchStats()} disabled={isFetching || isRefreshing}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? "animate-spin" : ""}`} />
+            Retry
+          </Button>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (

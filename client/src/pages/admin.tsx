@@ -773,13 +773,19 @@ export default function AdminPage() {
 
   // Admin Dashboard Component
   const AdminDashboard = () => {
-    // Check URL params first, then stored tab
-    const queryParams = new URLSearchParams(window.location.search);
-    const tabParam = queryParams.get("tab");
-    const storedTab = localStorage.getItem("adminActiveTab");
-    const [activeTab, setActiveTab] = useState(tabParam || storedTab || "overview");
-    
-    // Persist active tab to localStorage when it changes
+    // URL param wins, then last tab from localStorage. Lazy init survives remounts
+    // when the parent re-renders (e.g. React Query) before a useEffect could persist.
+    const [activeTab, setActiveTab] = useState(() => {
+      const tabParam = new URLSearchParams(window.location.search).get("tab");
+      return tabParam || localStorage.getItem("adminActiveTab") || "overview";
+    });
+
+    const persistAndSetTab = useCallback((next: string) => {
+      localStorage.setItem("adminActiveTab", next);
+      setActiveTab(next);
+    }, []);
+
+    // Persist when tab is changed programmatically (paths that bypass persistAndSetTab)
     useEffect(() => {
       localStorage.setItem("adminActiveTab", activeTab);
     }, [activeTab]);
@@ -840,7 +846,7 @@ export default function AdminPage() {
     
     // Direct navigation to store settings for CustomCat integration
     const openCustomCatSettings = () => {
-      setActiveTab("store");
+      persistAndSetTab("store");
     };
     
     // Check if element editing mode is active
@@ -1028,7 +1034,7 @@ export default function AdminPage() {
           )}
         </div>
 
-        <Tabs value={activeTab} className="w-full" onValueChange={setActiveTab}>
+        <Tabs value={activeTab} className="w-full" onValueChange={persistAndSetTab}>
           <TabsList className="w-full grid grid-cols-2 md:grid-cols-12 mb-8">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="editor">
@@ -1121,7 +1127,7 @@ export default function AdminPage() {
               
               <Card 
                 className="cursor-pointer hover:border-primary transition-all duration-200 hover:shadow-md"
-                onClick={() => setActiveTab("events")}
+                onClick={() => persistAndSetTab("events")}
               >
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -1145,7 +1151,7 @@ export default function AdminPage() {
               
               <Card 
                 className="cursor-pointer hover:border-primary transition-all duration-200 hover:shadow-md"
-                onClick={() => setActiveTab("store")}
+                onClick={() => persistAndSetTab("store")}
               >
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -1169,7 +1175,7 @@ export default function AdminPage() {
               
               <Card 
                 className="cursor-pointer hover:border-primary transition-all duration-200 hover:shadow-md"
-                onClick={() => setActiveTab("users")}
+                onClick={() => persistAndSetTab("users")}
               >
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
