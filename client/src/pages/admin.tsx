@@ -3446,10 +3446,9 @@ function TrafficStatsWidget({ adminFetch }: { adminFetch: (url: string) => Promi
     ? lastUpdated.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     : null;
 
-  const days: { date: string; visitors: number; registrations: number }[] = data?.days ?? [];
+  const hours: { time: string; visitors: number; registrations: number }[] = data?.days ?? [];
   const today = data?.today ?? { visitors: 0, registrations: 0 };
-  const week = data?.week ?? { visitors: 0, registrations: 0 };
-  const maxVal = Math.max(...days.map((d: any) => Math.max(d.visitors, d.registrations)), 1);
+  const maxVal = Math.max(...hours.map((h: any) => Math.max(h.visitors, h.registrations)), 1);
 
   return (
     <Card className="mt-6">
@@ -3493,12 +3492,10 @@ function TrafficStatsWidget({ adminFetch }: { adminFetch: (url: string) => Promi
         ) : (
           <>
             {/* Summary row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-2 gap-4 mb-6">
               {[
-                { label: "Visitors Today", value: today.visitors, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30" },
-                { label: "Registrations Today", value: today.registrations, color: "text-green-600", bg: "bg-green-50 dark:bg-green-950/30" },
-                { label: "Visitors This Week", value: week.visitors, color: "text-blue-500", bg: "bg-blue-50/60 dark:bg-blue-950/20" },
-                { label: "Registrations This Week", value: week.registrations, color: "text-green-500", bg: "bg-green-50/60 dark:bg-green-950/20" },
+                { label: "Visitors (24h)", value: today.visitors, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30" },
+                { label: "Registrations (24h)", value: today.registrations, color: "text-green-600", bg: "bg-green-50 dark:bg-green-950/30" },
               ].map(({ label, value, color, bg }) => (
                 <div key={label} className={`${bg} rounded-lg p-4 text-center transition-all`}>
                   <p className={`text-2xl font-bold ${color}`}>{value}</p>
@@ -3517,31 +3514,31 @@ function TrafficStatsWidget({ adminFetch }: { adminFetch: (url: string) => Promi
               </span>
             </div>
 
-            {/* 7-day bar chart */}
+            {/* 24-hour bar chart */}
             <div className="space-y-2">
-              {days.map((d: any) => (
-                <div key={d.date} className="flex items-center gap-3 text-xs">
+              {hours.map((h: any) => (
+                <div key={h.time} className="flex items-center gap-3 text-xs">
                   <span className="w-20 text-muted-foreground shrink-0 font-medium">
-                    {new Date(d.date + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                    {new Date(h.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
                   </span>
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center gap-2">
                       <div className="flex-1 bg-muted/30 rounded h-3 overflow-hidden">
                         <div
                           className="h-full rounded bg-blue-400 transition-all duration-500"
-                          style={{ width: `${Math.max((d.visitors / maxVal) * 100, d.visitors > 0 ? 2 : 0)}%` }}
+                          style={{ width: `${Math.max((h.visitors / maxVal) * 100, h.visitors > 0 ? 2 : 0)}%` }}
                         />
                       </div>
-                      <span className="text-muted-foreground w-16 text-right">{d.visitors} visits</span>
+                      <span className="text-muted-foreground w-16 text-right">{h.visitors} visits</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 bg-muted/30 rounded h-3 overflow-hidden">
                         <div
                           className="h-full rounded bg-green-500 transition-all duration-500"
-                          style={{ width: `${Math.max((d.registrations / maxVal) * 100, d.registrations > 0 ? 2 : 0)}%` }}
+                          style={{ width: `${Math.max((h.registrations / maxVal) * 100, h.registrations > 0 ? 2 : 0)}%` }}
                         />
                       </div>
-                      <span className="text-muted-foreground w-16 text-right">{d.registrations} reg.</span>
+                      <span className="text-muted-foreground w-16 text-right">{h.registrations} reg.</span>
                     </div>
                   </div>
                 </div>
@@ -3549,7 +3546,7 @@ function TrafficStatsWidget({ adminFetch }: { adminFetch: (url: string) => Promi
             </div>
 
             <p className="text-xs text-muted-foreground mt-4 border-t pt-3">
-              Refreshes every 30 seconds. Visitor counts reset on server restart. Registrations are live from the database.
+              24-hour hourly data. Refreshes every 30 seconds. Visitor counts reset on server restart. Registrations are live from the database.
             </p>
           </>
         )}
