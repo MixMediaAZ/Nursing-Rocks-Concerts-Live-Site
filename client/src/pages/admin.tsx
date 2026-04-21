@@ -3446,9 +3446,11 @@ function TrafficStatsWidget({ adminFetch }: { adminFetch: (url: string) => Promi
     ? lastUpdated.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     : null;
 
-  const hours: { time: string; visitors: number; registrations: number }[] = data?.days ?? [];
+  const days: { date: string; visitors: number; registrations: number }[] = data?.days ?? [];
   const today = data?.today ?? { visitors: 0, registrations: 0 };
-  const maxVal = Math.max(...hours.map((h: any) => Math.max(h.visitors, h.registrations)), 1);
+  const week = data?.week ?? { visitors: 0, registrations: 0 };
+  const allTime = data?.allTime ?? { visitors: 0, registrations: 0 };
+  const maxVal = Math.max(...days.map((d: any) => Math.max(d.visitors, d.registrations)), 1);
 
   return (
     <Card className="mt-6">
@@ -3491,21 +3493,56 @@ function TrafficStatsWidget({ adminFetch }: { adminFetch: (url: string) => Promi
           </div>
         ) : (
           <>
-            {/* Summary row */}
-            <div className="grid grid-cols-2 md:grid-cols-2 gap-4 mb-6">
-              {[
-                { label: "Visitors (24h)", value: today.visitors, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30" },
-                { label: "Registrations (24h)", value: today.registrations, color: "text-green-600", bg: "bg-green-50 dark:bg-green-950/30" },
-              ].map(({ label, value, color, bg }) => (
-                <div key={label} className={`${bg} rounded-lg p-4 text-center transition-all`}>
-                  <p className={`text-2xl font-bold ${color}`}>{value}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{label}</p>
+            {/* Key Metrics - Three Columns */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+              {/* Today Section */}
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-muted-foreground">Today</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-blue-50 dark:bg-blue-950/40 rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold text-blue-600">{today.visitors}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Visitors</p>
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-950/40 rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold text-green-600">{today.registrations}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Registered</p>
+                  </div>
                 </div>
-              ))}
+              </div>
+
+              {/* Week Section */}
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-muted-foreground">This Week</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-blue-50/70 dark:bg-blue-950/25 rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold text-blue-500">{week.visitors}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Visitors</p>
+                  </div>
+                  <div className="bg-green-50/70 dark:bg-green-950/25 rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold text-green-500">{week.registrations}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Registered</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* All-Time Section */}
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-muted-foreground">All Time</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-blue-50/50 dark:bg-blue-950/15 rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold text-blue-400">{allTime.visitors}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Visitors</p>
+                  </div>
+                  <div className="bg-green-50/50 dark:bg-green-950/15 rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold text-green-400">{allTime.registrations}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Registered</p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Legend */}
-            <div className="flex gap-4 mb-3">
+            <div className="flex gap-4 mb-4 pb-4 border-t">
               <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <span className="inline-block w-3 h-3 rounded bg-blue-400" /> Unique Visits
               </span>
@@ -3514,39 +3551,39 @@ function TrafficStatsWidget({ adminFetch }: { adminFetch: (url: string) => Promi
               </span>
             </div>
 
-            {/* 24-hour bar chart */}
+            {/* 7-Day Trend Chart */}
             <div className="space-y-2">
-              {hours.map((h: any) => (
-                <div key={h.time} className="flex items-center gap-3 text-xs">
+              {days.map((d: any) => (
+                <div key={d.date} className="flex items-center gap-3 text-xs">
                   <span className="w-20 text-muted-foreground shrink-0 font-medium">
-                    {new Date(h.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                    {new Date(d.date + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                   </span>
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center gap-2">
                       <div className="flex-1 bg-muted/30 rounded h-3 overflow-hidden">
                         <div
                           className="h-full rounded bg-blue-400 transition-all duration-500"
-                          style={{ width: `${Math.max((h.visitors / maxVal) * 100, h.visitors > 0 ? 2 : 0)}%` }}
+                          style={{ width: `${Math.max((d.visitors / maxVal) * 100, d.visitors > 0 ? 2 : 0)}%` }}
                         />
                       </div>
-                      <span className="text-muted-foreground w-16 text-right">{h.visitors} visits</span>
+                      <span className="text-muted-foreground w-16 text-right">{d.visitors} visits</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 bg-muted/30 rounded h-3 overflow-hidden">
                         <div
                           className="h-full rounded bg-green-500 transition-all duration-500"
-                          style={{ width: `${Math.max((h.registrations / maxVal) * 100, h.registrations > 0 ? 2 : 0)}%` }}
+                          style={{ width: `${Math.max((d.registrations / maxVal) * 100, d.registrations > 0 ? 2 : 0)}%` }}
                         />
                       </div>
-                      <span className="text-muted-foreground w-16 text-right">{h.registrations} reg.</span>
+                      <span className="text-muted-foreground w-16 text-right">{d.registrations} reg.</span>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
 
-            <p className="text-xs text-muted-foreground mt-4 border-t pt-3">
-              24-hour hourly data. Refreshes every 30 seconds. Visitor counts reset on server restart. Registrations are live from the database.
+            <p className="text-xs text-muted-foreground mt-4 pt-3">
+              7-day trend view. Refreshes every 30 seconds. Visitor counts reset on server restart. Registrations are live from the database.
             </p>
           </>
         )}

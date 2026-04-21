@@ -2102,33 +2102,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin-only endpoint — returns traffic stats + registration counts
   app.get("/api/admin/traffic-stats", requireAdminToken, async (req: Request, res: Response) => {
     try {
-      const now = new Date();
-      const hours: { time: string; visitors: number; registrations: number }[] = [];
+      const today = todayKey();
+      const days: { date: string; visitors: number; registrations: number }[] = [];
 
-      for (let i = 23; i >= 0; i--) {
-        const hourStart = new Date(now);
-        hourStart.setUTCHours(hourStart.getUTCHours() - i, 0, 0, 0);
-        const hourEnd = new Date(hourStart);
-        hourEnd.setUTCHours(hourEnd.getUTCHours() + 1);
-        const timeStr = hourStart.toISOString();
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().slice(0, 10);
 
         const [visitorRow] = await db
           .select({ count: sql<number>`cast(count(*) as int)` })
           .from(siteVisits)
-          .where(and(gte(siteVisits.created_at, hourStart), sql`${siteVisits.created_at} < ${hourEnd}`));
+          .where(eq(siteVisits.visit_date, dateStr));
 
+        const startOfDay = new Date(dateStr + 'T00:00:00.000Z');
+        const endOfDay = new Date(dateStr + 'T23:59:59.999Z');
         const [regRow] = await db
           .select({ count: sql<number>`cast(count(*) as int)` })
           .from(users)
-          .where(and(gte(users.created_at, hourStart), sql`${users.created_at} < ${hourEnd}`));
+          .where(and(gte(users.created_at, startOfDay), sql`${users.created_at} <= ${endOfDay}`));
 
-        hours.push({ time: timeStr, visitors: Number(visitorRow?.count ?? 0), registrations: Number(regRow?.count ?? 0) });
+        days.push({ date: dateStr, visitors: Number(visitorRow?.count ?? 0), registrations: Number(regRow?.count ?? 0) });
       }
 
-      const todayVisitors = hours.reduce((sum, h) => sum + h.visitors, 0);
-      const todayRegistrations = hours.reduce((sum, h) => sum + h.registrations, 0);
+      const todayStats = days.find(d => d.date === today) ?? { date: today, visitors: 0, registrations: 0 };
+      const weekVisitors = days.reduce((sum, d) => sum + d.visitors, 0);
+      const weekRegistrations = days.reduce((sum, d) => sum + d.registrations, 0);
 
-      res.json({ today: { visitors: todayVisitors, registrations: todayRegistrations }, week: { visitors: todayVisitors, registrations: todayRegistrations }, days: hours });
+      const [allTimeVisitors] = await db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(siteVisits);
+
+      const [allTimeRegs] = await db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(users);
+
+      res.json({
+        today: todayStats,
+        week: { visitors: weekVisitors, registrations: weekRegistrations },
+        allTime: { visitors: Number(allTimeVisitors?.count ?? 0), registrations: Number(allTimeRegs?.count ?? 0) },
+        days
+      });
     } catch (error) {
       console.error('[traffic-stats]', error);
       res.status(500).json({ message: 'Failed to load traffic stats' });
