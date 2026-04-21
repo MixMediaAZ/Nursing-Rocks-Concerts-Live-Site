@@ -2106,15 +2106,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hours: { time: string; visitors: number; registrations: number }[] = [];
 
       for (let i = 23; i >= 0; i--) {
-        const d = new Date(now);
-        d.setHours(d.getHours() - i);
-        d.setMinutes(0);
-        d.setSeconds(0);
-        d.setMilliseconds(0);
-        const hourStart = d;
+        const hourStart = new Date(now);
+        hourStart.setUTCHours(hourStart.getUTCHours() - i, 0, 0, 0);
         const hourEnd = new Date(hourStart);
-        hourEnd.setHours(hourEnd.getHours() + 1);
-        const timeStr = d.toISOString().slice(0, 13) + ':00Z';
+        hourEnd.setUTCHours(hourEnd.getUTCHours() + 1);
+        const timeStr = hourStart.toISOString();
 
         const [visitorRow] = await db
           .select({ count: sql<number>`cast(count(*) as int)` })
