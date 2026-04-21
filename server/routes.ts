@@ -2171,13 +2171,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Admin-only endpoint — returns jobs board traffic stats (unique + returning visitors)
   app.get("/api/admin/jobs-board-stats", requireAdminToken, async (req: Request, res: Response) => {
+    const emptyJobsBoardStatsResponse = () => {
+      const today = todayKey();
+      const days: { date: string; uniqueVisits: number; returningVisits: number }[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setUTCDate(d.getUTCDate() - i);
+        const dateStr = d.toISOString().slice(0, 10);
+        days.push({ date: dateStr, uniqueVisits: 0, returningVisits: 0 });
+      }
+      const todayStats = days.find((d) => d.date === today) ?? {
+        date: today,
+        uniqueVisits: 0,
+        returningVisits: 0,
+      };
+      return {
+        today: todayStats,
+        week: { uniqueVisits: 0, returningVisits: 0 },
+        allTime: { uniqueVisits: 0, returningVisits: 0 },
+        days,
+      };
+    };
+
     try {
       const today = todayKey();
       const days: { date: string; uniqueVisits: number; returningVisits: number }[] = [];
 
       for (let i = 6; i >= 0; i--) {
         const d = new Date();
-        d.setDate(d.getDate() - i);
+        d.setUTCDate(d.getUTCDate() - i);
         const dateStr = d.toISOString().slice(0, 10);
 
         const startOfDay = new Date(dateStr + 'T00:00:00.000Z');
@@ -2229,6 +2251,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         days
       });
     } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      const code = (error as { code?: string })?.code;
+      const missingTable =
+        code === "42P01" ||
+        (msg.includes("job_board_visits") && msg.toLowerCase().includes("does not exist"));
+      if (missingTable) {
+        console.warn("[jobs-board-stats] job_board_visits table missing; returning zeros. Run migrations/012_job_board_visits.sql or npm run db:fix");
+        res.json(emptyJobsBoardStatsResponse());
+        return;
+      }
       console.error('[jobs-board-stats]', error);
       res.status(500).json({ message: 'Failed to load jobs board stats' });
     }
