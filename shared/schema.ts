@@ -1041,6 +1041,18 @@ export const jobSourcePages = pgTable("job_source_pages", {
 export type JobSourcePage = typeof jobSourcePages.$inferSelect;
 export type InsertJobSourcePage = typeof jobSourcePages.$inferInsert;
 
+// Jobs board visit tracking (admin-only analytics)
+export const jobBoardVisits = pgTable("job_board_visits", {
+  id: serial("id").primaryKey(),
+  visitor_id: text("visitor_id").notNull(), // Hash of IP + user agent for privacy
+  is_returning: boolean("is_returning").default(false),
+  visited_at: timestamp("visited_at").defaultNow(),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+export type JobBoardVisit = typeof jobBoardVisits.$inferSelect;
+export type InsertJobBoardVisit = typeof jobBoardVisits.$inferInsert;
+
 // Type exports for JobListing with ingestion columns
 export type JobListing = typeof jobListings.$inferSelect;
 export type InsertJobListing = typeof jobListings.$inferInsert;

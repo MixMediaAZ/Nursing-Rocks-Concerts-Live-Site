@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
@@ -107,6 +107,15 @@ export default function JobsPage() {
       minSalary: undefined,
     },
   });
+
+  // Track jobs board visit (once per session)
+  useEffect(() => {
+    const hasTracked = sessionStorage.getItem('jobsBoardVisitTracked');
+    if (!hasTracked) {
+      fetch('/api/jobs/track-visit', { method: 'POST' }).catch(() => {});
+      sessionStorage.setItem('jobsBoardVisitTracked', 'true');
+    }
+  }, []);
 
   // Fetch job listings with filters
   const { data: jobs, isLoading, error: jobsError } = useQuery({

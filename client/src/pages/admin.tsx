@@ -58,6 +58,7 @@ import { AdminCreateEmployer } from "@/components/admin/admin-create-employer";
 import { AdminCreateJob } from "@/components/admin/admin-create-job";
 import { JobsTable } from "@/components/admin/jobs-table";
 import { IngestionStatusCard } from "@/components/admin/ingestion-status-card";
+import { JobsBoardTrafficWidget } from "@/components/admin/jobs-board-traffic-widget";
 
 export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -1316,6 +1317,9 @@ export default function AdminPage() {
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold">Jobs Board Management</h2>
               </div>
+
+              {/* Jobs Board Traffic Statistics */}
+              <JobsBoardTrafficWidget adminFetch={adminFetch} />
 
               {/* Employer Job Posting Pricing (beta) */}
               <Card>
@@ -3529,12 +3533,12 @@ function TrafficStatsWidget({ adminFetch }: { adminFetch: (url: string) => Promi
               <div className="space-y-3">
                 <p className="text-sm font-semibold text-muted-foreground">All Time</p>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-blue-50/50 dark:bg-blue-950/15 rounded-lg p-4 text-center">
-                    <p className="text-2xl font-bold text-blue-400">{allTime.visitors}</p>
+                  <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 text-center border border-blue-100 dark:border-blue-900">
+                    <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{allTime.visitors}</p>
                     <p className="text-xs text-muted-foreground mt-1">Visitors</p>
                   </div>
-                  <div className="bg-green-50/50 dark:bg-green-950/15 rounded-lg p-4 text-center">
-                    <p className="text-2xl font-bold text-green-400">{allTime.registrations}</p>
+                  <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-4 text-center border border-green-100 dark:border-green-900">
+                    <p className="text-2xl font-bold text-green-700 dark:text-green-300">{allTime.registrations}</p>
                     <p className="text-xs text-muted-foreground mt-1">Registered</p>
                   </div>
                 </div>
@@ -3554,8 +3558,8 @@ function TrafficStatsWidget({ adminFetch }: { adminFetch: (url: string) => Promi
             {/* 7-Day Trend Chart */}
             <div className="space-y-2">
               {days.map((d: any) => (
-                <div key={d.date} className="flex items-center gap-3 text-xs">
-                  <span className="w-20 text-muted-foreground shrink-0 font-medium">
+                <div key={d.date} className="flex items-center gap-2 sm:gap-3 text-xs">
+                  <span className="w-16 sm:w-20 text-muted-foreground shrink-0 font-medium">
                     {new Date(d.date + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                   </span>
                   <div className="flex-1 space-y-1">
@@ -3566,7 +3570,7 @@ function TrafficStatsWidget({ adminFetch }: { adminFetch: (url: string) => Promi
                           style={{ width: `${Math.max((d.visitors / maxVal) * 100, d.visitors > 0 ? 2 : 0)}%` }}
                         />
                       </div>
-                      <span className="text-muted-foreground w-16 text-right">{d.visitors} visits</span>
+                      <span className="text-muted-foreground w-14 sm:w-16 text-right">{d.visitors} visits</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 bg-muted/30 rounded h-3 overflow-hidden">
@@ -3575,7 +3579,7 @@ function TrafficStatsWidget({ adminFetch }: { adminFetch: (url: string) => Promi
                           style={{ width: `${Math.max((d.registrations / maxVal) * 100, d.registrations > 0 ? 2 : 0)}%` }}
                         />
                       </div>
-                      <span className="text-muted-foreground w-16 text-right">{d.registrations} reg.</span>
+                      <span className="text-muted-foreground w-14 sm:w-16 text-right">{d.registrations} reg.</span>
                     </div>
                   </div>
                 </div>

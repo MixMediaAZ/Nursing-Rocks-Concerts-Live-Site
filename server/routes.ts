@@ -8,7 +8,7 @@ import bcryptjs from "bcryptjs";
 import { db } from "./db";
 import { eq, sql, and, desc, ilike, or, inArray, gte } from "drizzle-orm";
 import { storage } from "./storage";
-import { approvedVideos, gallery, mediaFolders, events, nrpxRegistrations, users, tickets, storeProducts, storeOrders, storeOrderItems } from "@shared/schema";
+import { approvedVideos, gallery, mediaFolders, events, nrpxRegistrations, users, tickets, storeProducts, storeOrders, storeOrderItems, jobBoardVisits } from "@shared/schema";
 import QRCode from "qrcode";
 import { sendNrpxTicketEmail } from "./email";
 import { processImage } from "./image-utils";
@@ -2079,7 +2079,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to delete job alert" });
     }
   });
-  
+
+  // Jobs board visit tracking (privacy-safe: hashed IP + user agent)
+  app.post("/api/jobs/track-visit", async (req: Request, res: Response) => {
+    try {
+      const ip = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '').split(',')[0].trim();
+      const ua = (req.headers['user-agent'] || '').slice(0, 200);
+      const crypto = require('crypto');
+      const visitorId = crypto.createHash('sha256').update(ip + ua).digest('hex').slice(0, 32);
+
+      // Check if this visitor has visited before
+      const existingVisit = await db.select().from(jobBoardVisits).where(eq(jobBoardVisits.visitor_id, visitorId)).limit(1);
+      const isReturning = existingVisit.length > 0;
+
+      // Record the visit
+      await db.insert(jobBoardVisits).values({ visitor_id: visitorId, is_returning: isReturning });
+      res.json({ ok: true });
+    } catch {
+      res.json({ ok: true }); // Always succeed silently
+    }
+  });
+
   // ── Traffic tracking (DB-backed — survives restarts and deployments) ──────
   const todayKey = () => new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
 
@@ -2146,6 +2166,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('[traffic-stats]', error);
       res.status(500).json({ message: 'Failed to load traffic stats' });
+    }
+  });
+
+  // Admin-only endpoint — returns jobs board traffic stats (unique + returning visitors)
+  app.get("/api/admin/jobs-board-stats", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const today = todayKey();
+      const days: { date: string; uniqueVisits: number; returningVisits: number }[] = [];
+
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().slice(0, 10);
+
+        const startOfDay = new Date(dateStr + 'T00:00:00.000Z');
+        const endOfDay = new Date(dateStr + 'T23:59:59.999Z');
+
+        const [uniqueRow] = await db
+          .select({ count: sql<number>`cast(count(distinct visitor_id) as int)` })
+          .from(jobBoardVisits)
+          .where(and(
+            gte(jobBoardVisits.visited_at, startOfDay),
+            sql`${jobBoardVisits.visited_at} <= ${endOfDay}`,
+            eq(jobBoardVisits.is_returning, false)
+          ));
+
+        const [returningRow] = await db
+          .select({ count: sql<number>`cast(count(*) as int)` })
+          .from(jobBoardVisits)
+          .where(and(
+            gte(jobBoardVisits.visited_at, startOfDay),
+            sql`${jobBoardVisits.visited_at} <= ${endOfDay}`,
+            eq(jobBoardVisits.is_returning, true)
+          ));
+
+        days.push({
+          date: dateStr,
+          uniqueVisits: Number(uniqueRow?.count ?? 0),
+          returningVisits: Number(returningRow?.count ?? 0)
+        });
+      }
+
+      const todayStats = days.find(d => d.date === today) ?? { date: today, uniqueVisits: 0, returningVisits: 0 };
+      const weekUnique = days.reduce((sum, d) => sum + d.uniqueVisits, 0);
+      const weekReturning = days.reduce((sum, d) => sum + d.returningVisits, 0);
+
+      const [allTimeUnique] = await db
+        .select({ count: sql<number>`cast(count(distinct visitor_id) as int)` })
+        .from(jobBoardVisits)
+        .where(eq(jobBoardVisits.is_returning, false));
+
+      const [allTimeReturning] = await db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(jobBoardVisits)
+        .where(eq(jobBoardVisits.is_returning, true));
+
+      res.json({
+        today: todayStats,
+        week: { uniqueVisits: weekUnique, returningVisits: weekReturning },
+        allTime: { uniqueVisits: Number(allTimeUnique?.count ?? 0), returningVisits: Number(allTimeReturning?.count ?? 0) },
+        days
+      });
+    } catch (error) {
+      console.error('[jobs-board-stats]', error);
+      res.status(500).json({ message: 'Failed to load jobs board stats' });
     }
   });
 
