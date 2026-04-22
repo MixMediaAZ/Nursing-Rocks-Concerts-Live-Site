@@ -59,6 +59,7 @@ import { AdminCreateJob } from "@/components/admin/admin-create-job";
 import { JobsTable } from "@/components/admin/jobs-table";
 import { IngestionStatusCard } from "@/components/admin/ingestion-status-card";
 import { JobsBoardTrafficWidget } from "@/components/admin/jobs-board-traffic-widget";
+import { formatTrafficChartDayLabel } from "@/lib/format-traffic-chart-day";
 
 export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -3566,7 +3567,7 @@ function TrafficStatsWidget({ adminFetch }: { adminFetch: (url: string) => Promi
               {days.map((d: any) => (
                 <div key={d.date} className="flex items-center gap-2 sm:gap-3 text-xs">
                   <span className="w-16 sm:w-20 text-muted-foreground shrink-0 font-medium">
-                    {new Date(d.date + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                    {formatTrafficChartDayLabel(d.date)}
                   </span>
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center gap-2">
@@ -3593,7 +3594,7 @@ function TrafficStatsWidget({ adminFetch }: { adminFetch: (url: string) => Promi
             </div>
 
             <p className="text-xs text-muted-foreground mt-4 pt-3">
-              7-day trend view. Refreshes every 30 seconds. Visitor counts reset on server restart. Registrations are live from the database.
+              7-day trend (oldest to newest). Daily totals use US Mountain Time (Phoenix)—the &quot;Today&quot; row is the current Phoenix calendar day. Refreshes every 30 seconds.
             </p>
           </>
         )}

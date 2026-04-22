@@ -45,6 +45,11 @@ import {
   stableVideoIdFromKey,
 } from "./video/b2-s3";
 import { packageMp4KeyToHlsInB2 } from "./video/hls-packager";
+import {
+  getSiteTrafficDateKey,
+  getSiteTrafficRollingDateKeys,
+  getUtcRangeForSiteTrafficCalendarDate,
+} from "./site-traffic-dates";
 import multer from "multer";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import ffmpeg from "fluent-ffmpeg";
@@ -2101,8 +2106,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ── Traffic tracking (DB-backed — survives restarts and deployments) ──────
-  const todayKey = () => new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
-
   // Public endpoint — fires once per browser session from the client
   app.post("/api/track-visit", async (req: Request, res: Response) => {
     try {
@@ -2110,7 +2113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ua = (req.headers['user-agent'] || '').slice(0, 200);
       const crypto = require('crypto');
       const fingerprint = crypto.createHash('sha256').update(ip + ua).digest('hex').slice(0, 16);
-      const visit_date = todayKey();
+      const visit_date = getSiteTrafficDateKey();
       // ON CONFLICT DO NOTHING — idempotent, one row per unique visitor per day
       await db.insert(siteVisits).values({ visit_date, fingerprint }).onConflictDoNothing();
       res.json({ ok: true });
@@ -2122,21 +2125,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin-only endpoint — returns traffic stats + registration counts
   app.get("/api/admin/traffic-stats", requireAdminToken, async (req: Request, res: Response) => {
     try {
-      const today = todayKey();
+      const today = getSiteTrafficDateKey();
+      const dateKeys = getSiteTrafficRollingDateKeys(7);
       const days: { date: string; visitors: number; registrations: number }[] = [];
 
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        const dateStr = d.toISOString().slice(0, 10);
-
+      for (const dateStr of dateKeys) {
         const [visitorRow] = await db
           .select({ count: sql<number>`cast(count(*) as int)` })
           .from(siteVisits)
           .where(eq(siteVisits.visit_date, dateStr));
 
-        const startOfDay = new Date(dateStr + 'T00:00:00.000Z');
-        const endOfDay = new Date(dateStr + 'T23:59:59.999Z');
+        const { start: startOfDay, end: endOfDay } = getUtcRangeForSiteTrafficCalendarDate(dateStr);
         const [regRow] = await db
           .select({ count: sql<number>`cast(count(*) as int)` })
           .from(users)
@@ -2172,14 +2171,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin-only endpoint — returns jobs board traffic stats (unique + returning visitors)
   app.get("/api/admin/jobs-board-stats", requireAdminToken, async (req: Request, res: Response) => {
     const emptyJobsBoardStatsResponse = () => {
-      const today = todayKey();
-      const days: { date: string; uniqueVisits: number; returningVisits: number }[] = [];
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setUTCDate(d.getUTCDate() - i);
-        const dateStr = d.toISOString().slice(0, 10);
-        days.push({ date: dateStr, uniqueVisits: 0, returningVisits: 0 });
-      }
+      const today = getSiteTrafficDateKey();
+      const dateKeys = getSiteTrafficRollingDateKeys(7);
+      const days: { date: string; uniqueVisits: number; returningVisits: number }[] = dateKeys.map(
+        (dateStr) => ({ date: dateStr, uniqueVisits: 0, returningVisits: 0 })
+      );
       const todayStats = days.find((d) => d.date === today) ?? {
         date: today,
         uniqueVisits: 0,
@@ -2194,16 +2190,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     };
 
     try {
-      const today = todayKey();
+      const today = getSiteTrafficDateKey();
+      const dateKeys = getSiteTrafficRollingDateKeys(7);
       const days: { date: string; uniqueVisits: number; returningVisits: number }[] = [];
 
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setUTCDate(d.getUTCDate() - i);
-        const dateStr = d.toISOString().slice(0, 10);
-
-        const startOfDay = new Date(dateStr + 'T00:00:00.000Z');
-        const endOfDay = new Date(dateStr + 'T23:59:59.999Z');
+      for (const dateStr of dateKeys) {
+        const { start: startOfDay, end: endOfDay } = getUtcRangeForSiteTrafficCalendarDate(dateStr);
 
         const [uniqueRow] = await db
           .select({ count: sql<number>`cast(count(distinct visitor_id) as int)` })

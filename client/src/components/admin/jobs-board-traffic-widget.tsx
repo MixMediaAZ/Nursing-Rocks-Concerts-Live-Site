@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { formatTrafficChartDayLabel } from "@/lib/format-traffic-chart-day";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Users } from "lucide-react";
@@ -256,7 +257,7 @@ export function JobsBoardTrafficWidget({ adminFetch }: { adminFetch: (url: strin
         </div>
 
         <p className="text-xs text-muted-foreground mt-4 pt-3">
-          7-day trend view. Refreshes every 30 seconds. Tracking is privacy-safe (hashed IP + user agent).
+          7-day trend (oldest to newest). Daily totals use US Mountain Time (Phoenix). Refreshes every 30 seconds. Tracking is privacy-safe (hashed IP + user agent).
         </p>
       </CardContent>
     </Card>
