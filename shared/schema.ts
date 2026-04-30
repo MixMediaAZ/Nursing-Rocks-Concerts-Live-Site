@@ -1056,3 +1056,14 @@ export type InsertJobBoardVisit = typeof jobBoardVisits.$inferInsert;
 // Type exports for JobListing with ingestion columns
 export type JobListing = typeof jobListings.$inferSelect;
 export type InsertJobListing = typeof jobListings.$inferInsert;
+
+// Page content overrides — persists admin editor changes across deployments
+export const pageContent = pgTable("page_content", {
+  elementKey: text("element_key").primaryKey(),  // stable CSS selector or element ID
+  content: text("content").notNull(),
+  styles: jsonb("styles"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type PageContent = typeof pageContent.$inferSelect;
+export type InsertPageContent = typeof pageContent.$inferInsert;

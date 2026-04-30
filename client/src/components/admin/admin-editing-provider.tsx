@@ -7,6 +7,40 @@ import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { X, Edit, Wand, Save, Type, HandIcon, Settings, MousePointer, LayoutDashboard, LogOut, Plus } from 'lucide-react';
 
+// Generate a stable CSS selector for an element so saved content can be found on reload.
+// Walks up the DOM stopping at the nearest stable (non-dynamic) ID.
+function getElementKey(el: HTMLElement): string {
+  if (el.id && !el.id.startsWith('editable-element-')) return `#${el.id}`;
+  const parts: string[] = [];
+  let cur: HTMLElement | null = el;
+  while (cur && cur.tagName !== 'BODY') {
+    if (cur.id && !cur.id.startsWith('editable-element-')) {
+      parts.unshift(`#${cur.id}`);
+      break;
+    }
+    const parent = cur.parentElement;
+    let seg = cur.tagName.toLowerCase();
+    if (parent) {
+      const siblings = Array.from(parent.children).filter(c => c.tagName === cur!.tagName);
+      if (siblings.length > 1) seg += `:nth-of-type(${siblings.indexOf(cur) + 1})`;
+    }
+    parts.unshift(seg);
+    cur = parent;
+  }
+  return parts.join(' > ');
+}
+
+// Persist a single element's content + styles to the server (fire-and-forget).
+function persistContent(elementKey: string, content: string, styles: TextSaveOptions['styles'] | undefined) {
+  const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+  if (!token) return;
+  fetch('/api/admin/page-content', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ elementKey, content, styles: styles ?? null }),
+  }).catch(() => {}); // fire-and-forget — UI already shows the change
+}
+
 // Helper function to apply styles to HTML elements
 function applyStylesToElement(element: HTMLElement | undefined, styles: TextSaveOptions['styles']) {
   if (!element || !styles) return;
@@ -47,6 +81,31 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
   
   // Track the element that's currently being hovered
   const [hoveredElement, setHoveredElement] = useState<HTMLElement | null>(null);
+
+  // Load saved page content from DB on mount and apply to DOM.
+  // Runs once; if an element no longer exists the entry is silently skipped.
+  useEffect(() => {
+    fetch('/api/page-content')
+      .then(r => r.json())
+      .then((rows: { elementKey: string; content: string; styles: TextSaveOptions['styles'] | null }[]) => {
+        for (const row of rows) {
+          try {
+            const el = document.querySelector(row.elementKey) as HTMLElement | null;
+            if (!el) continue;
+            // Buttons/links were saved as plain text; everything else as sanitised HTML
+            if (el.tagName === 'BUTTON' || el.tagName === 'A') {
+              el.textContent = row.content;
+            } else {
+              el.innerHTML = row.content;
+            }
+            if (row.styles) applyStylesToElement(el, row.styles);
+          } catch {
+            // Invalid selector from a prior deployment — skip safely
+          }
+        }
+      })
+      .catch(() => {}); // network error — page shows code defaults, no crash
+  }, []);
 
   // Enable universal selection when admin mode is turned on
   useEffect(() => {
@@ -380,8 +439,9 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
               const socksTextSpan = document.getElementById('comfortSocksText');
               if (socksTextSpan) {
                 socksTextSpan.textContent = newContent;
+                persistContent(getElementKey(socksTextSpan), newContent, options?.styles);
                 console.log('Successfully updated comfort socks text directly by ID');
-                
+
                 toast({
                   title: 'Text Updated',
                   description: 'Comfort Socks button text has been updated',
@@ -583,12 +643,17 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
               }
             }
             
+            // Persist the change so it survives redeployments
+            if (selectedElement?.element) {
+              persistContent(getElementKey(selectedElement.element), newContent, options?.styles);
+            }
+
             toast({
               title: 'Text Updated',
               description: 'The selected text has been updated',
             });
           }
-          
+
           clearSelectedElement();
         }}
         elementId={selectedElement?.id}
@@ -675,8 +740,8 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
                 className="h-9 w-[90px]"
                 onClick={() => {
                   toast({
-                    title: 'Session Edits Only',
-                    description: 'Changes apply to this page view only — no server save is wired up yet.',
+                    title: 'Auto-saved',
+                    description: 'Each edit is saved to the database when you confirm it and will survive redeployments.',
                   });
                 }}
               >

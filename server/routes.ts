@@ -8,7 +8,7 @@ import bcryptjs from "bcryptjs";
 import { db } from "./db";
 import { eq, sql, and, desc, ilike, or, inArray, gte } from "drizzle-orm";
 import { storage } from "./storage";
-import { approvedVideos, gallery, mediaFolders, events, nrpxRegistrations, users, tickets, storeProducts, storeOrders, storeOrderItems, jobBoardVisits } from "@shared/schema";
+import { approvedVideos, gallery, mediaFolders, events, nrpxRegistrations, users, tickets, storeProducts, storeOrders, storeOrderItems, jobBoardVisits, pageContent } from "@shared/schema";
 import QRCode from "qrcode";
 import { sendNrpxTicketEmail } from "./email";
 import { processImage } from "./image-utils";
@@ -117,7 +117,16 @@ import {
   getCurrentUser,
 } from "./auth";
 import { setupAuth, requireAuth, requireVerifiedUser, requireAdmin } from "./session-auth";
-import { generateToken, isUserAdmin, getPayloadFromRequest, getTokenFromRequest } from './jwt';
+import {
+  generateToken,
+  generateGateScannerToken,
+  isUserAdmin,
+  getPayloadFromRequest,
+  getTokenFromRequest,
+  verifyToken,
+  verifyGateScannerToken,
+  isTokenBlacklisted,
+} from "./jwt";
 import { isTokenRevokedForUser, setUserRevokedBeforeMs } from "./token-revocation-store";
 import {
   upload,
@@ -127,7 +136,7 @@ import {
   updateMedia,
   deleteMedia
 } from "./media";
-import { authRateLimiter, adminPinRateLimiter, registerRateLimiter, passwordResetRateLimiter, scanRateLimiter } from "./rate-limit";
+import { authRateLimiter, adminPinRateLimiter, gatePinRateLimiter, registerRateLimiter, passwordResetRateLimiter, scanRateLimiter } from "./rate-limit";
 import { runAllEmailSchedules, getEmailScheduleStatus } from "./email-scheduler";
 import { searchJobs, searchEvents, searchNurses, getSearchSuggestions } from "./search";
 import { handleJobAlertsCron, handleEventRemindersCron, handleCronHealth } from "./cron-handlers";
@@ -204,6 +213,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     (req as any).user = { userId: payload.userId, email: payload.email, isAdmin: true };
     return next();
   };
+
+  /** Door scanner JWT or full admin — for POST /api/tickets/scan only */
+  const requireGateScannerOrAdmin = async (req: Request, res: Response, next: any) => {
+    const token = getTokenFromRequest(req);
+    if (!token) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    if (isTokenBlacklisted(token)) {
+      return res.status(401).json({ message: "Session has been terminated. Please sign in again." });
+    }
+    const gatePayload = verifyGateScannerToken(token);
+    if (gatePayload?.gateScanner) {
+      (req as any).gateScanner = true;
+      (req as any).user = { userId: undefined, email: undefined, isAdmin: false, gateScanner: true };
+      return next();
+    }
+    const payload = verifyToken(token);
+    if (!payload || !payload.isAdmin) {
+      return res.status(403).json({ message: "Door scanner or admin privileges required" });
+    }
+    const adminUser = await db.select().from(users).where(eq(users.id, payload.userId)).limit(1);
+    if (!adminUser.length || !adminUser[0].is_admin) {
+      return res.status(403).json({ message: "Admin privileges revoked" });
+    }
+    (req as any).user = { userId: payload.userId, email: payload.email, isAdmin: true };
+    return next();
+  };
+  // ─────────────────────────────────────────────────────────────────────────
+  // Page content persistence (admin editor)
+  app.get("/api/page-content", async (_req: Request, res: Response) => {
+    try {
+      const rows = await db.select().from(pageContent);
+      res.json(rows);
+    } catch (error) {
+      console.error("Error fetching page content:", error);
+      res.status(500).json({ message: "Failed to fetch page content" });
+    }
+  });
+
+  app.post("/api/admin/page-content", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const { elementKey, content, styles } = req.body;
+      if (!elementKey || content === undefined) {
+        return res.status(400).json({ message: "elementKey and content are required" });
+      }
+      await db.insert(pageContent)
+        .values({ elementKey, content, styles: styles ?? null, updatedAt: new Date() })
+        .onConflictDoUpdate({
+          target: pageContent.elementKey,
+          set: { content, styles: styles ?? null, updatedAt: new Date() },
+        });
+      res.json({ ok: true });
+    } catch (error) {
+      console.error("Error saving page content:", error);
+      res.status(500).json({ message: "Failed to save page content" });
+    }
+  });
+
+  app.delete("/api/admin/page-content/:key", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      await db.delete(pageContent).where(eq(pageContent.elementKey, req.params.key));
+      res.json({ ok: true });
+    } catch (error) {
+      console.error("Error deleting page content:", error);
+      res.status(500).json({ message: "Failed to delete page content" });
+    }
+  });
+
   // ─────────────────────────────────────────────────────────────────────────
   // Events
   app.get("/api/events", async (_req: Request, res: Response) => {
@@ -2818,41 +2895,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Public/Auth: Scan ticket QR code (gate scanning)
-  // FIX: Apply rate limiting to prevent DOS and brute force attacks on public endpoint
-  app.post("/api/tickets/scan", scanRateLimiter, requireAdminToken, async (req: Request, res: Response) => {
+  // Scan ticket QR code (door scanner JWT or admin JWT)
+  app.post("/api/tickets/scan", scanRateLimiter, requireGateScannerOrAdmin, async (req: Request, res: Response) => {
     try {
       const { scanTicket } = await import("./services/scan");
+      const { verifyQrToken } = await import("./services/qr");
 
-      const { qrToken, eventId, deviceFingerprint } = req.body;
+      const { qrToken, deviceFingerprint } = req.body;
+      const rawEventId = req.body.eventId;
 
-      // FIX: Validate required fields
-      if (!qrToken || !eventId) {
-        return res.status(400).json({ message: "Missing qrToken or eventId" });
+      if (!qrToken || typeof qrToken !== "string") {
+        return res.status(400).json({ message: "qrToken is required" });
       }
 
-      // FIX: Validate eventId is a number and positive
-      if (typeof eventId !== "number" || !Number.isInteger(eventId) || eventId <= 0) {
-        return res.status(400).json({ message: "eventId must be a positive integer" });
+      let eventId: number;
+      if (rawEventId === undefined || rawEventId === null || rawEventId === "") {
+        try {
+          const decoded = verifyQrToken(qrToken);
+          eventId = decoded.eventId;
+        } catch {
+          return res.status(400).json({ message: "Invalid or expired QR token" });
+        }
+      } else {
+        const n = typeof rawEventId === "string" ? parseInt(rawEventId, 10) : Number(rawEventId);
+        if (!Number.isInteger(n) || n <= 0) {
+          return res.status(400).json({ message: "eventId must be a positive integer" });
+        }
+        eventId = n;
       }
 
-      // FIX: Validate qrToken is a string
-      if (typeof qrToken !== "string") {
-        return res.status(400).json({ message: "qrToken must be a string" });
-      }
-
-      // FIX: Extract and validate IP address
       const ip = req.ip || req.connection?.remoteAddress || null;
       if (!ip) {
         console.warn("[Scan] Unable to determine request IP address");
       }
 
-      // Build scan context from request
       const scanContext = {
-        ip: ip || "127.0.0.1", // Use loopback as fallback, not "unknown"
+        ip: ip || "127.0.0.1",
         userAgent: req.get("user-agent") || "unknown",
         deviceFingerprint: deviceFingerprint,
-        scannerUserId: (req as any).user?.userId, // Optional if staff authenticated
+        scannerUserId: (req as any).user?.userId,
       };
 
       const result = await scanTicket({ qrToken, eventId, deviceFingerprint }, scanContext);
@@ -4539,6 +4620,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  /** Door staff: short-lived JWT for POST /api/tickets/scan only (not full admin) */
+  app.post("/api/gate/token", gatePinRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const isProduction = process.env.NODE_ENV === "production";
+      const envPin = process.env.GATE_SCANNER_PIN?.trim() ?? "";
+      const GATE_PIN = envPin || (!isProduction ? "12345678" : "");
+      if (isProduction && !envPin) {
+        return res.status(503).json({ message: "GATE_SCANNER_PIN is not configured." });
+      }
+      const submittedPin = req.body?.pin != null ? String(req.body.pin).trim() : "";
+      const submittedBuffer = Buffer.from(submittedPin);
+      const expectedBuffer = Buffer.from(GATE_PIN);
+      const pinMatches =
+        submittedBuffer.length === expectedBuffer.length &&
+        timingSafeEqual(submittedBuffer, expectedBuffer);
+      if (!submittedPin || !pinMatches) {
+        return res.status(401).json({ message: "Invalid gate PIN" });
+      }
+      let token: string;
+      try {
+        token = generateGateScannerToken();
+      } catch (e) {
+        console.error("[gate/token] signing error:", e);
+        return res.status(503).json({
+          message:
+            "Gate scanner is not configured. Set GATE_JWT_SECRET in production (min 32 characters).",
+        });
+      }
+      res.status(200).json({
+        token,
+        expiresIn: process.env.GATE_JWT_EXPIRES_IN || (isProduction ? "8h" : "12h"),
+      });
+    } catch (error) {
+      console.error("Error issuing gate token:", error);
+      res.status(500).json({ message: "Failed to issue gate token" });
+    }
+  });
+
   // Admin token generation for admin interface operations
   app.post("/api/admin/token", adminPinRateLimiter, async (req: Request, res: Response) => {
     try {

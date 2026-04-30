@@ -147,18 +147,6 @@ export function TextEditorDialog({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
         className={`${isMobile ? 'max-w-[95vw] p-4 sm:p-6' : 'max-w-2xl'} touch-manipulation rounded-lg`}
-        onOpenAutoFocus={(e) => {
-          // Prevent Radix's default auto-focus (would land on the TabsTrigger, not the textarea).
-          // Defer via rAF so our focus call runs AFTER Radix's FocusScope useEffect finishes.
-          e.preventDefault();
-          requestAnimationFrame(() => {
-            if (multiline) {
-              textareaRef.current?.focus();
-            } else {
-              inputRef.current?.focus();
-            }
-          });
-        }}
       >
         <form onSubmit={handleSubmit}>
           <DialogHeader className={isMobile ? 'mb-2 space-y-1' : ''}>
@@ -188,8 +176,8 @@ export function TextEditorDialog({
               }}
             >
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="content">Text Content</TabsTrigger>
-                <TabsTrigger value="styling">Styling Options</TabsTrigger>
+                <TabsTrigger value="content" tabIndex={-1}>Text Content</TabsTrigger>
+                <TabsTrigger value="styling" tabIndex={-1}>Styling Options</TabsTrigger>
               </TabsList>
               
               <TabsContent value="content" className="pt-4">
