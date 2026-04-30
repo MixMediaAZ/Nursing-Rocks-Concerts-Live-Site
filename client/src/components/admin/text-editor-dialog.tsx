@@ -65,15 +65,32 @@ export function TextEditorDialog({
   const [fontStyle, setFontStyle] = useState<'normal' | 'italic'>('normal');
   const [textDecoration, setTextDecoration] = useState<'none' | 'underline'>('none');
   const [textAlign, setTextAlign] = useState<'left' | 'center' | 'right' | 'justify'>('left');
-  
-  // Reset content when dialog opens with new initial content
+  // Only true when the user has explicitly touched a style control this session
+  const [hasStyleChanges, setHasStyleChanges] = useState(false);
+
+  // Style-change handlers — mark dirty so we know styles were intentionally set
+  const onColorChange    = (v: string) => { setTextColor(v); setHasStyleChanges(true); };
+  const onFontSizeChange = (v: string) => { setFontSize(v); setHasStyleChanges(true); };
+  const onFontWeightToggle  = () => { setFontWeight(w => w === 'bold' ? 'normal' : 'bold'); setHasStyleChanges(true); };
+  const onFontStyleToggle   = () => { setFontStyle(s => s === 'italic' ? 'normal' : 'italic'); setHasStyleChanges(true); };
+  const onDecorationToggle  = () => { setTextDecoration(d => d === 'underline' ? 'none' : 'underline'); setHasStyleChanges(true); };
+  const onAlignChange = (v: string) => { if (v) { setTextAlign(v as 'left' | 'center' | 'right' | 'justify'); setHasStyleChanges(true); } };
+
+  // Reset content AND all style state when dialog opens so nothing leaks between elements
   useEffect(() => {
     if (isOpen) {
       setContent(initialContent);
-      
+      setHasStyleChanges(false);
+      setTextColor('#000000');
+      setFontSize('16px');
+      setFontWeight('normal');
+      setFontStyle('normal');
+      setTextDecoration('none');
+      setTextAlign('left');
+
       // Check if we're on a mobile device
       setIsMobile(window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-      
+
       // Focus the input after a slight delay (for mobile keyboards)
       const timer = setTimeout(() => {
         if (multiline && textareaRef.current) {
@@ -82,7 +99,7 @@ export function TextEditorDialog({
           inputRef.current.focus();
         }
       }, 300);
-      
+
       return () => clearTimeout(timer);
     }
   }, [isOpen, initialContent, multiline]);
@@ -102,32 +119,21 @@ export function TextEditorDialog({
   };
 
   const handleSave = () => {
+    // Only include styles when the user explicitly changed something — prevents
+    // default values from overwriting existing CSS-controlled styling on every save
+    const styles = hasStyleChanges ? {
+      color: textColor,
+      fontSize,
+      fontWeight,
+      fontStyle,
+      textDecoration,
+      textAlign,
+    } : undefined;
+
     if (isCreatingNew) {
-      // Save with options for new text element
-      onSave(content, {
-        elementType,
-        insertLocation,
-        styles: {
-          color: textColor,
-          fontSize,
-          fontWeight,
-          fontStyle,
-          textDecoration,
-          textAlign
-        }
-      });
+      onSave(content, { elementType, insertLocation, styles });
     } else {
-      // Standard save for existing text with any styling changes
-      onSave(content, {
-        styles: {
-          color: textColor,
-          fontSize,
-          fontWeight,
-          fontStyle,
-          textDecoration,
-          textAlign
-        }
-      });
+      onSave(content, { styles });
     }
     onClose();
   };
@@ -264,27 +270,27 @@ export function TextEditorDialog({
                   {/* Text Formatting Toolbar */}
                   <div className="flex flex-wrap gap-2 mb-4">
                     <ToggleGroup type="multiple" className="flex flex-wrap">
-                      <ToggleGroupItem 
-                        value="bold" 
+                      <ToggleGroupItem
+                        value="bold"
                         aria-label="Toggle bold"
                         data-state={fontWeight === 'bold' ? 'on' : 'off'}
-                        onClick={() => setFontWeight(fontWeight === 'bold' ? 'normal' : 'bold')}
+                        onClick={onFontWeightToggle}
                       >
                         <Bold className="h-4 w-4" />
                       </ToggleGroupItem>
-                      <ToggleGroupItem 
-                        value="italic" 
+                      <ToggleGroupItem
+                        value="italic"
                         aria-label="Toggle italic"
                         data-state={fontStyle === 'italic' ? 'on' : 'off'}
-                        onClick={() => setFontStyle(fontStyle === 'italic' ? 'normal' : 'italic')}
+                        onClick={onFontStyleToggle}
                       >
                         <Italic className="h-4 w-4" />
                       </ToggleGroupItem>
-                      <ToggleGroupItem 
-                        value="underline" 
+                      <ToggleGroupItem
+                        value="underline"
                         aria-label="Toggle underline"
                         data-state={textDecoration === 'underline' ? 'on' : 'off'}
-                        onClick={() => setTextDecoration(textDecoration === 'underline' ? 'none' : 'underline')}
+                        onClick={onDecorationToggle}
                       >
                         <Underline className="h-4 w-4" />
                       </ToggleGroupItem>
@@ -292,7 +298,7 @@ export function TextEditorDialog({
 
                     <div className="w-0.5 h-8 bg-gray-200 mx-1"></div>
                     
-                    <ToggleGroup type="single" value={textAlign} onValueChange={(value) => value && setTextAlign(value as 'left' | 'center' | 'right' | 'justify')}>
+                    <ToggleGroup type="single" value={textAlign} onValueChange={onAlignChange}>
                       <ToggleGroupItem value="left" aria-label="Align left">
                         <AlignLeft className="h-4 w-4" />
                       </ToggleGroupItem>
@@ -317,13 +323,13 @@ export function TextEditorDialog({
                           id="textColor"
                           type="color"
                           value={textColor}
-                          onChange={(e) => setTextColor(e.target.value)}
+                          onChange={(e) => onColorChange(e.target.value)}
                           className="w-10 h-10 p-1 bg-transparent"
                         />
                         <Input
                           type="text"
                           value={textColor}
-                          onChange={(e) => setTextColor(e.target.value)}
+                          onChange={(e) => onColorChange(e.target.value)}
                           className="flex-1"
                         />
                       </div>
@@ -336,7 +342,7 @@ export function TextEditorDialog({
                       </div>
                       <Select
                         value={fontSize}
-                        onValueChange={setFontSize}
+                        onValueChange={onFontSizeChange}
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select font size" />

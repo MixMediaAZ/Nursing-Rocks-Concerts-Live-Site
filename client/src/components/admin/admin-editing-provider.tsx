@@ -95,12 +95,20 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
       // Don't process clicks on the admin toolbar or dialogs
       let target = e.target as HTMLElement;
       if (
-        target.closest('[data-admin-toolbar]') || 
+        target.closest('[data-admin-toolbar]') ||
         target.closest('[role="dialog"]') ||
         target.getAttribute('data-admin-action')
       ) return;
-      
-      // Prevent default behavior to avoid navigation on links
+
+      // Allow nav/header/footer links to navigate normally; intercept content-area links for editing
+      const anchor = target.closest('a') as HTMLAnchorElement | null;
+      if (anchor) {
+        const href = anchor.getAttribute('href') || '';
+        const isRealNav = href && href !== '#' && !href.startsWith('javascript:');
+        const isNavArea = !!anchor.closest('nav, header, footer');
+        if (isRealNav && isNavArea) return;
+      }
+
       e.preventDefault();
       e.stopPropagation();
       
@@ -667,8 +675,8 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
                 className="h-9 w-[90px]"
                 onClick={() => {
                   toast({
-                    title: 'Changes Saved',
-                    description: 'Your edits have been saved',
+                    title: 'Session Edits Only',
+                    description: 'Changes apply to this page view only — no server save is wired up yet.',
                   });
                 }}
               >
