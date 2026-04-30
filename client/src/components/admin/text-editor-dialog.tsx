@@ -148,14 +148,16 @@ export function TextEditorDialog({
       <DialogContent
         className={`${isMobile ? 'max-w-[95vw] p-4 sm:p-6' : 'max-w-2xl'} touch-manipulation rounded-lg`}
         onOpenAutoFocus={(e) => {
-          // Prevent Radix from focusing the first focusable element (the tab trigger).
-          // If the tab trigger gets focus, Space activates the tab instead of typing a space.
+          // Prevent Radix's default auto-focus (would land on the TabsTrigger, not the textarea).
+          // Defer via rAF so our focus call runs AFTER Radix's FocusScope useEffect finishes.
           e.preventDefault();
-          if (multiline) {
-            textareaRef.current?.focus();
-          } else {
-            inputRef.current?.focus();
-          }
+          requestAnimationFrame(() => {
+            if (multiline) {
+              textareaRef.current?.focus();
+            } else {
+              inputRef.current?.focus();
+            }
+          });
         }}
       >
         <form onSubmit={handleSubmit}>
@@ -204,7 +206,6 @@ export function TextEditorDialog({
                       onKeyDown={handleKeyDown}
                       autoCapitalize="sentences"
                       spellCheck={true}
-                      autoFocus={!isMobile}
                     />
                   ) : (
                     <Input
@@ -217,7 +218,6 @@ export function TextEditorDialog({
                       onKeyDown={handleKeyDown}
                       autoCapitalize="sentences"
                       spellCheck={true}
-                      autoFocus={!isMobile}
                     />
                   )}
                   
