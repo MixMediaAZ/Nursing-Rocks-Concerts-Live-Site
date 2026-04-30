@@ -145,7 +145,19 @@ export function TextEditorDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className={`${isMobile ? 'max-w-[95vw] p-4 sm:p-6' : 'max-w-2xl'} touch-manipulation rounded-lg`}>
+      <DialogContent
+        className={`${isMobile ? 'max-w-[95vw] p-4 sm:p-6' : 'max-w-2xl'} touch-manipulation rounded-lg`}
+        onOpenAutoFocus={(e) => {
+          // Prevent Radix from focusing the first focusable element (the tab trigger).
+          // If the tab trigger gets focus, Space activates the tab instead of typing a space.
+          e.preventDefault();
+          if (multiline) {
+            textareaRef.current?.focus();
+          } else {
+            inputRef.current?.focus();
+          }
+        }}
+      >
         <form onSubmit={handleSubmit}>
           <DialogHeader className={isMobile ? 'mb-2 space-y-1' : ''}>
             <DialogTitle className={isMobile ? 'text-lg' : ''}>
@@ -158,7 +170,21 @@ export function TextEditorDialog({
           </DialogHeader>
 
           <div className="py-4 space-y-4">
-            <Tabs defaultValue="content" className="w-full">
+            <Tabs
+              defaultValue="content"
+              className="w-full"
+              onValueChange={(tab) => {
+                if (tab === 'content') {
+                  setTimeout(() => {
+                    if (multiline) {
+                      textareaRef.current?.focus();
+                    } else {
+                      inputRef.current?.focus();
+                    }
+                  }, 0);
+                }
+              }}
+            >
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="content">Text Content</TabsTrigger>
                 <TabsTrigger value="styling">Styling Options</TabsTrigger>
