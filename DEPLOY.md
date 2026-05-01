@@ -12,11 +12,15 @@ Copy `.env.example` to `.env` and set values. **Do not commit `.env`.**
 | `JWT_SECRET` | **Required in production.** In dev, a default is used if missing. In production the server will not start without a secure value. |
 | `SESSION_SECRET` | Recommended in production; dev has a fallback. |
 | `ADMIN_PIN` | **Required in production** if you use the admin PIN login (`/api/admin/token`). In dev, default `1234567` is used if missing. |
+| `GATE_SCANNER_PIN` | **Required in production** for the door ticket scanner (`POST /api/gate/token`, `/scan-tickets`). Separate from `ADMIN_PIN` — share only with gate staff. In dev, default `12345678` if unset. |
+| `GATE_JWT_SECRET` | **Required in production** to sign gate-only JWTs (min 32 characters). Must differ from `JWT_SECRET`. |
+| `GATE_JWT_EXPIRES_IN` | Optional (e.g. `8h`, `12h`). TTL for gate scanner tokens. |
+| `VITE_GATE_DEFAULT_EVENT_ID` | Optional. Build-time default event id pre-selected on `/scan-tickets`. |
 | `ADMIN_PASSWORD_1`, `ADMIN_PASSWORD_2` | **Only when running `npm run db:create-admins`.** The script reads these from the environment (no passwords in code). Set them in `.env` or run: `ADMIN_PASSWORD_1=xxx ADMIN_PASSWORD_2=yyy npm run db:create-admins`. |
 
 **What “missing .env entries” means:**
 
-- **Production:** Set `JWT_SECRET` and `ADMIN_PIN` in your production environment (e.g. Vercel env vars). If they’re not set, production will fail to start (JWT) or admin PIN login will return 503.
+- **Production:** Set `JWT_SECRET` and `ADMIN_PIN` in your production environment (e.g. Vercel env vars). If they’re not set, production will fail to start (JWT) or admin PIN login will return 503. For the **door scanner**, also set `GATE_SCANNER_PIN` and `GATE_JWT_SECRET` (see `.env.example`); without them, gate token issuance returns 503 in production.
 - **Creating/updating admins:** When you run `npm run db:create-admins`, set `ADMIN_PASSWORD_1` and `ADMIN_PASSWORD_2` (in `.env` or on the command line). The script exits with an error if either is missing.
 
 ## Safe upgrade (recommended steps)

@@ -270,6 +270,7 @@ export async function getUserTicketsWithEvents(userId: number) {
       event_id: tickets.event_id,
       ticket_code: tickets.ticket_code,
       status: tickets.status,
+      checked_in_at: tickets.checked_in_at,
       email_status: tickets.email_status,
       email_error: tickets.email_error,
       emailed_at: tickets.emailed_at,

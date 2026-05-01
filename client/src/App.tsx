@@ -38,6 +38,7 @@ import ThanksPage from "@/pages/thanks";
 import ContactPage from "@/pages/contact";
 import PhoenixRegisterPage from "@/pages/phoenix-register";
 import ScanPage from "@/pages/scan";
+import ScanTicketsPage from "@/pages/scan-tickets";
 import SponsorshipPage from "@/pages/sponsorship";
 
 // Import the pages that were previously lazy loaded
@@ -59,11 +60,15 @@ function Router() {
   // Use window.location to check if we're on the admin page or scanner
   const isAdminPage = window.location.pathname === '/admin';
   const isScanPage = window.location.pathname === '/scan';
-  const isChromelessPage = isAdminPage || isScanPage;
+  const isScanTicketsPage = window.location.pathname === '/scan-tickets';
+  const isChromelessPage = isAdminPage || isScanPage || isScanTicketsPage;
 
   // Scanner gets full-screen, no chrome
   if (isScanPage) {
     return <ScanPage />;
+  }
+  if (isScanTicketsPage) {
+    return <ScanTicketsPage />;
   }
 
   return (

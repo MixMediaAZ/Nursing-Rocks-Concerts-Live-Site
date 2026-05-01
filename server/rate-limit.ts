@@ -52,6 +52,22 @@ export const adminPinRateLimiter = rateLimit({
   },
 });
 
+/** Gate scanner PIN (door) — same limits as admin PIN */
+export const gatePinRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: {
+    success: false,
+    message: 'Too many gate PIN attempts. Please try again later.',
+  },
+  statusCode: 429,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req, _res) => {
+    return req.ip || req.socket.remoteAddress || 'unknown';
+  },
+});
+
 /**
  * Rate limiter for registration endpoint
  * More lenient than login (account creation is less brute-force-prone)

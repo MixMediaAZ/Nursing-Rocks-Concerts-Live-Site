@@ -1206,7 +1206,27 @@ export default function AdminPage() {
                 Admin Actions
               </h2>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="hover:shadow-md transition-all duration-200 border-emerald-500/30">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Ticket className="h-5 w-5 text-emerald-600" /> Door ticket scanner
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Gate staff: door PIN unlocks camera scan only. Do not share your admin PIN with volunteers.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full border-emerald-600 text-emerald-700 hover:bg-emerald-50"
+                      onClick={() => window.open("/scan-tickets", "_blank", "noopener,noreferrer")}
+                    >
+                      Open /scan-tickets
+                    </Button>
+                  </CardContent>
+                </Card>
                 <Card className="hover:shadow-md transition-all duration-200 border-primary/30">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base flex items-center gap-2">
@@ -2599,6 +2619,7 @@ export default function AdminPage() {
                                 <tr className="border-b bg-muted/50 text-left">
                                   <th className="p-2">Event</th>
                                   <th className="p-2">Ticket</th>
+                                  <th className="p-2">Check-in</th>
                                   <th className="p-2">Email status</th>
                                   <th className="p-2 w-[140px]">Actions</th>
                                 </tr>
@@ -2607,6 +2628,7 @@ export default function AdminPage() {
                                 {selectedUserTickets.map((t: {
                                   id: string;
                                   status?: string | null;
+                                  checked_in_at?: string | Date | null;
                                   event_title?: string | null;
                                   event_date?: string | null;
                                   ticket_code?: string;
@@ -2627,6 +2649,22 @@ export default function AdminPage() {
                                       </div>
                                     </td>
                                     <td className="p-2 font-mono">{t.ticket_code}</td>
+                                    <td className="p-2 align-top">
+                                      {t.status === "checked_in" ? (
+                                        <div>
+                                          <Badge className="text-[10px] bg-emerald-600 hover:bg-emerald-600">Checked in</Badge>
+                                          {t.checked_in_at ? (
+                                            <div className="text-muted-foreground mt-1 text-[10px]">
+                                              {new Date(t.checked_in_at).toLocaleString()}
+                                            </div>
+                                          ) : null}
+                                        </div>
+                                      ) : (
+                                        <span className="text-muted-foreground">
+                                          {t.status === "issued" ? "Not checked in" : t.status || "—"}
+                                        </span>
+                                      )}
+                                    </td>
                                     <td className="p-2 align-top">
                                       <Badge
                                         variant={

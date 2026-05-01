@@ -1,5 +1,5 @@
 import { db } from "../db";
-import { tickets, ticketScanLogs, events } from "@shared/schema";
+import { tickets, ticketScanLogs, events, users } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import { verifyQrToken } from "./qr";
 import { markTicketExpired } from "./tickets";
@@ -221,7 +221,7 @@ export async function scanTicket(input: ScanInput, ctx: ScanContext): Promise<Sc
     ticket_id: ticket.id,
     user_id: ticket.user_id,
     event_id: ticket.event_id,
-    scanner_user_id: ctx.scannerUserId,
+    scanner_user_id: ctx.scannerUserId ?? null,
     scanner_device_id: ctx.scannerDeviceId,
     ip_address: ctx.ip,
     user_agent: ctx.userAgent,
@@ -230,11 +230,22 @@ export async function scanTicket(input: ScanInput, ctx: ScanContext): Promise<Sc
     reason: "checked_in",
   });
 
+  let userName: string | undefined;
+  const [attendee] = await db
+    .select({ first_name: users.first_name, last_name: users.last_name })
+    .from(users)
+    .where(eq(users.id, ticket.user_id))
+    .limit(1);
+  if (attendee) {
+    userName = [attendee.first_name, attendee.last_name].filter(Boolean).join(" ").trim() || undefined;
+  }
+
   return {
     ok: true,
     reason: "checked_in",
     message: "Ticket accepted",
     ticketCode: ticket.ticket_code,
+    userName,
   };
 }
 

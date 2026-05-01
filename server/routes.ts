@@ -5584,7 +5584,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (emailResult.success) {
         await db.update(nrpxRegistrations)
-          .set({ email_sent: true, email_sent_at: new Date() })
+          .set({ ticket_email_sent: true, ticket_email_sent_at: new Date() })
           .where(eq(nrpxRegistrations.id, reg.id));
         res.json({ success: true, message: "Email resent successfully." });
       } else {

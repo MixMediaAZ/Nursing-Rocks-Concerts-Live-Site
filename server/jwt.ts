@@ -155,3 +155,52 @@ export function isUserAdmin(req: Request): boolean {
   const payload = getPayloadFromRequest(req);
   return payload ? payload.isAdmin : false;
 }
+
+// ── Gate scanner JWT (door staff — scan-only, not user/admin session) ─────
+
+export interface GateScannerPayload {
+  typ: "gate_scanner";
+  gateScanner: true;
+}
+
+const GATE_TOKEN_EXPIRES =
+  process.env.GATE_JWT_EXPIRES_IN || (process.env.NODE_ENV === "production" ? "8h" : "12h");
+
+function getGateJwtSecret(): string {
+  const s = process.env.GATE_JWT_SECRET?.trim();
+  if (s) {
+    if (process.env.NODE_ENV === "production" && s.length < 32) {
+      throw new Error("GATE_JWT_SECRET must be at least 32 characters in production");
+    }
+    return s;
+  }
+  if (process.env.NODE_ENV !== "production") {
+    return `${JWT_SECRET}.gate-scanner.dev-only`;
+  }
+  throw new Error("GATE_JWT_SECRET must be set in production for gate scanner tokens");
+}
+
+/**
+ * Issue a short-lived JWT that only authorizes POST /api/tickets/scan.
+ * Signed with GATE_JWT_SECRET so it cannot be used as a user session token.
+ */
+export function generateGateScannerToken(): string {
+  const secret = getGateJwtSecret();
+  const payload: GateScannerPayload = { typ: "gate_scanner", gateScanner: true };
+  return jwt.sign(payload, secret, {
+    expiresIn: GATE_TOKEN_EXPIRES as SignOptions["expiresIn"],
+  });
+}
+
+export function verifyGateScannerToken(token: string): GateScannerPayload | null {
+  try {
+    const secret = getGateJwtSecret();
+    const decoded = jwt.verify(token, secret) as GateScannerPayload & { typ?: string };
+    if (decoded.typ !== "gate_scanner" || decoded.gateScanner !== true) {
+      return null;
+    }
+    return { typ: "gate_scanner", gateScanner: true };
+  } catch {
+    return null;
+  }
+}
