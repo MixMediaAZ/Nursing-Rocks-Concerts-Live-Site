@@ -201,7 +201,7 @@ export default function ScanTicketsPage() {
         }
 
         await html5QrCode.start(
-          { facingMode: "environment", facingMode: ["environment", "user"] },
+          { facingMode: "environment" },
           { fps: 10, qrbox: { width: 260, height: 260 }, aspectRatio: 1.0 },
           async (decodedText: string) => {
             if (processingRef.current || stopped) return;
