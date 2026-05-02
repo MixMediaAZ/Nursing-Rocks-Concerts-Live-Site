@@ -176,19 +176,32 @@ export default function ScanTicketsPage() {
     }, AUTO_RESET_MS);
   }, [gateToken, selectedEventId]);
 
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [cameraRetries, setCameraRetries] = useState(0);
+  const maxRetries = 3;
+
   useEffect(() => {
     if (!authed || !scanning) return;
 
     let stopped = false;
+    let retryTimeout: ReturnType<typeof setTimeout>;
 
     const initScanner = async () => {
       try {
+        setCameraError(null);
         const { Html5Qrcode } = await import("html5-qrcode");
         const html5QrCode = new Html5Qrcode(scannerDivId);
         scannerRef.current = html5QrCode;
 
+        // Check if camera access is available before starting
+        try {
+          await navigator.mediaDevices.enumerateDevices();
+        } catch (checkErr) {
+          throw new Error("Camera access not available on this device");
+        }
+
         await html5QrCode.start(
-          { facingMode: "environment" },
+          { facingMode: "environment", facingMode: ["environment", "user"] },
           { fps: 10, qrbox: { width: 260, height: 260 }, aspectRatio: 1.0 },
           async (decodedText: string) => {
             if (processingRef.current || stopped) return;
@@ -198,9 +211,44 @@ export default function ScanTicketsPage() {
           },
           () => {}
         );
+        setCameraRetries(0); // Reset retries on success
       } catch (err) {
         console.error("Scanner init error:", err);
-        setScanning(false);
+        const errorMsg = err instanceof Error ? err.message : String(err);
+
+        // Determine error type and user-friendly message
+        let userMessage = "Camera error. ";
+        if (errorMsg.includes("NotAllowedError") || errorMsg.includes("Permission denied")) {
+          userMessage += "Please grant camera permission when prompted. Retry or use Bluetooth scanner.";
+        } else if (errorMsg.includes("NotFoundError") || errorMsg.includes("not available")) {
+          userMessage += "No camera found on device. Use Bluetooth scanner instead.";
+          setCameraError(userMessage);
+          setScanning(false);
+          return;
+        } else if (errorMsg.includes("NotReadableError")) {
+          userMessage += "Camera is in use by another app. Close it and retry.";
+        } else if (errorMsg.includes("SecurityError")) {
+          userMessage += "HTTPS required for camera access. Check your connection.";
+        } else {
+          userMessage += "Retrying...";
+        }
+
+        setCameraError(userMessage);
+
+        // Retry logic with exponential backoff
+        if (cameraRetries < maxRetries && !stopped) {
+          const delayMs = 1000 * (cameraRetries + 1);
+          setCameraRetries(cameraRetries + 1);
+          retryTimeout = setTimeout(() => {
+            if (!stopped) {
+              console.log(`Camera init retry ${cameraRetries + 1}/${maxRetries}`);
+              initScanner();
+            }
+          }, delayMs);
+        } else if (cameraRetries >= maxRetries) {
+          setCameraError("Camera failed after retries. Use Bluetooth scanner or refresh page.");
+          setScanning(false);
+        }
       }
     };
 
@@ -208,12 +256,13 @@ export default function ScanTicketsPage() {
 
     return () => {
       stopped = true;
+      clearTimeout(retryTimeout);
       if (scannerRef.current) {
         scannerRef.current.stop().catch(() => {});
         scannerRef.current = null;
       }
     };
-  }, [authed, scanning, verifyQr]);
+  }, [authed, scanning, verifyQr, cameraRetries]);
 
   const handleDismiss = () => {
     if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
@@ -387,9 +436,18 @@ export default function ScanTicketsPage() {
             <div className="text-center space-y-4">
               <Camera className="h-20 w-20 text-gray-600 mx-auto" />
               <p className="text-gray-400 text-lg">Camera off</p>
+              {cameraError && (
+                <p className="text-red-400 text-sm bg-red-900/20 px-4 py-2 rounded">
+                  {cameraError}
+                </p>
+              )}
               <Button
                 type="button"
-                onClick={() => setScanning(true)}
+                onClick={() => {
+                  setCameraError(null);
+                  setCameraRetries(0);
+                  setScanning(true);
+                }}
                 className="bg-blue-600 hover:bg-blue-700 h-12 px-8 text-base"
               >
                 Start camera
@@ -397,30 +455,63 @@ export default function ScanTicketsPage() {
             </div>
           ) : (
             <div className="w-full max-w-sm space-y-4">
-              <div className="relative rounded-2xl overflow-hidden bg-black aspect-square max-h-[70vh]">
-                <div id={scannerDivId} className="w-full h-full min-h-[240px]" />
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute top-4 left-4 w-8 h-8 border-t-4 border-l-4 border-green-400 rounded-tl-lg" />
-                  <div className="absolute top-4 right-4 w-8 h-8 border-t-4 border-r-4 border-green-400 rounded-tr-lg" />
-                  <div className="absolute bottom-4 left-4 w-8 h-8 border-b-4 border-l-4 border-green-400 rounded-bl-lg" />
-                  <div className="absolute bottom-4 right-4 w-8 h-8 border-b-4 border-r-4 border-green-400 rounded-br-lg" />
-                </div>
-                {processing && (
-                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                    <Loader2 className="h-12 w-12 text-white animate-spin" />
+              {cameraError ? (
+                <div className="text-center space-y-4 py-8">
+                  <AlertTriangle className="h-16 w-16 text-yellow-500 mx-auto" />
+                  <div>
+                    <p className="text-yellow-400 font-semibold mb-2">Camera Issue</p>
+                    <p className="text-gray-300 text-sm">{cameraError}</p>
                   </div>
-                )}
-              </div>
-              <p className="text-center text-gray-400 text-sm">Hold QR code steady • Good lighting needed</p>
-              <p className="text-center text-gray-300 text-xs opacity-70">Or connect Bluetooth scanner (auto-reads)</p>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setScanning(false)}
-                className="w-full border-gray-700 text-gray-400 hover:text-white"
-              >
-                Stop camera
-              </Button>
+                  <div className="space-y-2">
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        setCameraError(null);
+                        setCameraRetries(0);
+                        setScanning(true);
+                      }}
+                      className="w-full bg-yellow-600 hover:bg-yellow-700 h-10"
+                    >
+                      Retry Camera
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setScanning(false)}
+                      className="w-full border-gray-700 text-gray-400 hover:text-white"
+                    >
+                      Use Bluetooth Scanner
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="relative rounded-2xl overflow-hidden bg-black aspect-square max-h-[70vh]">
+                    <div id={scannerDivId} className="w-full h-full min-h-[240px]" />
+                    <div className="absolute inset-0 pointer-events-none">
+                      <div className="absolute top-4 left-4 w-8 h-8 border-t-4 border-l-4 border-green-400 rounded-tl-lg" />
+                      <div className="absolute top-4 right-4 w-8 h-8 border-t-4 border-r-4 border-green-400 rounded-tr-lg" />
+                      <div className="absolute bottom-4 left-4 w-8 h-8 border-b-4 border-l-4 border-green-400 rounded-bl-lg" />
+                      <div className="absolute bottom-4 right-4 w-8 h-8 border-b-4 border-r-4 border-green-400 rounded-br-lg" />
+                    </div>
+                    {processing && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                        <Loader2 className="h-12 w-12 text-white animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-center text-gray-400 text-sm">Hold QR code steady • Good lighting needed</p>
+                  <p className="text-center text-gray-300 text-xs opacity-70">Or connect Bluetooth scanner (auto-reads)</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setScanning(false)}
+                    className="w-full border-gray-700 text-gray-400 hover:text-white"
+                  >
+                    Stop camera
+                  </Button>
+                </>
+              )}
             </div>
           )}
         </div>

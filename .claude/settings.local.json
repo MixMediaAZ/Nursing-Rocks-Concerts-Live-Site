@@ -213,7 +213,16 @@
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
       "mcp__Claude_in_Chrome__javascript_tool",
-      "mcp__Claude_in_Chrome__find"
+      "mcp__Claude_in_Chrome__find",
+      "Bash(git push *)",
+      "mcp__Claude_in_Chrome__browser_batch",
+      "Bash(curl -s https://www.nursingrocksconcerts.com/api/events)",
+      "Bash(curl -s https://www.nursingrocksconcerts.com/ -I)",
+      "Bash(curl -s https://www.nursingrocksconcerts.com/admin -I)",
+      "Bash(curl -s \"https://www.nursingrocksconcerts.com/api/admin/stats\")",
+      "mcp__bbb7e4d9-48d1-4584-9ef5-c334117800ca__get_project",
+      "Bash(git commit -m 'fix\\(scan-tickets\\): allow camera access on /scan-tickets page *)",
+      "Bash(git commit -m 'fix\\(scan-tickets\\): bulletproof camera handling for all platforms *)"
     ]
   }
 }
