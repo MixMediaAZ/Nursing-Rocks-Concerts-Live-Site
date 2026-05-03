@@ -184,7 +184,42 @@ export default function ScanTicketsPage() {
 
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [cameraRetries, setCameraRetries] = useState(0);
+  const [availableCameras, setAvailableCameras] = useState<Array<{ id: string; label: string }>>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState<string>("");
   const maxRetries = 3;
+
+  // Enumerate available cameras when authed
+  useEffect(() => {
+    if (!authed) return;
+    let cancelled = false;
+
+    const loadCameras = async () => {
+      try {
+        const { Html5Qrcode } = await import("html5-qrcode");
+        const cameras = await Html5Qrcode.getCameras();
+        if (cancelled) return;
+        const list = (cameras || []).map((c: { id: string; label: string }) => ({
+          id: c.id,
+          label: c.label || `Camera ${c.id.substring(0, 6)}`,
+        }));
+        setAvailableCameras(list);
+        // Auto-select rear camera if available, otherwise first
+        if (list.length > 0 && !selectedCameraId) {
+          const rear = list.find((c) =>
+            /back|rear|environment/i.test(c.label)
+          );
+          setSelectedCameraId(rear?.id || list[0].id);
+        }
+      } catch (err) {
+        console.warn("Could not enumerate cameras:", err);
+      }
+    };
+
+    loadCameras();
+    return () => {
+      cancelled = true;
+    };
+  }, [authed, selectedCameraId]);
 
   useEffect(() => {
     if (!authed || !scanning) return;
@@ -206,8 +241,13 @@ export default function ScanTicketsPage() {
           throw new Error("Camera access not available on this device");
         }
 
+        // Use selected camera ID if available, otherwise fallback to facingMode
+        const cameraConfig = selectedCameraId
+          ? { deviceId: { exact: selectedCameraId } }
+          : { facingMode: "environment" };
+
         await html5QrCode.start(
-          { facingMode: "environment" },
+          cameraConfig,
           { fps: 15, qrbox: { width: 280, height: 280 }, aspectRatio: 1.0 },
           async (decodedText: string) => {
             if (processingRef.current || stopped) return;
@@ -274,7 +314,7 @@ export default function ScanTicketsPage() {
         scannerRef.current = null;
       }
     };
-  }, [authed, scanning, verifyQr, cameraRetries]);
+  }, [authed, scanning, verifyQr, cameraRetries, selectedCameraId]);
 
   const handleDismiss = () => {
     if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
@@ -423,24 +463,49 @@ export default function ScanTicketsPage() {
           aria-label="Bluetooth scanner"
         />
 
-        <div className="px-4 py-3 border-b border-gray-800 bg-gray-900/80">
-          <label className="block text-xs text-gray-400 mb-1">Event (optional — leave Auto to read from QR)</label>
-          <select
-            title="Event filter"
-            value={selectedEventId}
-            onChange={(e) => {
-              setSelectedEventId(Number(e.target.value));
-              setTimeout(() => bluetoothInputRef.current?.focus(), 50);
-            }}
-            className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm"
-          >
-            <option value={AUTO_EVENT}>Auto — from QR</option>
-            {events.map((ev) => (
-              <option key={ev.id} value={ev.id}>
-                {ev.title}
-              </option>
-            ))}
-          </select>
+        <div className="px-4 py-3 border-b border-gray-800 bg-gray-900/80 space-y-3">
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Event (optional — leave Auto to read from QR)</label>
+            <select
+              title="Event filter"
+              value={selectedEventId}
+              onChange={(e) => {
+                setSelectedEventId(Number(e.target.value));
+                setTimeout(() => bluetoothInputRef.current?.focus(), 50);
+              }}
+              className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm"
+            >
+              <option value={AUTO_EVENT}>Auto — from QR</option>
+              {events.map((ev) => (
+                <option key={ev.id} value={ev.id}>
+                  {ev.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {availableCameras.length > 0 && (
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">
+                Camera ({availableCameras.length} available)
+              </label>
+              <select
+                title="Camera selection"
+                value={selectedCameraId}
+                onChange={(e) => {
+                  setSelectedCameraId(e.target.value);
+                  setTimeout(() => bluetoothInputRef.current?.focus(), 50);
+                }}
+                className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm"
+              >
+                {availableCameras.map((cam) => (
+                  <option key={cam.id} value={cam.id}>
+                    {cam.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 gap-6">

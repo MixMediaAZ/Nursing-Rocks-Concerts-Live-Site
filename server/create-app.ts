@@ -10,6 +10,23 @@ export function createApp() {
 
   const isDev = process.env.NODE_ENV !== "production";
 
+  // ⚠️ CRITICAL: Set camera permissions FIRST, before any other middleware
+  // This ensures /scan-tickets page can access camera for door staff scanner
+  // Use originalUrl to catch SPA routing correctly
+  app.use((req, res, next) => {
+    const urlPath = (req.originalUrl || req.path).split('?')[0]; // Get path without query params
+    const isScanTicketsPage = urlPath === "/scan-tickets" || urlPath.startsWith("/scan-tickets/");
+
+    if (isScanTicketsPage) {
+      // Allow camera on scanner page only
+      res.setHeader("Permissions-Policy", "camera=*, microphone=(), geolocation=()");
+    } else {
+      // Block camera everywhere else for security
+      res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    }
+    next();
+  });
+
   // Basic production hardening.
   // Keep a permissive CSP profile to avoid breaking existing inline scripts/styles while still enforcing key protections.
   app.use(
@@ -32,18 +49,6 @@ export function createApp() {
       },
     }),
   );
-
-  // Allow camera on /scan-tickets for door staff scanner
-  app.use((req, res, next) => {
-    if (req.path === "/scan-tickets" || req.path.startsWith("/scan-tickets/")) {
-      // Allow camera on scanner page only
-      res.setHeader("Permissions-Policy", "camera=*, microphone=(), geolocation=()");
-    } else {
-      // Block camera everywhere else
-      res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-    }
-    next();
-  });
 
   const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
     .split(",")
