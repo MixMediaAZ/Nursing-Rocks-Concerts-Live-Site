@@ -114,6 +114,12 @@ export default function ScanTicketsPage() {
       clearTimeout(resetTimerRef.current);
       resetTimerRef.current = null;
     }
+
+    // Detect code type for logging
+    const isQrCode = qrToken.length > 50 || qrToken.includes("%");
+    const codeType = isQrCode ? "QR" : "Barcode";
+    console.log(`✓ ${codeType} verified:`, qrToken.substring(0, 50));
+
     try {
       const body: { qrToken: string; eventId?: number; deviceFingerprint: string } = {
         qrToken,
@@ -381,7 +387,7 @@ export default function ScanTicketsPage() {
         <div className="bg-gray-900 border-b border-gray-800 px-4 py-3 flex items-center justify-between gap-2">
           <div>
             <h1 className="text-white font-bold text-lg leading-tight">Nursing Rocks — Tickets</h1>
-            <p className="text-gray-400 text-xs">Scan QR from confirmation email</p>
+            <p className="text-gray-400 text-xs">Scan QR code, barcode, or enter ticket code</p>
           </div>
           <Button
             type="button"
@@ -439,7 +445,7 @@ export default function ScanTicketsPage() {
 
         <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 gap-6">
           {!scanning ? (
-            <div className="text-center space-y-4">
+            <div className="text-center space-y-4 w-full max-w-sm">
               <Camera className="h-20 w-20 text-gray-600 mx-auto" />
               <p className="text-gray-400 text-lg">Camera off</p>
               {cameraError && (
@@ -447,6 +453,30 @@ export default function ScanTicketsPage() {
                   {cameraError}
                 </p>
               )}
+
+              {/* Manual entry field for barcodes/ticket codes */}
+              <div className="pt-4 border-t border-gray-700">
+                <p className="text-xs text-gray-500 mb-2">Or enter ticket code manually:</p>
+                <input
+                  type="text"
+                  inputMode="text"
+                  placeholder="Ticket code or barcode..."
+                  maxLength={100}
+                  autoComplete="off"
+                  className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm placeholder-gray-600 focus:border-blue-400 outline-none"
+                  onKeyDown={async (e) => {
+                    if (e.key === "Enter" && e.currentTarget.value.trim()) {
+                      const code = e.currentTarget.value.trim();
+                      e.currentTarget.value = "";
+                      if (!processingRef.current && authed) {
+                        processingRef.current = true;
+                        setProcessing(true);
+                        await verifyQr(code);
+                      }
+                    }
+                  }}
+                />
+              </div>
               <Button
                 type="button"
                 onClick={() => {
