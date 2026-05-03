@@ -3262,27 +3262,62 @@ function NrpxRegistrationsTab() {
         </Card>
       )}
 
-      {/* Stats cards */}
+      {/* Stats cards + check-in progress */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: "Total Registered", value: stats.total, icon: Users, color: "text-blue-600" },
-            { label: "Emails Sent", value: stats.emailsSent, icon: Mail, color: "text-green-600" },
-            { label: "Checked In", value: stats.checkedIn, icon: UserCheck, color: "text-emerald-600" },
-            { label: "Remaining", value: stats.remaining, icon: Ticket, color: "text-orange-600" },
-          ].map(({ label, value, icon: Icon, color }) => (
-            <Card key={label}>
-              <CardContent className="pt-4 pb-3">
-                <div className="flex items-center gap-2">
-                  <Icon className={`h-5 w-5 ${color}`} />
-                  <div>
-                    <p className={`text-2xl font-bold ${color}`}>{value}</p>
-                    <p className="text-xs text-muted-foreground">{label}</p>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: "Total Registered", value: stats.total, icon: Users, color: "text-blue-600" },
+              { label: "Emails Sent", value: stats.emailsSent, icon: Mail, color: "text-green-600" },
+              { label: "Checked In", value: stats.checkedIn, icon: UserCheck, color: "text-emerald-600" },
+              { label: "Remaining", value: stats.remaining, icon: Ticket, color: "text-orange-600" },
+            ].map(({ label, value, icon: Icon, color }) => (
+              <Card key={label}>
+                <CardContent className="pt-4 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Icon className={`h-5 w-5 ${color}`} />
+                    <div>
+                      <p className={`text-2xl font-bold ${color}`}>{value}</p>
+                      <p className="text-xs text-muted-foreground">{label}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Check-in progress bar */}
+          {stats.total > 0 && (
+            <Card>
+              <CardContent className="pt-4 pb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-muted-foreground">Door check-in progress</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-bold text-emerald-600">
+                      {Math.round((stats.checkedIn / stats.total) * 100)}% in
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      onClick={() => window.open("/scan-tickets", "_blank")}
+                    >
+                      Open Door Scanner ↗
+                    </Button>
                   </div>
                 </div>
+                <div className="h-3 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 rounded-full transition-all duration-700"
+                    style={{ width: `${Math.min(Math.round((stats.checkedIn / stats.total) * 100), 100)}%` }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Auto-refreshes every 30s
+                </p>
               </CardContent>
             </Card>
-          ))}
+          )}
         </div>
       )}
 

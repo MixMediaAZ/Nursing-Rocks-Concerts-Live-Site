@@ -8,7 +8,7 @@ import bcryptjs from "bcryptjs";
 import { db } from "./db";
 import { eq, sql, and, desc, ilike, or, inArray, gte } from "drizzle-orm";
 import { storage } from "./storage";
-import { approvedVideos, gallery, mediaFolders, events, nrpxRegistrations, users, tickets, storeProducts, storeOrders, storeOrderItems, jobBoardVisits, pageContent } from "@shared/schema";
+import { approvedVideos, gallery, mediaFolders, events, nrpxRegistrations, users, tickets, ticketScanLogs, storeProducts, storeOrders, storeOrderItems, jobBoardVisits, pageContent } from "@shared/schema";
 import QRCode from "qrcode";
 import { sendNrpxTicketEmail } from "./email";
 import { processImage } from "./image-utils";
@@ -4655,6 +4655,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error issuing gate token:", error);
       res.status(500).json({ message: "Failed to issue gate token" });
+    }
+  });
+
+  /** Gate scanner or admin: live check-in stats for an event */
+  app.get("/api/gate/stats", requireGateScannerOrAdmin, async (req: Request, res: Response) => {
+    try {
+      const rawEventId = req.query.eventId;
+      const eventId = rawEventId ? parseInt(String(rawEventId), 10) : null;
+
+      if (eventId !== null && (isNaN(eventId) || eventId <= 0)) {
+        return res.status(400).json({ message: "Invalid eventId" });
+      }
+
+      // Total sold tickets for this event (all non-revoked statuses)
+      const whereEvent = eventId ? and(eq(tickets.event_id, eventId)) : undefined;
+      const whereCheckedIn = eventId
+        ? and(eq(tickets.event_id, eventId), eq(tickets.status, "checked_in"))
+        : eq(tickets.status, "checked_in");
+
+      const [totalRow] = await db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(tickets)
+        .where(whereEvent);
+
+      const [checkedInRow] = await db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(tickets)
+        .where(whereCheckedIn);
+
+      const total = totalRow?.count ?? 0;
+      const checkedIn = checkedInRow?.count ?? 0;
+
+      // Recent check-ins (last 10) for live feed
+      const recentQuery = db
+        .select({
+          ticket_code: tickets.ticket_code,
+          checked_in_at: tickets.checked_in_at,
+          first_name: users.first_name,
+          last_name: users.last_name,
+        })
+        .from(tickets)
+        .leftJoin(users, eq(tickets.user_id, users.id))
+        .where(
+          eventId
+            ? and(eq(tickets.event_id, eventId), eq(tickets.status, "checked_in"))
+            : eq(tickets.status, "checked_in")
+        )
+        .orderBy(desc(tickets.checked_in_at))
+        .limit(10);
+
+      const recent = await recentQuery;
+
+      return res.json({
+        total,
+        checkedIn,
+        remaining: Math.max(0, total - checkedIn),
+        pct: total > 0 ? Math.round((checkedIn / total) * 100) : 0,
+        recent: recent.map((r) => ({
+          ticketCode: r.ticket_code,
+          name: [r.first_name, r.last_name].filter(Boolean).join(" ") || "Guest",
+          checkedInAt: r.checked_in_at,
+        })),
+        eventId: eventId ?? null,
+        asOf: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error fetching gate stats:", error);
+      return res.status(500).json({ message: "Failed to fetch stats" });
     }
   });
 

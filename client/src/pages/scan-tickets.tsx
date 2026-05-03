@@ -60,6 +60,12 @@ export default function ScanTicketsPage() {
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [availableCameras, setAvailableCameras] = useState<Array<{ id: string; label: string }>>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>("");
+  const [stats, setStats] = useState<{
+    checkedIn: number;
+    total: number;
+    pct: number;
+    recent: Array<{ ticketCode: string; name: string; checkedInAt: string | null }>;
+  } | null>(null);
 
   // Refs that don't trigger re-renders
   const processingRef = useRef(false);
@@ -149,6 +155,32 @@ export default function ScanTicketsPage() {
     sessionStorage.removeItem(GATE_TOKEN_KEY);
     setGateToken(null);
   }, [stopScanning]);
+
+  // ── Live check-in stats (poll every 30s + after each successful scan) ────
+
+  const fetchStats = useCallback(async () => {
+    const token = sessionStorage.getItem(GATE_TOKEN_KEY);
+    if (!token) return;
+    try {
+      const qs = selectedEventId > 0 ? `?eventId=${selectedEventId}` : "";
+      const res = await fetch(`/api/gate/stats${qs}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setStats(data);
+    } catch {
+      // non-critical — stats failure shouldn't affect scanning
+    }
+  }, [selectedEventId]);
+
+  // Initial load + 30s polling
+  useEffect(() => {
+    if (!authed) return;
+    fetchStats();
+    const interval = setInterval(fetchStats, 30_000);
+    return () => clearInterval(interval);
+  }, [authed, fetchStats]);
 
   // ── Camera enumeration (once on auth, not on camera selection change) ────
 
@@ -246,6 +278,7 @@ export default function ScanTicketsPage() {
         console.log(`[scanner] result:`, data.ok ? "✅ ACCEPTED" : `❌ ${data.reason}`);
 
         if (data.ok) {
+          fetchStats(); // refresh counter immediately on each check-in
           setResult({ kind: "ok", ticketCode: data.ticketCode, userName: data.userName });
         } else if (data.reason === "already_used") {
           setResult({
@@ -270,7 +303,7 @@ export default function ScanTicketsPage() {
         resetProcessing();
       }, AUTO_RESET_MS);
     },
-    [selectedEventId, stopScanning, resetProcessing]
+    [selectedEventId, stopScanning, resetProcessing, fetchStats]
   );
 
   const handleDismiss = useCallback(() => {
@@ -553,6 +586,41 @@ export default function ScanTicketsPage() {
           aria-label="Bluetooth scanner input"
           tabIndex={-1}
         />
+
+        {/* Live check-in counter */}
+        {stats && (
+          <div className="bg-gray-900 border-b border-gray-800 px-4 py-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-white font-bold text-2xl tabular-nums">
+                {stats.checkedIn}
+                <span className="text-gray-500 text-base font-normal"> / {stats.total} in</span>
+              </span>
+              <span className="text-gray-400 text-sm font-medium">{stats.pct}%</span>
+            </div>
+            {/* Progress bar */}
+            <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-green-500 rounded-full transition-all duration-500"
+                style={{ width: `${Math.min(stats.pct, 100)}%` }}
+              />
+            </div>
+            {/* Recent check-ins */}
+            {stats.recent.length > 0 && (
+              <div className="mt-2 space-y-0.5">
+                {stats.recent.slice(0, 3).map((r, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs">
+                    <span className="text-green-400 font-medium truncate max-w-[160px]">{r.name}</span>
+                    <span className="text-gray-600 shrink-0 ml-2">
+                      {r.checkedInAt
+                        ? new Date(r.checkedInAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                        : ""}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Controls bar */}
         <div className="px-4 py-3 border-b border-gray-800 bg-gray-900/80 space-y-3">
