@@ -202,14 +202,20 @@ export default function ScanTicketsPage() {
 
         await html5QrCode.start(
           { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 260, height: 260 }, aspectRatio: 1.0 },
+          { fps: 15, qrbox: { width: 280, height: 280 }, aspectRatio: 1.0 },
           async (decodedText: string) => {
             if (processingRef.current || stopped) return;
+            console.log("✓ QR detected:", decodedText.trim());
             processingRef.current = true;
             setProcessing(true);
             await verifyQr(decodedText.trim());
           },
-          () => {}
+          (errorMsg: string) => {
+            // Silent detection attempts are normal - only log critical errors
+            if (errorMsg && !errorMsg.includes("NotFoundException")) {
+              console.debug("QR scan attempt:", errorMsg);
+            }
+          }
         );
         setCameraRetries(0); // Reset retries on success
       } catch (err) {
