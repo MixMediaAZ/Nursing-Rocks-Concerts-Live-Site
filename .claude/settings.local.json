@@ -222,7 +222,14 @@
       "Bash(curl -s \"https://www.nursingrocksconcerts.com/api/admin/stats\")",
       "mcp__bbb7e4d9-48d1-4584-9ef5-c334117800ca__get_project",
       "Bash(git commit -m 'fix\\(scan-tickets\\): allow camera access on /scan-tickets page *)",
-      "Bash(git commit -m 'fix\\(scan-tickets\\): bulletproof camera handling for all platforms *)"
+      "Bash(git commit -m 'fix\\(scan-tickets\\): bulletproof camera handling for all platforms *)",
+      "Bash(git commit -m 'fix\\(scan-tickets\\): correct facingMode configuration syntax *)",
+      "Bash(curl -s https://www.nursingrocksconcerts.com/scan-tickets -I)",
+      "Bash(git commit -m 'fix\\(scan-tickets\\): set camera permissions in server middleware *)",
+      "Bash(git commit -m 'Remove conflicting Permissions-Policy headers from vercel.json *)",
+      "Bash(git commit -m 'Improve QR code detection settings and logging *)",
+      "Bash(git commit -m 'Add alphanumeric barcode and manual ticket code entry support *)",
+      "Bash(git commit -m 'Add camera selection dropdown and commit middleware fix *)"
     ]
   }
 }
