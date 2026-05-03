@@ -33,6 +33,18 @@ export function createApp() {
     }),
   );
 
+  // Allow camera on /scan-tickets for door staff scanner
+  app.use((req, res, next) => {
+    if (req.path === "/scan-tickets" || req.path.startsWith("/scan-tickets/")) {
+      // Allow camera on scanner page only
+      res.setHeader("Permissions-Policy", "camera=*, microphone=(), geolocation=()");
+    } else {
+      // Block camera everywhere else
+      res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    }
+    next();
+  });
+
   const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
     .split(",")
     .map((s) => s.trim())
