@@ -998,9 +998,20 @@ export default function AdminPage() {
         )}
         
         <div className="flex flex-wrap justify-between items-center gap-y-4 mb-6">
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <LayoutDashboard className="h-7 w-7" /> Admin Dashboard
-          </h1>
+          <div className="flex items-center gap-4 flex-wrap">
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <LayoutDashboard className="h-7 w-7" /> Admin Dashboard
+            </h1>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-emerald-600 text-emerald-700 hover:bg-emerald-50 flex items-center gap-1.5 font-semibold"
+              onClick={() => window.open("/scan-tickets", "_blank", "noopener,noreferrer")}
+            >
+              <Ticket className="h-4 w-4" />
+              Door Scanner ↗
+            </Button>
+          </div>
           
           {/* Live Editing Toggle - only shown when admin mode is active */}
           {isAdminMode && (
@@ -1223,7 +1234,7 @@ export default function AdminPage() {
                       className="w-full border-emerald-600 text-emerald-700 hover:bg-emerald-50"
                       onClick={() => window.open("/scan-tickets", "_blank", "noopener,noreferrer")}
                     >
-                      Open /scan-tickets
+                      Open Door Scanner ↗
                     </Button>
                   </CardContent>
                 </Card>

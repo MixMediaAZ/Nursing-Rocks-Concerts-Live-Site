@@ -706,6 +706,47 @@ export default function ScanTicketsPage() {
 
   const scannerDivId = "nr-gate-qr-scanner";
 
+  // ── Shared nav bar (PIN screen + main scanner screen) ────────────────────
+
+  const scannerNav = (
+    <nav className="bg-gray-900 border-b border-gray-700 px-4 py-2 flex items-center justify-between gap-2 shrink-0">
+      {/* Brand */}
+      <a
+        href="/"
+        className="flex items-center gap-2 text-white font-bold text-sm hover:text-green-400 transition-colors shrink-0"
+      >
+        <span className="text-xl leading-none">🎸</span>
+        <span className="hidden sm:inline">Nursing Rocks</span>
+      </a>
+
+      {/* Nav links */}
+      <div className="flex items-center gap-1">
+        <a
+          href="/"
+          className="text-gray-400 hover:text-white text-xs font-medium px-2.5 py-1.5 rounded-lg hover:bg-gray-800 transition-colors"
+        >
+          Home
+        </a>
+        <a
+          href="/admin"
+          className="text-gray-400 hover:text-white text-xs font-medium px-2.5 py-1.5 rounded-lg hover:bg-gray-800 transition-colors"
+        >
+          Admin
+        </a>
+        {authed && (
+          <button
+            type="button"
+            onClick={signOutGate}
+            className="text-gray-500 hover:text-red-400 text-xs font-medium px-2.5 py-1.5 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-1"
+            title="Lock scanner"
+          >
+            🔒 Lock
+          </button>
+        )}
+      </div>
+    </nav>
+  );
+
   // ── PIN screen ────────────────────────────────────────────────────────────
 
   if (!authed) {
@@ -714,7 +755,9 @@ export default function ScanTicketsPage() {
         <Helmet>
           <title>Door scanner | Nursing Rocks</title>
         </Helmet>
-        <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6">
+        <div className="min-h-screen bg-gray-950 flex flex-col">
+          {scannerNav}
+          <div className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-xs text-center space-y-6">
             <div>
               <div className="text-5xl mb-3">🎸</div>
@@ -744,7 +787,8 @@ export default function ScanTicketsPage() {
               </Button>
             </form>
           </div>
-        </div>
+          </div>{/* /flex-1 center */}
+        </div>{/* /min-h-screen */}
       </>
     );
   }
@@ -814,21 +858,16 @@ export default function ScanTicketsPage() {
 
       <div className="min-h-screen bg-gray-950 flex flex-col">
 
-        {/* Header */}
-        <div className="bg-gray-900 border-b border-gray-800 px-4 py-3 flex items-center justify-between gap-2">
+        {/* Site nav */}
+        {scannerNav}
+
+        {/* Scanner mode sub-header */}
+        <div className="bg-gray-900 border-b border-gray-800 px-4 py-2 flex items-center gap-3">
+          <span className="text-green-400 text-base leading-none">●</span>
           <div>
-            <h1 className="text-white font-bold text-lg leading-tight">Nursing Rocks — Gate</h1>
-            <p className="text-gray-400 text-xs">QR · Barcode · Manual entry</p>
+            <p className="text-white font-semibold text-sm leading-tight">Gate scanner active</p>
+            <p className="text-gray-500 text-xs">QR · Barcode · Manual entry</p>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="border-gray-600 text-gray-300 shrink-0"
-            onClick={signOutGate}
-          >
-            Lock
-          </Button>
         </div>
 
         {/* Hidden capture input for Bluetooth scanner (always focused when not typing elsewhere) */}
