@@ -30,14 +30,70 @@ interface ScanSettings {
   qrboxSize: 200 | 280 | 360;
   torch: boolean;
   zoom: number;
+  sound: boolean;
+  resetMs: 2000 | 4000 | 6000;
 }
-const DEFAULT_SETTINGS: ScanSettings = { fps: 15, qrboxSize: 280, torch: false, zoom: 1 };
+const DEFAULT_SETTINGS: ScanSettings = {
+  fps: 15, qrboxSize: 280, torch: false, zoom: 1, sound: true, resetMs: 4000,
+};
 const FPS_LABELS: Record<ScanSettings["fps"], string> = { 10: "10 — battery saver", 15: "15 — normal", 30: "30 — fast" };
 const BOX_LABELS: Record<ScanSettings["qrboxSize"], string> = { 200: "S — small", 280: "M — medium", 360: "L — large" };
+const RESET_LABELS: Record<ScanSettings["resetMs"], string> = { 2000: "2s — fast queue", 4000: "4s — normal", 6000: "6s — slow" };
+
+// ── Audio feedback (Web Audio API — no files needed) ─────────────────────────
+function playBeep(type: "ok" | "used" | "fail"): void {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    if (type === "ok") {
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.25);
+    } else if (type === "used") {
+      osc.frequency.value = 520;
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.2);
+    } else {
+      // Two low pulses for fail
+      osc.frequency.value = 220;
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.setValueAtTime(0, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime + 0.2);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.5);
+    }
+    setTimeout(() => ctx.close().catch(() => {}), 1500);
+  } catch { /* AudioContext not available */ }
+}
+
+// ── Vibration feedback ────────────────────────────────────────────────────────
+function vibrate(type: "ok" | "used" | "fail"): void {
+  try {
+    if (!("vibrate" in navigator)) return;
+    if (type === "ok")   navigator.vibrate(200);
+    else if (type === "used") navigator.vibrate([100, 60, 100]);
+    else                 navigator.vibrate([60, 40, 60, 40, 200]);
+  } catch { /* vibrate not available */ }
+}
+
+// ── Decode JWT expiry (no verification — display only) ───────────────────────
+function getTokenExpiryMs(token: string): number | null {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return typeof payload.exp === "number" ? payload.exp * 1000 - Date.now() : null;
+  } catch { return null; }
+}
 
 const GATE_TOKEN_KEY = "nr_gate_scanner_jwt";
 const AUTO_EVENT = 0;
-const AUTO_RESET_MS = 4000;
 
 type ScanApiResult = {
   ok?: boolean;
@@ -105,13 +161,18 @@ export default function ScanTicketsPage() {
     torch: boolean;
     zoom: { min: number; max: number; step: number } | null;
   } | null>(null);
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine);
+  const [tokenExpiresIn, setTokenExpiresIn] = useState<number | null>(null);
 
   // Refs that don't trigger re-renders
   const processingRef = useRef(false);
   const scannerRef = useRef<Html5QrcodeInstance | null>(null);
   const bluetoothInputRef = useRef<HTMLInputElement | null>(null);
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const cameraRetriesRef = useRef(0); // useRef instead of state — avoids double-init
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  const cameraRetriesRef = useRef(0);
+  const didAutoStartRef = useRef(false); // prevent re-auto-start after manual stop
+  const scanSettingsRef = useRef<ScanSettings>(DEFAULT_SETTINGS); // ref copy used inside verifyCode to avoid stale closure
   const maxRetries = 3;
 
   const authed = Boolean(gateToken);
@@ -204,6 +265,77 @@ export default function ScanTicketsPage() {
     setGateToken(null);
   }, [stopScanning]);
 
+  // ── Keep scanSettings ref in sync (lets verifyCode read current values without stale closure) ──
+  useEffect(() => { scanSettingsRef.current = scanSettings; }, [scanSettings]);
+
+  // ── Network status ────────────────────────────────────────────────────────
+  useEffect(() => {
+    const on = () => setIsOnline(true);
+    const off = () => setIsOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
+
+  // ── Token expiry countdown ────────────────────────────────────────────────
+  useEffect(() => {
+    if (!gateToken) { setTokenExpiresIn(null); return; }
+    const update = () => setTokenExpiresIn(getTokenExpiryMs(gateToken));
+    update();
+    const interval = setInterval(update, 30_000);
+    return () => clearInterval(interval);
+  }, [gateToken]);
+
+  // ── Screen wake lock — keep screen on while scanning ─────────────────────
+  useEffect(() => {
+    if (!scanning || !("wakeLock" in navigator)) return;
+
+    let released = false;
+
+    const acquire = async () => {
+      try {
+        wakeLockRef.current = await (navigator as any).wakeLock.request("screen");
+        console.log("[scanner] wake lock acquired");
+        wakeLockRef.current.addEventListener("release", () => {
+          if (!released) console.log("[scanner] wake lock released by browser");
+        });
+      } catch (err) {
+        console.warn("[scanner] wake lock unavailable:", err);
+      }
+    };
+
+    // Re-acquire when tab becomes visible again (browser releases on hide)
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") acquire();
+    };
+
+    acquire();
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      released = true;
+      document.removeEventListener("visibilitychange", onVisibility);
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch(() => {});
+        wakeLockRef.current = null;
+      }
+    };
+  }, [scanning]);
+
+  // ── Auto-start camera on first auth ──────────────────────────────────────
+  useEffect(() => {
+    if (authed && !didAutoStartRef.current) {
+      didAutoStartRef.current = true;
+      setScanning(true);
+    }
+    if (!authed) {
+      didAutoStartRef.current = false;
+    }
+  }, [authed]);
+
   // ── Live check-in stats (poll every 30s + after each successful scan) ────
 
   const fetchStats = useCallback(async () => {
@@ -286,7 +418,8 @@ export default function ScanTicketsPage() {
         // Token expired — stop scanner and prompt re-auth
         stopScanning();
         setResult({ kind: "fail", message: "Session expired. Enter PIN to unlock." });
-        resetTimerRef.current = setTimeout(() => setResult(null), AUTO_RESET_MS);
+        if (scanSettingsRef.current.sound) { playBeep("fail"); vibrate("fail"); }
+        resetTimerRef.current = setTimeout(() => setResult(null), scanSettingsRef.current.resetMs);
         return;
       }
 
@@ -318,7 +451,8 @@ export default function ScanTicketsPage() {
           setGateToken(null);
           stopScanning();
           setResult({ kind: "fail", message: "Session expired. Enter PIN to unlock." });
-          resetTimerRef.current = setTimeout(() => setResult(null), AUTO_RESET_MS);
+          if (scanSettingsRef.current.sound) { playBeep("fail"); vibrate("fail"); }
+          resetTimerRef.current = setTimeout(() => setResult(null), scanSettingsRef.current.resetMs);
           return;
         }
 
@@ -328,6 +462,7 @@ export default function ScanTicketsPage() {
         if (data.ok) {
           fetchStats(); // refresh counter immediately on each check-in
           setResult({ kind: "ok", ticketCode: data.ticketCode, userName: data.userName });
+          if (scanSettingsRef.current.sound) { playBeep("ok"); vibrate("ok"); }
         } else if (data.reason === "already_used") {
           setResult({
             kind: "used",
@@ -335,21 +470,24 @@ export default function ScanTicketsPage() {
             userName: data.userName,
             ticketCode: data.ticketCode,
           });
+          if (scanSettingsRef.current.sound) { playBeep("used"); vibrate("used"); }
         } else {
           setResult({
             kind: "fail",
             message: data.message || data.reason || "Invalid ticket",
           });
+          if (scanSettingsRef.current.sound) { playBeep("fail"); vibrate("fail"); }
         }
       } catch {
         setResult({ kind: "fail", message: "Network error — try again." });
+        if (scanSettingsRef.current.sound) { playBeep("fail"); vibrate("fail"); }
       }
 
       // Auto-clear result and unlock for next scan
       resetTimerRef.current = setTimeout(() => {
         setResult(null);
         resetProcessing();
-      }, AUTO_RESET_MS);
+      }, scanSettingsRef.current.resetMs);
     },
     [selectedEventId, stopScanning, resetProcessing, fetchStats]
   );
@@ -706,6 +844,28 @@ export default function ScanTicketsPage() {
           tabIndex={-1}
         />
 
+        {/* Offline warning banner */}
+        {!isOnline && (
+          <div className="bg-red-700 text-white text-sm font-semibold text-center py-2 px-4">
+            ⚠️ No internet — scans will fail
+          </div>
+        )}
+
+        {/* Token expiry warning banner */}
+        {tokenExpiresIn !== null && tokenExpiresIn < 30 * 60 * 1000 && (
+          <div
+            className={`text-sm font-semibold text-center py-2 px-4 ${
+              tokenExpiresIn < 5 * 60 * 1000
+                ? "bg-red-700 text-white animate-pulse"
+                : "bg-amber-700 text-white"
+            }`}
+          >
+            {tokenExpiresIn < 5 * 60 * 1000
+              ? `🔴 Session expires in ${Math.ceil(tokenExpiresIn / 60000)}min — re-enter PIN soon`
+              : `⏱ Session expires in ${Math.ceil(tokenExpiresIn / 60000)}min`}
+          </div>
+        )}
+
         {/* Live check-in counter */}
         {stats && (
           <div className="bg-gray-900 border-b border-gray-800 px-4 py-3">
@@ -1044,6 +1204,49 @@ export default function ScanTicketsPage() {
                           <p className="text-xs text-gray-600">
                             Changing speed or box size briefly restarts the camera
                           </p>
+                        </div>
+
+                        {/* Sound feedback toggle */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-300">
+                            {scanSettings.sound ? "🔊" : "🔇"} Scan sounds
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setScanSettings((s) => ({ ...s, sound: !s.sound }))}
+                            className={`relative w-11 h-6 rounded-full transition-colors ${
+                              scanSettings.sound ? "bg-blue-600" : "bg-gray-700"
+                            }`}
+                            aria-label="Toggle scan sounds"
+                          >
+                            <span
+                              className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                                scanSettings.sound ? "translate-x-5" : "translate-x-0"
+                              }`}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Auto-reset timing */}
+                        <div className="space-y-1.5">
+                          <p className="text-sm text-gray-300">Auto-reset delay</p>
+                          <div className="grid grid-cols-3 gap-1">
+                            {([2000, 4000, 6000] as ScanSettings["resetMs"][]).map((ms) => (
+                              <button
+                                key={ms}
+                                type="button"
+                                onClick={() => setScanSettings((s) => ({ ...s, resetMs: ms }))}
+                                className={`py-1.5 text-xs rounded-lg border transition-colors ${
+                                  scanSettings.resetMs === ms
+                                    ? "bg-blue-600 border-blue-500 text-white"
+                                    : "bg-gray-800 border-gray-700 text-gray-400 hover:text-white"
+                                }`}
+                              >
+                                {RESET_LABELS[ms]}
+                              </button>
+                            ))}
+                          </div>
+                          <p className="text-xs text-gray-600">Time before next scan is allowed</p>
                         </div>
 
                         {/* No-support message if device has neither torch nor zoom */}
