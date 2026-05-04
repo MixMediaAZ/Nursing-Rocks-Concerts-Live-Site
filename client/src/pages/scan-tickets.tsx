@@ -1,7 +1,39 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Helmet } from "react-helmet";
-import { CheckCircle2, XCircle, AlertTriangle, Camera, Loader2 } from "lucide-react";
+import { CheckCircle2, XCircle, AlertTriangle, Camera, Loader2, Lightbulb, ZoomIn, Settings, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+// ── Camera capability types ───────────────────────────────────────────────────
+interface TorchFeature {
+  isSupported: () => boolean;
+  apply: (val: boolean) => Promise<void>;
+}
+interface ZoomFeature {
+  isSupported: () => boolean;
+  apply: (val: number) => Promise<void>;
+  min: () => number;
+  max: () => number;
+  step: () => number;
+}
+interface Html5QrcodeInstance {
+  stop: () => Promise<void>;
+  applyVideoConstraints: (c: MediaTrackConstraints) => Promise<void>;
+  getRunningTrackCameraCapabilities: () => {
+    torchFeature: () => TorchFeature;
+    zoomFeature: () => ZoomFeature;
+  };
+}
+
+// ── Scanner settings ──────────────────────────────────────────────────────────
+interface ScanSettings {
+  fps: 10 | 15 | 30;
+  qrboxSize: 200 | 280 | 360;
+  torch: boolean;
+  zoom: number;
+}
+const DEFAULT_SETTINGS: ScanSettings = { fps: 15, qrboxSize: 280, torch: false, zoom: 1 };
+const FPS_LABELS: Record<ScanSettings["fps"], string> = { 10: "10 — battery saver", 15: "15 — normal", 30: "30 — fast" };
+const BOX_LABELS: Record<ScanSettings["qrboxSize"], string> = { 200: "S — small", 280: "M — medium", 360: "L — large" };
 
 const GATE_TOKEN_KEY = "nr_gate_scanner_jwt";
 const AUTO_EVENT = 0;
@@ -67,9 +99,16 @@ export default function ScanTicketsPage() {
     recent: Array<{ ticketCode: string; name: string; checkedInAt: string | null }>;
   } | null>(null);
 
+  const [scanSettings, setScanSettings] = useState<ScanSettings>(DEFAULT_SETTINGS);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [capabilities, setCapabilities] = useState<{
+    torch: boolean;
+    zoom: { min: number; max: number; step: number } | null;
+  } | null>(null);
+
   // Refs that don't trigger re-renders
   const processingRef = useRef(false);
-  const scannerRef = useRef<{ stop: () => Promise<void> } | null>(null);
+  const scannerRef = useRef<Html5QrcodeInstance | null>(null);
   const bluetoothInputRef = useRef<HTMLInputElement | null>(null);
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cameraRetriesRef = useRef(0); // useRef instead of state — avoids double-init
@@ -88,9 +127,18 @@ export default function ScanTicketsPage() {
 
   const stopScanner = useCallback(() => {
     if (scannerRef.current) {
+      // Turn torch off before stopping — some devices leave it on otherwise
+      try {
+        const caps = scannerRef.current.getRunningTrackCameraCapabilities();
+        if (caps.torchFeature().isSupported()) {
+          caps.torchFeature().apply(false).catch(() => {});
+        }
+      } catch { /* ignore — scanner may already be stopping */ }
       scannerRef.current.stop().catch(() => {});
       scannerRef.current = null;
     }
+    setCapabilities(null);
+    setScanSettings((s) => ({ ...s, torch: false })); // reset torch state
   }, []);
 
   const resetProcessing = useCallback(() => {
@@ -306,6 +354,52 @@ export default function ScanTicketsPage() {
     [selectedEventId, stopScanning, resetProcessing, fetchStats]
   );
 
+  // ── Camera settings controls ──────────────────────────────────────────────
+
+  /** Toggle flashlight — applies live, no scanner restart needed */
+  const toggleTorch = useCallback(async () => {
+    if (!scannerRef.current || !capabilities?.torch) return;
+    const next = !scanSettings.torch;
+    try {
+      await scannerRef.current
+        .getRunningTrackCameraCapabilities()
+        .torchFeature()
+        .apply(next);
+      setScanSettings((s) => ({ ...s, torch: next }));
+    } catch (err) {
+      console.warn("[scanner] torch toggle failed:", err);
+    }
+  }, [capabilities, scanSettings.torch]);
+
+  /** Adjust zoom — applies live, no scanner restart needed */
+  const applyZoom = useCallback(async (zoom: number) => {
+    if (!scannerRef.current || !capabilities?.zoom) return;
+    const clamped = Math.max(capabilities.zoom.min, Math.min(capabilities.zoom.max, zoom));
+    try {
+      await scannerRef.current
+        .getRunningTrackCameraCapabilities()
+        .zoomFeature()
+        .apply(clamped);
+      setScanSettings((s) => ({ ...s, zoom: clamped }));
+    } catch (err) {
+      console.warn("[scanner] zoom apply failed:", err);
+    }
+  }, [capabilities]);
+
+  /** Change FPS or qrbox size — requires scanner restart */
+  const applyRestartSetting = useCallback(
+    (patch: Partial<Pick<ScanSettings, "fps" | "qrboxSize">>) => {
+      setScanSettings((s) => ({ ...s, ...patch }));
+      if (scanning) {
+        stopScanner();
+        setScanning(false);
+        cameraRetriesRef.current = 0;
+        setTimeout(() => setScanning(true), 150);
+      }
+    },
+    [scanning, stopScanner]
+  );
+
   const handleDismiss = useCallback(() => {
     clearResetTimer();
     setResult(null);
@@ -345,10 +439,10 @@ export default function ScanTicketsPage() {
         await html5QrCode.start(
           cameraConstraint,
           {
-            fps: 15,
-            qrbox: { width: 280, height: 280 },
+            fps: scanSettings.fps,
+            qrbox: { width: scanSettings.qrboxSize, height: scanSettings.qrboxSize },
             aspectRatio: 1.0,
-            disableFlip: false, // allow mirrored codes
+            disableFlip: false,
           },
           async (decodedText: string) => {
             if (processingRef.current || stopped) return;
@@ -357,12 +451,35 @@ export default function ScanTicketsPage() {
             await verifyCode(decodedText);
           },
           (_errorMsg: string) => {
-            // NotFoundException fires on every frame with no QR — normal, suppress
+            // NotFoundException fires on every frame — normal, suppress
           }
         );
 
         cameraRetriesRef.current = 0;
         console.log("[scanner] camera started");
+
+        // ── Detect what this device actually supports ─────────────────────
+        // Must happen AFTER start() — capabilities only available on live stream
+        try {
+          const caps = html5QrCode.getRunningTrackCameraCapabilities();
+          const torchFeat = caps.torchFeature();
+          const zoomFeat = caps.zoomFeature();
+          const zoomCap = zoomFeat.isSupported()
+            ? { min: zoomFeat.min(), max: zoomFeat.max(), step: zoomFeat.step() }
+            : null;
+          setCapabilities({ torch: torchFeat.isSupported(), zoom: zoomCap });
+          console.log("[scanner] capabilities:", {
+            torch: torchFeat.isSupported(),
+            zoom: zoomCap,
+          });
+          // Re-apply zoom if user had it set before restart
+          if (zoomCap && scanSettings.zoom > 1) {
+            zoomFeat.apply(Math.min(scanSettings.zoom, zoomCap.max)).catch(() => {});
+          }
+        } catch (capErr) {
+          console.warn("[scanner] capability detection failed:", capErr);
+          setCapabilities({ torch: false, zoom: null });
+        }
       } catch (err) {
         if (stopped) return;
         const errorMsg = err instanceof Error ? err.message : String(err);
@@ -427,7 +544,9 @@ export default function ScanTicketsPage() {
     };
     // ← cameraRetries NOT in deps (use ref instead to prevent double-init)
     // ← selectedCameraId handled by separate camera-change effect above
-  }, [authed, scanning, verifyCode, selectedCameraId]);
+    // ← scanSettings.torch/zoom NOT here (applied live without restart)
+    // ← scanSettings.fps/qrboxSize trigger restart via applyRestartSetting
+  }, [authed, scanning, verifyCode, selectedCameraId, scanSettings.fps, scanSettings.qrboxSize]);
 
   // ── Bluetooth / keyboard scanner ─────────────────────────────────────────
 
@@ -808,6 +927,136 @@ export default function ScanTicketsPage() {
                   <p className="text-center text-gray-400 text-sm">
                     Hold QR code steady inside the frame
                   </p>
+
+                  {/* ── Scanner settings panel ── */}
+                  <div className="border border-gray-800 rounded-xl overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setSettingsOpen((o) => !o)}
+                      className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-900 text-gray-400 hover:text-white text-sm"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Settings className="h-4 w-4" />
+                        Scanner settings
+                      </span>
+                      {settingsOpen ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </button>
+
+                    {settingsOpen && (
+                      <div className="bg-gray-950 px-4 py-4 space-y-5">
+
+                        {/* Torch — only shown if device supports it */}
+                        {capabilities?.torch && (
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-2 text-sm text-gray-300">
+                              <Lightbulb className="h-4 w-4 text-yellow-400" />
+                              Flashlight
+                            </span>
+                            <button
+                              type="button"
+                              onClick={toggleTorch}
+                              className={`relative w-11 h-6 rounded-full transition-colors ${
+                                scanSettings.torch ? "bg-yellow-500" : "bg-gray-700"
+                              }`}
+                              aria-label="Toggle flashlight"
+                            >
+                              <span
+                                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                                  scanSettings.torch ? "translate-x-5" : "translate-x-0"
+                                }`}
+                              />
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Zoom — only shown if device supports it */}
+                        {capabilities?.zoom && (
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="flex items-center gap-2 text-sm text-gray-300">
+                                <ZoomIn className="h-4 w-4 text-blue-400" />
+                                Zoom
+                              </span>
+                              <span className="text-xs text-gray-500 tabular-nums">
+                                {scanSettings.zoom.toFixed(1)}×
+                              </span>
+                            </div>
+                            <input
+                              type="range"
+                              min={capabilities.zoom.min}
+                              max={capabilities.zoom.max}
+                              step={capabilities.zoom.step || 0.1}
+                              value={scanSettings.zoom}
+                              onChange={(e) => applyZoom(parseFloat(e.target.value))}
+                              className="w-full accent-blue-500"
+                            />
+                            <div className="flex justify-between text-xs text-gray-600">
+                              <span>{capabilities.zoom.min}×</span>
+                              <span>{capabilities.zoom.max}×</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Scan box size */}
+                        <div className="space-y-1.5">
+                          <p className="text-sm text-gray-300">Scan box size</p>
+                          <div className="grid grid-cols-3 gap-1">
+                            {([200, 280, 360] as ScanSettings["qrboxSize"][]).map((size) => (
+                              <button
+                                key={size}
+                                type="button"
+                                onClick={() => applyRestartSetting({ qrboxSize: size })}
+                                className={`py-1.5 text-xs rounded-lg border transition-colors ${
+                                  scanSettings.qrboxSize === size
+                                    ? "bg-blue-600 border-blue-500 text-white"
+                                    : "bg-gray-800 border-gray-700 text-gray-400 hover:text-white"
+                                }`}
+                              >
+                                {BOX_LABELS[size]}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* FPS */}
+                        <div className="space-y-1.5">
+                          <p className="text-sm text-gray-300">Scan speed (FPS)</p>
+                          <div className="grid grid-cols-3 gap-1">
+                            {([10, 15, 30] as ScanSettings["fps"][]).map((fps) => (
+                              <button
+                                key={fps}
+                                type="button"
+                                onClick={() => applyRestartSetting({ fps })}
+                                className={`py-1.5 text-xs rounded-lg border transition-colors ${
+                                  scanSettings.fps === fps
+                                    ? "bg-blue-600 border-blue-500 text-white"
+                                    : "bg-gray-800 border-gray-700 text-gray-400 hover:text-white"
+                                }`}
+                              >
+                                {FPS_LABELS[fps]}
+                              </button>
+                            ))}
+                          </div>
+                          <p className="text-xs text-gray-600">
+                            Changing speed or box size briefly restarts the camera
+                          </p>
+                        </div>
+
+                        {/* No-support message if device has neither torch nor zoom */}
+                        {capabilities && !capabilities.torch && !capabilities.zoom && (
+                          <p className="text-xs text-gray-600 text-center py-1">
+                            This device doesn't support flashlight or zoom control
+                          </p>
+                        )}
+
+                      </div>
+                    )}
+                  </div>
+
                   <p className="text-center text-gray-600 text-xs">
                     Bluetooth scanner also active in background
                   </p>
