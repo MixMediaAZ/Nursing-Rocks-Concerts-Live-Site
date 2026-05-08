@@ -8,7 +8,6 @@ const FeaturedArtist = () => {
     { type: "band", name: "The Central Line", url: "https://azpbs.org/horizon/2023/12/all-doctor-band-the-central-line-made-up-of-phoenix-childrens-hospital-doctors/" },
     { type: "band", name: "Jane 'n the Jungle", url: "https://www.janenthejungle.com/" },
     { type: "band", name: "PsychoStar", url: "https://linktr.ee/psychostar" },
-    { type: "band", name: "My Upside Down", url: "https://linktr.ee/myupsidedown?utm_source=ig&utm_medium=social&utm_content=link_in_bio&fbclid=PAZXh0bgNhZW0CMTEAc3J0YwZhcHBfaWQMMjU2MjgxMDQwNTU4AAGnMjHDfeOnXd7lbqhPbfsQzdUxgvFu46D58LJjH2KOfvVwopesIARMimTBETU_aem_eimjH1K9n_Kz-aRWTR0izg" },
     { type: "dj", name: "Casual Alien", url: "https://casualalien.bandzoogle.com/" },
     { type: "dj", name: "Oopsie Daisy", url: "https://www.instagram.com/nickbornhoft/" }
   ];
