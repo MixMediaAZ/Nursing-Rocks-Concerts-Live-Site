@@ -173,6 +173,7 @@ export default function ScanTicketsPage() {
   const cameraRetriesRef = useRef(0);
   const didAutoStartRef = useRef(false); // prevent re-auto-start after manual stop
   const scanSettingsRef = useRef<ScanSettings>(DEFAULT_SETTINGS); // ref copy used inside verifyCode to avoid stale closure
+  const stoppingRef = useRef(false); // guard against concurrent stop attempts
   const maxRetries = 3;
 
   const authed = Boolean(gateToken);
@@ -186,20 +187,24 @@ export default function ScanTicketsPage() {
     }
   };
 
-  const stopScanner = useCallback(() => {
-    if (scannerRef.current) {
+  const stopScanner = useCallback(async () => {
+    if (stoppingRef.current || !scannerRef.current) return;
+    stoppingRef.current = true;
+    try {
       // Turn torch off before stopping — some devices leave it on otherwise
       try {
         const caps = scannerRef.current.getRunningTrackCameraCapabilities();
         if (caps.torchFeature().isSupported()) {
-          caps.torchFeature().apply(false).catch(() => {});
+          await caps.torchFeature().apply(false).catch(() => {});
         }
       } catch { /* ignore — scanner may already be stopping */ }
-      scannerRef.current.stop().catch(() => {});
+      await scannerRef.current.stop().catch(() => {});
+    } finally {
       scannerRef.current = null;
+      stoppingRef.current = false;
+      setCapabilities(null);
+      setScanSettings((s) => ({ ...s, torch: false })); // reset torch state
     }
-    setCapabilities(null);
-    setScanSettings((s) => ({ ...s, torch: false })); // reset torch state
   }, []);
 
   const resetProcessing = useCallback(() => {
@@ -208,8 +213,8 @@ export default function ScanTicketsPage() {
   }, []);
 
   // Centralised stop — called by Lock, Stop Camera, Bluetooth buttons, token expiry
-  const stopScanning = useCallback(() => {
-    stopScanner();
+  const stopScanning = useCallback(async () => {
+    await stopScanner();
     setScanning(false);
     resetProcessing();
     clearResetTimer();
@@ -260,7 +265,7 @@ export default function ScanTicketsPage() {
   };
 
   const signOutGate = useCallback(() => {
-    stopScanning();
+    stopScanning().catch(() => {});
     sessionStorage.removeItem(GATE_TOKEN_KEY);
     setGateToken(null);
   }, [stopScanning]);
@@ -416,7 +421,7 @@ export default function ScanTicketsPage() {
       const token = sessionStorage.getItem(GATE_TOKEN_KEY);
       if (!token) {
         // Token expired — stop scanner and prompt re-auth
-        stopScanning();
+        await stopScanning().catch(() => {});
         setResult({ kind: "fail", message: "Session expired. Enter PIN to unlock." });
         if (scanSettingsRef.current.sound) { playBeep("fail"); vibrate("fail"); }
         resetTimerRef.current = setTimeout(() => setResult(null), scanSettingsRef.current.resetMs);
@@ -449,7 +454,7 @@ export default function ScanTicketsPage() {
         if (res.status === 401) {
           sessionStorage.removeItem(GATE_TOKEN_KEY);
           setGateToken(null);
-          stopScanning();
+          await stopScanning().catch(() => {});
           setResult({ kind: "fail", message: "Session expired. Enter PIN to unlock." });
           if (scanSettingsRef.current.sound) { playBeep("fail"); vibrate("fail"); }
           resetTimerRef.current = setTimeout(() => setResult(null), scanSettingsRef.current.resetMs);
@@ -675,8 +680,18 @@ export default function ScanTicketsPage() {
     return () => {
       stopped = true;
       clearTimeout(retryTimeout);
-      if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {});
+      // Use stopScanner if guard available (prevents concurrent stops)
+      if (scannerRef.current && !stoppingRef.current) {
+        stoppingRef.current = true;
+        scannerRef.current
+          .stop()
+          .catch(() => {})
+          .finally(() => {
+            scannerRef.current = null;
+            stoppingRef.current = false;
+          });
+      } else if (scannerRef.current) {
+        // If already stopping, just clear the ref
         scannerRef.current = null;
       }
     };
@@ -1091,7 +1106,7 @@ export default function ScanTicketsPage() {
                       type="button"
                       variant="outline"
                       onClick={() => {
-                        stopScanning();
+                        stopScanning().catch(() => {});
                         setTimeout(() => bluetoothInputRef.current?.focus(), 100);
                       }}
                       className="w-full border-gray-700 text-gray-400 hover:text-white"
@@ -1307,7 +1322,7 @@ export default function ScanTicketsPage() {
                     type="button"
                     variant="outline"
                     onClick={() => {
-                      stopScanning();
+                      stopScanning().catch(() => {});
                       setTimeout(() => bluetoothInputRef.current?.focus(), 100);
                     }}
                     className="w-full border-gray-700 text-gray-400 hover:text-white"

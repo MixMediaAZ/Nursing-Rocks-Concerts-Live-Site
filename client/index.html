@@ -23,7 +23,10 @@
       // This is not our code - it's from browser extensions trying to access DOM elements
       (function() {
         function suppressShareModalError(e) {
-          if (e.filename && e.filename.includes('share-modal')) {
+          const isShareModal = (e.filename && e.filename.includes('share-modal')) ||
+                              (e.message && e.message.includes('share-modal')) ||
+                              (e.stack && e.stack.includes('share-modal'));
+          if (isShareModal) {
             e.preventDefault();
             e.stopPropagation();
             return true;
@@ -31,7 +34,9 @@
         }
         window.addEventListener('error', suppressShareModalError, true);
         window.addEventListener('unhandledrejection', function(e) {
-          if (e.reason && e.reason.message && e.reason.message.includes('share-modal')) {
+          const isShareModal = (e.reason && e.reason.message && e.reason.message.includes('share-modal')) ||
+                              (e.reason && e.reason.stack && e.reason.stack.includes('share-modal'));
+          if (isShareModal) {
             e.preventDefault();
           }
         });
