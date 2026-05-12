@@ -228,20 +228,12 @@ export default function ScanTicketsPage() {
     try {
       setBluetoothStatus("Searching for Bluetooth devices...");
       const device = await (navigator as any).bluetooth.requestDevice({
-        filters: [
-          { namePrefix: "HC-" },
-          { namePrefix: "BT-" },
-          { namePrefix: "HM-" },
-          { name: "SCANNER" },
-          { name: "barcode" },
-          { services: ["0000ffe0-0000-1000-8000-00805f9b34fb"] }, // HM-10/HC-05 serial
-        ],
+        acceptAllDevices: true,
         optionalServices: [
           "0000ffe0-0000-1000-8000-00805f9b34fb",
           "0000180a-0000-1000-8000-00805f9b34fb",
           "00001101-0000-1000-8000-00805f9b34fb", // Serial port profile
         ],
-        acceptAllDevices: true, // Allow selecting any paired device
       } as any);
 
       if (!device) {
