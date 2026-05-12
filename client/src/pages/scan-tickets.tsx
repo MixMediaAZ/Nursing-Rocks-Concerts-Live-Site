@@ -156,6 +156,9 @@ export default function ScanTicketsPage() {
   } | null>(null);
   const [bluetoothDevice, setBluetoothDevice] = useState<BluetoothDevice | null>(null);
   const [bluetoothStatus, setBluetoothStatus] = useState<string>("");
+  const [savedBluetoothName, setSavedBluetoothName] = useState<string>(() =>
+    typeof sessionStorage !== "undefined" ? sessionStorage.getItem("saved_bt_device") || "" : ""
+  );
 
   const [scanSettings, setScanSettings] = useState<ScanSettings>(DEFAULT_SETTINGS);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -224,22 +227,30 @@ export default function ScanTicketsPage() {
 
   // ── Bluetooth device selection ───────────────────────────────────────────
 
-  const connectBluetoothScanner = useCallback(async () => {
+  const connectBluetoothScanner = useCallback(async (deviceToConnect?: BluetoothDevice) => {
     try {
-      setBluetoothStatus("Searching for Bluetooth devices...");
-      const device = await (navigator as any).bluetooth.requestDevice({
-        acceptAllDevices: true,
-        optionalServices: [
-          "0000ffe0-0000-1000-8000-00805f9b34fb",
-          "0000180a-0000-1000-8000-00805f9b34fb",
-          "00001101-0000-1000-8000-00805f9b34fb", // Serial port profile
-        ],
-      } as any);
+      let device = deviceToConnect;
+
+      if (!device) {
+        setBluetoothStatus("Searching for Bluetooth devices...");
+        device = await (navigator as any).bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: [
+            "0000ffe0-0000-1000-8000-00805f9b34fb",
+            "0000180a-0000-1000-8000-00805f9b34fb",
+            "00001101-0000-1000-8000-00805f9b34fb",
+          ],
+        } as any);
+      }
 
       if (!device) {
         setBluetoothStatus("");
         return;
       }
+
+      // Save device name for auto-connect next time
+      sessionStorage.setItem("saved_bt_device", device.name);
+      setSavedBluetoothName(device.name);
 
       setBluetoothDevice(device);
       setBluetoothStatus(`Connecting to ${device.name}...`);
@@ -450,6 +461,34 @@ export default function ScanTicketsPage() {
       didAutoStartRef.current = false;
     }
   }, [authed]);
+
+  // ── Auto-connect to saved Bluetooth device ────────────────────────────────
+  useEffect(() => {
+    if (!authed || bluetoothDevice || !savedBluetoothName) return;
+
+    const autoConnect = async () => {
+      try {
+        setBluetoothStatus(`Reconnecting to ${savedBluetoothName}...`);
+        const devices = await (navigator as any).bluetooth.getDevices?.();
+        if (devices) {
+          const savedDevice = devices.find((d: BluetoothDevice) => d.name === savedBluetoothName);
+          if (savedDevice) {
+            await connectBluetoothScanner(savedDevice);
+            return;
+          }
+        }
+        // If getDevices not available or device not found, clear saved name
+        sessionStorage.removeItem("saved_bt_device");
+        setSavedBluetoothName("");
+      } catch {
+        // Silent fail - user can manually connect
+      }
+    };
+
+    // Small delay to let UI settle
+    const timeout = setTimeout(autoConnect, 500);
+    return () => clearTimeout(timeout);
+  }, [authed, bluetoothDevice, savedBluetoothName, connectBluetoothScanner]);
 
   // ── Live check-in stats (poll every 30s + after each successful scan) ────
 
@@ -1174,13 +1213,38 @@ export default function ScanTicketsPage() {
               </label>
               <div className="flex gap-2">
                 {!bluetoothDevice ? (
-                  <Button
-                    type="button"
-                    onClick={connectBluetoothScanner}
-                    className="flex-1 bg-blue-700 hover:bg-blue-600 text-xs py-2"
-                  >
-                    📱 Connect Scanner
-                  </Button>
+                  <div className="flex-1 space-y-2">
+                    {savedBluetoothName ? (
+                      <>
+                        <Button
+                          type="button"
+                          onClick={() => connectBluetoothScanner()}
+                          className="w-full bg-green-700 hover:bg-green-600 text-xs py-2"
+                        >
+                          🔗 Reconnect {savedBluetoothName}
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            sessionStorage.removeItem("saved_bt_device");
+                            setSavedBluetoothName("");
+                            connectBluetoothScanner();
+                          }}
+                          className="w-full bg-blue-700 hover:bg-blue-600 text-xs py-2"
+                        >
+                          📱 Select Different Scanner
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        type="button"
+                        onClick={() => connectBluetoothScanner()}
+                        className="w-full bg-blue-700 hover:bg-blue-600 text-xs py-2"
+                      >
+                        📱 Connect Scanner
+                      </Button>
+                    )}
+                  </div>
                 ) : (
                   <>
                     <div className="flex-1 bg-gray-800 border border-green-600 text-white rounded-lg px-3 py-2 text-xs flex items-center gap-2 truncate">
