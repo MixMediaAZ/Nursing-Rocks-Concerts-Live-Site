@@ -229,12 +229,20 @@ export default function ScanTicketsPage() {
       setBluetoothStatus("Searching for Bluetooth devices...");
       const device = await (navigator as any).bluetooth.requestDevice({
         filters: [
-          { namePrefix: "HC-" }, // HC-05 Bluetooth module
+          { namePrefix: "HC-" },
           { namePrefix: "BT-" },
-          { services: ["0000ffe0-0000-1000-8000-00805f9b34fb"] }, // Generic serial service
+          { namePrefix: "HM-" },
+          { name: "SCANNER" },
+          { name: "barcode" },
+          { services: ["0000ffe0-0000-1000-8000-00805f9b34fb"] }, // HM-10/HC-05 serial
         ],
-        optionalServices: ["0000ffe0-0000-1000-8000-00805f9b34fb"],
-      });
+        optionalServices: [
+          "0000ffe0-0000-1000-8000-00805f9b34fb",
+          "0000180a-0000-1000-8000-00805f9b34fb",
+          "00001101-0000-1000-8000-00805f9b34fb", // Serial port profile
+        ],
+        acceptAllDevices: true, // Allow selecting any paired device
+      } as any);
 
       if (!device) {
         setBluetoothStatus("");
@@ -242,7 +250,7 @@ export default function ScanTicketsPage() {
       }
 
       setBluetoothDevice(device);
-      setBluetoothStatus(`Connected: ${device.name}`);
+      setBluetoothStatus(`Connecting to ${device.name}...`);
 
       // Listen for disconnection
       device.addEventListener("gattserverdisconnected", () => {
@@ -250,44 +258,72 @@ export default function ScanTicketsPage() {
         setBluetoothStatus("Bluetooth disconnected");
       });
 
-      // Try to connect and read from the device
+      // Try to connect
       const gatt = await device.gatt?.connect();
       if (!gatt) {
         setBluetoothStatus("Failed to connect to device");
+        setBluetoothDevice(null);
         return;
       }
 
-      // Try to find characteristic for reading
+      setBluetoothStatus(`Connected to ${device.name} ✓`);
+
+      // Try to find and subscribe to notifications from various services
+      let foundCharacteristic = false;
+
       try {
+        // Try HM-10/HC-05 serial service first
         const service = await gatt.getPrimaryService("0000ffe0-0000-1000-8000-00805f9b34fb");
         const characteristic = await service.getCharacteristic("0000ffe1-0000-1000-8000-00805f9b34fb");
-
-        // Set up notifications for incoming data
         await characteristic.startNotifications();
+
         characteristic.addEventListener("characteristicvaluechanged", (event: Event) => {
           const value = (event.target as any).value as DataView;
           const decoder = new TextDecoder();
           const text = decoder.decode(value);
-          // Add to bluetooth input (triggers scan on Enter)
-          setBluetoothInput((prev) => {
-            const combined = (prev + text).trim();
-            if (combined.includes("\n") || combined.includes("\r")) {
-              return "";
-            }
-            return combined;
-          });
+          setBluetoothInput((prev) => (prev + text).trimStart());
         });
 
-        setBluetoothStatus(`Connected to ${device.name}`);
+        foundCharacteristic = true;
       } catch {
-        setBluetoothStatus(`Connected to ${device.name} (read-only)`);
+        // Try standard serial port profile
+        try {
+          const services = await gatt.getPrimaryServices();
+          for (const service of services) {
+            try {
+              const characteristics = await service.getCharacteristics();
+              for (const char of characteristics) {
+                if (char.properties.notify || char.properties.indicate) {
+                  await char.startNotifications();
+                  char.addEventListener("characteristicvaluechanged", (event: Event) => {
+                    const value = (event.target as any).value as DataView;
+                    const decoder = new TextDecoder();
+                    const text = decoder.decode(value);
+                    setBluetoothInput((prev) => (prev + text).trimStart());
+                  });
+                  foundCharacteristic = true;
+                  break;
+                }
+              }
+              if (foundCharacteristic) break;
+            } catch {
+              // Continue to next service
+            }
+          }
+        } catch {
+          // Device connected but notifications not available
+        }
+      }
+
+      if (!foundCharacteristic) {
+        setBluetoothStatus(`Connected to ${device.name} (keyboard mode)`);
       }
     } catch (error) {
       const err = error as any;
-      if (err.name !== "NotFoundError") {
-        setBluetoothStatus(`Bluetooth error: ${err.message || "Unknown error"}`);
-      } else {
+      if (err.name === "NotFoundError" || err.name === "SecurityError") {
         setBluetoothStatus("");
+      } else {
+        setBluetoothStatus(`Error: ${err.message || "Could not connect"}`);
       }
     }
   }, []);
