@@ -797,6 +797,58 @@ export default function ScanTicketsPage() {
                 aria-label="Gate PIN"
               />
               {pinError && <p className="text-red-400 text-sm">Invalid PIN. Try again.</p>}
+
+              {/* Numeric keypad */}
+              <div className="grid grid-cols-3 gap-2">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => {
+                      if (pinInput.length < 12) {
+                        setPinInput(pinInput + num);
+                        setPinError(false);
+                      }
+                    }}
+                    className="bg-gray-700 hover:bg-gray-600 text-white text-2xl font-semibold py-3 rounded-lg transition-colors"
+                  >
+                    {num}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPinInput(pinInput.slice(0, -1));
+                    setPinError(false);
+                  }}
+                  className="bg-red-700 hover:bg-red-600 text-white text-sm font-semibold py-3 rounded-lg transition-colors"
+                >
+                  ⌫
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (pinInput.length < 12) {
+                      setPinInput(pinInput + "0");
+                      setPinError(false);
+                    }
+                  }}
+                  className="bg-gray-700 hover:bg-gray-600 text-white text-2xl font-semibold py-3 rounded-lg transition-colors"
+                >
+                  0
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPinInput("");
+                    setPinError(false);
+                  }}
+                  className="bg-orange-700 hover:bg-orange-600 text-white text-sm font-semibold py-3 rounded-lg transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
+
               <Button type="submit" className="w-full h-12 text-base bg-blue-600 hover:bg-blue-700">
                 Unlock scanner
               </Button>
