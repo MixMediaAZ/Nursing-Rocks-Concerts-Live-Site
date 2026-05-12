@@ -154,6 +154,8 @@ export default function ScanTicketsPage() {
     pct: number;
     recent: Array<{ ticketCode: string; name: string; checkedInAt: string | null }>;
   } | null>(null);
+  const [bluetoothDevice, setBluetoothDevice] = useState<BluetoothDevice | null>(null);
+  const [bluetoothStatus, setBluetoothStatus] = useState<string>("");
 
   const [scanSettings, setScanSettings] = useState<ScanSettings>(DEFAULT_SETTINGS);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -219,6 +221,86 @@ export default function ScanTicketsPage() {
     resetProcessing();
     clearResetTimer();
   }, [stopScanner, resetProcessing]);
+
+  // ── Bluetooth device selection ───────────────────────────────────────────
+
+  const connectBluetoothScanner = useCallback(async () => {
+    try {
+      setBluetoothStatus("Searching for Bluetooth devices...");
+      const device = await (navigator as any).bluetooth.requestDevice({
+        filters: [
+          { namePrefix: "HC-" }, // HC-05 Bluetooth module
+          { namePrefix: "BT-" },
+          { services: ["0000ffe0-0000-1000-8000-00805f9b34fb"] }, // Generic serial service
+        ],
+        optionalServices: ["0000ffe0-0000-1000-8000-00805f9b34fb"],
+      });
+
+      if (!device) {
+        setBluetoothStatus("");
+        return;
+      }
+
+      setBluetoothDevice(device);
+      setBluetoothStatus(`Connected: ${device.name}`);
+
+      // Listen for disconnection
+      device.addEventListener("gattserverdisconnected", () => {
+        setBluetoothDevice(null);
+        setBluetoothStatus("Bluetooth disconnected");
+      });
+
+      // Try to connect and read from the device
+      const gatt = await device.gatt?.connect();
+      if (!gatt) {
+        setBluetoothStatus("Failed to connect to device");
+        return;
+      }
+
+      // Try to find characteristic for reading
+      try {
+        const service = await gatt.getPrimaryService("0000ffe0-0000-1000-8000-00805f9b34fb");
+        const characteristic = await service.getCharacteristic("0000ffe1-0000-1000-8000-00805f9b34fb");
+
+        // Set up notifications for incoming data
+        await characteristic.startNotifications();
+        characteristic.addEventListener("characteristicvaluechanged", (event: Event) => {
+          const value = (event.target as any).value as DataView;
+          const decoder = new TextDecoder();
+          const text = decoder.decode(value);
+          // Add to bluetooth input (triggers scan on Enter)
+          setBluetoothInput((prev) => {
+            const combined = (prev + text).trim();
+            if (combined.includes("\n") || combined.includes("\r")) {
+              return "";
+            }
+            return combined;
+          });
+        });
+
+        setBluetoothStatus(`Connected to ${device.name}`);
+      } catch {
+        setBluetoothStatus(`Connected to ${device.name} (read-only)`);
+      }
+    } catch (error) {
+      const err = error as any;
+      if (err.name !== "NotFoundError") {
+        setBluetoothStatus(`Bluetooth error: ${err.message || "Unknown error"}`);
+      } else {
+        setBluetoothStatus("");
+      }
+    }
+  }, []);
+
+  const disconnectBluetooth = useCallback(async () => {
+    if (bluetoothDevice) {
+      try {
+        await bluetoothDevice.gatt?.disconnect();
+      } catch {}
+      setBluetoothDevice(null);
+      setBluetoothStatus("");
+    }
+  }, [bluetoothDevice]);
 
   // ── Auth events ──────────────────────────────────────────────────────────
 
@@ -1053,6 +1135,45 @@ export default function ScanTicketsPage() {
                   </option>
                 ))}
               </select>
+            </div>
+          )}
+
+          {/* Bluetooth device selector */}
+          {typeof (navigator as any).bluetooth !== "undefined" && (
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">
+                Bluetooth Scanner {bluetoothDevice ? "🔗" : ""}
+              </label>
+              <div className="flex gap-2">
+                {!bluetoothDevice ? (
+                  <Button
+                    type="button"
+                    onClick={connectBluetoothScanner}
+                    className="flex-1 bg-blue-700 hover:bg-blue-600 text-xs py-2"
+                  >
+                    📱 Connect Scanner
+                  </Button>
+                ) : (
+                  <>
+                    <div className="flex-1 bg-gray-800 border border-green-600 text-white rounded-lg px-3 py-2 text-xs flex items-center gap-2 truncate">
+                      <span className="text-green-400">●</span>
+                      <span className="truncate">{bluetoothDevice.name}</span>
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={disconnectBluetooth}
+                      className="bg-red-700 hover:bg-red-600 text-xs px-3"
+                    >
+                      Disconnect
+                    </Button>
+                  </>
+                )}
+              </div>
+              {bluetoothStatus && (
+                <p className={`text-xs mt-1 ${bluetoothStatus.includes("error") || bluetoothStatus.includes("failed") ? "text-red-400" : "text-green-400"}`}>
+                  {bluetoothStatus}
+                </p>
+              )}
             </div>
           )}
         </div>
