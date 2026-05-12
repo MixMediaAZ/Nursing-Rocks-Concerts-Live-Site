@@ -140,13 +140,13 @@ export const generalApiRateLimiter = rateLimit({
  * FIX: Prevents DOS and brute force attacks on public gate scanning
  *
  * Configuration:
- * - 30 scans per minute per IP address
+ * - 120 scans per minute per IP address
  * - Suitable for high-throughput gate operations
  * - Prevents scanning thousands of invalid tickets rapidly
  */
 export const scanRateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 30, // 30 requests per minute per IP
+  max: 120, // Allows multiple scanners behind the same venue Wi-Fi/NAT
   message: {
     ok: false,
     reason: "rate_limited",

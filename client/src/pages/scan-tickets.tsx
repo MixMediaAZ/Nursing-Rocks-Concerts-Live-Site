@@ -43,7 +43,9 @@ const RESET_LABELS: Record<ScanSettings["resetMs"], string> = { 2000: "2s — fa
 // ── Audio feedback (Web Audio API — no files needed) ─────────────────────────
 function playBeep(type: "ok" | "used" | "fail"): void {
   try {
-    const ctx = new AudioContext();
+    const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextCtor) return;
+    const ctx = new AudioContextCtor();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);

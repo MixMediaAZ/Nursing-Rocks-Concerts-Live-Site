@@ -6,12 +6,13 @@ import { v4 as uuidv4 } from 'uuid';
 import fetch from 'node-fetch';
 import { storage } from './storage';
 import { db } from './db';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, or, isNull, ne } from 'drizzle-orm';
 import { users, tickets } from '@shared/schema';
 import jwt from 'jsonwebtoken';
 import { generateToken, verifyToken, getPayloadFromRequest, getUserIdFromRequest, isUserVerified, blacklistToken, isTokenBlacklisted, getTokenFromRequest } from './jwt';
 import { setUserRevokedBeforeMs, isTokenRevokedForUser } from './token-revocation-store';
 import { sendTicketConfirmationEmail, sendPasswordResetEmail, sendWelcomeEmail } from './email';
+import { issueTicketForEvent } from './services/tickets';
 
 const SALT_ROUNDS = 10;
 
@@ -274,33 +275,28 @@ export async function purchaseTicket(req: Request, res: Response) {
       return res.status(404).json({ message: 'Event not found' });
     }
 
-    // Generate unique ticket code
-    const ticketCode = `NR-${uuidv4().substring(0, 8).toUpperCase()}`;
-
-    // Create ticket with email status set to pending approval
-    // Emails will only be sent after admin approval
-    const ticket = await storage.createTicket(
-      {
+    const { ticket, newlyIssued } = await issueTicketForEvent(userId, Number(event_id));
+    const [updatedTicket] = await db
+      .update(tickets)
+      .set({
         ticket_type,
         price,
-        event_id,
-        user_id: userId,
-        ticket_code: ticketCode,
-        email_status: 'pending_approval'  // FIX: Require admin approval before sending email
-      },
-      userId,
-      event_id,
-      ticketCode
-    );
+        email_status: newlyIssued ? "pending_approval" : ticket.email_status,
+        updated_at: new Date(),
+      })
+      .where(eq(tickets.id, ticket.id))
+      .returning();
 
     // FIX: Do NOT send email immediately - wait for admin approval
     // Email will be sent via admin approval endpoint: /api/admin/tickets/:id/approve-and-send-email
-    console.log(`Ticket created with pending approval for email: ${ticket.id}`);
+    console.log(`Ticket ${newlyIssued ? "created" : "already exists"} for email approval: ${ticket.id}`);
 
     return res.status(201).json({
-      message: 'Ticket requested successfully. Awaiting admin approval to send confirmation email.',
-      ticket,
-      emailStatus: 'pending_approval'
+      message: newlyIssued
+        ? 'Ticket requested successfully. Awaiting admin approval to send confirmation email.'
+        : 'You already have a ticket for this event.',
+      ticket: updatedTicket || ticket,
+      emailStatus: (updatedTicket || ticket).email_status
     });
   } catch (error) {
     console.error('Ticket purchase error:', error);
@@ -348,20 +344,22 @@ export async function validateTicketByCode(req: Request, res: Response) {
     // Get event details for the ticket
     const event = await storage.getEvent(ticket.event_id as number);
 
+    const isUsed = ticket.status === "checked_in" || ticket.is_used === true;
+
     return res.status(200).json({
       valid: true,
       ticket: {
         code: ticket.ticket_code,
         type: ticket.ticket_type,
         price: ticket.price,
-        is_used: ticket.is_used,
+        is_used: isUsed,
         event: event ? {
           title: event.title,
           date: event.date,
           location: event.location,
         } : null,
       },
-      message: ticket.is_used ? 'Ticket has already been used' : 'Ticket is valid'
+      message: isUsed ? 'Ticket has already been used' : 'Ticket is valid'
     });
   } catch (error) {
     console.error('Ticket validation error:', error);
@@ -392,7 +390,8 @@ export async function markTicketUsed(req: Request, res: Response) {
       })
       .where(and(
         eq(tickets.ticket_code, code),
-        eq(tickets.is_used, false)
+        ne(tickets.status, "checked_in"),
+        or(eq(tickets.is_used, false), isNull(tickets.is_used))
       ))
       .returning();
 

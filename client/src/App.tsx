@@ -39,6 +39,7 @@ import ContactPage from "@/pages/contact";
 import PhoenixRegisterPage from "@/pages/phoenix-register";
 import ScanPage from "@/pages/scan";
 import ScanTicketsPage from "@/pages/scan-tickets";
+import VerifyTicketPage from "@/pages/verify-ticket";
 import SponsorshipPage from "@/pages/sponsorship";
 
 // Import the pages that were previously lazy loaded
@@ -120,6 +121,7 @@ function Router() {
             <Route path="/faq" component={FAQPage} />
             <Route path="/contact" component={ContactPage} />
             <Route path="/phoenix-register" component={PhoenixRegisterPage} />
+            <Route path="/verify-ticket/:code" component={VerifyTicketPage} />
             <Route component={NotFound} />
           </Switch>
         </div>

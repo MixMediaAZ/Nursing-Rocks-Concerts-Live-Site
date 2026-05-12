@@ -14,14 +14,17 @@ import QRCode from "react-qr-code";
 
 // Define types for our data
 interface TicketData {
-  id: number;
+  id: number | string;
   user_id: number;
   event_id: number;
   ticket_code: string;
+  qr_token?: string | null;
+  qr_image_url?: string | null;
+  status?: string | null;
   ticket_type: string;
   price: string | number;
   purchase_date: string;
-  is_used: boolean;
+  is_used?: boolean | null;
   usage_date?: string;
   event?: {
     id: number;
@@ -86,8 +89,10 @@ export default function TicketsPage() {
   }
   
   // Group tickets by used/unused status
-  const upcomingTickets = ticketsData?.tickets?.filter(ticket => !ticket.is_used) || [];
-  const pastTickets = ticketsData?.tickets?.filter(ticket => ticket.is_used) || [];
+  const isTicketUsed = (ticket: TicketData) =>
+    ticket.status === "checked_in" || ticket.is_used === true;
+  const upcomingTickets = ticketsData?.tickets?.filter(ticket => !isTicketUsed(ticket)) || [];
+  const pastTickets = ticketsData?.tickets?.filter(ticket => isTicketUsed(ticket)) || [];
   
   return (
     <div className="container max-w-4xl py-8">
@@ -182,6 +187,7 @@ interface TicketCardProps {
 
 function TicketCard({ ticket, isUsed }: TicketCardProps) {
   const [showQR, setShowQR] = useState(false);
+  const qrValue = ticket.qr_token || `${window.location.origin}/verify-ticket/${ticket.ticket_code}`;
   
   // Create a type-safe event object with default values if event is undefined
   const event = ticket.event || {
@@ -197,11 +203,11 @@ function TicketCard({ ticket, isUsed }: TicketCardProps) {
       <div className="p-4 md:p-6 flex flex-col md:flex-row gap-4 md:gap-6">
         <div className="md:w-1/4">
           {showQR ? (
-            <div className="bg-white p-4 rounded-md flex items-center justify-center h-full">
+            <div id={`ticket-qr-${ticket.id}`} className="bg-white p-4 rounded-md flex items-center justify-center h-full">
               <QRCode
                 size={128}
                 style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                value={`${window.location.origin}/verify-ticket/${ticket.ticket_code}`}
+                value={qrValue}
               />
             </div>
           ) : event.image_url ? (
@@ -275,7 +281,24 @@ function TicketCard({ ticket, isUsed }: TicketCardProps) {
             >
               {showQR ? "Hide QR" : "Show QR Code"}
             </Button>
-            <Button size="sm" variant="outline">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const svg = document.querySelector(`#ticket-qr-${ticket.id} svg`);
+                if (!(svg instanceof SVGElement)) return;
+                const serializer = new XMLSerializer();
+                const source = serializer.serializeToString(svg);
+                const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `${ticket.ticket_code}-qr.svg`;
+                link.click();
+                URL.revokeObjectURL(url);
+              }}
+              disabled={!showQR}
+            >
               <Download className="h-4 w-4 mr-1" />
               Download
             </Button>
@@ -288,7 +311,7 @@ function TicketCard({ ticket, isUsed }: TicketCardProps) {
           <QRCode
             size={180}
             style={{ height: "auto", maxWidth: "100%", width: "180px" }}
-            value={`${window.location.origin}/verify-ticket/${ticket.ticket_code}`}
+            value={qrValue}
           />
         </div>
       )}

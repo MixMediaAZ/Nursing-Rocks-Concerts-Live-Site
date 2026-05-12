@@ -1,6 +1,7 @@
 import { db } from "../db";
 import { users, tickets, events } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import { ensureTicketQrToken } from "./tickets";
 
 // Initialize Resend client if API key is available (lazy loading)
 let resendClient: any = null;
@@ -126,7 +127,7 @@ export async function sendTicketIssuedEmail(userId: number, eventId: number, tic
 
   const ticketResult = await db.select().from(tickets).where(eq(tickets.id, ticketId)).limit(1);
   if (!ticketResult.length) throw new Error("Ticket not found");
-  const ticket = ticketResult[0];
+  let ticket = ticketResult[0];
 
   const emailSubject = TICKET_ISSUED_EMAIL_SUBJECT;
 
@@ -436,7 +437,7 @@ export async function resendTicketEmail(ticketId: string) {
   const ticketResult = await db.select().from(tickets).where(eq(tickets.id, ticketId)).limit(1);
   if (!ticketResult.length) throw new Error("Ticket not found");
 
-  const ticket = ticketResult[0];
+  let ticket = ticketResult[0];
 
   // FIX: Validate ticket is in a state where it can be resent
   if (ticket.status === "revoked") {
@@ -445,6 +446,7 @@ export async function resendTicketEmail(ticketId: string) {
   if (ticket.status === "expired") {
     throw new Error("Cannot resend email for expired ticket");
   }
+  await ensureTicketQrToken(ticket);
 
   try {
     const sendResult = await sendTicketIssuedEmail(ticket.user_id, ticket.event_id, ticketId);
@@ -497,12 +499,7 @@ export async function getTicketQrCode(ticketId: string) {
   const ticketResult = await db.select().from(tickets).where(eq(tickets.id, ticketId)).limit(1);
   if (!ticketResult.length) throw new Error("Ticket not found");
 
-  const ticket = ticketResult[0];
-
-  // FIX: Handle nullable qr_token safely (legacy tickets may not have it)
-  if (!ticket.qr_token) {
-    throw new Error("QR token not available for this ticket (legacy ticket)");
-  }
+  const ticket = await ensureTicketQrToken(ticketResult[0]);
 
   return {
     ticketCode: ticket.ticket_code,
@@ -567,7 +564,7 @@ export async function approveAndSendTicketEmail(ticketId: string, adminUserId: n
     throw new Error("Ticket not found");
   }
 
-  const ticket = ticketResult[0];
+  let ticket = ticketResult[0];
 
   // FIX: Safety check - only approve if in pending_approval state
   if (ticket.email_status !== "pending_approval") {
@@ -577,6 +574,7 @@ export async function approveAndSendTicketEmail(ticketId: string, adminUserId: n
       emailStatus: ticket.email_status ?? undefined,
     };
   }
+  ticket = await ensureTicketQrToken(ticket);
 
   // FIX: Fetch user and event data with validation
   const userResult = await db.select().from(users).where(eq(users.id, ticket.user_id)).limit(1);
@@ -638,6 +636,8 @@ export async function approveAndSendTicketEmail(ticketId: string, adminUserId: n
     }
     .footer { text-align: center; padding: 20px; font-size: 12px; color: #888; border-top: 1px solid #ddd; }
     .important { background: #fffbea; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #ffa500; }
+    .qr { text-align: center; background: white; padding: 20px; border-radius: 6px; margin: 20px 0; }
+    .qr img { max-width: 260px; width: 100%; height: auto; border: 1px solid #ddd; }
   </style>
 </head>
 <body>
@@ -665,8 +665,15 @@ export async function approveAndSendTicketEmail(ticketId: string, adminUserId: n
         ${escapeHtml(ticket.ticket_code)}
       </div>
 
+      ${ticket.qr_image_url ? `
+      <div class="qr">
+        <p style="margin: 0 0 12px 0; font-weight: bold;">Scan this QR code at the gate</p>
+        <img src="${escapeHtml(ticket.qr_image_url)}" alt="Ticket QR code">
+      </div>
+      ` : ''}
+
       <div class="important">
-        <strong>Important:</strong> Please save your ticket code or bring this email with you. You'll need to present this code at the venue to check in.
+        <strong>Important:</strong> Please bring this email with you. Staff can scan the QR code or enter your ticket code at the venue.
       </div>
 
       <p>If you have any questions about the event or your ticket, please don't hesitate to reach out to us.</p>

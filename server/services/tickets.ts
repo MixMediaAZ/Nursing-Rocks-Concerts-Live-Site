@@ -40,6 +40,53 @@ export type IssueTicketForEventResult = {
   newlyIssued: boolean;
 };
 
+export async function ensureTicketQrToken(ticket: typeof tickets.$inferSelect): Promise<typeof tickets.$inferSelect> {
+  if (ticket.qr_token && ticket.qr_image_url && ticket.expires_at) {
+    return ticket;
+  }
+
+  const eventResult = await db.select().from(events).where(eq(events.id, ticket.event_id)).limit(1);
+  if (!eventResult.length) {
+    throw new Error(`Event ${ticket.event_id} not found`);
+  }
+
+  const event = eventResult[0];
+  const expiresAt =
+    ticket.expires_at ||
+    event.ticket_expiration_at ||
+    (event.end_at
+      ? new Date((event.end_at as Date).getTime() + 7 * 24 * 60 * 60 * 1000)
+      : new Date((event.date as Date).getTime() + 7 * 24 * 60 * 60 * 1000));
+
+  const qrToken =
+    ticket.qr_token ||
+    signQrPayload(
+      {
+        ticketId: ticket.id,
+        userId: ticket.user_id,
+        eventId: ticket.event_id,
+        ticketCode: ticket.ticket_code,
+        type: "event_ticket",
+      },
+      expiresAt
+    );
+
+  const qrImageUrl = ticket.qr_image_url || (await generateAndStoreQrImage(qrToken, ticket.id));
+
+  const [updated] = await db
+    .update(tickets)
+    .set({
+      qr_token: qrToken,
+      qr_image_url: qrImageUrl,
+      expires_at: expiresAt,
+      updated_at: new Date(),
+    })
+    .where(eq(tickets.id, ticket.id))
+    .returning();
+
+  return updated || ticket;
+}
+
 /**
  * Issue a ticket for a specific event
  * Idempotent: returns existing issued/checked-in ticket if one already exists (`newlyIssued: false`)
@@ -60,6 +107,10 @@ export async function issueTicketForEvent(
 
   if (existing.length > 0) {
     const ticket = existing[0];
+
+    if (ticket.status === "issued" && !ticket.qr_token) {
+      return { ticket: await ensureTicketQrToken(ticket), newlyIssued: false };
+    }
 
     // If issued or checked-in, return existing (FIX: standardized to "issued" from schema default)
     if (ticket.status === "issued" || ticket.status === "checked_in") {

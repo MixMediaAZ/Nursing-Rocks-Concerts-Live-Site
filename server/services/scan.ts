@@ -168,12 +168,22 @@ export async function scanTicket(input: ScanInput, ctx: ScanContext): Promise<Sc
   }
 
   // Step 7: Check if already checked in (single-use enforcement)
-  if (ticket.status === "checked_in") {
+  if (ticket.status === "checked_in" || ticket.is_used === true) {
     await logRejectedScan(ticket, input.eventId, ctx, "already_used", "Ticket has already been checked in");
+    const [attendee] = await db
+      .select({ first_name: users.first_name, last_name: users.last_name })
+      .from(users)
+      .where(eq(users.id, ticket.user_id))
+      .limit(1);
+    const userName = attendee
+      ? [attendee.first_name, attendee.last_name].filter(Boolean).join(" ").trim() || undefined
+      : undefined;
     return {
       ok: false,
       reason: "already_used",
       message: "Ticket already used",
+      ticketCode: ticket.ticket_code,
+      userName,
     };
   }
 
@@ -195,6 +205,7 @@ export async function scanTicket(input: ScanInput, ctx: ScanContext): Promise<Sc
     .update(tickets)
     .set({
       status: "checked_in",
+      is_used: true,
       checked_in_at: now,
       last_scan_at: now,
       scan_count: (ticket.scan_count || 0) + 1,

@@ -6,7 +6,7 @@ import fs from "fs";
 import { randomBytes, timingSafeEqual } from "crypto";
 import bcryptjs from "bcryptjs";
 import { db } from "./db";
-import { eq, sql, and, desc, ilike, or, inArray, gte } from "drizzle-orm";
+import { eq, sql, and, desc, ilike, or, inArray, gte, ne } from "drizzle-orm";
 import { storage } from "./storage";
 import { approvedVideos, gallery, mediaFolders, events, nrpxRegistrations, users, tickets, ticketScanLogs, storeProducts, storeOrders, storeOrderItems, jobBoardVisits, pageContent } from "@shared/schema";
 import QRCode from "qrcode";
@@ -2900,12 +2900,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { scanTicket } = await import("./services/scan");
       const { verifyQrToken } = await import("./services/qr");
+      const { ensureTicketQrToken } = await import("./services/tickets");
 
-      const { qrToken, deviceFingerprint } = req.body;
+      let { qrToken, deviceFingerprint } = req.body;
       const rawEventId = req.body.eventId;
 
       if (!qrToken || typeof qrToken !== "string") {
         return res.status(400).json({ message: "qrToken is required" });
+      }
+      qrToken = qrToken.trim();
+      if (!qrToken) {
+        return res.status(400).json({ message: "qrToken is required" });
+      }
+
+      const looksLikeJwt = qrToken.split(".").length === 3;
+      if (!looksLikeJwt) {
+        let ticketCode = qrToken;
+        try {
+          const parsed = new URL(qrToken);
+          const parts = parsed.pathname.split("/").filter(Boolean);
+          const verifyIndex = parts.findIndex((part) => part === "verify-ticket");
+          if (verifyIndex >= 0 && parts[verifyIndex + 1]) {
+            ticketCode = decodeURIComponent(parts[verifyIndex + 1]);
+          }
+        } catch {
+          const match = qrToken.match(/\/verify-ticket\/([^/?#]+)/);
+          if (match?.[1]) ticketCode = decodeURIComponent(match[1]);
+        }
+
+        ticketCode = ticketCode.trim().toUpperCase();
+        if (!/^NR-[A-Z0-9-]{4,64}$/.test(ticketCode)) {
+          return res.status(400).json({ ok: false, reason: "token_invalid", message: "Invalid QR code" });
+        }
+
+        const [ticketForCode] = await db
+          .select()
+          .from(tickets)
+          .where(eq(tickets.ticket_code, ticketCode))
+          .limit(1);
+
+        if (!ticketForCode) {
+          return res.status(404).json({ ok: false, reason: "ticket_not_found", message: "Ticket not found" });
+        }
+        const scannableTicket = await ensureTicketQrToken(ticketForCode);
+        qrToken = scannableTicket.qr_token;
       }
 
       let eventId: number;
@@ -4669,7 +4707,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Total sold tickets for this event (all non-revoked statuses)
-      const whereEvent = eventId ? and(eq(tickets.event_id, eventId)) : undefined;
+      const whereEvent = eventId
+        ? and(eq(tickets.event_id, eventId), ne(tickets.status, "revoked"))
+        : ne(tickets.status, "revoked");
       const whereCheckedIn = eventId
         ? and(eq(tickets.event_id, eventId), eq(tickets.status, "checked_in"))
         : eq(tickets.status, "checked_in");
