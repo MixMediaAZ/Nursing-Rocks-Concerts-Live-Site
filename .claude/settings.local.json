@@ -237,7 +237,11 @@
       "Bash(git commit -m 'Add camera settings panel: torch, zoom, fps, scan box size *)",
       "Bash(dir \"C:\\\\Users\\\\Dave\\\\Downloads\\\\Nursing-Rocks-Concerts-Live-Site - 3.0\\\\client\\\\src\\\\components\" /b)",
       "Bash(cmd /c \"dir /b \\\\\"C:\\\\Users\\\\Dave\\\\Downloads\\\\Nursing-Rocks-Concerts-Live-Site - 3.0\\\\client\\\\src\\\\components\\\\\"\")",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(git pull *)",
+      "Bash(git stash *)",
+      "Bash(netstat -ano)",
+      "Bash(findstr \"5173\")"
     ]
   }
 }

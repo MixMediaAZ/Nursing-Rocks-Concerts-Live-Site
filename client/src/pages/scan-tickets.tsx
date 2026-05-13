@@ -161,6 +161,7 @@ export default function ScanTicketsPage() {
   const [savedBluetoothName, setSavedBluetoothName] = useState<string>(() =>
     typeof sessionStorage !== "undefined" ? sessionStorage.getItem("saved_bt_device") || "" : ""
   );
+  const [pairedDevices, setPairedDevices] = useState<BluetoothDevice[]>([]);
 
   const [scanSettings, setScanSettings] = useState<ScanSettings>(DEFAULT_SETTINGS);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -462,6 +463,30 @@ export default function ScanTicketsPage() {
     if (!authed) {
       didAutoStartRef.current = false;
     }
+  }, [authed]);
+
+  // ── Fetch list of paired Bluetooth devices ──────────────────────────────
+  useEffect(() => {
+    if (!authed) {
+      setPairedDevices([]);
+      return;
+    }
+
+    const fetchPairedDevices = async () => {
+      try {
+        const devices = await (navigator as any).bluetooth.getDevices?.();
+        if (devices && Array.isArray(devices)) {
+          setPairedDevices(devices);
+        }
+      } catch {
+        // getDevices not supported or error occurred
+        setPairedDevices([]);
+      }
+    };
+
+    // Small delay to let UI settle
+    const timeout = setTimeout(fetchPairedDevices, 300);
+    return () => clearTimeout(timeout);
   }, [authed]);
 
   // ── Auto-connect to saved Bluetooth device ────────────────────────────────
@@ -1211,12 +1236,32 @@ export default function ScanTicketsPage() {
           {typeof (navigator as any).bluetooth !== "undefined" && (
             <div>
               <label className="block text-xs text-gray-400 mb-1">
-                Bluetooth Scanner {bluetoothDevice ? "🔗" : ""}
+                Bluetooth Scanner {bluetoothDevice ? "🔗" : ""} {pairedDevices.length > 0 && `(${pairedDevices.length} paired)`}
               </label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-col">
                 {!bluetoothDevice ? (
-                  <div className="flex-1 space-y-2">
-                    {savedBluetoothName ? (
+                  <div className="space-y-2">
+                    {/* Paired devices list */}
+                    {pairedDevices.length > 0 && (
+                      <div className="space-y-1">
+                        {pairedDevices.map((device) => (
+                          <Button
+                            key={device.id}
+                            type="button"
+                            onClick={() => connectBluetoothScanner(device)}
+                            className={`w-full text-xs py-2 ${
+                              savedBluetoothName === device.name
+                                ? "bg-green-700 hover:bg-green-600"
+                                : "bg-gray-700 hover:bg-gray-600"
+                            }`}
+                          >
+                            {savedBluetoothName === device.name ? "✓ " : ""}📱 {device.name}
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                    {/* Manual selection buttons */}
+                    {savedBluetoothName && pairedDevices.length === 0 ? (
                       <>
                         <Button
                           type="button"
@@ -1243,7 +1288,7 @@ export default function ScanTicketsPage() {
                         onClick={() => connectBluetoothScanner()}
                         className="w-full bg-blue-700 hover:bg-blue-600 text-xs py-2"
                       >
-                        📱 Connect Scanner
+                        {pairedDevices.length > 0 ? "📱 Other Scanner..." : "📱 Connect Scanner"}
                       </Button>
                     )}
                   </div>
