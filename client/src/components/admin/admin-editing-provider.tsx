@@ -61,8 +61,8 @@ interface AdminEditingProviderProps {
 
 export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
   const adminState = useAdminEditMode();
-  const { 
-    selectedElement, 
+  const {
+    selectedElement,
     isImageReplacementDialogOpen,
     isTextEditorDialogOpen,
     isCreatingNewText,
@@ -78,9 +78,20 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
     setUniversalSelectionEnabled,
     setSelectedElement
   } = useElementSelection();
-  
+
   // Track the element that's currently being hovered
   const [hoveredElement, setHoveredElement] = useState<HTMLElement | null>(null);
+  // Track whether the edit toolbar should be visible (hidden by default)
+  const [showEditToolbar, setShowEditToolbar] = useState(() =>
+    typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('showEditToolbar') === 'true' : false
+  );
+
+  // Save toolbar visibility state to sessionStorage
+  useEffect(() => {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('showEditToolbar', String(showEditToolbar));
+    }
+  }, [showEditToolbar]);
 
   // Load saved page content from DB on mount and apply to DOM.
   // Runs once; if an element no longer exists the entry is silently skipped.
@@ -664,9 +675,9 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
         isCreatingNew={isCreatingNewText}
       />
       
-      {/* Admin mode toolbar - only shown when admin mode is active */}
-      {adminState.isAdminMode && (
-        <div 
+      {/* Admin mode toolbar - only shown when admin mode is active AND toolbar is toggled on */}
+      {adminState.isAdminMode && showEditToolbar && (
+        <div
           data-admin-toolbar="true"
           className="fixed bottom-4 left-0 right-0 mx-auto w-max max-w-[95%] overflow-auto bg-white rounded-lg shadow-lg border border-gray-200 px-3 py-2 z-50"
         >

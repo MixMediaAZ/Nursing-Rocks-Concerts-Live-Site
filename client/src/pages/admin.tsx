@@ -1034,13 +1034,29 @@ export default function AdminPage() {
                 </Label>
               </div>
               
-              <Button 
+              <Button
                 variant="default"
                 size="sm"
                 className="bg-primary"
                 onClick={() => openLiveSiteInAdminMode(true)}
               >
                 <Edit className="h-4 w-4 mr-1" /> Open Editor
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const isVisible = sessionStorage.getItem('showEditToolbar') === 'true';
+                  sessionStorage.setItem('showEditToolbar', String(!isVisible));
+                  window.location.reload();
+                  toast({
+                    title: isVisible ? "Toolbar Hidden" : "Toolbar Shown",
+                    description: isVisible ? "Edit toolbar is now hidden" : "Edit toolbar is now visible at the bottom",
+                  });
+                }}
+              >
+                {sessionStorage.getItem('showEditToolbar') === 'true' ? 'Hide' : 'Show'} Toolbar
               </Button>
             </div>
           )}

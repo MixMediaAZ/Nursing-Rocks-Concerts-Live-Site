@@ -241,7 +241,8 @@
       "Bash(git pull *)",
       "Bash(git stash *)",
       "Bash(netstat -ano)",
-      "Bash(findstr \"5173\")"
+      "Bash(findstr \"5173\")",
+      "mcp__Claude_in_Chrome__switch_browser"
     ]
   }
 }
