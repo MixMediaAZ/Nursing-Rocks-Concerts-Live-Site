@@ -8,31 +8,44 @@ import { LogOut, Settings, Edit } from 'lucide-react';
 export function FloatingAdminControl() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isEditModeActive, setIsEditModeActive] = useState(false);
-  
+  const [showWidget, setShowWidget] = useState(false);
+  const [currentPath, setCurrentPath] = useState(
+    typeof window !== 'undefined' ? window.location.pathname : ''
+  );
+
   // Check if user is in admin mode and edit mode
   useEffect(() => {
     const checkAdminStatus = () => {
       const adminStatus = localStorage.getItem("isAdmin") === "true";
       const editMode = localStorage.getItem("editMode") === "true";
+      const widgetVisible = sessionStorage.getItem("showEditToolbar") === "true";
       setIsAdmin(adminStatus);
       setIsEditModeActive(editMode);
+      setShowWidget(widgetVisible);
     };
-    
+
     // Initial check
     checkAdminStatus();
-    
+
     // Listen for changes to admin status
     window.addEventListener('admin-mode-changed', checkAdminStatus);
     window.addEventListener('storage', checkAdminStatus);
-    
+
+    // Track route changes
+    const handlePopState = () => setCurrentPath(window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+
     return () => {
       window.removeEventListener('admin-mode-changed', checkAdminStatus);
       window.removeEventListener('storage', checkAdminStatus);
+      window.removeEventListener('popstate', handlePopState);
     };
   }, []);
 
-  // If not in admin mode, don't render anything
-  if (!isAdmin) {
+  // Hide widget by default on admin dashboard (it has its own controls)
+  // Only show when explicitly toggled via the top menu
+  const isOnAdminDashboard = currentPath.startsWith('/admin');
+  if (!isAdmin || (isOnAdminDashboard && !showWidget)) {
     return null;
   }
 

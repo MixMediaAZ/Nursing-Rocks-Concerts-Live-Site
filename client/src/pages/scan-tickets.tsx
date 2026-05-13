@@ -464,6 +464,48 @@ export default function ScanTicketsPage() {
     }
   }, [authed]);
 
+  // ── Release camera/video stream on page unload (prevents lockup on refresh) ──
+  useEffect(() => {
+    const releaseCamera = () => {
+      // Synchronously stop all video tracks from any video elements
+      try {
+        document.querySelectorAll("video").forEach((video) => {
+          const stream = video.srcObject as MediaStream | null;
+          if (stream) {
+            stream.getTracks().forEach((track) => track.stop());
+            video.srcObject = null;
+          }
+        });
+      } catch { /* ignore */ }
+
+      // Best-effort scanner stop (async, may not complete before unload)
+      if (scannerRef.current) {
+        try {
+          scannerRef.current.stop().catch(() => {});
+        } catch { /* ignore */ }
+        scannerRef.current = null;
+      }
+
+      // Release wake lock
+      if (wakeLockRef.current) {
+        try {
+          wakeLockRef.current.release().catch(() => {});
+        } catch { /* ignore */ }
+        wakeLockRef.current = null;
+      }
+    };
+
+    window.addEventListener("beforeunload", releaseCamera);
+    window.addEventListener("pagehide", releaseCamera);
+
+    return () => {
+      window.removeEventListener("beforeunload", releaseCamera);
+      window.removeEventListener("pagehide", releaseCamera);
+      // Also release on component unmount (route change)
+      releaseCamera();
+    };
+  }, []);
+
   // ── Fetch list of paired Bluetooth devices ──────────────────────────────
   useEffect(() => {
     if (!authed) {

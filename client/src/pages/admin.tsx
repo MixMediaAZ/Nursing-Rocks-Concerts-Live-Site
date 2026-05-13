@@ -1049,14 +1049,17 @@ export default function AdminPage() {
                 onClick={() => {
                   const isVisible = sessionStorage.getItem('showEditToolbar') === 'true';
                   sessionStorage.setItem('showEditToolbar', String(!isVisible));
-                  window.location.reload();
+                  // Notify other components that listen for this change
+                  window.dispatchEvent(new Event('admin-mode-changed'));
                   toast({
-                    title: isVisible ? "Toolbar Hidden" : "Toolbar Shown",
-                    description: isVisible ? "Edit toolbar is now hidden" : "Edit toolbar is now visible at the bottom",
+                    title: isVisible ? "Editor Widget Hidden" : "Editor Widget Shown",
+                    description: isVisible ? "Editor widget is now hidden" : "Editor widget is now visible",
                   });
+                  // Reload to ensure consistent state across all components
+                  setTimeout(() => window.location.reload(), 600);
                 }}
               >
-                {sessionStorage.getItem('showEditToolbar') === 'true' ? 'Hide' : 'Show'} Toolbar
+                {sessionStorage.getItem('showEditToolbar') === 'true' ? 'Hide' : 'Show'} Editor Widget
               </Button>
             </div>
           )}
