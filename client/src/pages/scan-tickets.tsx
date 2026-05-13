@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Helmet } from "react-helmet";
-import { CheckCircle2, XCircle, AlertTriangle, Camera, Loader2, Lightbulb, ZoomIn, Settings, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckCircle2, XCircle, AlertTriangle, Camera, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // ── Camera capability types ───────────────────────────────────────────────────
@@ -164,7 +164,6 @@ export default function ScanTicketsPage() {
   const [pairedDevices, setPairedDevices] = useState<BluetoothDevice[]>([]);
 
   const [scanSettings, setScanSettings] = useState<ScanSettings>(DEFAULT_SETTINGS);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [capabilities, setCapabilities] = useState<{
     torch: boolean;
     zoom: { min: number; max: number; step: number } | null;
