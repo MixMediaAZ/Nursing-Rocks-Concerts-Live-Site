@@ -675,8 +675,9 @@ export function AdminEditingProvider({ children }: AdminEditingProviderProps) {
         isCreatingNew={isCreatingNewText}
       />
       
-      {/* Admin mode toolbar - only shown when admin mode is active AND toolbar is toggled on */}
-      {adminState.isAdminMode && showEditToolbar && (
+      {/* Admin mode toolbar - only shown when admin mode is active AND toolbar is toggled on,
+          and NEVER on scan-tickets page (would block scanner UI) */}
+      {adminState.isAdminMode && showEditToolbar && !window.location.pathname.startsWith('/scan-tickets') && (
         <div
           data-admin-toolbar="true"
           className="fixed bottom-4 left-0 right-0 mx-auto w-max max-w-[95%] overflow-auto bg-white rounded-lg shadow-lg border border-gray-200 px-3 py-2 z-50"

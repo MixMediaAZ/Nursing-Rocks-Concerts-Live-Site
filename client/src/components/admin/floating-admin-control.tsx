@@ -42,12 +42,15 @@ export function FloatingAdminControl() {
     };
   }, []);
 
-  // Hide widget by default on admin dashboard and scan-tickets page
-  // (these pages have their own controls and the widget gets in the way)
-  // Only show when explicitly toggled via the admin top menu
-  const hideByDefault =
-    currentPath.startsWith('/admin') || currentPath.startsWith('/scan-tickets');
-  if (!isAdmin || (hideByDefault && !showWidget)) {
+  // Never show widget on scan-tickets page (door staff don't need it,
+  // and it blocks the PIN keypad and scanner UI)
+  if (currentPath.startsWith('/scan-tickets')) {
+    return null;
+  }
+
+  // On admin dashboard, hide by default — only show when toggled via top menu
+  const isOnAdminDashboard = currentPath.startsWith('/admin');
+  if (!isAdmin || (isOnAdminDashboard && !showWidget)) {
     return null;
   }
 
