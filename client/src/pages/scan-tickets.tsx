@@ -162,6 +162,7 @@ export default function ScanTicketsPage() {
     typeof sessionStorage !== "undefined" ? sessionStorage.getItem("saved_bt_device") || "" : ""
   );
   const [pairedDevices, setPairedDevices] = useState<BluetoothDevice[]>([]);
+  const [lastScannerInput, setLastScannerInput] = useState<string>("");
 
   const [scanSettings, setScanSettings] = useState<ScanSettings>(DEFAULT_SETTINGS);
   const [capabilities, setCapabilities] = useState<{
@@ -934,6 +935,108 @@ export default function ScanTicketsPage() {
     [bluetoothInput, authed, verifyCode]
   );
 
+  // ── Global HID scanner listener ───────────────────────────────────────────
+  // Tuned for Eyoyo EY-O32 and similar HID-mode 2D scanners:
+  //  • Default suffix: CR (Enter key)
+  //  • Configurable inter-char delay (default ~5ms, can be set up to 100ms)
+  //  • Sends as standard HID keyboard reports
+  // These scanners aren't visible to Web Bluetooth API (which only sees BLE GATT).
+  // We capture keystrokes globally — works regardless of which element has focus.
+  useEffect(() => {
+    if (!authed) return;
+
+    let buffer = "";
+    let lastKeyTime = 0;
+    let bufferTimeout: ReturnType<typeof setTimeout> | null = null;
+    let firstKeyTime = 0;
+
+    // Lenient timing — Eyoyo can be configured with up to 100ms inter-char delay
+    const BUFFER_CLEAR_MS = 500;
+    // A barcode scan should complete in under 2 seconds; longer = human typing
+    const MAX_SCAN_DURATION_MS = 2000;
+
+    const isTypeableTarget = (el: EventTarget | null): boolean => {
+      if (!el || !(el instanceof HTMLElement)) return false;
+      // Allow capture into our hidden bluetooth input (it's tabIndex=-1)
+      if (el === bluetoothInputRef.current) return false;
+      const tag = el.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+      if (el.isContentEditable) return true;
+      return false;
+    };
+
+    const submitBuffer = async () => {
+      const code = buffer.trim();
+      buffer = "";
+      firstKeyTime = 0;
+      if (bufferTimeout) { clearTimeout(bufferTimeout); bufferTimeout = null; }
+      if (!code || code.length < 3) return;
+      // Show user the scanner input is being received (truncated for display)
+      setLastScannerInput(code.length > 20 ? code.slice(0, 17) + "..." : code);
+      processingRef.current = true;
+      setProcessing(true);
+      setBluetoothInput("");
+      await verifyCode(code);
+    };
+
+    const handleGlobalKey = async (e: KeyboardEvent) => {
+      // Don't capture while processing, or when user is typing in a real input
+      if (processingRef.current) return;
+      if (isTypeableTarget(e.target)) return;
+      // Ignore modifier combos (Ctrl+R, Cmd+F, etc.)
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      const now = Date.now();
+      const delta = now - lastKeyTime;
+      lastKeyTime = now;
+
+      // Clear stale buffer if the gap is too large or scan has run too long
+      if (
+        (delta > BUFFER_CLEAR_MS && buffer.length > 0) ||
+        (firstKeyTime > 0 && now - firstKeyTime > MAX_SCAN_DURATION_MS)
+      ) {
+        buffer = "";
+        firstKeyTime = 0;
+      }
+
+      // Eyoyo's CR suffix shows up as 'Enter' key in HID mode
+      if (e.key === "Enter") {
+        e.preventDefault();
+        await submitBuffer();
+        return;
+      }
+
+      // Some scanners send Tab as suffix
+      if (e.key === "Tab" && buffer.length >= 3) {
+        e.preventDefault();
+        await submitBuffer();
+        return;
+      }
+
+      // Buffer printable single chars (letters, digits, symbols, dash)
+      if (e.key.length === 1) {
+        if (buffer.length === 0) firstKeyTime = now;
+        buffer += e.key;
+        if (bufferTimeout) clearTimeout(bufferTimeout);
+        bufferTimeout = setTimeout(() => {
+          // No terminator received — auto-submit if buffer looks like a ticket code
+          if (buffer.length >= 6) {
+            submitBuffer().catch(() => {});
+          } else {
+            buffer = "";
+            firstKeyTime = 0;
+          }
+        }, BUFFER_CLEAR_MS);
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKey, true);
+    return () => {
+      window.removeEventListener("keydown", handleGlobalKey, true);
+      if (bufferTimeout) clearTimeout(bufferTimeout);
+    };
+  }, [authed, verifyCode]);
+
   // ── Scanner div ID ────────────────────────────────────────────────────────
 
   const scannerDivId = "nr-gate-qr-scanner";
@@ -1273,68 +1376,62 @@ export default function ScanTicketsPage() {
             </div>
           )}
 
-          {/* Bluetooth device selector */}
+          {/* Bluetooth scanner info — Eyoyo EY-O32 and similar HID-mode scanners */}
+          <div className="bg-blue-950/30 border border-blue-800/50 rounded-lg p-2.5">
+            <p className="text-xs text-blue-200 font-medium mb-1">
+              📡 Bluetooth Scanner (Eyoyo, Tera, etc.)
+            </p>
+            <p className="text-xs text-gray-400 leading-snug">
+              1. Set scanner to <span className="text-white">HID/Keyboard mode</span> (default for Eyoyo).
+              <br />
+              2. Pair via <span className="text-white">Android Settings → Bluetooth</span>.
+              <br />
+              3. Scans flow into this page automatically — no setup needed here.
+            </p>
+            {lastScannerInput ? (
+              <p className="text-xs text-green-400 mt-1.5 font-mono truncate">
+                ✓ Last scan: {lastScannerInput}
+              </p>
+            ) : (
+              <p className="text-xs text-gray-600 mt-1.5">
+                Waiting for first scan…
+              </p>
+            )}
+          </div>
+
+          {/* Advanced: Web Bluetooth (BLE-only scanners) - hidden behind a details toggle */}
           {typeof (navigator as any).bluetooth !== "undefined" && (
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">
-                Bluetooth Scanner {bluetoothDevice ? "🔗" : ""} {pairedDevices.length > 0 && `(${pairedDevices.length} paired)`}
-              </label>
-              <div className="flex gap-2 flex-col">
+            <details className="text-xs">
+              <summary className="text-gray-500 cursor-pointer hover:text-gray-300 py-1">
+                Advanced: BLE scanner pairing (uncommon)
+              </summary>
+              <div className="mt-2 space-y-2">
                 {!bluetoothDevice ? (
-                  <div className="space-y-2">
-                    {/* Paired devices list */}
-                    {pairedDevices.length > 0 && (
-                      <div className="space-y-1">
-                        {pairedDevices.map((device) => (
-                          <Button
-                            key={device.id}
-                            type="button"
-                            onClick={() => connectBluetoothScanner(device)}
-                            className={`w-full text-xs py-2 ${
-                              savedBluetoothName === device.name
-                                ? "bg-green-700 hover:bg-green-600"
-                                : "bg-gray-700 hover:bg-gray-600"
-                            }`}
-                          >
-                            {savedBluetoothName === device.name ? "✓ " : ""}📱 {device.name}
-                          </Button>
-                        ))}
-                      </div>
-                    )}
-                    {/* Manual selection buttons */}
-                    {savedBluetoothName && pairedDevices.length === 0 ? (
-                      <>
-                        <Button
-                          type="button"
-                          onClick={() => connectBluetoothScanner()}
-                          className="w-full bg-green-700 hover:bg-green-600 text-xs py-2"
-                        >
-                          🔗 Reconnect {savedBluetoothName}
-                        </Button>
-                        <Button
-                          type="button"
-                          onClick={() => {
-                            sessionStorage.removeItem("saved_bt_device");
-                            setSavedBluetoothName("");
-                            connectBluetoothScanner();
-                          }}
-                          className="w-full bg-blue-700 hover:bg-blue-600 text-xs py-2"
-                        >
-                          📱 Select Different Scanner
-                        </Button>
-                      </>
-                    ) : (
-                      <Button
-                        type="button"
-                        onClick={() => connectBluetoothScanner()}
-                        className="w-full bg-blue-700 hover:bg-blue-600 text-xs py-2"
-                      >
-                        {pairedDevices.length > 0 ? "📱 Other Scanner..." : "📱 Connect Scanner"}
-                      </Button>
-                    )}
-                  </div>
-                ) : (
                   <>
+                    {pairedDevices.length > 0 && pairedDevices.map((device) => (
+                      <Button
+                        key={device.id}
+                        type="button"
+                        onClick={() => connectBluetoothScanner(device)}
+                        className={`w-full text-xs py-2 ${
+                          savedBluetoothName === device.name
+                            ? "bg-green-700 hover:bg-green-600"
+                            : "bg-gray-700 hover:bg-gray-600"
+                        }`}
+                      >
+                        {savedBluetoothName === device.name ? "✓ " : ""}📱 {device.name}
+                      </Button>
+                    ))}
+                    <Button
+                      type="button"
+                      onClick={() => connectBluetoothScanner()}
+                      className="w-full bg-blue-700 hover:bg-blue-600 text-xs py-2"
+                    >
+                      📱 Pair BLE Scanner...
+                    </Button>
+                  </>
+                ) : (
+                  <div className="flex gap-2">
                     <div className="flex-1 bg-gray-800 border border-green-600 text-white rounded-lg px-3 py-2 text-xs flex items-center gap-2 truncate">
                       <span className="text-green-400">●</span>
                       <span className="truncate">{bluetoothDevice.name}</span>
@@ -1346,15 +1443,15 @@ export default function ScanTicketsPage() {
                     >
                       Disconnect
                     </Button>
-                  </>
+                  </div>
+                )}
+                {bluetoothStatus && (
+                  <p className={`text-xs ${bluetoothStatus.includes("error") || bluetoothStatus.includes("failed") ? "text-red-400" : "text-green-400"}`}>
+                    {bluetoothStatus}
+                  </p>
                 )}
               </div>
-              {bluetoothStatus && (
-                <p className={`text-xs mt-1 ${bluetoothStatus.includes("error") || bluetoothStatus.includes("failed") ? "text-red-400" : "text-green-400"}`}>
-                  {bluetoothStatus}
-                </p>
-              )}
-            </div>
+            </details>
           )}
         </div>
 
