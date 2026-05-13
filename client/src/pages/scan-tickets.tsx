@@ -330,6 +330,10 @@ export default function ScanTicketsPage() {
         setBluetoothStatus("");
       } else {
         setBluetoothStatus(`Error: ${err.message || "Could not connect"}`);
+        // Clear saved device on failure so we don't keep retrying on every page load
+        sessionStorage.removeItem("saved_bt_device");
+        setSavedBluetoothName("");
+        setBluetoothDevice(null);
       }
     }
   }, []);

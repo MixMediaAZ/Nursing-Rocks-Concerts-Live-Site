@@ -243,7 +243,8 @@
       "Bash(netstat -ano)",
       "Bash(findstr \"5173\")",
       "mcp__Claude_in_Chrome__switch_browser",
-      "Bash(gh pr create --base main --head claude/gracious-volhard-66a5ec --title 'Hide editor widgets on scan-tickets + fix camera refresh lockup' --body 'Fixes: *)"
+      "Bash(gh pr create --base main --head claude/gracious-volhard-66a5ec --title 'Hide editor widgets on scan-tickets + fix camera refresh lockup' --body 'Fixes: *)",
+      "Bash(curl -sI https://nursingrocksconcerts.com/scan-tickets)"
     ]
   }
 }
