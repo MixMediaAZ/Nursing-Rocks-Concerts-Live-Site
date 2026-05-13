@@ -229,7 +229,15 @@
       "Bash(git commit -m 'Remove conflicting Permissions-Policy headers from vercel.json *)",
       "Bash(git commit -m 'Improve QR code detection settings and logging *)",
       "Bash(git commit -m 'Add alphanumeric barcode and manual ticket code entry support *)",
-      "Bash(git commit -m 'Add camera selection dropdown and commit middleware fix *)"
+      "Bash(git commit -m 'Add camera selection dropdown and commit middleware fix *)",
+      "Bash(git commit -m 'Overhaul scan-tickets: fix all reliability bugs for flawless operation *)",
+      "Bash(git commit -m 'Add live check-in counter, stats API, and admin progress bar *)",
+      "Bash(node -e \"const l = require\\('lucide-react'\\); console.log\\(Object.keys\\(l\\).filter\\(k => /flash|torch|light|zap/i.test\\(k\\)\\).join\\(', '\\)\\)\")",
+      "Bash(npx vite *)",
+      "Bash(git commit -m 'Add camera settings panel: torch, zoom, fps, scan box size *)",
+      "Bash(dir \"C:\\\\Users\\\\Dave\\\\Downloads\\\\Nursing-Rocks-Concerts-Live-Site - 3.0\\\\client\\\\src\\\\components\" /b)",
+      "Bash(cmd /c \"dir /b \\\\\"C:\\\\Users\\\\Dave\\\\Downloads\\\\Nursing-Rocks-Concerts-Live-Site - 3.0\\\\client\\\\src\\\\components\\\\\"\")",
+      "Bash(git commit *)"
     ]
   }
 }
