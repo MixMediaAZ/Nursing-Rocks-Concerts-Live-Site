@@ -1260,17 +1260,19 @@ export default function ScanTicketsPage() {
           </div>
         </div>
 
-        {/* Hidden capture input for Bluetooth scanner (always focused when not typing elsewhere) */}
+        {/* Hidden capture input (legacy fallback — global keystroke listener now handles BT scanner input).
+            No autoFocus: on Android, focusing a hidden input pops the soft keyboard and scrolls the page. */}
         <input
           ref={bluetoothInputRef}
           type="text"
           value={bluetoothInput}
           onChange={(e) => setBluetoothInput(e.target.value)}
           onKeyDown={handleBluetoothKey}
-          autoFocus
+          readOnly
           className="absolute -left-[9999px] w-px h-px opacity-0"
           aria-label="Bluetooth scanner input"
           tabIndex={-1}
+          aria-hidden="true"
         />
 
         {/* Offline warning banner */}
