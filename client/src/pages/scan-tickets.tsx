@@ -469,10 +469,13 @@ export default function ScanTicketsPage() {
     }
   }, [authed]);
 
-  // ── Release camera/video stream on page unload (prevents lockup on refresh) ──
+  // ── Release camera tracks on real page unload (prevents lockup on refresh) ──
+  // IMPORTANT: only runs on actual page unload — NOT on tab switch, scroll-hide-
+  // address-bar, or bfcache. That would tear down the camera mid-session on Android.
+  // Also: does NOT touch scannerRef — the scanner init effect handles that cleanup
+  // and double-stopping causes html5-qrcode to throw.
   useEffect(() => {
-    const releaseCamera = () => {
-      // Synchronously stop all video tracks from any video elements
+    const releaseVideoTracks = () => {
       try {
         document.querySelectorAll("video").forEach((video) => {
           const stream = video.srcObject as MediaStream | null;
@@ -482,32 +485,28 @@ export default function ScanTicketsPage() {
           }
         });
       } catch { /* ignore */ }
+    };
 
-      // Best-effort scanner stop (async, may not complete before unload)
-      if (scannerRef.current) {
-        try {
-          scannerRef.current.stop().catch(() => {});
-        } catch { /* ignore */ }
-        scannerRef.current = null;
-      }
+    // beforeunload fires synchronously right before page actually unloads (refresh, close)
+    const handleBeforeUnload = () => {
+      releaseVideoTracks();
+    };
 
-      // Release wake lock
-      if (wakeLockRef.current) {
-        try {
-          wakeLockRef.current.release().catch(() => {});
-        } catch { /* ignore */ }
-        wakeLockRef.current = null;
+    // pagehide with persisted=false means real unload (not bfcache)
+    const handlePageHide = (e: PageTransitionEvent) => {
+      if (!e.persisted) {
+        releaseVideoTracks();
       }
     };
 
-    window.addEventListener("beforeunload", releaseCamera);
-    window.addEventListener("pagehide", releaseCamera);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("pagehide", handlePageHide);
 
     return () => {
-      window.removeEventListener("beforeunload", releaseCamera);
-      window.removeEventListener("pagehide", releaseCamera);
-      // Also release on component unmount (route change)
-      releaseCamera();
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("pagehide", handlePageHide);
+      // Do NOT call releaseVideoTracks() on unmount — the scanner init effect's
+      // cleanup already calls html5-qrcode.stop() which releases the track.
     };
   }, []);
 
