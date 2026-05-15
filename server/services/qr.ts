@@ -9,8 +9,17 @@ export interface QRPayload {
   type: "event_ticket";
 }
 
-// CRITICAL: QR token secret - MUST be set in production
-const QR_SECRET = (() => {
+function normalizeSecretList(value: string | undefined): string[] {
+  return (value || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+// CRITICAL: QR token secret - MUST be set in production.
+// Primary secret signs all new tickets. Previous secrets are verify-only for
+// preserving already-issued tickets during a planned rotation.
+const QR_PRIMARY_SECRET = (() => {
   if (!process.env.QR_TOKEN_SECRET) {
     const isDev = process.env.NODE_ENV !== "production";
     if (isDev) {
@@ -29,6 +38,23 @@ const QR_SECRET = (() => {
   return process.env.QR_TOKEN_SECRET;
 })();
 
+const QR_PREVIOUS_SECRETS = (() => {
+  const previousSecrets = normalizeSecretList(process.env.QR_TOKEN_SECRET_PREVIOUS);
+  if (process.env.NODE_ENV === "production") {
+    for (const secret of previousSecrets) {
+      if (secret.length < 32) {
+        console.warn(
+          "⚠️ [QR] QR_TOKEN_SECRET_PREVIOUS contains a short legacy secret. " +
+            "Use it only long enough to support already-issued tickets, then remove it."
+        );
+      }
+    }
+  }
+  return previousSecrets;
+})();
+
+const QR_VERIFY_SECRETS = [QR_PRIMARY_SECRET, ...QR_PREVIOUS_SECRETS];
+
 /**
  * Sign a QR payload into a JWT token
  * This token is embedded in the QR code and verified at scan time
@@ -36,7 +62,7 @@ const QR_SECRET = (() => {
 export function signQrPayload(payload: QRPayload, expiresAt: Date): string {
   const exp = Math.floor(expiresAt.getTime() / 1000);
 
-  return jwt.sign(payload, QR_SECRET, {
+  return jwt.sign(payload, QR_PRIMARY_SECRET, {
     algorithm: "HS256",
     expiresIn: Math.floor((expiresAt.getTime() - Date.now()) / 1000),
   });
@@ -47,19 +73,25 @@ export function signQrPayload(payload: QRPayload, expiresAt: Date): string {
  * Throws if token is invalid, expired, or tampered with
  */
 export function verifyQrToken(token: string): QRPayload {
-  try {
-    const decoded = jwt.verify(token, QR_SECRET, {
-      algorithms: ["HS256"],
-    }) as QRPayload;
+  let lastError: unknown = null;
 
-    if (decoded.type !== "event_ticket") {
-      throw new Error("Invalid token type");
+  for (const secret of QR_VERIFY_SECRETS) {
+    try {
+      const decoded = jwt.verify(token, secret, {
+        algorithms: ["HS256"],
+      }) as QRPayload;
+
+      if (decoded.type !== "event_ticket") {
+        throw new Error("Invalid token type");
+      }
+
+      return decoded;
+    } catch (error) {
+      lastError = error;
     }
-
-    return decoded;
-  } catch (error) {
-    throw new Error(`Invalid QR token: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
+
+  throw new Error(`Invalid QR token: ${lastError instanceof Error ? lastError.message : "Unknown error"}`);
 }
 
 /**
