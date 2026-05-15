@@ -94,6 +94,35 @@ function getTokenExpiryMs(token: string): number | null {
   } catch { return null; }
 }
 
+/** Stable DOMException / Error fields for logging and UI (Chrome mobile often populates `name` more reliably than string substrings). */
+function getScannerErrorMeta(err: unknown): { name: string; message: string } {
+  if (typeof DOMException !== "undefined" && err instanceof DOMException) {
+    return { name: err.name, message: err.message };
+  }
+  if (err instanceof Error) {
+    return { name: err.name, message: err.message };
+  }
+  return { name: "Unknown", message: String(err) };
+}
+
+/** Best-effort UA categorization so error UI can give platform-specific hints. */
+function getPlatformInfo(): { iosWebKit: boolean; android: boolean; firefox: boolean; samsung: boolean } {
+  const ua = typeof navigator !== "undefined" ? navigator.userAgent || "" : "";
+  const iosWebKit = /iPad|iPhone|iPod/.test(ua) || (/Mac/.test(ua) && "ontouchend" in (typeof document !== "undefined" ? document : {}));
+  const android = /Android/.test(ua);
+  const firefox = /Firefox\//.test(ua);
+  const samsung = /SamsungBrowser/.test(ua);
+  return { iosWebKit, android, firefox, samsung };
+}
+
+/** True when we're served over HTTPS or localhost — camera APIs require this. */
+function isSecureForCamera(): boolean {
+  if (typeof window === "undefined") return false;
+  if (window.isSecureContext) return true;
+  const host = window.location.hostname;
+  return host === "localhost" || host === "127.0.0.1" || host === "::1";
+}
+
 const GATE_TOKEN_KEY = "nr_gate_scanner_jwt";
 const AUTO_EVENT = 0;
 
@@ -171,6 +200,8 @@ export default function ScanTicketsPage() {
   } | null>(null);
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
   const [tokenExpiresIn, setTokenExpiresIn] = useState<number | null>(null);
+  /** False until first camera enumeration pass finishes after auth (avoids html5-qrcode starting twice: facingMode then deviceId). */
+  const [cameraEnumReady, setCameraEnumReady] = useState(false);
 
   // Refs that don't trigger re-renders
   const processingRef = useRef(false);
@@ -458,16 +489,16 @@ export default function ScanTicketsPage() {
     };
   }, [scanning]);
 
-  // ── Auto-start camera on first auth ──────────────────────────────────────
+  // ── Auto-start camera on first auth (after camera list resolves — see loadCameras) ──
   useEffect(() => {
-    if (authed && !didAutoStartRef.current) {
+    if (authed && cameraEnumReady && !didAutoStartRef.current) {
       didAutoStartRef.current = true;
       setScanning(true);
     }
     if (!authed) {
       didAutoStartRef.current = false;
     }
-  }, [authed]);
+  }, [authed, cameraEnumReady]);
 
   // ── Release camera tracks on real page unload (prevents lockup on refresh) ──
   // IMPORTANT: only runs on actual page unload — NOT on tab switch, scroll-hide-
@@ -591,8 +622,13 @@ export default function ScanTicketsPage() {
   // ── Camera enumeration (once on auth, not on camera selection change) ────
 
   useEffect(() => {
-    if (!authed) return;
+    if (!authed) {
+      setCameraEnumReady(false);
+      return;
+    }
+
     let cancelled = false;
+    setCameraEnumReady(false);
 
     const loadCameras = async () => {
       try {
@@ -611,6 +647,8 @@ export default function ScanTicketsPage() {
         }
       } catch (err) {
         console.warn("Camera enumeration failed:", err);
+      } finally {
+        if (!cancelled) setCameraEnumReady(true);
       }
     };
 
@@ -783,6 +821,37 @@ export default function ScanTicketsPage() {
       try {
         setCameraError(null);
 
+        // ── Pre-flight checks (covers iOS Safari, Firefox, Samsung Internet, old Edge, etc.) ──
+        if (!isSecureForCamera()) {
+          setCameraError(
+            "Camera blocked: this page must be opened over HTTPS (or localhost). Open the secure URL and try again."
+          );
+          setScanning(false);
+          return;
+        }
+        if (typeof navigator === "undefined" || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          setCameraError(
+            "This browser doesn't expose camera APIs. Use the latest Safari/Chrome/Edge/Firefox, or scan with the Bluetooth scanner / manual entry."
+          );
+          setScanning(false);
+          return;
+        }
+
+        // Best-effort early permission probe — surfaces a denied state before getUserMedia throws.
+        try {
+          const perms: any = (navigator as any).permissions;
+          if (perms && typeof perms.query === "function") {
+            const status = await perms.query({ name: "camera" as PermissionName }).catch(() => null);
+            if (status && status.state === "denied") {
+              setCameraError(
+                "Camera permission is blocked for this site. Open the browser's site settings, set Camera to Allow, then reload."
+              );
+              setScanning(false);
+              return;
+            }
+          }
+        } catch { /* Permissions API absent on older WebKit — fall through to getUserMedia */ }
+
         const { Html5Qrcode } = await import("html5-qrcode");
 
         // Ensure any previous instance is stopped
@@ -791,39 +860,64 @@ export default function ScanTicketsPage() {
           scannerRef.current = null;
         }
 
-        const html5QrCode = new Html5Qrcode(scannerDivId, { verbose: false });
+        let html5QrCode = new Html5Qrcode(scannerDivId, { verbose: false });
         scannerRef.current = html5QrCode;
 
-        // Use exact device ID if selected, else fall back to rear facingMode
-        const cameraConstraint =
-          selectedCameraId
-            ? { deviceId: { exact: selectedCameraId } }
-            : { facingMode: "environment" };
+        const scanConfig = {
+          fps: scanSettings.fps,
+          qrbox: { width: scanSettings.qrboxSize, height: scanSettings.qrboxSize },
+          disableFlip: false,
+        };
 
-        await html5QrCode.start(
-          cameraConstraint,
-          {
-            fps: scanSettings.fps,
-            qrbox: { width: scanSettings.qrboxSize, height: scanSettings.qrboxSize },
-            aspectRatio: 1.0,
-            disableFlip: false,
-          },
-          async (decodedText: string) => {
-            if (processingRef.current || stopped) return;
-            processingRef.current = true;
-            setProcessing(true);
-            await verifyCode(decodedText);
-          },
-          (_errorMsg: string) => {
-            // NotFoundException fires on every frame — normal, suppress
+        const onDecoded = async (decodedText: string) => {
+          if (processingRef.current || stopped) return;
+          processingRef.current = true;
+          setProcessing(true);
+          await verifyCode(decodedText);
+        };
+
+        // ── Constraint fallback chain ───────────────────────────────────────
+        // Tries the most specific constraint first, then degrades. This single
+        // chain covers every common platform failure mode:
+        //   • Android Chrome where deviceId.exact / deviceId.ideal still fails
+        //   • iOS Safari where facingMode "environment" works but deviceId is flaky
+        //   • Desktop laptops with only a front-facing camera (fallback to "user")
+        //   • Tablets / kiosks with a single un-labelled camera (final true)
+        const fallbacks: Array<{ label: string; c: MediaTrackConstraints | boolean }> = [];
+        if (selectedCameraId) fallbacks.push({ label: "deviceId-ideal", c: { deviceId: { ideal: selectedCameraId } } });
+        fallbacks.push({ label: "environment", c: { facingMode: "environment" } });
+        fallbacks.push({ label: "user", c: { facingMode: "user" } });
+        fallbacks.push({ label: "any-camera", c: true });
+
+        const startWith = (constraints: MediaTrackConstraints | boolean) =>
+          html5QrCode.start(constraints as any, scanConfig, onDecoded, () => {});
+
+        let lastErr: unknown = null;
+        let started = false;
+        for (const tier of fallbacks) {
+          try {
+            await startWith(tier.c);
+            console.log(`[scanner] camera started (${tier.label})`);
+            started = true;
+            break;
+          } catch (tierErr) {
+            lastErr = tierErr;
+            const meta = getScannerErrorMeta(tierErr);
+            console.warn(`[scanner] tier ${tier.label} failed: ${meta.name} — ${meta.message}`);
+            // Recreate instance for next attempt — html5-qrcode leaves video element in inconsistent state otherwise
+            try { await html5QrCode.stop(); } catch { /* already stopped */ }
+            html5QrCode = new Html5Qrcode(scannerDivId, { verbose: false });
+            scannerRef.current = html5QrCode;
+            // For NotAllowed (permission), don't bother trying further tiers — same result.
+            if (meta.name === "NotAllowedError") break;
           }
-        );
+        }
+        if (!started) throw lastErr ?? new Error("Camera could not start (all constraint tiers failed)");
 
         cameraRetriesRef.current = 0;
-        console.log("[scanner] camera started");
 
         // ── Detect what this device actually supports ─────────────────────
-        // Must happen AFTER start() — capabilities only available on live stream
+        // Must happen AFTER start() — capabilities only available on live stream.
         try {
           const caps = html5QrCode.getRunningTrackCameraCapabilities();
           const torchFeat = caps.torchFeature();
@@ -832,11 +926,6 @@ export default function ScanTicketsPage() {
             ? { min: zoomFeat.min(), max: zoomFeat.max(), step: zoomFeat.step() }
             : null;
           setCapabilities({ torch: torchFeat.isSupported(), zoom: zoomCap });
-          console.log("[scanner] capabilities:", {
-            torch: torchFeat.isSupported(),
-            zoom: zoomCap,
-          });
-          // Re-apply zoom if user had it set before restart
           if (zoomCap && scanSettings.zoom > 1) {
             zoomFeat.apply(Math.min(scanSettings.zoom, zoomCap.max)).catch(() => {});
           }
@@ -846,46 +935,53 @@ export default function ScanTicketsPage() {
         }
       } catch (err) {
         if (stopped) return;
-        const errorMsg = err instanceof Error ? err.message : String(err);
-        console.error("[scanner] init error:", errorMsg);
+        const { name: errName, message: errorMsg } = getScannerErrorMeta(err);
+        const platform = getPlatformInfo();
+        console.error("[scanner] init error:", errName, errorMsg, err);
+
+        const platformHint = platform.iosWebKit
+          ? " (iOS: Settings → Safari → Camera → Allow)"
+          : platform.android
+          ? " (Android: site settings → Permissions → Camera → Allow)"
+          : "";
 
         let userMessage = "";
-        if (
-          errorMsg.includes("NotAllowedError") ||
-          errorMsg.includes("Permission denied") ||
-          errorMsg.includes("permissionDenied")
-        ) {
-          userMessage = "Camera permission denied. Tap allow when prompted, then retry.";
-        } else if (
-          errorMsg.includes("NotFoundError") ||
-          errorMsg.includes("Requested device not found") ||
-          errorMsg.includes("not available")
-        ) {
+        let stop = false;
+        if (errName === "NotAllowedError" || errorMsg.includes("Permission denied")) {
+          userMessage = `Camera permission denied. Allow access${platformHint}, then tap Retry camera.`;
+          stop = true;
+        } else if (errName === "NotFoundError" || errorMsg.includes("Requested device not found")) {
           userMessage = "No camera found. Use Bluetooth scanner or enter code manually.";
-          setCameraError(userMessage);
-          setScanning(false);
-          return;
-        } else if (errorMsg.includes("NotReadableError") || errorMsg.includes("Could not start")) {
-          userMessage = "Camera in use by another app. Close it and retry.";
-        } else if (errorMsg.includes("SecurityError")) {
-          userMessage = "Camera blocked — HTTPS required. Check connection.";
-        } else if (errorMsg.includes("OverconstrainedError") || errorMsg.includes("Overconstrained")) {
-          // Selected camera ID no longer valid — fall back to facingMode
-          console.warn("[scanner] OverconstrainedError — clearing selected camera ID");
+          stop = true;
+        } else if (errName === "NotReadableError" || errorMsg.includes("Could not start")) {
+          userMessage = "Camera is in use by another app. Close it (or restart the device) and tap Retry camera.";
+        } else if (errName === "OverconstrainedError" || errorMsg.includes("Overconstrained")) {
+          // Last-ditch — clear the chosen device id; next attempt will start fresh on facingMode.
           setSelectedCameraId("");
           userMessage = "Selected camera unavailable. Switching to default…";
+        } else if (errName === "SecurityError") {
+          userMessage = "Camera blocked — page must be loaded over HTTPS.";
+          stop = true;
+        } else if (errName === "AbortError") {
+          userMessage = "Camera was interrupted. Tap Retry camera.";
+        } else if (errName === "NotSupportedError") {
+          userMessage = `Camera not supported by this browser${platformHint}. Use Safari/Chrome/Edge or manual entry.`;
+          stop = true;
         } else {
-          userMessage = "Camera error. Retrying…";
+          const detail = [errName, errorMsg.slice(0, 140)].filter(Boolean).join(": ");
+          userMessage = detail ? `Camera error — ${detail} (retrying…)` : "Camera error. Retrying…";
         }
 
         setCameraError(userMessage);
 
+        if (stop) {
+          setScanning(false);
+          return;
+        }
+
         if (cameraRetriesRef.current < maxRetries) {
           const delay = 1200 * Math.pow(2, cameraRetriesRef.current); // 1.2s, 2.4s, 4.8s
           cameraRetriesRef.current += 1;
-          console.log(
-            `[scanner] retry ${cameraRetriesRef.current}/${maxRetries} in ${delay}ms`
-          );
           retryTimeout = setTimeout(() => {
             if (!stopped) initScanner();
           }, delay);
@@ -1046,6 +1142,16 @@ export default function ScanTicketsPage() {
 
   // ── Shared nav bar (PIN screen + main scanner screen) ────────────────────
 
+  /**
+   * If the page is loaded without a secure context (HTTP, non-localhost), getUserMedia is silently blocked
+   * by every modern browser. Volunteers won't know why the camera "errors out", so we surface this up front.
+   */
+  const insecureBanner = !isSecureForCamera() ? (
+    <div className="bg-red-700 text-white text-xs sm:text-sm font-semibold text-center py-2 px-3">
+      ⚠️ Camera will be blocked: this page must be opened over <span className="font-mono">https://</span> (or localhost). Open the secure URL.
+    </div>
+  ) : null;
+
   const scannerNav = (
     <nav className="bg-gray-900 border-b border-gray-700 px-4 py-2 flex items-center justify-between gap-2 shrink-0">
       {/* Brand */}
@@ -1095,6 +1201,7 @@ export default function ScanTicketsPage() {
         </Helmet>
         <div className="min-h-screen bg-gray-950 flex flex-col">
           {scannerNav}
+          {insecureBanner}
           <div className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-xs text-center space-y-6">
             <div>
@@ -1250,6 +1357,7 @@ export default function ScanTicketsPage() {
 
         {/* Site nav */}
         {scannerNav}
+        {insecureBanner}
 
         {/* Scanner mode sub-header */}
         <div className="bg-gray-900 border-b border-gray-800 px-4 py-2 flex items-center gap-3">
@@ -1477,14 +1585,19 @@ export default function ScanTicketsPage() {
                 </div>
               )}
 
+              {!cameraEnumReady && (
+                <p className="text-center text-xs text-gray-500">Detecting cameras…</p>
+              )}
+
               <Button
                 type="button"
+                disabled={!cameraEnumReady}
                 onClick={() => {
                   setCameraError(null);
                   cameraRetriesRef.current = 0;
                   setScanning(true);
                 }}
-                className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-base"
+                className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-base disabled:opacity-50 disabled:pointer-events-none"
               >
                 Start camera
               </Button>

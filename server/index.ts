@@ -1,4 +1,10 @@
 import "dotenv/config";
+
+// Local dev: no need for cross-env if NODE_ENV is unset after .env
+if (process.env.NODE_ENV === undefined || process.env.NODE_ENV === "") {
+  process.env.NODE_ENV = "development";
+}
+
 import * as Sentry from "@sentry/node";
 import { nodeProfilingIntegration } from "@sentry/profiling-node";
 import express, { type Request, Response, NextFunction } from "express";
