@@ -601,7 +601,7 @@ export default function ScanTicketsPage() {
     try {
       const qs = selectedEventId > 0 ? `?eventId=${selectedEventId}` : "";
       const res = await fetch(`/api/gate/stats${qs}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, "X-Gate-Scanner-Token": token },
       });
       if (!res.ok) return;
       const data = await res.json();
@@ -706,6 +706,7 @@ export default function ScanTicketsPage() {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
+            "X-Gate-Scanner-Token": token,
           },
           body: JSON.stringify(body),
         });

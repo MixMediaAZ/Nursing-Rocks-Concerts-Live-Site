@@ -122,11 +122,14 @@ export function getPayloadFromRequest(req: Request): JwtPayload | null {
 
 export function getTokenFromRequest(req: Request): string | null {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    return token || null;
   }
-  const token = authHeader.split(' ')[1];
-  return token || null;
+
+  const scannerHeader = req.headers['x-gate-scanner-token'];
+  const scannerToken = Array.isArray(scannerHeader) ? scannerHeader[0] : scannerHeader;
+  return scannerToken || null;
 }
 
 /**
