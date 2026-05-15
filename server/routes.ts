@@ -2929,8 +2929,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         ticketCode = ticketCode.trim().toUpperCase();
-        if (!/^NR-[A-Z0-9-]{4,64}$/.test(ticketCode)) {
+        if (!/^(NR|NRPX)-[A-Z0-9-]{4,64}$/.test(ticketCode)) {
           return res.status(400).json({ ok: false, reason: "token_invalid", message: "Invalid QR code" });
+        }
+
+        // NRPX registration tickets are plain ticket codes (QR contains the code, not a JWT).
+        // Keep them supported in the main gate scanner so door staff only need /scan-tickets.
+        if (ticketCode.startsWith("NRPX-")) {
+          const [updated] = await db
+            .update(nrpxRegistrations)
+            .set({ checked_in: true, checked_in_at: new Date() })
+            .where(and(
+              eq(nrpxRegistrations.ticket_code, ticketCode),
+              eq(nrpxRegistrations.checked_in, false)
+            ))
+            .returning();
+
+          if (updated) {
+            console.log(`[Gate/NRPX] Checked in: ${updated.first_name} ${updated.last_name} (${ticketCode})`);
+            return res.status(200).json({
+              ok: true,
+              reason: "checked_in",
+              message: "Ticket accepted",
+              ticketCode,
+              userName: `${updated.first_name} ${updated.last_name}`.trim(),
+            });
+          }
+
+          const [existing] = await db
+            .select()
+            .from(nrpxRegistrations)
+            .where(eq(nrpxRegistrations.ticket_code, ticketCode))
+            .limit(1);
+
+          if (!existing) {
+            return res.status(404).json({ ok: false, reason: "ticket_not_found", message: "Ticket not found" });
+          }
+
+          const checkedInAt = existing.checked_in_at
+            ? new Date(existing.checked_in_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+            : "earlier";
+          return res.status(400).json({
+            ok: false,
+            reason: "already_used",
+            message: `Already checked in at ${checkedInAt}`,
+            ticketCode,
+            userName: `${existing.first_name} ${existing.last_name}`.trim(),
+          });
         }
 
         const [ticketForCode] = await db
