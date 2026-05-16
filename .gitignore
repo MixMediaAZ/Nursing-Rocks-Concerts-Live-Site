@@ -44,6 +44,10 @@ products.json
 response.json
 uploads/
 
+# Gate backup exports (PII — regenerate with node scripts/export-gate-backup-list.mjs)
+scripts/gate-backup-list.tsv
+scripts/gate-backup-list.md
+
 # Exclude the old site folder
 Nursing-Rocks-Concerts-Live-Site-OLD/
 
