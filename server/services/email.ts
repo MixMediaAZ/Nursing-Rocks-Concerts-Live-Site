@@ -236,6 +236,11 @@ function buildThankYouEmailHtml(): string {
         <p>More importantly, thank you for what you do every single day. The care and dedication you bring to your patients doesn't go unnoticed — and it's exactly why we created a space to celebrate you.</p>
         <p>We're already planning your next event and so appreciate having you with us. Watch for updates soon!</p>
         <p>Please tag @NursingRocks if you have any fun social media posts!</p>
+        <p><a href="https://www.facebook.com/share/18cC5MHrSX/" style="color: #e94560;">Follow us on Facebook</a></p>
+        <div style="text-align: center; margin: 20px 0;">
+          <img src="https://www.nursingrocksconcerts.com/assets/instagram-qr.png" alt="Follow @NURSING_ROCKS_CONCERT_SERIES on Instagram" style="width: 220px; height: auto; border-radius: 8px;" />
+          <p style="margin: 8px 0 0; font-size: 13px; color: #555;">Scan to follow us on Instagram<br><strong>@NURSING_ROCKS_CONCERT_SERIES</strong></p>
+        </div>
         <div class="sign-off">
           <p>With deep appreciation,<br><strong>Nursing Rocks!</strong></p>
           <p><a href="https://www.NursingRocksConcerts.com" style="color: #e94560;">www.NursingRocksConcerts.com</a></p>
