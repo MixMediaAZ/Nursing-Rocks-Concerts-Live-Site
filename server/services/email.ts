@@ -286,39 +286,8 @@ export async function sendNurseVerifiedWelcomeEmail(userId: number): Promise<{
     throw new Error("User has invalid email address");
   }
 
-  const firstName = escapeHtml((user.first_name || "there").trim() || "there");
-  const base = getPublicSiteBaseUrl();
-  const signInUrl = `${base}/login?redirect=${encodeURIComponent("/dashboard")}`;
-  const subject = NURSE_VERIFIED_WELCOME_SUBJECT;
-
-  const html = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f3f4f6;color:#1f2937;">
-  <div style="max-width:600px;margin:0 auto;padding:24px;">
-    <div style="background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%);color:#fff;padding:28px;border-radius:12px 12px 0 0;text-align:center;">
-      <h1 style="margin:0;font-size:24px;">You're verified!</h1>
-      <p style="margin:12px 0 0;font-size:16px;opacity:.95;">Nursing Rocks</p>
-    </div>
-    <div style="background:#fff;padding:28px;border-radius:0 0 12px 12px;box-shadow:0 4px 6px rgba(0,0,0,.08);">
-      <p style="font-size:16px;line-height:1.6;">Hi ${firstName},</p>
-      <p style="font-size:16px;line-height:1.6;">Your nursing account has been <strong>approved</strong>. Next steps:</p>
-      <ol style="font-size:15px;line-height:1.7;padding-left:20px;">
-        <li>Sign in to the site using the button below.</li>
-        <li>Open your <strong>dashboard</strong>.</li>
-        <li>Click <strong>Get your ticket(s) &amp; email</strong> to create your free event ticket(s). We'll email your QR code — one message per new ticket when events are available.</li>
-      </ol>
-      <div style="text-align:center;margin:28px 0;">
-        <a href="${signInUrl}" style="display:inline-block;background:#dc2626;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:16px;">Sign in to your dashboard</a>
-      </div>
-      <p style="font-size:13px;color:#6b7280;">If the button doesn't work, copy this link: <a href="${signInUrl}" style="color:#dc2626;word-break:break-all;">${escapeHtml(signInUrl)}</a></p>
-      <p style="font-size:13px;color:#6b7280;margin-top:20px;border-top:1px solid #e5e7eb;padding-top:16px;">Questions? Reply is not monitored — contact <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}">${escapeHtml(SUPPORT_EMAIL)}</a>.</p>
-    </div>
-    <p style="text-align:center;font-size:12px;color:#9ca3af;margin-top:16px;">Nursing Rocks Foundation · Gateway Community College Scholarships</p>
-  </div>
-</body>
-</html>`;
+  const subject = "Thank You from Nursing Rocks! 🎸";
+  const html = buildThankYouEmailHtml();
 
   const client = await initializeResendClient();
   if (client && process.env.RESEND_API_KEY) {
@@ -345,7 +314,6 @@ export async function sendNurseVerifiedWelcomeEmail(userId: number): Promise<{
   console.log(`[EMAIL - DEV LOG ONLY] Welcome email for user ${userId}`);
   console.log(`To: ${user.email}`);
   console.log(`Subject: ${subject}`);
-  console.log(`Dashboard Link: ${signInUrl}`);
   console.log(`Note: RESEND_API_KEY not configured - email NOT sent to Resend, only logged here`);
   console.log(`${"=".repeat(60)}\n`);
   return { deliveryMode: "dev_log" };

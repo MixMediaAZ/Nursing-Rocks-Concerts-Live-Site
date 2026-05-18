@@ -495,6 +495,57 @@ export async function sendEventReminderEmail(data: EventReminderEmailData): Prom
   }
 }
 
+// ========== SHARED THANK-YOU EMAIL ==========
+
+function thankYouEmailHtml(): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.8; color: #1a1a1a; margin: 0; padding: 0; background: #f4f4f4; }
+    .wrapper { background: #f4f4f4; padding: 24px 0; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 40px 32px; text-align: center; }
+    .header h1 { margin: 0 0 8px; font-size: 28px; font-weight: 800; }
+    .header p { margin: 0; font-size: 16px; opacity: 0.85; }
+    .content { padding: 36px 32px; font-size: 16px; color: #1a1a1a; }
+    .content p { margin: 0 0 18px; }
+    .sign-off { margin-top: 28px; }
+    .footer { background: #1a1a2e; color: #aaa; text-align: center; padding: 24px 32px; font-size: 13px; }
+    .footer a { color: #e94560; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <h1>🎸 Nursing Rocks!</h1>
+        <p>Concert Series</p>
+      </div>
+      <div class="content">
+        <p>Thank you for joining us at our inaugural Nursing Rocks! Concert Series event, including those of you who signed up at the last minute. Your involvement is what made the night special!</p>
+        <p>More importantly, thank you for what you do every single day. The care and dedication you bring to your patients doesn't go unnoticed — and it's exactly why we created a space to celebrate you.</p>
+        <p>We're already planning your next event and so appreciate having you with us. Watch for updates soon!</p>
+        <p>Please tag @NursingRocks if you have any fun social media posts!</p>
+        <div class="sign-off">
+          <p>With deep appreciation,<br><strong>Nursing Rocks!</strong></p>
+          <p><a href="https://www.NursingRocksConcerts.com" style="color: #e94560;">www.NursingRocksConcerts.com</a></p>
+        </div>
+      </div>
+      <div class="footer">
+        <p><strong style="color: #fff;">Nursing Rocks Concert Series</strong></p>
+        <p>Benefiting Gateway Community College Scholarships</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}
+
 // ========== NRPX PHOENIX TICKET EMAIL ==========
 
 export interface NrpxTicketEmailData {
@@ -506,7 +557,7 @@ export interface NrpxTicketEmailData {
 }
 
 /**
- * Send QR ticket email for NRPX Phoenix event registration
+ * Send thank-you email for NRPX Phoenix event (post-inaugural event)
  */
 export async function sendNrpxTicketEmail(data: NrpxTicketEmailData): Promise<{ success: boolean; error?: string }> {
   if (!resend) {
@@ -514,99 +565,12 @@ export async function sendNrpxTicketEmail(data: NrpxTicketEmailData): Promise<{ 
     return { success: false, error: 'Email service not configured' };
   }
 
-  const qrBase64 = data.qrBuffer.toString('base64');
-
-  const emailHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #1a1a1a; margin: 0; padding: 0; background: #f4f4f4; }
-    .wrapper { background: #f4f4f4; padding: 24px 0; }
-    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-    .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 40px 32px; text-align: center; }
-    .header img { height: 48px; margin-bottom: 16px; }
-    .header h1 { margin: 0 0 8px; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
-    .header p { margin: 0; font-size: 16px; opacity: 0.85; }
-    .rock-accent { color: #e94560; }
-    .content { padding: 32px; }
-    .greeting { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
-    .event-card { background: #f8f9ff; border: 2px solid #e94560; border-radius: 10px; padding: 20px 24px; margin: 24px 0; }
-    .event-card h2 { margin: 0 0 16px; font-size: 20px; color: #0f3460; }
-    .event-detail { display: flex; align-items: flex-start; margin-bottom: 10px; font-size: 15px; }
-    .event-detail .icon { font-size: 18px; margin-right: 10px; flex-shrink: 0; }
-    .qr-section { text-align: center; padding: 24px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee; margin: 24px 0; }
-    .qr-section h3 { margin: 0 0 16px; font-size: 16px; color: #555; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-    .qr-section img { width: 220px; height: 220px; border: 4px solid #1a1a2e; border-radius: 8px; display: block; margin: 0 auto 16px; }
-    .ticket-code { font-family: 'Courier New', monospace; font-size: 22px; font-weight: 700; letter-spacing: 3px; color: #0f3460; background: #f0f4ff; border: 2px dashed #0f3460; border-radius: 8px; padding: 12px 20px; display: inline-block; margin-top: 4px; }
-    .backup-info { background: #fff8e1; border-left: 4px solid #f9a825; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 20px 0; font-size: 14px; color: #5a4000; }
-    .backup-info strong { display: block; margin-bottom: 6px; font-size: 15px; }
-    .footer { background: #1a1a2e; color: #aaa; text-align: center; padding: 24px 32px; font-size: 13px; }
-    .footer a { color: #e94560; text-decoration: none; }
-  </style>
-</head>
-<body>
-  <div class="wrapper">
-    <div class="container">
-      <div class="header">
-        <h1>🎸 Nursing Rocks Phoenix</h1>
-        <p>Your ticket is confirmed — see you at the show!</p>
-      </div>
-
-      <div class="content">
-        <p class="greeting">Hi ${esc(data.firstName)},</p>
-        <p>You're registered for <strong>Nursing Rocks Phoenix</strong>! Show this QR code at the door for entry. No printing needed — your phone works great.</p>
-
-        <div class="event-card">
-          <h2>🎤 Event Details</h2>
-          <div class="event-detail"><span class="icon">📅</span><div><strong>Date:</strong> Saturday, May 16, 2026</div></div>
-          <div class="event-detail"><span class="icon">📍</span><div><strong>Venue:</strong> The Walter Studio, Phoenix, AZ</div></div>
-          <div class="event-detail"><span class="icon">🎵</span><div><strong>Featuring:</strong> PsychoStar + special guests</div></div>
-          <div class="event-detail"><span class="icon">🎟️</span><div><strong>Ticket:</strong> Free — registered nurses only</div></div>
-        </div>
-
-        <div class="qr-section">
-          <h3>Your Entry QR Code</h3>
-          <img src="data:image/png;base64,${qrBase64}" alt="QR Code for entry" />
-          <div class="ticket-code">${esc(data.ticketCode)}</div>
-        </div>
-
-        <div class="backup-info">
-          <strong>Can't scan? No problem.</strong>
-          Give the door volunteer your name: <strong>${esc(data.firstName)} ${esc(data.lastName)}</strong><br>
-          Or your ticket code: <strong>${esc(data.ticketCode)}</strong>
-        </div>
-
-        <p style="font-size: 14px; color: #666;">Questions? Reach us at <a href="mailto:hello@nursingrocksconcerts.com" style="color: #e94560;">hello@nursingrocksconcerts.com</a></p>
-        <p style="font-size: 14px; color: #666;">See you on May 16th! 🤘<br><strong>— The Nursing Rocks Team</strong></p>
-      </div>
-
-      <div class="footer">
-        <p><strong style="color: #fff;">Nursing Rocks Concert Series</strong></p>
-        <p>Benefiting Gateway Community College Scholarships</p>
-        <p style="margin-top: 12px; font-size: 11px; color: #666;">This is a transactional email confirming your event registration.</p>
-      </div>
-    </div>
-  </div>
-</body>
-</html>
-  `;
-
   try {
     const response = await resend.emails.send({
       from: 'Nursing Rocks <tickets@nursingrocksconcerts.com>',
       to: data.email,
-      subject: 'Your Nursing Rocks Phoenix Ticket 🎸',
-      html: emailHtml,
-      attachments: [
-        {
-          filename: 'ticket-qr.png',
-          content: data.qrBuffer,
-          contentType: 'image/png',
-        },
-      ],
+      subject: 'Thank You from Nursing Rocks! 🎸',
+      html: thankYouEmailHtml(),
     });
 
     if (response.error) {
@@ -629,7 +593,7 @@ export interface NrpxWelcomeEmailData {
 }
 
 /**
- * Send welcome email for approved NRPX registration with instructions to claim ticket
+ * Send thank-you email for approved NRPX registration
  */
 export async function sendNrpxWelcomeEmail(data: NrpxWelcomeEmailData): Promise<{ success: boolean; error?: string }> {
   if (!resend) {
@@ -637,102 +601,12 @@ export async function sendNrpxWelcomeEmail(data: NrpxWelcomeEmailData): Promise<
     return { success: false, error: 'Email service not configured' };
   }
 
-  const appUrl = process.env.APP_URL || 'https://nursingrocksconcerts.com';
-
-  const emailHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #1a1a1a; margin: 0; padding: 0; background: #f4f4f4; }
-    .wrapper { background: #f4f4f4; padding: 24px 0; }
-    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-    .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 40px 32px; text-align: center; }
-    .header h1 { margin: 0 0 8px; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
-    .header p { margin: 0; font-size: 16px; opacity: 0.85; }
-    .rock-accent { color: #e94560; }
-    .content { padding: 32px; }
-    .greeting { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
-    .approval-card { background: #e8f5e9; border: 2px solid #4caf50; border-radius: 10px; padding: 20px 24px; margin: 24px 0; text-align: center; }
-    .approval-card h2 { margin: 0 0 10px; font-size: 20px; color: #2e7d32; }
-    .approval-card p { margin: 0; color: #388e3c; font-size: 15px; }
-    .cta-button { display: inline-block; background: #e94560; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin: 24px 0; }
-    .event-card { background: #f8f9ff; border: 2px solid #e94560; border-radius: 10px; padding: 20px 24px; margin: 24px 0; }
-    .event-card h2 { margin: 0 0 16px; font-size: 20px; color: #0f3460; }
-    .event-detail { display: flex; align-items: flex-start; margin-bottom: 10px; font-size: 15px; }
-    .event-detail .icon { font-size: 18px; margin-right: 10px; flex-shrink: 0; }
-    .next-steps { background: #fff3e0; border-left: 4px solid #ff9800; padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 20px 0; }
-    .next-steps h3 { margin: 0 0 12px; color: #e65100; font-size: 16px; }
-    .next-steps ol { margin: 0; padding-left: 20px; color: #5a4000; }
-    .next-steps li { margin-bottom: 8px; }
-    .footer { background: #1a1a2e; color: #aaa; text-align: center; padding: 24px 32px; font-size: 13px; }
-    .footer a { color: #e94560; text-decoration: none; }
-  </style>
-</head>
-<body>
-  <div class="wrapper">
-    <div class="container">
-      <div class="header">
-        <h1>🎸 Nursing Rocks Phoenix</h1>
-        <p>Your registration is approved!</p>
-      </div>
-
-      <div class="content">
-        <p class="greeting">Hi ${esc(data.firstName)},</p>
-
-        <div class="approval-card">
-          <h2>✓ Registration Approved</h2>
-          <p>Great news! Your registration for Nursing Rocks Phoenix has been approved.</p>
-        </div>
-
-        <p>Now it's time to claim your free ticket. Follow the steps below:</p>
-
-        <div class="next-steps">
-          <h3>📋 Next Steps:</h3>
-          <ol>
-            <li><strong>Log in</strong> to your account at <a href="${appUrl}" style="color: #ff6f00;">${appUrl}</a></li>
-            <li><strong>Go to your dashboard</strong> and look for "Claim Your Phoenix Ticket"</li>
-            <li><strong>Click the button</strong> to receive your QR code ticket via email</li>
-            <li><strong>Show your QR code</strong> at the door on event day</li>
-          </ol>
-        </div>
-
-        <p style="text-align: center;">
-          <a href="${appUrl}/dashboard" class="cta-button">Log In & Claim Your Ticket</a>
-        </p>
-
-        <div class="event-card">
-          <h2>🎤 Event Details</h2>
-          <div class="event-detail"><span class="icon">📅</span><div><strong>Date:</strong> Saturday, May 16, 2026</div></div>
-          <div class="event-detail"><span class="icon">⏰</span><div><strong>Time:</strong> 3:00 PM (Doors Open)</div></div>
-          <div class="event-detail"><span class="icon">📍</span><div><strong>Venue:</strong> The Walter Studio, Phoenix, AZ</div></div>
-          <div class="event-detail"><span class="icon">🎵</span><div><strong>Featuring:</strong> The Black Moods, Jane 'n the Jungle, PsychoStar, My Upside Down & more</div></div>
-          <div class="event-detail"><span class="icon">🎟️</span><div><strong>Ticket:</strong> Free — for registered nurses</div></div>
-        </div>
-
-        <p style="font-size: 14px; color: #666;">Questions? Reach us at <a href="mailto:support@nursingrocksconcerts.com" style="color: #e94560;">support@nursingrocksconcerts.com</a></p>
-        <p style="font-size: 14px; color: #666;">See you at Nursing Rocks! 🤘<br><strong>— The Nursing Rocks Team</strong></p>
-      </div>
-
-      <div class="footer">
-        <p><strong style="color: #fff;">Nursing Rocks Concert Series</strong></p>
-        <p>Benefiting Gateway Community College Scholarships</p>
-        <p style="margin-top: 12px; font-size: 11px; color: #666;">This is a transactional email confirming your registration approval.</p>
-      </div>
-    </div>
-  </div>
-</body>
-</html>
-  `;
-
   try {
     const response = await resend.emails.send({
       from: 'Nursing Rocks <noreply@nursingrocksconcerts.com>',
       to: data.email,
-      subject: 'Your Nursing Rocks Phoenix Registration Approved! 🎸',
-      html: emailHtml,
+      subject: 'Thank You from Nursing Rocks! 🎸',
+      html: thankYouEmailHtml(),
     });
 
     if (response.error) {
