@@ -203,7 +203,7 @@ function buildTicketEmailHtml(_data: {
   return buildThankYouEmailHtml();
 }
 
-function buildThankYouEmailHtml(): string {
+export function buildThankYouEmailHtml(): string {
   return `
 <!DOCTYPE html>
 <html>

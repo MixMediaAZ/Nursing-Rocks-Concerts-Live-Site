@@ -59,6 +59,7 @@ import { AdminCreateJob } from "@/components/admin/admin-create-job";
 import { JobsTable } from "@/components/admin/jobs-table";
 import { IngestionStatusCard } from "@/components/admin/ingestion-status-card";
 import { JobsBoardTrafficWidget } from "@/components/admin/jobs-board-traffic-widget";
+import { ThankYouBatchCard } from "@/components/admin/thank-you-batch-card";
 import { formatTrafficChartDayLabel } from "@/lib/format-traffic-chart-day";
 
 export default function AdminPage() {
@@ -1737,6 +1738,8 @@ export default function AdminPage() {
                 })()}
               </CardContent>
             </Card>
+
+            <ThankYouBatchCard />
           </TabsContent>
 
           <TabsContent value="editor">

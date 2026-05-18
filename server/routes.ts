@@ -2820,6 +2820,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin: Thank-you email batch — preview list of eligible recipients
+  app.get("/api/admin/thank-you-batch/preview", requireAdminToken, async (_req: Request, res: Response) => {
+    try {
+      const { getThankYouBatchPreview } = await import("./services/thank-you-batch");
+      const preview = await getThankYouBatchPreview();
+      return res.json(preview);
+    } catch (error) {
+      console.error("Error generating thank-you batch preview:", error);
+      const message = error instanceof Error ? error.message : "Failed to load preview";
+      return res.status(500).json({ message });
+    }
+  });
+
+  // Admin: Thank-you email batch — execute send (requires count match)
+  app.post("/api/admin/thank-you-batch/send", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const adminUserId = (req as any).user?.userId;
+      if (!adminUserId) {
+        return res.status(401).json({ message: "Admin user not found" });
+      }
+      const expectedCount = Number((req.body as any)?.expectedCount);
+      if (!Number.isInteger(expectedCount) || expectedCount < 0) {
+        return res.status(400).json({ message: "expectedCount (integer) is required" });
+      }
+
+      const { runThankYouBatch } = await import("./services/thank-you-batch");
+      const result = await runThankYouBatch(adminUserId, expectedCount);
+      return res.json(result);
+    } catch (error) {
+      console.error("Error running thank-you batch:", error);
+      const message = error instanceof Error ? error.message : "Failed to send batch";
+      return res.status(400).json({ message });
+    }
+  });
+
   // Admin: Get QR code details for a ticket (for viewing/resending)
   app.get("/api/admin/tickets/:id/qr", requireAdminToken, async (req: Request, res: Response) => {
     try {
