@@ -228,11 +228,12 @@ function buildThankYouEmailHtml(): string {
   <div class="wrapper">
     <div class="container">
       <div class="header">
-        <h1>🎸 Nursing Rocks!</h1>
+        <img src="https://www.nursingrocksconcerts.com/assets/logos/NursingRocks_NewLogo.png" alt="Nursing Rocks" style="height: 80px; margin-bottom: 16px;" />
+        <h1>Nursing Rocks!</h1>
         <p>Concert Series</p>
       </div>
       <div class="content">
-        <p>Thank you for joining us at our inaugural Nursing Rocks! Concert Series event! Your involvement is what made the night special!</p>
+        <p>For those of you who joined us at your inaugural Nursing Rocks! Concert Series event, Thank you! Your involvement is what made the night special!</p>
         <p>More importantly, thank you for what you do every single day. The care and dedication you bring to your patients doesn't go unnoticed — and it's exactly why we created a space to celebrate you.</p>
         <p>We're already planning your next event and so appreciate having you with us. Watch for updates soon!</p>
         <p>Please tag @NursingRocks if you have any fun social media posts!</p>
