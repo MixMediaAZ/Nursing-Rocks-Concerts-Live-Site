@@ -232,13 +232,14 @@ function buildThankYouEmailHtml(): string {
         <p>Concert Series</p>
       </div>
       <div class="content">
-        <p>Thank you for joining us at our inaugural Nursing Rocks! Concert Series event, including those of you who signed up at the last minute. Your involvement is what made the night special!</p>
+        <p>Thank you for joining us at our inaugural Nursing Rocks! Concert Series event! Your involvement is what made the night special!</p>
         <p>More importantly, thank you for what you do every single day. The care and dedication you bring to your patients doesn't go unnoticed — and it's exactly why we created a space to celebrate you.</p>
         <p>We're already planning your next event and so appreciate having you with us. Watch for updates soon!</p>
         <p>Please tag @NursingRocks if you have any fun social media posts!</p>
         <div class="sign-off">
           <p>With deep appreciation,<br><strong>Nursing Rocks!</strong></p>
           <p><a href="https://www.NursingRocksConcerts.com" style="color: #e94560;">www.NursingRocksConcerts.com</a></p>
+          <p><a href="https://nursingrocks.org/" style="color: #e94560;">https://nursingrocks.org/</a></p>
         </div>
       </div>
       <div class="footer">
