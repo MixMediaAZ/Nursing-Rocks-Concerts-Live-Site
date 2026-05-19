@@ -24,7 +24,17 @@ async function ensureInitialized() {
       const { createApp } = await import("./create-app");
       const { registerRoutes } = await import("./routes");
       const { serveStatic } = await import("./static");
-      
+
+      // Self-migrate: ensure thank-you tracking column exists before any query
+      // uses the users schema (which now declares it). Idempotent.
+      try {
+        const { db } = await import("./db");
+        const { sql } = await import("drizzle-orm");
+        await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "thank_you_email_sent_at" TIMESTAMP NULL`);
+      } catch (err) {
+        console.error("[boot] thank_you_email_sent_at column add failed:", err instanceof Error ? err.message : err);
+      }
+
       app = createApp();
       await registerRoutes(app);
       // In Vercel we rewrite SPA routes to the function; serve built client if present.
