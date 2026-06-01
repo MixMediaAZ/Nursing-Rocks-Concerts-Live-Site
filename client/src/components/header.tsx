@@ -8,9 +8,22 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Menu, X, User, HeartPulse, PlayCircle, Video, Briefcase, ShieldCheck } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { clearToken, SESSION_USER_SYNC_EVENT } from "@/lib/token-utils";
 import { useToast } from "@/hooks/use-toast";
+
+// Header collapses to hamburger below the lg breakpoint (1024px),
+// since the full nav pill + side zones don't fit on tablets.
+function useHeaderCollapsed() {
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const update = () => setCollapsed(window.innerWidth < 1180);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+  return collapsed;
+}
 
 // Define the type for navigation links
 interface NavLink {
@@ -104,7 +117,7 @@ export function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const isMobile = useIsMobile();
+  const isMobile = useHeaderCollapsed();
   const [location] = useLocation();
   // Cart functionality removed as store is non-functioning
 
