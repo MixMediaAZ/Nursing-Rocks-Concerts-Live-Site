@@ -276,6 +276,67 @@ function sanitizeHeader(value: string): string {
 }
 
 /**
+ * Build welcome email for newly verified nurses
+ * Welcomes them to the community, thanks them for signing up and being a nurse
+ * Notifies them they'll be contacted when new events are available
+ */
+function buildNurseWelcomeEmailHtml(): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.8; color: #1a1a1a; margin: 0; padding: 0; background: #f4f4f4; }
+    .wrapper { background: #f4f4f4; padding: 24px 0; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 40px 32px; text-align: center; }
+    .header h1 { margin: 0 0 8px; font-size: 28px; font-weight: 800; }
+    .header p { margin: 0; font-size: 16px; opacity: 0.85; }
+    .content { padding: 36px 32px; font-size: 16px; color: #1a1a1a; }
+    .content p { margin: 0 0 18px; }
+    .sign-off { margin-top: 28px; }
+    .footer { background: #1a1a2e; color: #aaa; text-align: center; padding: 24px 32px; font-size: 13px; }
+    .footer a { color: #e94560; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <img src="https://www.nursingrocksconcerts.com/assets/logos/NursingRocks_NewLogo.png" alt="Nursing Rocks" style="height: 80px; margin-bottom: 16px;" />
+        <h1>Welcome!</h1>
+        <p>Nursing Rocks Concert Series</p>
+      </div>
+      <div class="content">
+        <p>Thank you for signing up and for your choice to become a nurse.</p>
+        <p>Your dedication to caring for others is the heart of what we celebrate at Nursing Rocks. We created this concert series to honor you — to lift you up, recognize your contributions, and bring our nursing community together through live music and celebration.</p>
+        <p>We're grateful to have you as part of our community. When new concert dates are announced, you'll be notified so you can claim your free tickets.</p>
+        <p>In the meantime, follow us for updates and behind-the-scenes moments:</p>
+        <p><a href="https://www.facebook.com/share/18cC5MHrSX/" style="color: #e94560;">Follow us on Facebook</a></p>
+        <div style="text-align: center; margin: 20px 0;">
+          <img src="https://www.nursingrocksconcerts.com/assets/instagram-qr.png" alt="Follow @NURSING_ROCKS_CONCERT_SERIES on Instagram" style="width: 220px; height: auto; border-radius: 8px;" />
+          <p style="margin: 8px 0 0; font-size: 13px; color: #555;">Scan to follow us on Instagram<br><strong>@NURSING_ROCKS_CONCERT_SERIES</strong></p>
+        </div>
+        <div class="sign-off">
+          <p>With gratitude,<br><strong>Nursing Rocks!</strong></p>
+          <p><a href="https://www.nursingrocksconcerts.com" style="color: #e94560;">www.NursingRocksConcerts.com</a></p>
+          <p><a href="https://nursingrocks.org/" style="color: #e94560;">https://nursingrocks.org/</a></p>
+        </div>
+      </div>
+      <div class="footer">
+        <p><strong style="color: #fff;">Nursing Rocks Concert Series</strong></p>
+        <p>Benefiting Gateway Community College Scholarships</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}
+
+/**
  * Welcome email after admin verifies a nurse: link to sign in → dashboard → "Get your ticket(s)".
  * Does not include QR; ticket issuance email is sent when the user claims from the dashboard.
  */
@@ -293,8 +354,8 @@ export async function sendNurseVerifiedWelcomeEmail(userId: number): Promise<{
     throw new Error("User has invalid email address");
   }
 
-  const subject = "Thank You from Nursing Rocks! 🎸";
-  const html = buildThankYouEmailHtml();
+  const subject = "Welcome to Nursing Rocks! 🎸";
+  const html = buildNurseWelcomeEmailHtml();
 
   const client = await initializeResendClient();
   if (client && process.env.RESEND_API_KEY) {

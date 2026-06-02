@@ -187,7 +187,9 @@
       "Bash(powershell.exe -Command \"Get-Process -Id 863252 -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path\")",
       "Bash(curl -s http://localhost:5000/)",
       "Bash(curl -sI http://localhost:5000/)",
-      "Bash(curl -sI \"https://f004.backblazeb2.com/file/nursing-rocks-videos/poster/b2_653047948431b68a1ba418e577876c5e.jpg\")"
+      "Bash(curl -sI \"https://f004.backblazeb2.com/file/nursing-rocks-videos/poster/b2_653047948431b68a1ba418e577876c5e.jpg\")",
+      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")",
+      "Bash(grep -E \"\\\\.\\(tsx?\\)$\")"
     ]
   }
 }

@@ -27,6 +27,8 @@ export const registerValidation = [
   body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
   body('first_name').notEmpty().withMessage('First name is required'),
   body('last_name').notEmpty().withMessage('Last name is required'),
+  body('city').notEmpty().withMessage('City is required'),
+  body('state').notEmpty().withMessage('State is required'),
 ];
 
 export const loginValidation = [
@@ -50,10 +52,11 @@ export async function register(req: Request, res: Response) {
       return res.status(400).json({ message });
     }
 
-    const { email, password, first_name, last_name } = req.body;
+    const { email, password, first_name, last_name, city, state } = req.body;
 
     console.log('[register] Attempt for email:', email);
     console.log('[register] First name:', first_name, 'Last name:', last_name);
+    console.log('[register] City:', city, 'State:', state);
 
     // FIX: Normalize email (trim + lowercase) to ensure consistent storage and lookup
     const normalizedEmail = email.toLowerCase().trim();
@@ -78,7 +81,7 @@ export async function register(req: Request, res: Response) {
     console.log('[register] Password hashed, length:', passwordHash.length);
 
     // Create user with normalized email
-    const user = await storage.createUser({ email: normalizedEmail, first_name, last_name, password }, passwordHash);
+    const user = await storage.createUser({ email: normalizedEmail, first_name, last_name, city, state, password }, passwordHash);
     console.log('[register] User created with ID:', user.id);
 
     // SECURITY: Set Cache-Control headers to prevent caching of sensitive auth data

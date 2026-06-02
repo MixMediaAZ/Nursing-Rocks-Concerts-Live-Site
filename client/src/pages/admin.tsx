@@ -2433,6 +2433,9 @@ export default function AdminPage() {
                               Email
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              City, State
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Status
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -2453,6 +2456,11 @@ export default function AdminPage() {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm text-gray-500">{user.email}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-500">
+                                  {user.city && user.state ? `${user.city}, ${user.state}` : "—"}
+                                </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex flex-col gap-1">
@@ -2565,6 +2573,14 @@ export default function AdminPage() {
                       <div>
                         <span className="font-medium">Email:</span>
                         <p className="text-muted-foreground break-all">{selectedUser.email}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium">City:</span>
+                        <p className="text-muted-foreground">{selectedUser.city || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium">State:</span>
+                        <p className="text-muted-foreground">{selectedUser.state || 'N/A'}</p>
                       </div>
                       <div>
                         <span className="font-medium">Joined:</span>

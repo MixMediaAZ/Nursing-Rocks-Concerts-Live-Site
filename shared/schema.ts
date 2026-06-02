@@ -207,6 +207,8 @@ export const users = pgTable("users", {
   password_hash: text("password_hash").notNull(),
   first_name: text("first_name").notNull(),
   last_name: text("last_name").notNull(),
+  city: text("city"),
+  state: text("state"),
   created_at: timestamp("created_at").defaultNow(),
   is_verified: boolean("is_verified").default(false),
   verified_at: timestamp("verified_at"),
