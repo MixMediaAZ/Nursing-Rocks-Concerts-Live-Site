@@ -73,6 +73,17 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Self-migrate: ensure user columns added in code exist in DB. Idempotent.
+  try {
+    const { db } = await import("./db");
+    const { sql } = await import("drizzle-orm");
+    await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "thank_you_email_sent_at" TIMESTAMP NULL`);
+    await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "city" TEXT`);
+    await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "state" TEXT`);
+  } catch (err) {
+    console.error("[boot] users self-migrate failed:", err instanceof Error ? err.message : err);
+  }
+
   const server = await registerRoutes(app);
 
   // Initialize jobs ingestion scheduler (only in production if explicitly enabled)

@@ -1056,10 +1056,6 @@ export const jobBoardVisits = pgTable("job_board_visits", {
 export type JobBoardVisit = typeof jobBoardVisits.$inferSelect;
 export type InsertJobBoardVisit = typeof jobBoardVisits.$inferInsert;
 
-// Type exports for JobListing with ingestion columns
-export type JobListing = typeof jobListings.$inferSelect;
-export type InsertJobListing = typeof jobListings.$inferInsert;
-
 // Page content overrides — persists admin editor changes across deployments
 export const pageContent = pgTable("page_content", {
   elementKey: text("element_key").primaryKey(),  // stable CSS selector or element ID

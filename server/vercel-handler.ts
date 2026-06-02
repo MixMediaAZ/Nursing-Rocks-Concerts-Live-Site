@@ -25,14 +25,16 @@ async function ensureInitialized() {
       const { registerRoutes } = await import("./routes");
       const { serveStatic } = await import("./static");
 
-      // Self-migrate: ensure thank-you tracking column exists before any query
-      // uses the users schema (which now declares it). Idempotent.
+      // Self-migrate: ensure user columns added in code exist in DB before any query
+      // uses the users schema. Idempotent.
       try {
         const { db } = await import("./db");
         const { sql } = await import("drizzle-orm");
         await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "thank_you_email_sent_at" TIMESTAMP NULL`);
+        await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "city" TEXT`);
+        await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "state" TEXT`);
       } catch (err) {
-        console.error("[boot] thank_you_email_sent_at column add failed:", err instanceof Error ? err.message : err);
+        console.error("[boot] users self-migrate failed:", err instanceof Error ? err.message : err);
       }
 
       app = createApp();

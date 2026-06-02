@@ -189,7 +189,10 @@
       "Bash(curl -sI http://localhost:5000/)",
       "Bash(curl -sI \"https://f004.backblazeb2.com/file/nursing-rocks-videos/poster/b2_653047948431b68a1ba418e577876c5e.jpg\")",
       "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")",
-      "Bash(grep -E \"\\\\.\\(tsx?\\)$\")"
+      "Bash(grep -E \"\\\\.\\(tsx?\\)$\")",
+      "Bash(node -e ' *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5000/)",
+      "Bash(git check-ignore *)"
     ]
   }
 }
