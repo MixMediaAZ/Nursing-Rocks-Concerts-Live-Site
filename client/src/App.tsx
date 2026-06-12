@@ -33,6 +33,7 @@ import DemoReplacePage from "@/pages/demo-replace";
 import SponsorshipsPage from "@/pages/sponsorships";
 import EditDemoPage from "@/pages/edit-demo-page";
 import ProductSyncPage from "@/pages/product-sync";
+import JobAnalyticsPage from "@/pages/job-analytics";
 import UploadUtilityPage from "@/pages/upload-utility";
 import ThanksPage from "@/pages/thanks";
 import ContactPage from "@/pages/contact";
@@ -114,6 +115,7 @@ function Router() {
             <Route path="/demo-replace" component={DemoReplacePage} />
             <Route path="/edit-demo" component={EditDemoPage} />
             <Route path="/admin/product-sync" component={ProductSyncPage} />
+            <Route path="/admin/job-analytics" component={JobAnalyticsPage} />
             <Route path="/upload-utility" component={UploadUtilityPage} />
             {/* Legal and information pages */}
             <Route path="/terms" component={TermsPage} />

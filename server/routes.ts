@@ -2225,6 +2225,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const weekVisitors = days.reduce((sum, d) => sum + d.visitors, 0);
       const weekRegistrations = days.reduce((sum, d) => sum + d.registrations, 0);
 
+      // Rolling 30-day ("Last 30 Days") totals
+      const monthKeys = getSiteTrafficRollingDateKeys(30);
+      const [monthVisitorRow] = await db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(siteVisits)
+        .where(inArray(siteVisits.visit_date, monthKeys));
+
+      const { start: monthStart } = getUtcRangeForSiteTrafficCalendarDate(monthKeys[0]);
+      const { end: monthEnd } = getUtcRangeForSiteTrafficCalendarDate(monthKeys[monthKeys.length - 1]);
+      const [monthRegRow] = await db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(users)
+        .where(and(gte(users.created_at, monthStart), sql`${users.created_at} <= ${monthEnd}`));
+
       const [allTimeVisitors] = await db
         .select({ count: sql<number>`cast(count(*) as int)` })
         .from(siteVisits);
@@ -2236,6 +2250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         today: todayStats,
         week: { visitors: weekVisitors, registrations: weekRegistrations },
+        month: { visitors: Number(monthVisitorRow?.count ?? 0), registrations: Number(monthRegRow?.count ?? 0) },
         allTime: { visitors: Number(allTimeVisitors?.count ?? 0), registrations: Number(allTimeRegs?.count ?? 0) },
         days
       });
@@ -2332,6 +2347,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error('[jobs-board-stats]', error);
       res.status(500).json({ message: 'Failed to load jobs board stats' });
+    }
+  });
+
+  // Admin-only endpoint — job postings analytics (new postings + applications over time, plus board status)
+  app.get("/api/admin/job-postings-stats", requireAdminToken, async (req: Request, res: Response) => {
+    try {
+      const today = getSiteTrafficDateKey();
+      const dateKeys = getSiteTrafficRollingDateKeys(7);
+      const days: { date: string; postings: number; applications: number }[] = [];
+
+      for (const dateStr of dateKeys) {
+        const { start: startOfDay, end: endOfDay } = getUtcRangeForSiteTrafficCalendarDate(dateStr);
+
+        const [postingRow] = await db
+          .select({ count: sql<number>`cast(count(*) as int)` })
+          .from(jobListings)
+          .where(and(gte(jobListings.posted_date, startOfDay), sql`${jobListings.posted_date} <= ${endOfDay}`));
+
+        const [appRow] = await db
+          .select({ count: sql<number>`cast(count(*) as int)` })
+          .from(jobApplications)
+          .where(and(gte(jobApplications.application_date, startOfDay), sql`${jobApplications.application_date} <= ${endOfDay}`));
+
+        days.push({
+          date: dateStr,
+          postings: Number(postingRow?.count ?? 0),
+          applications: Number(appRow?.count ?? 0),
+        });
+      }
+
+      const todayStats = days.find(d => d.date === today) ?? { date: today, postings: 0, applications: 0 };
+      const weekPostings = days.reduce((sum, d) => sum + d.postings, 0);
+      const weekApplications = days.reduce((sum, d) => sum + d.applications, 0);
+
+      // Rolling 30-day ("Last 30 Days") totals
+      const monthKeys = getSiteTrafficRollingDateKeys(30);
+      const { start: monthStart } = getUtcRangeForSiteTrafficCalendarDate(monthKeys[0]);
+      const { end: monthEnd } = getUtcRangeForSiteTrafficCalendarDate(monthKeys[monthKeys.length - 1]);
+
+      const [monthPostingRow] = await db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(jobListings)
+        .where(and(gte(jobListings.posted_date, monthStart), sql`${jobListings.posted_date} <= ${monthEnd}`));
+
+      const [monthAppRow] = await db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(jobApplications)
+        .where(and(gte(jobApplications.application_date, monthStart), sql`${jobApplications.application_date} <= ${monthEnd}`));
+
+      const [allTimePostings] = await db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(jobListings);
+
+      const [allTimeApplications] = await db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(jobApplications);
+
+      // Current board status (point-in-time)
+      const [activeRow] = await db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(jobListings)
+        .where(eq(jobListings.is_active, true));
+
+      const [pendingRow] = await db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(jobListings)
+        .where(eq(jobListings.is_approved, false));
+
+      const [featuredRow] = await db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(jobListings)
+        .where(eq(jobListings.is_featured, true));
+
+      const [expiredRow] = await db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(jobListings)
+        .where(sql`${jobListings.expiry_date} is not null and ${jobListings.expiry_date} < now()`);
+
+      const [viewsRow] = await db
+        .select({ total: sql<number>`cast(coalesce(sum(${jobListings.views_count}), 0) as int)` })
+        .from(jobListings);
+
+      res.json({
+        today: todayStats,
+        week: { postings: weekPostings, applications: weekApplications },
+        month: { postings: Number(monthPostingRow?.count ?? 0), applications: Number(monthAppRow?.count ?? 0) },
+        allTime: { postings: Number(allTimePostings?.count ?? 0), applications: Number(allTimeApplications?.count ?? 0) },
+        status: {
+          active: Number(activeRow?.count ?? 0),
+          pending: Number(pendingRow?.count ?? 0),
+          featured: Number(featuredRow?.count ?? 0),
+          expired: Number(expiredRow?.count ?? 0),
+          totalViews: Number(viewsRow?.total ?? 0),
+        },
+        days,
+      });
+    } catch (error) {
+      console.error('[job-postings-stats]', error);
+      res.status(500).json({ message: 'Failed to load job postings stats' });
     }
   });
 

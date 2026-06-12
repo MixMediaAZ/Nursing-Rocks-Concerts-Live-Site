@@ -1374,6 +1374,14 @@ export default function AdminPage() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold">Jobs Board Management</h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { window.location.href = "/admin/job-analytics"; }}
+                >
+                  <Briefcase className="h-4 w-4 mr-2" />
+                  Job Postings Analytics
+                </Button>
               </div>
 
               {/* Jobs Board Traffic Statistics */}
@@ -3582,6 +3590,7 @@ function TrafficStatsWidget({ adminFetch }: { adminFetch: (url: string) => Promi
   const days: { date: string; visitors: number; registrations: number }[] = data?.days ?? [];
   const today = data?.today ?? { visitors: 0, registrations: 0 };
   const week = data?.week ?? { visitors: 0, registrations: 0 };
+  const month = data?.month ?? { visitors: 0, registrations: 0 };
   const allTime = data?.allTime ?? { visitors: 0, registrations: 0 };
   const maxVal = Math.max(...days.map((d: any) => Math.max(d.visitors, d.registrations)), 1);
 
@@ -3627,7 +3636,7 @@ function TrafficStatsWidget({ adminFetch }: { adminFetch: (url: string) => Promi
         ) : (
           <>
             {/* Key Metrics - Three Columns */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
               {/* Today Section */}
               <div className="space-y-3">
                 <p className="text-sm font-semibold text-muted-foreground">Today</p>
@@ -3653,6 +3662,21 @@ function TrafficStatsWidget({ adminFetch }: { adminFetch: (url: string) => Promi
                   </div>
                   <div className="bg-green-50/70 dark:bg-green-950/25 rounded-lg p-4 text-center">
                     <p className="text-2xl font-bold text-green-500">{week.registrations}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Registered</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Last 30 Days Section */}
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-muted-foreground">Last 30 Days</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-blue-50/70 dark:bg-blue-950/25 rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold text-blue-500">{month.visitors}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Visitors</p>
+                  </div>
+                  <div className="bg-green-50/70 dark:bg-green-950/25 rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold text-green-500">{month.registrations}</p>
                     <p className="text-xs text-muted-foreground mt-1">Registered</p>
                   </div>
                 </div>
