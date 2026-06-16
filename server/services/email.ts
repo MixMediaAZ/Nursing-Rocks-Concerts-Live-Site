@@ -48,7 +48,7 @@ const SENDER_EMAIL = process.env.SENDER_EMAIL || "noreply@nursingrocks.com";
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "support@nursingrocks.com";
 
 /** Subject line for nurse verification / free ticket issuance emails (Resend or dev log). */
-export const TICKET_ISSUED_EMAIL_SUBJECT = "Your Free Nursing Rocks Ticket is Ready! 🎸";
+export const TICKET_ISSUED_EMAIL_SUBJECT = "Thank You from Nursing Rocks! 🎸";
 
 /** Subject when an admin verifies a nurse — links to site; ticket QR is sent separately when they claim. */
 export const NURSE_VERIFIED_WELCOME_SUBJECT = "You're verified — welcome to Nursing Rocks! 🎸";
@@ -188,10 +188,10 @@ export function ticketIssuedEmailStatusFromDelivery(
 }
 
 /**
- * Build beautiful HTML email template for newly verified nurses
- * Message is personalized, welcoming, and emphasizes the free gift
+ * Build thank-you email for nurses who attended/registered for a Nursing Rocks event.
+ * Replaces the original ticket-issuance email as of May 2026 (post-inaugural event).
  */
-function buildTicketEmailHtml(data: {
+function buildTicketEmailHtml(_data: {
   userName: string;
   eventTitle: string;
   eventDate: string;
@@ -200,128 +200,62 @@ function buildTicketEmailHtml(data: {
   ticketCode: string;
   qrImageUrl: string;
 }): string {
+  return buildThankYouEmailHtml();
+}
+
+export function buildThankYouEmailHtml(): string {
   return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1f2937; background: #f3f4f6; }
-        .outer { background: #f3f4f6; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .header { background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 40px 30px; text-align: center; }
-        .header h1 { font-size: 32px; margin-bottom: 10px; }
-        .header p { font-size: 18px; opacity: 0.95; }
-        .content { padding: 40px 30px; }
-        .welcome-box { background: #fef3c7; border-left: 4px solid #dc2626; padding: 20px; border-radius: 6px; margin-bottom: 30px; }
-        .welcome-box strong { color: #92400e; }
-        h2 { font-size: 24px; color: #1f2937; margin: 25px 0 15px; }
-        .event-details { background: #f9fafb; padding: 25px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626; }
-        .event-detail-row { display: flex; align-items: center; margin: 12px 0; font-size: 16px; }
-        .event-detail-row span:first-child { min-width: 100px; font-weight: 600; color: #374151; }
-        .qr-section { text-align: center; margin: 35px 0; padding: 30px; background: #fafafa; border-radius: 8px; }
-        .qr-label { font-size: 14px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 15px; }
-        .qr-image { max-width: 280px; height: auto; margin: 15px 0; border-radius: 6px; border: 2px solid #e5e7eb; }
-        .ticket-code { font-size: 20px; font-weight: 700; font-family: 'Monaco', 'Courier New', monospace; background: white; padding: 15px; border-radius: 6px; border: 2px dashed #dc2626; margin-top: 15px; word-break: break-all; }
-        .backup-info { font-size: 12px; color: #6b7280; margin-top: 12px; }
-        .instructions { background: #eff6ff; border-left: 4px solid #2563eb; padding: 20px; border-radius: 6px; margin: 25px 0; }
-        .instructions h3 { color: #1e40af; font-size: 14px; font-weight: 600; margin-bottom: 10px; }
-        .instructions ul { margin-left: 20px; color: #374151; }
-        .instructions li { margin: 8px 0; }
-        .warning { background: #fee2e2; border-left: 4px solid #dc2626; padding: 20px; border-radius: 6px; margin: 25px 0; }
-        .warning strong { color: #7f1d1d; }
-        .warning p { color: #991b1b; font-size: 14px; }
-        .support-section { margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
-        .support-section p { font-size: 14px; color: #6b7280; }
-        .support-link { color: #dc2626; text-decoration: none; font-weight: 600; }
-        .footer { background: #f3f4f6; padding: 20px 30px; text-align: center; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; }
-        .footer-logo { font-weight: 600; color: #1f2937; margin: 10px 0; }
-        .footer-tagline { color: #9ca3af; font-size: 11px; }
-      </style>
-    </head>
-    <body>
-      <div class="outer">
-        <div class="container">
-          <!-- Header -->
-          <div class="header">
-            <h1>🎸 You're Verified!</h1>
-            <p>Your free Nursing Rocks ticket is ready</p>
-          </div>
-
-          <!-- Main Content -->
-          <div class="content">
-            <p style="font-size: 16px; margin-bottom: 20px;">Hi ${escapeHtml(data.userName)},</p>
-
-            <div class="welcome-box">
-              <strong>Welcome to the Nursing Rocks community!</strong> We're thrilled to have verified you. You now have a free ticket to the upcoming Nursing Rocks concert — our way of saying thank you for all you do.
-            </div>
-
-            <!-- Event Details -->
-            <h2>Your Event Details</h2>
-            <div class="event-details">
-              <h3 style="margin: 0 0 15px 0; color: #dc2626; font-size: 20px;">${escapeHtml(data.eventTitle)}</h3>
-              <div class="event-detail-row">
-                <span>📅 Date:</span>
-                <span>${escapeHtml(data.eventDate)}</span>
-              </div>
-              <div class="event-detail-row">
-                <span>🕐 Time:</span>
-                <span>${escapeHtml(data.eventTime)}</span>
-              </div>
-              <div class="event-detail-row">
-                <span>📍 Location:</span>
-                <span>${escapeHtml(data.eventLocation)}</span>
-              </div>
-            </div>
-
-            <!-- QR Code -->
-            <h2>Your Ticket</h2>
-            <div class="qr-section">
-              <div class="qr-label">Scan this QR code at the gate</div>
-              ${data.qrImageUrl ? `<img src="${escapeHtml(data.qrImageUrl)}" alt="Your QR Ticket" class="qr-image">` : '<p style="color: #9ca3af; padding: 40px 0;">[QR code unavailable]</p>'}
-              <div style="margin-top: 20px;">
-                <p style="font-size: 12px; color: #6b7280; margin-bottom: 8px;">Or provide this code:</p>
-                <div class="ticket-code">${escapeHtml(data.ticketCode)}</div>
-              </div>
-              <div class="backup-info">✓ Save this code as a backup</div>
-            </div>
-
-            <!-- How It Works -->
-            <div class="instructions">
-              <h3>How to Check In:</h3>
-              <ul>
-                <li><strong>Option 1:</strong> Show this email and the QR code to staff at the gate</li>
-                <li><strong>Option 2:</strong> Tell them your ticket code: <code style="background: white; padding: 2px 4px; border-radius: 2px;">${escapeHtml(data.ticketCode)}</code></li>
-                <li><strong>Option 3:</strong> Take a screenshot of this QR code for offline access</li>
-              </ul>
-            </div>
-
-            <!-- Important Notice -->
-            <div class="warning">
-              <strong>⚠️ Important - Please Read:</strong>
-              <p style="margin-top: 8px;">This ticket is <strong>exclusively yours</strong> and single-use. Once scanned at the event, it cannot be used again. Please do not share your QR code or ticket number with others. Tickets are tied to your name and verification status — attempting to share them violates our terms and may result in removal from the event.</p>
-            </div>
-
-            <!-- Support -->
-            <div class="support-section">
-              <p><strong>Questions?</strong> We're here to help!</p>
-              <p>📧 Email: <a href="mailto:${SUPPORT_EMAIL}" class="support-link">${SUPPORT_EMAIL}</a></p>
-              <p style="margin-top: 15px; font-size: 13px;">If you didn't receive this email, check your spam folder. If you lose your ticket, reply to this email or contact support and we'll help you out.</p>
-            </div>
-          </div>
-
-          <!-- Footer -->
-          <div class="footer">
-            <div class="footer-logo">🎵 Nursing Rocks Foundation</div>
-            <div class="footer-tagline">Benefiting Gateway Community College Scholarships</div>
-            <p style="margin-top: 12px;">This is an automated message. Please do not reply directly — use the support email above.</p>
-          </div>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.8; color: #1a1a1a; margin: 0; padding: 0; background: #f4f4f4; }
+    .wrapper { background: #f4f4f4; padding: 24px 0; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 40px 32px; text-align: center; }
+    .header h1 { margin: 0 0 8px; font-size: 28px; font-weight: 800; }
+    .header p { margin: 0; font-size: 16px; opacity: 0.85; }
+    .content { padding: 36px 32px; font-size: 16px; color: #1a1a1a; }
+    .content p { margin: 0 0 18px; }
+    .sign-off { margin-top: 28px; }
+    .footer { background: #1a1a2e; color: #aaa; text-align: center; padding: 24px 32px; font-size: 13px; }
+    .footer a { color: #e94560; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <img src="https://www.nursingrocksconcerts.com/assets/logos/NursingRocks_NewLogo.png" alt="Nursing Rocks" style="height: 80px; margin-bottom: 16px;" />
+        <h1>Nursing Rocks!</h1>
+        <p>Concert Series</p>
+      </div>
+      <div class="content">
+        <p>For those of you who joined us at your inaugural Nursing Rocks! Concert Series event, Thank you! Your involvement is what made the night special!</p>
+        <p>More importantly, thank you for what you do every single day. The care and dedication you bring to your patients doesn't go unnoticed — and it's exactly why we created a space to celebrate you.</p>
+        <p>We're already planning your next event and so appreciate having you with us. Watch for updates soon!</p>
+        <p>Please tag @NursingRocks if you have any fun social media posts!</p>
+        <p><a href="https://www.facebook.com/share/18cC5MHrSX/" style="color: #e94560;">Follow us on Facebook</a></p>
+        <div style="text-align: center; margin: 20px 0;">
+          <img src="https://www.nursingrocksconcerts.com/assets/instagram-qr.png" alt="Follow @NURSING_ROCKS_CONCERT_SERIES on Instagram" style="width: 220px; height: auto; border-radius: 8px;" />
+          <p style="margin: 8px 0 0; font-size: 13px; color: #555;">Scan to follow us on Instagram<br><strong>@NURSING_ROCKS_CONCERT_SERIES</strong></p>
+        </div>
+        <div class="sign-off">
+          <p>With deep appreciation,<br><strong>Nursing Rocks!</strong></p>
+          <p><a href="https://www.NursingRocksConcerts.com" style="color: #e94560;">www.NursingRocksConcerts.com</a></p>
+          <p><a href="https://nursingrocks.org/" style="color: #e94560;">https://nursingrocks.org/</a></p>
         </div>
       </div>
-    </body>
-    </html>
+      <div class="footer">
+        <p><strong style="color: #fff;">Nursing Rocks Concert Series</strong></p>
+        <p>Benefiting Gateway Community College Scholarships</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
   `;
 }
 
@@ -342,6 +276,67 @@ function sanitizeHeader(value: string): string {
 }
 
 /**
+ * Build welcome email for newly verified nurses
+ * Welcomes them to the community, thanks them for signing up and being a nurse
+ * Notifies them they'll be contacted when new events are available
+ */
+function buildNurseWelcomeEmailHtml(): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.8; color: #1a1a1a; margin: 0; padding: 0; background: #f4f4f4; }
+    .wrapper { background: #f4f4f4; padding: 24px 0; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 40px 32px; text-align: center; }
+    .header h1 { margin: 0 0 8px; font-size: 28px; font-weight: 800; }
+    .header p { margin: 0; font-size: 16px; opacity: 0.85; }
+    .content { padding: 36px 32px; font-size: 16px; color: #1a1a1a; }
+    .content p { margin: 0 0 18px; }
+    .sign-off { margin-top: 28px; }
+    .footer { background: #1a1a2e; color: #aaa; text-align: center; padding: 24px 32px; font-size: 13px; }
+    .footer a { color: #e94560; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <img src="https://www.nursingrocksconcerts.com/assets/logos/NursingRocks_NewLogo.png" alt="Nursing Rocks" style="height: 80px; margin-bottom: 16px;" />
+        <h1>Welcome!</h1>
+        <p>Nursing Rocks Concert Series</p>
+      </div>
+      <div class="content">
+        <p>Thank you for signing up and for your choice to become a nurse.</p>
+        <p>Your dedication to caring for others is the heart of what we celebrate at Nursing Rocks. We created this concert series to honor you — to lift you up, recognize your contributions, and bring our nursing community together through live music and celebration.</p>
+        <p>We're grateful to have you as part of our community. When new concert dates are announced, you'll be notified so you can claim your free tickets.</p>
+        <p>In the meantime, follow us for updates and behind-the-scenes moments:</p>
+        <p><a href="https://www.facebook.com/share/18cC5MHrSX/" style="color: #e94560;">Follow us on Facebook</a></p>
+        <div style="text-align: center; margin: 20px 0;">
+          <img src="https://www.nursingrocksconcerts.com/assets/instagram-qr.png" alt="Follow @NURSING_ROCKS_CONCERT_SERIES on Instagram" style="width: 220px; height: auto; border-radius: 8px;" />
+          <p style="margin: 8px 0 0; font-size: 13px; color: #555;">Scan to follow us on Instagram<br><strong>@NURSING_ROCKS_CONCERT_SERIES</strong></p>
+        </div>
+        <div class="sign-off">
+          <p>With gratitude,<br><strong>Nursing Rocks!</strong></p>
+          <p><a href="https://www.nursingrocksconcerts.com" style="color: #e94560;">www.NursingRocksConcerts.com</a></p>
+          <p><a href="https://nursingrocks.org/" style="color: #e94560;">https://nursingrocks.org/</a></p>
+        </div>
+      </div>
+      <div class="footer">
+        <p><strong style="color: #fff;">Nursing Rocks Concert Series</strong></p>
+        <p>Benefiting Gateway Community College Scholarships</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}
+
+/**
  * Welcome email after admin verifies a nurse: link to sign in → dashboard → "Get your ticket(s)".
  * Does not include QR; ticket issuance email is sent when the user claims from the dashboard.
  */
@@ -359,39 +354,8 @@ export async function sendNurseVerifiedWelcomeEmail(userId: number): Promise<{
     throw new Error("User has invalid email address");
   }
 
-  const firstName = escapeHtml((user.first_name || "there").trim() || "there");
-  const base = getPublicSiteBaseUrl();
-  const signInUrl = `${base}/login?redirect=${encodeURIComponent("/dashboard")}`;
-  const subject = NURSE_VERIFIED_WELCOME_SUBJECT;
-
-  const html = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f3f4f6;color:#1f2937;">
-  <div style="max-width:600px;margin:0 auto;padding:24px;">
-    <div style="background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%);color:#fff;padding:28px;border-radius:12px 12px 0 0;text-align:center;">
-      <h1 style="margin:0;font-size:24px;">You're verified!</h1>
-      <p style="margin:12px 0 0;font-size:16px;opacity:.95;">Nursing Rocks</p>
-    </div>
-    <div style="background:#fff;padding:28px;border-radius:0 0 12px 12px;box-shadow:0 4px 6px rgba(0,0,0,.08);">
-      <p style="font-size:16px;line-height:1.6;">Hi ${firstName},</p>
-      <p style="font-size:16px;line-height:1.6;">Your nursing account has been <strong>approved</strong>. Next steps:</p>
-      <ol style="font-size:15px;line-height:1.7;padding-left:20px;">
-        <li>Sign in to the site using the button below.</li>
-        <li>Open your <strong>dashboard</strong>.</li>
-        <li>Click <strong>Get your ticket(s) &amp; email</strong> to create your free event ticket(s). We'll email your QR code — one message per new ticket when events are available.</li>
-      </ol>
-      <div style="text-align:center;margin:28px 0;">
-        <a href="${signInUrl}" style="display:inline-block;background:#dc2626;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:16px;">Sign in to your dashboard</a>
-      </div>
-      <p style="font-size:13px;color:#6b7280;">If the button doesn't work, copy this link: <a href="${signInUrl}" style="color:#dc2626;word-break:break-all;">${escapeHtml(signInUrl)}</a></p>
-      <p style="font-size:13px;color:#6b7280;margin-top:20px;border-top:1px solid #e5e7eb;padding-top:16px;">Questions? Reply is not monitored — contact <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}">${escapeHtml(SUPPORT_EMAIL)}</a>.</p>
-    </div>
-    <p style="text-align:center;font-size:12px;color:#9ca3af;margin-top:16px;">Nursing Rocks Foundation · Gateway Community College Scholarships</p>
-  </div>
-</body>
-</html>`;
+  const subject = "Welcome to Nursing Rocks! 🎸";
+  const html = buildNurseWelcomeEmailHtml();
 
   const client = await initializeResendClient();
   if (client && process.env.RESEND_API_KEY) {
@@ -418,7 +382,6 @@ export async function sendNurseVerifiedWelcomeEmail(userId: number): Promise<{
   console.log(`[EMAIL - DEV LOG ONLY] Welcome email for user ${userId}`);
   console.log(`To: ${user.email}`);
   console.log(`Subject: ${subject}`);
-  console.log(`Dashboard Link: ${signInUrl}`);
   console.log(`Note: RESEND_API_KEY not configured - email NOT sent to Resend, only logged here`);
   console.log(`${"=".repeat(60)}\n`);
   return { deliveryMode: "dev_log" };
@@ -608,94 +571,13 @@ export async function approveAndSendTicketEmail(ticketId: string, adminUserId: n
     const nurseName = `${user.first_name} ${user.last_name}`;
 
     // Build HTML email
-    const emailHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-    .header h1 { margin: 0; font-size: 28px; }
-    .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
-    .event-details { background: white; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #667eea; }
-    .event-details h3 { margin-top: 0; color: #667eea; }
-    .event-details p { margin: 8px 0; }
-    .label { font-weight: bold; color: #555; display: inline-block; width: 120px; }
-    .ticket-code {
-      background: #667eea;
-      color: white;
-      padding: 20px;
-      border-radius: 6px;
-      text-align: center;
-      margin: 20px 0;
-      font-size: 24px;
-      font-weight: bold;
-      letter-spacing: 2px;
-    }
-    .footer { text-align: center; padding: 20px; font-size: 12px; color: #888; border-top: 1px solid #ddd; }
-    .important { background: #fffbea; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #ffa500; }
-    .qr { text-align: center; background: white; padding: 20px; border-radius: 6px; margin: 20px 0; }
-    .qr img { max-width: 260px; width: 100%; height: auto; border: 1px solid #ddd; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>✓ Ticket Confirmed</h1>
-      <p>Your Nursing Rocks! Concert Series ticket is ready</p>
-    </div>
-
-    <div class="content">
-      <p>Hi ${escapeHtml(nurseName)},</p>
-
-      <p>Thank you for purchasing your ticket to the Nursing Rocks! Concert Series! We're excited to see you at the event.</p>
-
-      <div class="event-details">
-        <h3>${escapeHtml(event.title)}</h3>
-        <p><span class="label">Date:</span> ${escapeHtml(formattedDate)}</p>
-        <p><span class="label">Time:</span> ${escapeHtml(event.start_time || 'TBD')}</p>
-        <p><span class="label">Location:</span> ${escapeHtml(event.location)}</p>
-        <p><span class="label">Ticket Type:</span> ${escapeHtml(ticket.ticket_type || 'General Admission')}</p>
-        <p><span class="label">Price:</span> ${escapeHtml(ticket.price || 'Free')}</p>
-      </div>
-
-      <div class="ticket-code">
-        ${escapeHtml(ticket.ticket_code)}
-      </div>
-
-      ${ticket.qr_image_url ? `
-      <div class="qr">
-        <p style="margin: 0 0 12px 0; font-weight: bold;">Scan this QR code at the gate</p>
-        <img src="${escapeHtml(ticket.qr_image_url)}" alt="Ticket QR code">
-      </div>
-      ` : ''}
-
-      <div class="important">
-        <strong>Important:</strong> Please bring this email with you. Staff can scan the QR code or enter your ticket code at the venue.
-      </div>
-
-      <p>If you have any questions about the event or your ticket, please don't hesitate to reach out to us.</p>
-
-      <p>See you at the show!<br>
-      <strong>The Nursing Rocks! Team</strong></p>
-    </div>
-
-    <div class="footer">
-      <p>Nursing Rocks! Concert Series | For Healthcare Professionals</p>
-      <p>&copy; ${new Date().getFullYear()} All rights reserved.</p>
-    </div>
-  </div>
-</body>
-</html>
-    `;
+    const emailHtml = buildThankYouEmailHtml();
 
     // FIX: Send email via Resend
     const emailResult = await resend.emails.send({
       from: SENDER_EMAIL,
       to: user.email,
-      subject: sanitizeHeader(`Your Nursing Rocks! Ticket for ${event.title}`),
+      subject: sanitizeHeader("Thank You from Nursing Rocks! 🎸"),
       html: emailHtml,
       replyTo: "NursingRocksConcerts@gmail.com",
     });

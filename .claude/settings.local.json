@@ -177,7 +177,22 @@
       "Bash(git commit -m 'Add camera settings panel: torch, zoom, fps, scan box size *)",
       "Bash(dir \"C:\\\\Users\\\\Dave\\\\Downloads\\\\Nursing-Rocks-Concerts-Live-Site - 3.0\\\\client\\\\src\\\\components\" /b)",
       "Bash(cmd /c \"dir /b \\\\\"C:\\\\Users\\\\Dave\\\\Downloads\\\\Nursing-Rocks-Concerts-Live-Site - 3.0\\\\client\\\\src\\\\components\\\\\"\")",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(ls \"C:/Users/Dave/Downloads/Nursing Rocks! Phoenix Photos - Sizzle Reel & Website/\")",
+      "PowerShell(node scripts/process-phoenix-photos.mjs)",
+      "PowerShell($d = \"C:/Users/Dave/Downloads/Nursing Rocks! Phoenix Photos - Sizzle Reel & Website\"; Get-ChildItem $d -File | Measure-Object | Select-Object -ExpandProperty Count; Get-ChildItem $d -File | Where-Object { $_.Name -match '\\\\\\(\\\\d+\\\\\\)' } | Measure-Object | Select-Object -ExpandProperty Count)",
+      "Bash(ffmpeg -version)",
+      "Bash(netstat -ano)",
+      "Bash(tasklist //FI \"PID eq 863252\")",
+      "Bash(powershell.exe -Command \"Get-Process -Id 863252 -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path\")",
+      "Bash(curl -s http://localhost:5000/)",
+      "Bash(curl -sI http://localhost:5000/)",
+      "Bash(curl -sI \"https://f004.backblazeb2.com/file/nursing-rocks-videos/poster/b2_653047948431b68a1ba418e577876c5e.jpg\")",
+      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")",
+      "Bash(grep -E \"\\\\.\\(tsx?\\)$\")",
+      "Bash(node -e ' *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5000/)",
+      "Bash(git check-ignore *)"
     ]
   }
 }

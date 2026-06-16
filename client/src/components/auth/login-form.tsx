@@ -43,11 +43,12 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   async function onSubmit(values: LoginFormValues) {
     setIsLoading(true);
     try {
+      const payload = { ...values, email: values.email.trim().toLowerCase() };
       const response = await apiRequest("POST", "/api/auth/login", {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {

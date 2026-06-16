@@ -4,12 +4,12 @@ import 'dotenv/config';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-// Admin user definitions (no passwords in code). Passwords must be set via environment:
-//   ADMIN_PASSWORD_1  - password for first user (MixMediaAZ@gmail.com)
-//   ADMIN_PASSWORD_2  - password for second user (Spencer.Coon@...)
+// Admin user definitions. Email and password come from environment:
+//   ADMIN_EMAIL_1 / ADMIN_PASSWORD_1  - first admin
+//   ADMIN_EMAIL_2 / ADMIN_PASSWORD_2  - second admin
 const ADMIN_USERS = [
   {
-    email: 'MixMediaAZ@gmail.com',
+    emailEnv: 'ADMIN_EMAIL_1',
     passwordEnv: 'ADMIN_PASSWORD_1',
     first_name: 'MixMedia',
     last_name: 'Admin',
@@ -17,7 +17,7 @@ const ADMIN_USERS = [
     is_verified: true,
   },
   {
-    email: 'Spencer.Coon@executiveelitegroup.com',
+    emailEnv: 'ADMIN_EMAIL_2',
     passwordEnv: 'ADMIN_PASSWORD_2',
     first_name: 'Spencer',
     last_name: 'Coon',
@@ -31,12 +31,17 @@ async function createAdminUsers() {
     console.log('Creating/updating admin users...\n');
     
     for (const adminUser of ADMIN_USERS) {
+      const email = process.env[adminUser.emailEnv];
+      if (!email || email.trim() === '') {
+        console.error(`❌ Missing ${adminUser.emailEnv}. Set it in .env or environment and run again.`);
+        process.exit(1);
+      }
       const password = process.env[adminUser.passwordEnv];
       if (!password || password.trim() === '') {
         console.error(`❌ Missing ${adminUser.passwordEnv}. Set it in .env or environment and run again.`);
         process.exit(1);
       }
-      const normalizedEmail = adminUser.email.toLowerCase().trim();
+      const normalizedEmail = email.toLowerCase().trim();
       
       // Check if user exists (case-insensitive)
       const existingUser = await pool.query(
@@ -67,7 +72,7 @@ async function createAdminUsers() {
             user.id,
           ]
         );
-        console.log(`✅ Updated admin user: ${adminUser.email} (ID: ${user.id})`);
+        console.log(`✅ Updated admin user: ${normalizedEmail} (ID: ${user.id})`);
       } else {
         // Create new user
         const passwordHash = await bcrypt.hash(password, 10);
@@ -84,7 +89,7 @@ async function createAdminUsers() {
             adminUser.is_verified,
           ]
         );
-        console.log(`✅ Created admin user: ${adminUser.email} (ID: ${result.rows[0].id})`);
+        console.log(`✅ Created admin user: ${normalizedEmail} (ID: ${result.rows[0].id})`);
       }
     }
     

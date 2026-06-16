@@ -207,6 +207,8 @@ export const users = pgTable("users", {
   password_hash: text("password_hash").notNull(),
   first_name: text("first_name").notNull(),
   last_name: text("last_name").notNull(),
+  city: text("city"),
+  state: text("state"),
   created_at: timestamp("created_at").defaultNow(),
   is_verified: boolean("is_verified").default(false),
   verified_at: timestamp("verified_at"),
@@ -217,6 +219,7 @@ export const users = pgTable("users", {
   status: text("status").default("active"), // active, suspended, inactive
   reset_token: text("reset_token"),
   reset_token_expires_at: timestamp("reset_token_expires_at"),
+  thank_you_email_sent_at: timestamp("thank_you_email_sent_at"),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -1052,10 +1055,6 @@ export const jobBoardVisits = pgTable("job_board_visits", {
 
 export type JobBoardVisit = typeof jobBoardVisits.$inferSelect;
 export type InsertJobBoardVisit = typeof jobBoardVisits.$inferInsert;
-
-// Type exports for JobListing with ingestion columns
-export type JobListing = typeof jobListings.$inferSelect;
-export type InsertJobListing = typeof jobListings.$inferInsert;
 
 // Page content overrides — persists admin editor changes across deployments
 export const pageContent = pgTable("page_content", {

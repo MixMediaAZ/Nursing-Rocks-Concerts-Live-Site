@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle2, AlertCircle, Music, Calendar, MapPin, Star, Loader2 } from "lucide-react";
+import { CheckCircle2, AlertCircle, Music, Calendar, MapPin, Star, Loader2, Camera } from "lucide-react";
+import { Link } from "wouter";
 
 const registrationSchema = z.object({
   firstName: z.string().min(1, "First name is required").max(100).trim(),
@@ -108,6 +109,12 @@ export default function PhoenixRegisterPage() {
             <p className="text-sm text-gray-500">
               Didn't get the approval email? Check your spam folder. Once approved, you'll receive an email with instructions to claim your ticket.
             </p>
+            <Link href="/events/phoenix">
+              <Button variant="outline" className="w-full gap-2">
+                <Camera className="h-4 w-4" />
+                See photos from the show
+              </Button>
+            </Link>
           </div>
         </div>
       </>

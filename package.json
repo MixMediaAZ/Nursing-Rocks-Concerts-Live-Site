@@ -152,6 +152,7 @@
     "@vitest/coverage-v8": "^4.1.1",
     "cross-env": "^10.1.0",
     "drizzle-kit": "^0.31.8",
+    "heic-convert": "^2.1.0",
     "tsx": "^4.19.1",
     "vitest": "^4.1.1"
   },

@@ -24,6 +24,8 @@ const registerSchema = z.object({
   confirm_password: z.string().min(8, { message: "Password must be at least 8 characters" }),
   first_name: z.string().min(1, { message: "First name is required" }),
   last_name: z.string().min(1, { message: "Last name is required" }),
+  city: z.string().min(1, { message: "City is required" }),
+  state: z.string().min(1, { message: "State is required" }),
 }).refine((data) => data.password === data.confirm_password, {
   message: "Passwords do not match",
   path: ["confirm_password"],
@@ -47,6 +49,8 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
       confirm_password: "",
       first_name: "",
       last_name: "",
+      city: "",
+      state: "",
     },
   });
 
@@ -139,6 +143,34 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                     <FormLabel>Last Name</FormLabel>
                     <FormControl>
                       <Input placeholder="Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Phoenix" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="state"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>State</FormLabel>
+                    <FormControl>
+                      <Input placeholder="AZ" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
