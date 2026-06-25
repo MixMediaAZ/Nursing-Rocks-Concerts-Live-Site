@@ -4,26 +4,24 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 
-// Pitch deck slides (13)
+// Pitch deck slides (12)
 import phoenixLogo from "@assets/pitch-deck/phoenix-logo.jpg";
-import slide0 from "@assets/pitch-deck/0_1758828531029-hvQgIknr.jpg";
-import slide1 from "@assets/pitch-deck/1_1758828531031-DMgzRFvL.jpg";
-import slide2 from "@assets/pitch-deck/2_1758828531031-frBdoLW9.jpg";
-import slide3 from "@assets/pitch-deck/3_1758828531032-_6KHYUZA.jpg";
-import slide4 from "@assets/pitch-deck/4_1758828531033-CpkSugu5.jpg";
-import slide5 from "@assets/pitch-deck/5_1758828531034-B8Ce15Gb.jpg";
-import slide6 from "@assets/pitch-deck/6_1758828531035-Bgh1IsTa.jpg";
-import slide7 from "@assets/pitch-deck/7_1758828531035-DE8liC_J.jpg";
-import slide8 from "@assets/pitch-deck/8_1758828531036-BiPv94LO.jpg";
-import slide9 from "@assets/pitch-deck/9_1758828531037-BHRwQbAN.jpg";
-import slide10 from "@assets/pitch-deck/10_1758828531038-DK6xrOqg.jpg";
-import slide11 from "@assets/pitch-deck/11_1758828531039-DWoUwVdw.jpg";
+import slide1 from "@assets/pitch-deck/slide-01.jpg";
+import slide2 from "@assets/pitch-deck/slide-02.jpg";
+import slide3 from "@assets/pitch-deck/slide-03.jpg";
+import slide4 from "@assets/pitch-deck/slide-04.jpg";
+import slide5 from "@assets/pitch-deck/slide-05.jpg";
+import slide6 from "@assets/pitch-deck/slide-06.jpg";
+import slide7 from "@assets/pitch-deck/slide-07.jpg";
+import slide8 from "@assets/pitch-deck/slide-08.jpg";
+import slide9 from "@assets/pitch-deck/slide-09.jpg";
+import slide10 from "@assets/pitch-deck/slide-10.jpg";
+import slide11 from "@assets/pitch-deck/slide-11.jpg";
 
 export default function SponsorsPage() {
   const slides = useMemo(
     () => [
       phoenixLogo,
-      slide0,
       slide1,
       slide2,
       slide3,
