@@ -213,7 +213,9 @@ export default function ScanTicketsPage() {
   const didAutoStartRef = useRef(false); // prevent re-auto-start after manual stop
   const scanSettingsRef = useRef<ScanSettings>(DEFAULT_SETTINGS); // ref copy used inside verifyCode to avoid stale closure
   const stoppingRef = useRef(false); // guard against concurrent stop attempts
+  const lastCompletedScanRef = useRef<{ code: string; at: number } | null>(null);
   const maxRetries = 3;
+  const SAME_CODE_SUPPRESS_MS = 8000;
 
   const authed = Boolean(gateToken);
 
@@ -250,6 +252,16 @@ export default function ScanTicketsPage() {
     processingRef.current = false;
     setProcessing(false);
   }, []);
+
+  const resetForNextScan = useCallback(() => {
+    clearResetTimer();
+    setResult(null);
+    setBluetoothInput("");
+    resetProcessing();
+    window.requestAnimationFrame(() => {
+      bluetoothInputRef.current?.focus({ preventScroll: true });
+    });
+  }, [resetProcessing]);
 
   // Centralised stop — called by Lock, Stop Camera, Bluetooth buttons, token expiry
   const stopScanning = useCallback(async () => {
@@ -683,14 +695,30 @@ export default function ScanTicketsPage() {
         await stopScanning().catch(() => {});
         setResult({ kind: "fail", message: "Session expired. Enter PIN to unlock." });
         if (scanSettingsRef.current.sound) { playBeep("fail"); vibrate("fail"); }
-        resetTimerRef.current = setTimeout(() => setResult(null), scanSettingsRef.current.resetMs);
+        resetTimerRef.current = setTimeout(resetForNextScan, scanSettingsRef.current.resetMs);
         return;
       }
 
       clearResetTimer();
 
       const code = rawCode.trim();
-      if (!code) return;
+      if (!code) {
+        resetProcessing();
+        return;
+      }
+
+      const lastCompleted = lastCompletedScanRef.current;
+      if (
+        lastCompleted &&
+        lastCompleted.code === code &&
+        Date.now() - lastCompleted.at < SAME_CODE_SUPPRESS_MS
+      ) {
+        resetProcessing();
+        window.requestAnimationFrame(() => {
+          bluetoothInputRef.current?.focus({ preventScroll: true });
+        });
+        return;
+      }
 
       console.log(`[scanner] received code (${code.length} chars):`, code.substring(0, 60));
 
@@ -717,7 +745,7 @@ export default function ScanTicketsPage() {
           await stopScanning().catch(() => {});
           setResult({ kind: "fail", message: "Session expired. Enter PIN to unlock." });
           if (scanSettingsRef.current.sound) { playBeep("fail"); vibrate("fail"); }
-          resetTimerRef.current = setTimeout(() => setResult(null), scanSettingsRef.current.resetMs);
+          resetTimerRef.current = setTimeout(resetForNextScan, scanSettingsRef.current.resetMs);
           return;
         }
 
@@ -748,13 +776,12 @@ export default function ScanTicketsPage() {
         if (scanSettingsRef.current.sound) { playBeep("fail"); vibrate("fail"); }
       }
 
+      lastCompletedScanRef.current = { code, at: Date.now() };
+
       // Auto-clear result and unlock for next scan
-      resetTimerRef.current = setTimeout(() => {
-        setResult(null);
-        resetProcessing();
-      }, scanSettingsRef.current.resetMs);
+      resetTimerRef.current = setTimeout(resetForNextScan, scanSettingsRef.current.resetMs);
     },
-    [selectedEventId, stopScanning, resetProcessing, fetchStats]
+    [selectedEventId, stopScanning, resetProcessing, resetForNextScan, fetchStats]
   );
 
   // ── Camera settings controls ──────────────────────────────────────────────
@@ -804,11 +831,8 @@ export default function ScanTicketsPage() {
   );
 
   const handleDismiss = useCallback(() => {
-    clearResetTimer();
-    setResult(null);
-    resetProcessing();
-    setTimeout(() => bluetoothInputRef.current?.focus(), 100);
-  }, [resetProcessing]);
+    resetForNextScan();
+  }, [resetForNextScan]);
 
   // ── Camera scanner effect ─────────────────────────────────────────────────
 
@@ -1292,14 +1316,14 @@ export default function ScanTicketsPage() {
   }
 
   // ── Result overlay ────────────────────────────────────────────────────────
-
-  if (result) {
+  // Keep the scanner page mounted underneath this overlay. Unmounting the html5-qrcode
+  // target div while scanning is active can leave the camera stream in a dead state.
+  const resultOverlay = result ? (() => {
     const ok = result.kind === "ok";
     const used = result.kind === "used";
-
     return (
       <div
-        className={`min-h-screen flex flex-col items-center justify-center p-8 text-white text-center cursor-pointer select-none ${
+        className={`fixed inset-0 z-50 flex flex-col items-center justify-center p-8 text-white text-center cursor-pointer select-none ${
           ok ? "bg-green-600" : used ? "bg-orange-600" : "bg-red-700"
         }`}
         onClick={handleDismiss}
@@ -1343,7 +1367,7 @@ export default function ScanTicketsPage() {
         </div>
       </div>
     );
-  }
+  })() : null;
 
   // ── Main scanner UI ───────────────────────────────────────────────────────
 
@@ -1732,6 +1756,7 @@ export default function ScanTicketsPage() {
           )}
         </div>
       </div>
+      {resultOverlay}
     </>
   );
 }
