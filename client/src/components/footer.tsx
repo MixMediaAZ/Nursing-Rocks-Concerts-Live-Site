@@ -82,6 +82,11 @@ export function Footer() {
                 <a href="/#concerts" className="inline-block text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">Concerts</a>
               </li>
               <li>
+                <Link href="/nursing-rocks-radio">
+                  <div className="inline-block text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">Nursing Rocks Radio</div>
+                </Link>
+              </li>
+              <li>
                 <a href="https://nursingrocks.org" target="_blank" rel="noopener noreferrer" className="inline-block text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">NursingRocks.org</a>
               </li>
             </ul>

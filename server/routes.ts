@@ -1841,6 +1841,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ========== NURSING ROCKS RADIO: SONG SUGGESTIONS ==========
+
+  // Public: submit a song suggestion (rate-limited to prevent spam/DoS)
+  app.post("/api/song-suggestions", authRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const name = String(req.body?.name || "").trim();
+      const song = String(req.body?.song || "").trim();
+      const city = String(req.body?.city || "").trim();
+      const role = String(req.body?.role || "").trim();
+      const story = String(req.body?.story || "").trim();
+      const email = String(req.body?.email || "").toLowerCase().trim();
+      const canShare = Boolean(req.body?.can_share);
+
+      if (!name || name.length > 200) {
+        return res.status(400).json({ message: "Name is required (max 200 characters)" });
+      }
+      if (!song || song.length > 300) {
+        return res.status(400).json({ message: "Song is required (max 300 characters)" });
+      }
+      if (city.length > 200) {
+        return res.status(400).json({ message: "City too long (max 200 characters)" });
+      }
+      if (role.length > 200) {
+        return res.status(400).json({ message: "Role too long (max 200 characters)" });
+      }
+      if (story.length > 2000) {
+        return res.status(400).json({ message: "Story too long (max 2000 characters)" });
+      }
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ message: "Please enter a valid email address" });
+      }
+
+      const created = await storage.createSongSuggestion({
+        name,
+        song,
+        city: city || null,
+        role: role || null,
+        story: story || null,
+        email: email || null,
+        can_share: canShare,
+      });
+
+      return res.status(201).json({
+        id: created.id,
+        message: "Thanks! Your song suggestion was received.",
+      });
+    } catch (error) {
+      console.error("Error creating song suggestion:", error);
+      return res.status(500).json({ message: "Failed to submit song suggestion" });
+    }
+  });
+
+  // Admin: list song suggestions (newest first)
+  app.get("/api/admin/song-suggestions", requireAdminToken, async (_req: Request, res: Response) => {
+    try {
+      const rows = await storage.getSongSuggestions();
+      return res.json(rows);
+    } catch (error) {
+      console.error("Error fetching song suggestions:", error);
+      return res.status(500).json({ message: "Failed to fetch song suggestions" });
+    }
+  });
+
   // Get list of public sponsors/partners
   app.get("/api/sponsors/partners", async (_req: Request, res: Response) => {
     try {

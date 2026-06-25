@@ -3,6 +3,7 @@ import FeaturedArtist from "@/components/featured-artist";
 import ConcertCalendar from "@/components/concert-calendar";
 import Newsletter from "@/components/newsletter";
 import PromotionButtons from "@/components/promotion-buttons";
+import NursingRocksRadioTeaser from "@/components/nursing-rocks-radio-teaser";
 import PhoenixFadeGallery from "@/components/phoenix-fade-gallery";
 import { Helmet } from "react-helmet";
 
@@ -16,6 +17,7 @@ const Home = () => {
 
       <HeroSection />
       <PromotionButtons />
+      <NursingRocksRadioTeaser />
       <FeaturedArtist />
 
       {/* Recent show highlight — fades through all phoenix photos */}

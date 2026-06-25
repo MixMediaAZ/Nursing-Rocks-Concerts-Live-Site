@@ -908,6 +908,31 @@ export const insertSponsorshipSchema = createInsertSchema(sponsorships).omit({
   updated_at: true,
 });
 
+// ========== SONG SUGGESTIONS (Nursing Rocks Radio) ==========
+// Public submissions from the /nursing-rocks-radio "Suggest a Song" form.
+export const songSuggestions = pgTable("song_suggestions", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  city: text("city"),
+  role: text("role"),
+  song: text("song").notNull(),
+  story: text("story"),
+  // Optional; normalize to lowercase().trim() when present.
+  email: text("email"),
+  can_share: boolean("can_share").default(false),
+  status: text("status").default("new"), // new, reviewed, added, archived
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+export const insertSongSuggestionSchema = createInsertSchema(songSuggestions).omit({
+  id: true,
+  status: true,
+  created_at: true,
+});
+
+export type SongSuggestion = typeof songSuggestions.$inferSelect;
+export type InsertSongSuggestion = z.infer<typeof insertSongSuggestionSchema>;
+
 // Update user relations to include store relationships
 // Note: usersRelations consolidated above with all relationships including storeOrders
 

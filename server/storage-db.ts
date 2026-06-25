@@ -20,12 +20,13 @@ import {
   ContactRequest, InsertContactRequest,
   AppSetting, InsertAppSetting,
   Sponsorship, InsertSponsorship,
+  SongSuggestion, InsertSongSuggestion,
   events, artists, gallery, subscribers,
   users, nurseLicenses, tickets,
   storeProducts, storeOrders, storeOrderItems,
   employers, jobListings, nurseProfiles,
   jobApplications, savedJobs, jobAlerts, contactRequests,
-  appSettings, sponsorships, nrpxRegistrations
+  appSettings, sponsorships, nrpxRegistrations, songSuggestions
 } from "@shared/schema";
 import { IStorage } from "./storage";
 import session from "express-session";
@@ -1158,5 +1159,28 @@ export class DatabaseStorage implements IStorage {
         desc(sponsorships.amount_cents),
         desc(sponsorships.created_at)
       );
+  }
+
+  // ========== SONG SUGGESTIONS (Nursing Rocks Radio) ==========
+
+  async createSongSuggestion(suggestion: InsertSongSuggestion): Promise<SongSuggestion> {
+    // Normalize optional email for case-insensitive consistency with the rest of the app.
+    const normalizedEmail = suggestion.email
+      ? suggestion.email.toLowerCase().trim()
+      : null;
+
+    const [created] = await db
+      .insert(songSuggestions)
+      .values({ ...suggestion, email: normalizedEmail })
+      .returning();
+
+    return created;
+  }
+
+  async getSongSuggestions(): Promise<SongSuggestion[]> {
+    return await db
+      .select()
+      .from(songSuggestions)
+      .orderBy(desc(songSuggestions.created_at));
   }
 }

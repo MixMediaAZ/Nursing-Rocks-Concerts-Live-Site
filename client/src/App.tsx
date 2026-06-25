@@ -18,7 +18,9 @@ import LicenseVerificationPage from "@/pages/license-verification";
 import CitiesPage from "@/pages/cities";
 import CityDetailsPage from "@/pages/city-details";
 import SponsorsPage from "@/pages/sponsors";
+import NursingRocksRadioPage from "@/pages/nursing-rocks-radio";
 import AdminPage from "@/pages/admin";
+import AdminSongSuggestionsPage from "@/pages/admin-song-suggestions";
 import JobsPage from "@/pages/jobs";
 import JobDetailsPage from "@/pages/job-details";
 import GalleryPage from "@/pages/gallery";
@@ -99,6 +101,7 @@ function Router() {
             <Route path="/cities" component={CitiesPage} />
             <Route path="/cities/:cityId" component={CityDetailsPage} />
             <Route path="/sponsors" component={SponsorsPage} />
+            <Route path="/nursing-rocks-radio" component={NursingRocksRadioPage} />
             <Route path="/sponsorship" component={SponsorshipPage} />
             <Route path="/sponsorships" component={SponsorshipsPage} />
             <Route path="/jobs" component={JobsPage} />
@@ -116,6 +119,7 @@ function Router() {
             <Route path="/edit-demo" component={EditDemoPage} />
             <Route path="/admin/product-sync" component={ProductSyncPage} />
             <Route path="/admin/job-analytics" component={JobAnalyticsPage} />
+            <Route path="/admin/song-suggestions" component={AdminSongSuggestionsPage} />
             <Route path="/upload-utility" component={UploadUtilityPage} />
             {/* Legal and information pages */}
             <Route path="/terms" component={TermsPage} />

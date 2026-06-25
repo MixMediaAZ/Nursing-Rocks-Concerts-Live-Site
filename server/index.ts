@@ -80,6 +80,19 @@ app.use((req, res, next) => {
     await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "thank_you_email_sent_at" TIMESTAMP NULL`);
     await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "city" TEXT`);
     await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "state" TEXT`);
+    // Nursing Rocks Radio "Suggest a Song" submissions.
+    await db.execute(sql`CREATE TABLE IF NOT EXISTS "song_suggestions" (
+      "id" SERIAL PRIMARY KEY,
+      "name" TEXT NOT NULL,
+      "city" TEXT,
+      "role" TEXT,
+      "song" TEXT NOT NULL,
+      "story" TEXT,
+      "email" TEXT,
+      "can_share" BOOLEAN DEFAULT FALSE,
+      "status" TEXT DEFAULT 'new',
+      "created_at" TIMESTAMP DEFAULT NOW()
+    )`);
   } catch (err) {
     console.error("[boot] users self-migrate failed:", err instanceof Error ? err.message : err);
   }

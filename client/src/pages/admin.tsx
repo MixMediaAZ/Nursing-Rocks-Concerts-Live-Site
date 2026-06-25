@@ -1118,6 +1118,23 @@ export default function AdminPage() {
           
           <TabsContent value="overview">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Song Suggestions Card */}
+              <Card
+                className="cursor-pointer transition-all duration-200 hover:shadow-md hover:border-primary"
+                onClick={() => { window.location.href = "/admin/song-suggestions"; }}
+              >
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Music className="h-5 w-5" /> Song Suggestions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Nurse song picks from Nursing Rocks Radio
+                  </p>
+                </CardContent>
+              </Card>
+
               {/* Element Editing Card */}
               <Card 
                 className={`cursor-pointer transition-all duration-200 hover:shadow-md ${isEditModeActive ? "bg-primary/5 border-primary/50" : "hover:border-primary"}`}

@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Menu, X, User, HeartPulse, PlayCircle, Video, Briefcase, ShieldCheck } from "lucide-react";
+import { Menu, X, User, HeartPulse, PlayCircle, Video, Briefcase, ShieldCheck, Radio } from "lucide-react";
 import { clearToken, SESSION_USER_SYNC_EVENT } from "@/lib/token-utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -191,6 +191,7 @@ export function Header() {
     const publicNavLinks: NavLink[] = [
       { href: "/", label: "Home", icon: <HeartPulse size={18} /> },
       { href: "/videos", label: "Videos", icon: <PlayCircle size={18} /> },
+      { href: "/nursing-rocks-radio", label: "Listen", icon: <Radio size={18} /> },
       { href: "/jobs", label: "Jobs Board", icon: <Briefcase size={18} /> },
       {
         href: "/thanks",
