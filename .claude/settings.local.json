@@ -192,7 +192,12 @@
       "Bash(grep -E \"\\\\.\\(tsx?\\)$\")",
       "Bash(node -e ' *)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5000/)",
-      "Bash(git check-ignore *)"
+      "Bash(git check-ignore *)",
+      "Bash(curl -s -o /dev/null -w \"homepage HTTP %{http_code}\\\\n\" https://nursingrocksconcerts.com/)",
+      "Bash(curl -s -X POST https://nursingrocksconcerts.com/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"nobody@example.com\",\"password\":\"WrongPassword123\"}' -w \"\\\\nlogin endpoint HTTP %{http_code}\\\\n\")",
+      "Bash(node -e \"const s=require\\('./package.json'\\).scripts; for\\(const k in s\\){if\\(/deploy|vercel/i.test\\(k\\)\\) console.log\\(k+': '+s[k]\\)}\")",
+      "Bash(echo \"=== AI_BUILDS copy \\(where you saved logo\\) ===\"; ls -la \"/c/Users/Dave/AI_BUILDS/Nursing-Rocks-Concerts-Live-Site - 3.0/public/assets/employers/\" 2>/dev/null || echo \"NOT FOUND\"; echo \"\"; echo \"=== Downloads copy \\(my working dir\\) ===\"; ls -la \"/c/Users/Dave/Downloads/Nursing-Rocks-Concerts-Live-Site - 3.0/public/assets/employers/\" 2>/dev/null || echo \"NOT FOUND\")",
+      "Bash(cd \"D:\\\\AI Builds - OM\\\\Apps Builds-from-6-2026\\\\Nursing-Rocks-Concerts-Live-Site - 3.0\" && cp attached_assets/pitch-deck/*.jpg client/src/assets/pitch-deck/ && echo \"✓ All JPG files copied\" && ls -1 client/src/assets/pitch-deck/*.jpg | wc -l && echo \"files in client folder\")"
     ]
   }
 }
