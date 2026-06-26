@@ -21,8 +21,9 @@ export interface RadioPlaylist {
   explicitWarning?: boolean;
 }
 
-/** Order in which non-featured category sections render on the page. */
+/** Order in which category sections render on the page. */
 export const RADIO_CATEGORY_ORDER = [
+  "Featured",
   "Rock / High Energy",
   "Era Playlists",
   "Mood / Recovery / Variety",

@@ -6,11 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { SpotifyEmbed } from "@/components/spotify-embed";
 import { PlaylistCard } from "@/components/playlist-card";
-import { SharePlaylistButton } from "@/components/share-playlist-button";
 import {
-  featuredPlaylists,
   playlistsByCategory,
   RADIO_CATEGORY_ORDER,
   RADIO_PLAYLIST_PARAM,
@@ -112,65 +109,26 @@ export default function NursingRocksRadioPage() {
 
       <div className="container px-6 md:px-8 py-10">
         <div className="max-w-6xl mx-auto space-y-16" id="playlists">
-          {/* Featured — players visible */}
-          <section className="!py-0">
-            <div className="rounded-2xl border border-gray-200 bg-white/85 backdrop-blur-sm shadow-md p-6 sm:p-8">
-            <div className="w-full text-center mb-6">
-              <h2 className="text-2xl md:text-3xl font-bold">Start Here</h2>
-              <p className="text-muted-foreground mt-1">
-                Four playlists to set the tone — hit play and go.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {featuredPlaylists.map((playlist) => (
-                <div
-                  key={playlist.playlistId}
-                  id={`playlist-${playlist.playlistId}`}
-                  className={`rounded-xl border bg-background p-4 shadow-sm scroll-mt-24 ${
-                    sharedPlaylistId === playlist.playlistId
-                      ? "ring-2 ring-primary ring-offset-2"
-                      : ""
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h3 className="m-0 max-w-none text-left text-lg font-bold">
-                        {playlist.title}
-                      </h3>
-                      <p className="mx-0 mb-3 max-w-none text-left text-sm text-muted-foreground">
-                        {playlist.subtitle}
-                      </p>
-                    </div>
-                    <SharePlaylistButton playlist={playlist} />
-                  </div>
-                  <SpotifyEmbed
-                    playlistId={playlist.playlistId}
-                    title={playlist.title}
-                  />
-                </div>
-              ))}
-            </div>
-            </div>
-          </section>
-
-          {/* Category sections — lazy cards */}
           {RADIO_CATEGORY_ORDER.map((category) => {
             const items = playlistsByCategory(category);
             if (items.length === 0) return null;
+            const isFeatured = category === "Featured";
             return (
               <section key={category} className="!py-0">
-                <div className="w-full text-center mb-6">
-                  <h2 className="text-2xl md:text-3xl font-bold">{category}</h2>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {items.map((playlist) => (
-                    <PlaylistCard
-                      key={playlist.playlistId}
-                      playlist={playlist}
-                      initialOpen
-                      highlight={sharedPlaylistId === playlist.playlistId}
-                    />
-                  ))}
+                <div className="rounded-2xl border border-gray-200 bg-white/85 backdrop-blur-sm shadow-md p-6 sm:p-8">
+                  <div className="w-full text-center mb-6">
+                    <h2 className="text-2xl md:text-3xl font-bold">{category}</h2>
+                  </div>
+                  <div className={`grid gap-6 grid-cols-1 ${isFeatured ? "md:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
+                    {items.map((playlist) => (
+                      <PlaylistCard
+                        key={playlist.playlistId}
+                        playlist={playlist}
+                        initialOpen
+                        highlight={sharedPlaylistId === playlist.playlistId}
+                      />
+                    ))}
+                  </div>
                 </div>
               </section>
             );
