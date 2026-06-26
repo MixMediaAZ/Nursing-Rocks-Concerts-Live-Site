@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Play, ChevronUp, AlertTriangle } from "lucide-react";
+import { ExternalLink, Play, ChevronUp, AlertTriangle, Heart } from "lucide-react";
 import { SpotifyEmbed } from "./spotify-embed";
 import { SharePlaylistButton } from "./share-playlist-button";
 import { spotifyOpenUrl, type RadioPlaylist } from "@/lib/nursing-rocks-radio";
@@ -13,13 +13,19 @@ interface PlaylistCardProps {
   initialOpen?: boolean;
   /** Visually highlight the card (used when this is the shared/deep-linked card). */
   highlight?: boolean;
+  /** Total like count from the server. */
+  likeCount?: number;
+  /** Whether the current user has already liked this playlist. */
+  isLiked?: boolean;
+  /** Called when the user clicks the heart. */
+  onLike?: () => void;
 }
 
 /**
  * A single playlist card. The Spotify player is lazy: the iframe is only mounted
  * after the user clicks "Preview here", keeping the page light on first load.
  */
-export function PlaylistCard({ playlist, initialOpen = false, highlight = false }: PlaylistCardProps) {
+export function PlaylistCard({ playlist, initialOpen = false, highlight = false, likeCount, isLiked = false, onLike }: PlaylistCardProps) {
   const [open, setOpen] = useState(initialOpen);
 
   return (
@@ -81,6 +87,17 @@ export function PlaylistCard({ playlist, initialOpen = false, highlight = false 
             </a>
           </Button>
           <SharePlaylistButton playlist={playlist} />
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={onLike}
+            disabled={isLiked || !onLike}
+            aria-label={isLiked ? "Liked" : `Like ${playlist.title}`}
+            className={`gap-1 ${isLiked ? "text-red-500 hover:text-red-500" : "text-muted-foreground hover:text-red-400"}`}
+          >
+            <Heart className={`h-4 w-4 transition-all ${isLiked ? "fill-red-500 text-red-500 scale-110" : ""}`} />
+            {likeCount ? likeCount : ""}
+          </Button>
         </div>
       </CardContent>
     </Card>

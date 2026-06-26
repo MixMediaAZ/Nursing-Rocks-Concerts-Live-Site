@@ -93,6 +93,13 @@ app.use((req, res, next) => {
       "status" TEXT DEFAULT 'new',
       "created_at" TIMESTAMP DEFAULT NOW()
     )`);
+    // Nursing Rocks Radio playlist likes (anonymous heart votes).
+    await db.execute(sql`CREATE TABLE IF NOT EXISTS "playlist_likes" (
+      "id" SERIAL PRIMARY KEY,
+      "playlist_id" TEXT NOT NULL,
+      "created_at" TIMESTAMP DEFAULT NOW()
+    )`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS "idx_playlist_likes_pid" ON "playlist_likes"("playlist_id")`);
   } catch (err) {
     console.error("[boot] users self-migrate failed:", err instanceof Error ? err.message : err);
   }

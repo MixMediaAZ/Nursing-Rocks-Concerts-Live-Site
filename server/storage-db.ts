@@ -26,7 +26,8 @@ import {
   storeProducts, storeOrders, storeOrderItems,
   employers, jobListings, nurseProfiles,
   jobApplications, savedJobs, jobAlerts, contactRequests,
-  appSettings, sponsorships, nrpxRegistrations, songSuggestions
+  appSettings, sponsorships, nrpxRegistrations, songSuggestions,
+  playlistLikes
 } from "@shared/schema";
 import { IStorage } from "./storage";
 import session from "express-session";
@@ -1182,5 +1183,26 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(songSuggestions)
       .orderBy(desc(songSuggestions.created_at));
+  }
+
+  // ========== PLAYLIST LIKES (Nursing Rocks Radio) ==========
+
+  async addPlaylistLike(playlistId: string): Promise<number> {
+    await db.insert(playlistLikes).values({ playlist_id: playlistId });
+    const rows = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(playlistLikes)
+      .where(eq(playlistLikes.playlist_id, playlistId));
+    return Number(rows[0]?.count ?? 0);
+  }
+
+  async getPlaylistLikeCounts(): Promise<Record<string, number>> {
+    const rows = await db
+      .select({ playlist_id: playlistLikes.playlist_id, count: sql<number>`count(*)` })
+      .from(playlistLikes)
+      .groupBy(playlistLikes.playlist_id);
+    const result: Record<string, number> = {};
+    for (const row of rows) result[row.playlist_id] = Number(row.count);
+    return result;
   }
 }

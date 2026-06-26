@@ -1904,6 +1904,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ========== NURSING ROCKS RADIO: PLAYLIST LIKES ==========
+
+  // Public: record a like for a playlist (localStorage prevents double-tap on client)
+  app.post("/api/playlist-likes", authRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const playlistId = String(req.body?.playlistId || "").trim();
+      if (!playlistId || playlistId.length > 100) {
+        return res.status(400).json({ message: "Invalid playlistId" });
+      }
+      const count = await storage.addPlaylistLike(playlistId);
+      return res.status(201).json({ playlistId, count });
+    } catch (error) {
+      console.error("Error adding playlist like:", error);
+      return res.status(500).json({ message: "Failed to record like" });
+    }
+  });
+
+  // Public: get all playlist like counts (used to populate heart buttons on page load)
+  app.get("/api/playlist-likes", async (_req: Request, res: Response) => {
+    try {
+      const counts = await storage.getPlaylistLikeCounts();
+      return res.json(counts);
+    } catch (error) {
+      console.error("Error fetching playlist like counts:", error);
+      return res.status(500).json({ message: "Failed to fetch like counts" });
+    }
+  });
+
   // Get list of public sponsors/partners
   app.get("/api/sponsors/partners", async (_req: Request, res: Response) => {
     try {

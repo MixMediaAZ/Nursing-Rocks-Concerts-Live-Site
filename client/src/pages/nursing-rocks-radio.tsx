@@ -8,10 +8,30 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { PlaylistCard } from "@/components/playlist-card";
 import {
+  getDailyFeaturedPlaylists,
   playlistsByCategory,
   RADIO_CATEGORY_ORDER,
   RADIO_PLAYLIST_PARAM,
+  type RadioPlaylist,
 } from "@/lib/nursing-rocks-radio";
+
+const LIKED_KEY = "nrcs_liked_playlists";
+
+function getLikedFromStorage(): Set<string> {
+  try {
+    const raw = localStorage.getItem(LIKED_KEY);
+    if (!raw) return new Set();
+    return new Set(JSON.parse(raw) as string[]);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveLikedToStorage(liked: Set<string>) {
+  try {
+    localStorage.setItem(LIKED_KEY, JSON.stringify([...liked]));
+  } catch {}
+}
 
 export default function NursingRocksRadioPage() {
   // Deep link: /nursing-rocks-radio?p=<playlistId> opens scrolled to that playlist.
@@ -24,13 +44,57 @@ export default function NursingRocksRadioPage() {
     if (!sharedPlaylistId) return;
     const el = document.getElementById(`playlist-${sharedPlaylistId}`);
     if (!el) return;
-    // Small delay so the featured players and layout settle before scrolling.
     const t = setTimeout(
       () => el.scrollIntoView({ behavior: "smooth", block: "center" }),
       300,
     );
     return () => clearTimeout(t);
   }, [sharedPlaylistId]);
+
+  // Today's featured 4 — deterministic per day, consistent for all visitors.
+  const dailyFeatured = useMemo(() => getDailyFeaturedPlaylists(4), []);
+
+  // Like state
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
+  const [likedPlaylists, setLikedPlaylists] = useState<Set<string>>(() =>
+    typeof window !== "undefined" ? getLikedFromStorage() : new Set(),
+  );
+
+  useEffect(() => {
+    fetch("/api/playlist-likes")
+      .then((r) => r.json())
+      .then((data: Record<string, number>) => setLikeCounts(data))
+      .catch(() => {});
+  }, []);
+
+  const handleLike = async (playlistId: string) => {
+    if (likedPlaylists.has(playlistId)) return;
+    // Optimistic update
+    const next = new Set(likedPlaylists).add(playlistId);
+    setLikedPlaylists(next);
+    saveLikedToStorage(next);
+    setLikeCounts((prev) => ({ ...prev, [playlistId]: (prev[playlistId] ?? 0) + 1 }));
+    try {
+      const res = await fetch("/api/playlist-likes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playlistId }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLikeCounts((prev) => ({ ...prev, [playlistId]: data.count }));
+      }
+    } catch {}
+  };
+
+  const cardProps = (playlist: RadioPlaylist) => ({
+    playlist,
+    initialOpen: true,
+    highlight: sharedPlaylistId === playlist.playlistId,
+    likeCount: likeCounts[playlist.playlistId],
+    isLiked: likedPlaylists.has(playlist.playlistId),
+    onLike: () => handleLike(playlist.playlistId),
+  });
 
   return (
     <>
@@ -48,7 +112,7 @@ export default function NursingRocksRadioPage() {
         <meta property="og:type" content="website" />
       </Helmet>
 
-      {/* Hero — mirrors the Sponsors page banner treatment */}
+      {/* Hero */}
       <div className="py-10 bg-gradient-to-r from-[#5D3FD3]/5 to-[#FF3366]/5">
         <div className="container px-6 md:px-8 flex justify-center">
           <div
@@ -109,24 +173,37 @@ export default function NursingRocksRadioPage() {
 
       <div className="container px-6 md:px-8 py-10">
         <div className="max-w-6xl mx-auto space-y-16" id="playlists">
+
+          {/* Featured Today — daily rotation of 4 from all 20 */}
+          <section className="!py-0">
+            <div className="rounded-2xl border border-gray-200 bg-white/85 backdrop-blur-sm shadow-md p-6 sm:p-8">
+              <div className="w-full text-center mb-6">
+                <h2 className="text-2xl md:text-3xl font-bold">Featured Today</h2>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  A fresh lineup every day — check back tomorrow.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {dailyFeatured.map((playlist) => (
+                  <PlaylistCard key={`featured-${playlist.playlistId}`} {...cardProps(playlist)} />
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Genre category sections */}
           {RADIO_CATEGORY_ORDER.map((category) => {
             const items = playlistsByCategory(category);
             if (items.length === 0) return null;
-            const isFeatured = category === "Featured";
             return (
               <section key={category} className="!py-0">
                 <div className="rounded-2xl border border-gray-200 bg-white/85 backdrop-blur-sm shadow-md p-6 sm:p-8">
                   <div className="w-full text-center mb-6">
                     <h2 className="text-2xl md:text-3xl font-bold">{category}</h2>
                   </div>
-                  <div className={`grid gap-6 grid-cols-1 ${isFeatured ? "md:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {items.map((playlist) => (
-                      <PlaylistCard
-                        key={playlist.playlistId}
-                        playlist={playlist}
-                        initialOpen
-                        highlight={sharedPlaylistId === playlist.playlistId}
-                      />
+                      <PlaylistCard key={playlist.playlistId} {...cardProps(playlist)} />
                     ))}
                   </div>
                 </div>

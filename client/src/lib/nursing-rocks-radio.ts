@@ -15,15 +15,12 @@ export interface RadioPlaylist {
   subtitle: string;
   /** Spotify playlist ID (the part after /playlist/ in the share URL). */
   playlistId: string;
-  /** When true, the playlist is shown in the visible "Featured" row up top. */
-  featured?: boolean;
   /** When true, shows an adult-language / explicit-content badge. */
   explicitWarning?: boolean;
 }
 
 /** Order in which category sections render on the page. */
 export const RADIO_CATEGORY_ORDER = [
-  "Featured",
   "Rock / High Energy",
   "Era Playlists",
   "Mood / Recovery / Variety",
@@ -31,37 +28,19 @@ export const RADIO_CATEGORY_ORDER = [
 ] as const;
 
 export const nursingRocksPlaylists: RadioPlaylist[] = [
-  // ── Featured ──────────────────────────────────────────────────────────────
+  // ── Rock / High Energy ────────────────────────────────────────────────────
   {
-    category: "Featured",
+    category: "Rock / High Energy",
     title: "Fun to Be Had",
     subtitle: "A friendly starting point for the Nursing Rocks Radio experience.",
     playlistId: "3mLAFcc9VWoN0KYKB8FkRQ",
-    featured: true,
   },
   {
-    category: "Featured",
+    category: "Rock / High Energy",
     title: "Code Blue Rock",
     subtitle: "Main Nursing Rocks energy: loud, alive, and built for rock fans.",
     playlistId: "0KnJNxmpyBjLUCVcCpDBOM",
-    featured: true,
   },
-  {
-    category: "Featured",
-    title: "R&B Essentials",
-    subtitle: "Smooth essentials for essential nurses.",
-    playlistId: "7IE4Mab1eXyuEDO7GKGxfe",
-    featured: true,
-  },
-  {
-    category: "Featured",
-    title: "Jazz-tastic",
-    subtitle: "Timeless, classic, and calmer listening.",
-    playlistId: "1Sjyd4oJfeDcjDjxhHmMVm",
-    featured: true,
-  },
-
-  // ── Rock / High Energy ────────────────────────────────────────────────────
   {
     category: "Rock / High Energy",
     title: "Deep Cuts / Vinyl Days",
@@ -135,6 +114,18 @@ export const nursingRocksPlaylists: RadioPlaylist[] = [
   // ── Mood / Recovery / Variety ─────────────────────────────────────────────
   {
     category: "Mood / Recovery / Variety",
+    title: "R&B Essentials",
+    subtitle: "Smooth essentials for essential nurses.",
+    playlistId: "7IE4Mab1eXyuEDO7GKGxfe",
+  },
+  {
+    category: "Mood / Recovery / Variety",
+    title: "Jazz-tastic",
+    subtitle: "Timeless, classic, and calmer listening.",
+    playlistId: "1Sjyd4oJfeDcjDjxhHmMVm",
+  },
+  {
+    category: "Mood / Recovery / Variety",
     title: "Feeling Yachty",
     subtitle: "Smooth emotional waves for softer listening.",
     playlistId: "7faBK1dIaBISP17FCryHvY",
@@ -168,8 +159,20 @@ export const nursingRocksPlaylists: RadioPlaylist[] = [
   },
 ];
 
-/** Featured playlists (player visible), driven by the `featured` flag. */
-export const featuredPlaylists = nursingRocksPlaylists.filter((p) => p.featured);
+/** Pick `count` playlists for today's Featured section using the date as a seed.
+ *  All visitors see the same lineup on a given day; it refreshes automatically at midnight. */
+export function getDailyFeaturedPlaylists(count = 4): RadioPlaylist[] {
+  const d = new Date();
+  const seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  const pool = [...nursingRocksPlaylists];
+  let s = seed;
+  for (let i = pool.length - 1; i > 0; i--) {
+    s = (Math.imul(s, 1664525) + 1013904223) | 0;
+    const j = Math.abs(s) % (i + 1);
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, count);
+}
 
 /** Playlists for a given category, in catalog order. */
 export function playlistsByCategory(category: string): RadioPlaylist[] {

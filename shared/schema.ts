@@ -933,6 +933,16 @@ export const insertSongSuggestionSchema = createInsertSchema(songSuggestions).om
 export type SongSuggestion = typeof songSuggestions.$inferSelect;
 export type InsertSongSuggestion = z.infer<typeof insertSongSuggestionSchema>;
 
+// ========== PLAYLIST LIKES (Nursing Rocks Radio) ==========
+// Anonymous per-play "heart" votes — one row per click, localStorage prevents double-tap.
+export const playlistLikes = pgTable("playlist_likes", {
+  id: serial("id").primaryKey(),
+  playlist_id: text("playlist_id").notNull(),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+export type PlaylistLike = typeof playlistLikes.$inferSelect;
+
 // Update user relations to include store relationships
 // Note: usersRelations consolidated above with all relationships including storeOrders
 
